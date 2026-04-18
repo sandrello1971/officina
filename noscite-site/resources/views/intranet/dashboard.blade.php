@@ -84,5 +84,23 @@
             </div>
         </div>
     </div>
+
+    <div class="card" style="margin-top:16px;">
+        <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+            🖥 <span>VPS Attivi</span>
+            <a href="/intranet/servers" style="margin-left:auto; font-size:0.75rem; color:#55B1AE; font-weight:400;">Vedi tutti →</a>
+        </h3>
+        @php $servers = \App\Models\IntranetServer::orderBy('sort_order')->get(); @endphp
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">
+            @foreach($servers as $server)
+            <a href="{{ $server->url }}" target="_blank"
+               style="padding:10px 12px; background:#F5F7F7; border-radius:8px; text-decoration:none; border-left:3px solid
+                   {{ $server->status === 'active' ? '#55B1AE' : ($server->status === 'maintenance' ? '#E28A53' : '#8A9696') }};">
+                <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F; margin-bottom:2px;">{{ $server->name }}</div>
+                <div style="font-size:0.75rem; color:#8A9696;">{{ $server->provider }} · {{ $server->ip_address }}</div>
+            </a>
+            @endforeach
+        </div>
+    </div>
 </div>
 @endsection

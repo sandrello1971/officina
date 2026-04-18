@@ -12,7 +12,7 @@
         </h2>
     </div>
 
-    <form method="POST" action="/admin/courses/{{ $course->id }}/modules/{{ $module->id }}">
+    <form method="POST" action="/admin/courses/{{ $course->id }}/modules/{{ $module->id }}" enctype="multipart/form-data">
         @csrf @method('PUT')
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
@@ -139,6 +139,31 @@
         #tiptap-editor [style*="text-align: right"] { text-align:right; }
         .toolbar-btn-active { background:#E8F5F5 !important; color:#55B1AE !important; border-color:#55B1AE !important; }
         </style>
+
+        <div style="background:linear-gradient(135deg,#1A1F1F,#252B2B); border-radius:10px; padding:20px; margin-bottom:20px;">
+            <h3 style="color:#55B1AE; font-weight:700; margin-bottom:12px; font-size:0.9rem;">🎬 Video del modulo</h3>
+
+            @if($module->video_ai_id)
+            <div style="padding:10px 14px; background:rgba(85,177,174,0.1); border-radius:8px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="color:#55B1AE; font-size:0.85rem; font-weight:600;">✓ {{ $module->video_filename }}</div>
+                    <div style="color:#8A9696; font-size:0.75rem;">Status: {{ $module->video_status }}</div>
+                </div>
+                <div style="font-size:0.75rem; color:#8A9696; font-family:monospace;">{{ substr($module->video_ai_id, 0, 12) }}...</div>
+            </div>
+            @endif
+
+            <div>
+                <label style="font-size:0.8rem; color:#8A9696; display:block; margin-bottom:6px;">
+                    {{ $module->video_ai_id ? 'Sostituisci video' : 'Carica video' }} (MP4, MOV, AVI — max 2GB)
+                </label>
+                <input type="file" name="video_file" accept="video/*"
+                       style="width:100%; padding:10px; border:1px dashed rgba(85,177,174,0.4); border-radius:8px; color:#8A9696; font-size:0.8rem; background:rgba(255,255,255,0.05);">
+                <p style="color:#4A5252; font-size:0.75rem; margin-top:6px;">
+                    Il video verrà trascritto automaticamente con AI e indicizzato per il chatbot Minerva.
+                </p>
+            </div>
+        </div>
 
         <div style="display:flex; gap:12px; justify-content:flex-end;">
             <a href="/admin/courses/{{ $course->id }}/modules"

@@ -76,6 +76,11 @@ Route::prefix('intranet')->name('intranet.')->group(function () {
         Route::post('/manage', [App\Http\Controllers\IntranetController::class, 'store'])->name('store');
         Route::delete('/manage/{tool}', [App\Http\Controllers\IntranetController::class, 'destroy'])->name('destroy');
         Route::post('/manage/{tool}/toggle', [App\Http\Controllers\IntranetController::class, 'toggle'])->name('toggle');
+
+        Route::get('/servers', [App\Http\Controllers\IntranetController::class, 'servers'])->name('servers');
+        Route::post('/servers', [App\Http\Controllers\IntranetController::class, 'storeServer'])->name('servers.store');
+        Route::delete('/servers/{server}', [App\Http\Controllers\IntranetController::class, 'destroyServer'])->name('servers.destroy');
+        Route::patch('/servers/{server}', [App\Http\Controllers\IntranetController::class, 'updateServer'])->name('servers.update');
     });
 });
 

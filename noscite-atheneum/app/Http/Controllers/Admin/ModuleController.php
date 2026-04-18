@@ -60,9 +60,32 @@ class ModuleController extends Controller
             'duration_minutes' => 'nullable|integer',
             'sort_order' => 'nullable|integer',
             'is_active' => 'nullable',
+            'video_file' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/webm|max:2048000',
         ]);
         $data['is_active'] = isset($data['is_active']);
+        unset($data['video_file']);
         $module->update($data);
+
+        if ($request->hasFile('video_file')) {
+            $file = $request->file('video_file');
+            $videoAI = app(\App\Services\VideoAIService::class);
+
+            try {
+                $result = $videoAI->ingestVideo(
+                    $file->getPathname(),
+                    $file->getClientOriginalName()
+                );
+
+                $module->update([
+                    'video_ai_id' => $result['video_id'],
+                    'video_filename' => $file->getClientOriginalName(),
+                    'video_status' => $result['status'] ?? 'processing',
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('VideoAI upload error: ' . $e->getMessage());
+                return back()->with('error', 'Upload video fallito: ' . $e->getMessage());
+            }
+        }
 
         return back()->with('success', 'Modulo aggiornato.');
     }

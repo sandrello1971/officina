@@ -53,6 +53,9 @@
         <a href="/intranet/poc" class="nav-item {{ request()->routeIs('intranet.poc') ? 'active' : '' }}">
             🧪 POC & Demo
         </a>
+        <a href="/intranet/servers" class="nav-item {{ request()->routeIs('intranet.servers') ? 'active' : '' }}">
+            🖥 Infrastruttura VPS
+        </a>
 
         @if($intranetUser['is_admin'] ?? false)
         <div style="margin:16px 8px 4px; padding:0 12px;">

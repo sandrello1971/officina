@@ -70,12 +70,32 @@ function addMessage(content, role) {
         wrapper.innerHTML = `<div style="max-width:70%;padding:12px 16px;background:#55B1AE;border-radius:12px 0 12px 12px;font-size:0.875rem;color:white;line-height:1.6;">${content}</div>`;
     } else {
         wrapper.style.cssText = 'display:flex;gap:10px;align-items:flex-start;';
+        const formattedContent = content
+            .replace(/\n/g, '<br>')
+            .replace(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g,
+                '<span style="background:#E8F5F5;color:#55B1AE;padding:1px 6px;border-radius:4px;font-family:monospace;font-size:0.8rem;cursor:pointer;" onclick="window.seekVideoTo(\'$1\')">▶ $1</span>');
         wrapper.innerHTML = `
             <div style="width:32px;height:32px;border-radius:50%;background:#55B1AE;display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;flex-shrink:0;">&#10022;</div>
-            <div style="max-width:70%;padding:12px 16px;background:#F5F7F7;border-radius:0 12px 12px 12px;font-size:0.875rem;color:#1A1F1F;line-height:1.6;">${content.replace(/\n/g,'<br>')}</div>`;
+            <div style="max-width:70%;padding:12px 16px;background:#F5F7F7;border-radius:0 12px 12px 12px;font-size:0.875rem;color:#1A1F1F;line-height:1.6;">${formattedContent}</div>`;
     }
     container.insertBefore(wrapper, document.getElementById('messages-end'));
     scrollBottom();
+}
+
+window.seekVideoTo = function(timestamp) {
+    const parts = timestamp.split(':').map(Number);
+    let seconds = 0;
+    if (parts.length === 2) seconds = parts[0] * 60 + parts[1];
+    if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+
+    const video = document.querySelector('video');
+    if (video) {
+        video.currentTime = seconds;
+        video.play();
+        video.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        alert('Apri il modulo video per saltare a ' + timestamp);
+    }
 }
 
 function addTyping() {
@@ -114,7 +134,7 @@ form.addEventListener('submit', async (e) => {
         });
         document.getElementById('typing')?.remove();
         const data = await res.json();
-        addMessage(escapeHtml(data.reply || data.message || 'Errore nella risposta.'), 'assistant');
+        addMessage(escapeHtml(data.reply || data.message || 'Errore nella risposta.'), 'assistant', data.timestamps || []);
     } catch(err) {
         document.getElementById('typing')?.remove();
         addMessage('Errore di connessione. Riprova tra poco.', 'assistant');

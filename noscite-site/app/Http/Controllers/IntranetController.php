@@ -73,4 +73,50 @@ class IntranetController extends Controller
         $tool->update(['active' => !$tool->active]);
         return back();
     }
+
+    public function servers()
+    {
+        $user = session('intranet_user');
+        $servers = \App\Models\IntranetServer::orderBy('sort_order')->get();
+        return view('intranet.servers', compact('user', 'servers'));
+    }
+
+    public function storeServer(Request $request)
+    {
+        $user = session('intranet_user');
+        if (!($user['is_admin'] ?? false)) abort(403);
+
+        $data = $request->validate([
+            'name' => 'required|string|max:100',
+            'hostname' => 'nullable|string|max:255',
+            'ip_address' => 'nullable|string|max:50',
+            'url' => 'nullable|url|max:255',
+            'provider' => 'nullable|string|max:50',
+            'github_url' => 'nullable|url|max:255',
+            'service' => 'nullable|string|max:255',
+            'os' => 'nullable|string|max:100',
+            'specs' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+            'status' => 'nullable|in:active,maintenance,offline',
+        ]);
+        $data['sort_order'] = (\App\Models\IntranetServer::max('sort_order') ?? 0) + 1;
+        \App\Models\IntranetServer::create($data);
+        return back()->with('success', 'Server aggiunto!');
+    }
+
+    public function destroyServer(\App\Models\IntranetServer $server)
+    {
+        $user = session('intranet_user');
+        if (!($user['is_admin'] ?? false)) abort(403);
+        $server->delete();
+        return back()->with('success', 'Server rimosso.');
+    }
+
+    public function updateServer(Request $request, \App\Models\IntranetServer $server)
+    {
+        $user = session('intranet_user');
+        if (!($user['is_admin'] ?? false)) abort(403);
+        $server->update($request->only(['status', 'notes', 'specs', 'os']));
+        return back()->with('success', 'Server aggiornato.');
+    }
 }
