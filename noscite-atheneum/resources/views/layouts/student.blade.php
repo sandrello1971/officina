@@ -7,7 +7,9 @@
     <title>@yield('title', 'Atheneum') — Atheneum Noscite</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <style>
+        [x-cloak] { display: none !important; }
         body { font-family: 'Calibri', system-ui, sans-serif; }
         .sidebar { width: 260px; min-height: 100vh; background: #1A1F1F; position: fixed; left: 0; top: 0; bottom: 0; overflow-y: auto; z-index: 40; }
         .main-content { margin-left: 260px; min-height: 100vh; background: #F5F7F7; }

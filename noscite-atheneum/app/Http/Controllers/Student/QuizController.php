@@ -3,96 +3,68 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Module;
 use App\Models\Quiz;
 use App\Models\QuizAnswer;
 use App\Models\QuizAttempt;
+use App\Models\Student;
 use Illuminate\Http\Request;
 
 class QuizController extends Controller
 {
     public function show(Quiz $quiz)
     {
-        $studentId = session('student_id');
-        abort_unless($studentId, 403);
+        $student = Student::findOrFail(session('student_id'));
 
-        $quiz->load('questions');
+        $questions = $quiz->questions()->orderBy('sort_order')->get();
 
-        $previousAttempts = QuizAttempt::where('quiz_id', $quiz->id)
-            ->where('student_id', $studentId)
-            ->orderByDesc('created_at')
+        $pastAttempts = QuizAttempt::where('quiz_id', $quiz->id)
+            ->where('student_id', $student->id)
+            ->whereNotNull('completed_at')
+            ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('student.quiz.show', compact('quiz', 'previousAttempts'));
+        $course = $quiz->course ?? $quiz->module?->course;
+
+        $nextModule = null;
+        if ($quiz->module_id && $quiz->module) {
+            $nextModule = Module::where('course_id', $quiz->module->course_id)
+                ->where('sort_order', '>', $quiz->module->sort_order)
+                ->orderBy('sort_order')
+                ->first();
+        }
+
+        return view('student.quiz.show', compact('quiz', 'questions', 'pastAttempts', 'course', 'nextModule'));
     }
 
-    public function start(Quiz $quiz)
+    public function start(Request $request, Quiz $quiz)
     {
-        $studentId = session('student_id');
-        abort_unless($studentId, 403);
-
-        $nextAttempt = QuizAttempt::where('quiz_id', $quiz->id)
-            ->where('student_id', $studentId)
-            ->max('attempt_number') ?? 0;
-
-        if ($quiz->max_attempts && $nextAttempt >= $quiz->max_attempts) {
-            return back()->withErrors(['quiz' => 'Hai esaurito i tentativi disponibili.']);
-        }
+        $student = Student::findOrFail(session('student_id'));
 
         $attempt = QuizAttempt::create([
             'quiz_id' => $quiz->id,
-            'student_id' => $studentId,
+            'student_id' => $student->id,
             'started_at' => now(),
-            'attempt_number' => $nextAttempt + 1,
+            'attempt_number' => QuizAttempt::where('quiz_id', $quiz->id)
+                ->where('student_id', $student->id)
+                ->count() + 1,
         ]);
 
-        $questions = $quiz->questions;
-        if ($quiz->randomize_questions) {
-            $questions = $questions->shuffle();
-        }
-
-        return view('student.quiz.attempt', compact('quiz', 'attempt', 'questions'));
+        return response()->json(['attempt_id' => $attempt->id]);
     }
 
     public function submit(Request $request, Quiz $quiz)
     {
-        $studentId = session('student_id');
-        abort_unless($studentId, 403);
-
-        $attempt = QuizAttempt::where('id', $request->attempt_id)
-            ->where('student_id', $studentId)
-            ->firstOrFail();
-
-        $answers = $request->input('answers', []);
-        $totalPoints = 0;
-        $earnedPoints = 0;
-
-        foreach ($quiz->questions as $question) {
-            $userAnswer = $answers[$question->id] ?? null;
-            $isCorrect = $this->checkAnswer($question, $userAnswer);
-            $points = $isCorrect ? $question->points : 0;
-
-            $totalPoints += $question->points;
-            $earnedPoints += $points;
-
-            QuizAnswer::create([
-                'attempt_id' => $attempt->id,
-                'question_id' => $question->id,
-                'answer' => is_array($userAnswer) ? json_encode($userAnswer) : $userAnswer,
-                'is_correct' => $isCorrect,
-                'points_earned' => $points,
+        $attempt = QuizAttempt::find($request->attempt_id);
+        if ($attempt) {
+            $attempt->update([
+                'completed_at' => now(),
+                'score' => $request->score,
+                'passed' => $request->passed,
+                'time_spent_seconds' => now()->diffInSeconds($attempt->started_at),
             ]);
         }
-
-        $score = $totalPoints > 0 ? round(($earnedPoints / $totalPoints) * 100) : 0;
-
-        $attempt->update([
-            'completed_at' => now(),
-            'score' => $score,
-            'passed' => $score >= $quiz->passing_score,
-            'time_spent_seconds' => now()->diffInSeconds($attempt->started_at),
-        ]);
-
-        return redirect()->route('student.quiz.result', [$quiz, $attempt]);
+        return response()->json(['success' => true]);
     }
 
     public function result(Quiz $quiz, QuizAttempt $attempt)
@@ -103,21 +75,5 @@ class QuizController extends Controller
         $attempt->load('answers.question');
 
         return view('student.quiz.result', compact('quiz', 'attempt'));
-    }
-
-    private function checkAnswer($question, $userAnswer): bool
-    {
-        if (empty($userAnswer)) {
-            return false;
-        }
-
-        if ($question->type === 'open') {
-            return false;
-        }
-
-        $correct = trim((string) $question->correct_answer);
-        $given = is_array($userAnswer) ? implode(',', $userAnswer) : trim((string) $userAnswer);
-
-        return strcasecmp($correct, $given) === 0;
     }
 }

@@ -3,11 +3,6 @@
 @section('breadcrumb', $course->name)
 
 @section('content')
-@php
-    $totalModules = $modules->count();
-    $completedModules = $progressByModule->where('status', 'completed')->count();
-    $progressPercent = $totalModules > 0 ? round(($completedModules / $totalModules) * 100) : 0;
-@endphp
 
 <div style="max-width:800px;">
 
@@ -52,7 +47,7 @@
                 <div style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.875rem; flex-shrink:0;
                     background:{{ $status === 'completed' ? '#E8F5F5' : ($status === 'in_progress' ? '#fff3ec' : '#F5F7F7') }};
                     color:{{ $status === 'completed' ? '#3A8C89' : ($status === 'in_progress' ? '#c97a45' : '#8A9696') }};">
-                    {{ $status === 'completed' ? '&#10003;' : ($index + 1) }}
+                    {{ $status === 'completed' ? '✓' : ($index + 1) }}
                 </div>
 
                 <div style="flex:1;">
@@ -79,7 +74,7 @@
 
                 <div style="display:flex; align-items:center; gap:8px;">
                     @if($status === 'completed')
-                    <span style="font-size:0.7rem; padding:3px 8px; background:#E8F5F5; color:#3A8C89; border-radius:4px; font-weight:600;">Completato</span>
+                    <span style="font-size:0.7rem; padding:3px 8px; background:#E8F5F5; color:#3A8C89; border-radius:4px; font-weight:600;">✓ Completato</span>
                     @elseif($status === 'in_progress')
                     <span style="font-size:0.7rem; padding:3px 8px; background:#fff3ec; color:#c97a45; border-radius:4px; font-weight:600;">In corso</span>
                     @else
@@ -95,6 +90,20 @@
         </div>
         @endforeach
     </div>
+
+    @if($progressPercent >= 70 && $finalQuiz)
+    <div style="background:linear-gradient(135deg,#1A1F1F,#252B2B); border-radius:16px; padding:24px; margin-top:16px; border:2px solid rgba(85,177,174,0.4); text-align:center;">
+        <div style="font-size:2rem; margin-bottom:12px;">🎓</div>
+        <h3 style="color:white; font-weight:700; margin-bottom:6px;">Pronto per l'esame finale?</h3>
+        <p style="color:#8A9696; font-size:0.875rem; margin-bottom:16px;">
+            Hai completato il {{ $progressPercent }}% del corso. Puoi sostenere l'esame finale.
+        </p>
+        <a href="/learn/quiz/{{ $finalQuiz->id }}"
+           style="display:inline-block; padding:12px 32px; background:#55B1AE; color:white; border-radius:8px; font-weight:700; text-decoration:none; font-size:0.9rem;">
+            Esame finale →
+        </a>
+    </div>
+    @endif
 
 </div>
 @endsection
