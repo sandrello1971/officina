@@ -13,7 +13,7 @@ class Student extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'password', 'phone', 'company', 'role',
-        'avatar_url', 'is_active', 'must_change_password',
+        'avatar_url', 'is_active', 'is_demo', 'must_change_password',
     ];
 
     protected $hidden = [
@@ -22,6 +22,7 @@ class Student extends Authenticatable
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_demo' => 'boolean',
         'must_change_password' => 'boolean',
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',

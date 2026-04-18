@@ -27,7 +27,7 @@ Route::prefix('learn')->name('student.')->group(function () {
     Route::get('/change-password', [App\Http\Controllers\Student\AuthController::class, 'showChangePassword'])->name('change-password');
     Route::post('/change-password', [App\Http\Controllers\Student\AuthController::class, 'changePassword'])->name('change-password.post');
 
-    Route::middleware(['student.auth', 'student.password'])->group(function () {
+    Route::middleware(['student.auth', 'student.password', 'demo.restrictions'])->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\Student\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/course/{course:slug}', [App\Http\Controllers\Student\CourseController::class, 'show'])->name('course.show');
         Route::get('/course/{course:slug}/module/{module}', [App\Http\Controllers\Student\CourseController::class, 'module'])->name('module.show');
@@ -41,6 +41,11 @@ Route::prefix('learn')->name('student.')->group(function () {
 
         Route::get('/chat/{course:slug}', [App\Http\Controllers\Student\ChatController::class, 'show'])->name('chat.show');
         Route::post('/chat/message', [App\Http\Controllers\Student\ChatController::class, 'sendMessage'])->name('chat.message');
+
+        Route::get('/certificate/{course:slug}', [App\Http\Controllers\Student\CertificateController::class, 'download'])->name('certificate.download');
+        Route::get('/certificate/{course:slug}/view', [App\Http\Controllers\Student\CertificateController::class, 'show'])->name('certificate.show');
+
+        Route::post('/notes/{module}', [App\Http\Controllers\Student\NoteController::class, 'save'])->name('notes.save');
     });
 });
 
@@ -66,6 +71,8 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::delete('rag/{document}', [App\Http\Controllers\Admin\RagController::class, 'destroy'])->name('rag.destroy');
 
     Route::get('analytics', [App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics');
+    Route::post('analytics/send-reminders', [App\Http\Controllers\Admin\AnalyticsController::class, 'sendReminders'])->name('analytics.send-reminders');
+    Route::post('analytics/send-reminder/{student}', [App\Http\Controllers\Admin\AnalyticsController::class, 'sendReminder'])->name('analytics.send-reminder');
 
     Route::post('upload-image', [App\Http\Controllers\Admin\AdminDashboardController::class, 'uploadImage'])->name('upload-image');
     Route::post('courses/{course}/generate-quiz', [App\Http\Controllers\Admin\CourseController::class, 'generateQuiz'])->name('courses.generate-quiz');

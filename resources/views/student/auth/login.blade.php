@@ -25,6 +25,34 @@
             </div>
             @endif
 
+            @if(request('demo'))
+            <div style="margin-bottom:20px; padding:14px 16px; background:rgba(226,138,83,0.15);
+                 border:1px solid rgba(226,138,83,0.4); border-radius:10px;">
+                <div style="color:#E28A53; font-weight:700; font-size:0.85rem; margin-bottom:6px;">
+                    ✦ Accesso Demo
+                </div>
+                <div style="color:#8A9696; font-size:0.8rem; margin-bottom:10px;">
+                    Usa queste credenziali per esplorare la piattaforma:
+                </div>
+                <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:10px 14px;
+                     font-family:monospace; font-size:0.85rem;">
+                    <div style="color:#E8EDED; margin-bottom:4px;">
+                        📧 <span style="color:#55B1AE;">demo@atheneum.noscite.it</span>
+                    </div>
+                    <div style="color:#E8EDED;">
+                        🔑 <span style="color:#55B1AE;">Demo2024</span>
+                    </div>
+                </div>
+                <button onclick="
+                    document.querySelector('input[name=email]').value='demo@atheneum.noscite.it';
+                    document.querySelector('input[name=password]').value='Demo2024';
+                " style="margin-top:10px; width:100%; padding:8px; background:#E28A53; color:white;
+                         border:none; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+                    ↓ Compila automaticamente e accedi
+                </button>
+            </div>
+            @endif
+
             <form method="POST" action="{{ route('student.login.post') }}" class="rounded-2xl p-6 space-y-5" style="background:rgba(42,47,47,0.95);border:1px solid #3a3f3f;backdrop-filter:blur(10px)">
                 @csrf
                 <div>
@@ -43,9 +71,12 @@
             <p class="text-center mt-6 text-xs" style="color:#8A9696">
                 Problemi? Scrivi a <a href="mailto:info@noscite.it" style="color:#55B1AE">info@noscite.it</a>
             </p>
-            <p class="text-center mt-3 text-xs">
-                <a href="/" style="color:#555">&larr; Torna al sito</a>
-            </p>
+            <div style="text-align:center; margin-top:16px; padding-top:16px; border-top:1px solid rgba(85,177,174,0.15);">
+                <a href="https://atheneum.noscite.it"
+                   style="color:#8A9696; font-size:0.8rem; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                    ← Torna al sito Atheneum
+                </a>
+            </div>
         </div>
     </div>
 </body>

@@ -36,11 +36,19 @@ class CourseController extends Controller
             ->where('is_active', true)
             ->first();
 
+        $certificationPassed = false;
+        if ($finalQuiz) {
+            $certificationPassed = QuizAttempt::where('quiz_id', $finalQuiz->id)
+                ->where('student_id', $student->id)
+                ->where('passed', true)
+                ->exists();
+        }
+
         $progressByModule = $progress;
 
         return view('student.course.show', compact(
             'course', 'modules', 'progressPercent',
-            'completedModules', 'totalModules', 'finalQuiz', 'progressByModule'
+            'completedModules', 'totalModules', 'finalQuiz', 'certificationPassed', 'progressByModule'
         ));
     }
 
@@ -93,9 +101,33 @@ class CourseController extends Controller
                 ->exists();
         }
 
+        $isDemo = $student->is_demo;
+
+        $note = \App\Models\StudentNote::where('student_id', $student->id)
+            ->where('module_id', $module->id)
+            ->first();
+
+        if ($isDemo && $module->content) {
+            $lines = explode("\n", $module->content);
+            $module->content = implode("\n", array_slice($lines, 0, 20));
+            $module->content .= '
+            <div style="margin-top:24px; padding:20px; background:linear-gradient(135deg,#1A1F1F,#3A8C89); border-radius:12px; text-align:center;">
+                <div style="color:#55B1AE; font-weight:700; margin-bottom:8px;">✦ Stai usando la versione Demo</div>
+                <p style="color:#8A9696; font-size:0.875rem; margin-bottom:16px;">
+                    Visualizzi solo un\'anteprima del contenuto.<br>
+                    Acquista il corso per accedere a tutti i materiali.
+                </p>
+                <a href="https://atheneum.noscite.it/contatti"
+                   style="padding:10px 24px; background:#E28A53; color:white; border-radius:8px; font-size:0.875rem; font-weight:700; text-decoration:none;">
+                    Acquista il corso completo →
+                </a>
+            </div>';
+        }
+
         return view('student.course.module', compact(
             'course', 'module', 'materials', 'quiz', 'finalQuiz',
-            'certificationPassed', 'progress', 'prevModule', 'nextModule', 'canvases'
+            'certificationPassed', 'progress', 'prevModule', 'nextModule',
+            'canvases', 'isDemo', 'note'
         ));
     }
 

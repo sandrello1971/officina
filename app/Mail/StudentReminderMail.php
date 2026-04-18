@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Mail;
+
+use App\Models\Student;
+use Illuminate\Bus\Queueable;
+use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
+
+class StudentReminderMail extends Mailable
+{
+    use Queueable, SerializesModels;
+
+    public function __construct(public Student $student) {}
+
+    public function envelope(): Envelope
+    {
+        return new Envelope(subject: '📚 Ti aspettiamo su Atheneum Noscite');
+    }
+
+    public function content(): Content
+    {
+        return new Content(markdown: 'emails.student-reminder');
+    }
+}

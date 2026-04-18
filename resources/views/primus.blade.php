@@ -38,8 +38,18 @@
 <!-- TARGET -->
 <section class="py-12 px-4" style="background:#E8F5F5">
     <div class="max-w-4xl mx-auto">
-        <h2 class="text-xl font-bold mb-3" style="color:#1A1F1F">A chi e rivolto</h2>
-        <p style="color:#4A5252">Imprenditori e dirigenti di PMI italiane 5-50 dipendenti. Nessuna esperienza AI richiesta. Pensato per chi e curioso ma scettico, e vuole decidere con cognizione di causa prima di investire.</p>
+        <div style="background:#F5F7F7; border-radius:12px; padding:20px;">
+            <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:12px;">👔 A chi è rivolto</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div style="display:flex; align-items:center; gap:8px; font-size:0.875rem; color:#4A5252;">✓ Imprenditori e titolari di PMI (5-50 dipendenti)</div>
+                <div style="display:flex; align-items:center; gap:8px; font-size:0.875rem; color:#4A5252;">✓ Dirigenti che vogliono capire l'AI prima di investire</div>
+                <div style="display:flex; align-items:center; gap:8px; font-size:0.875rem; color:#4A5252;">✓ Chi non ha esperienza AI pregressa</div>
+                <div style="display:flex; align-items:center; gap:8px; font-size:0.875rem; color:#4A5252;">✓ Board aziendali che devono allinearsi sul perché</div>
+            </div>
+            <div style="margin-top:12px; padding:10px 14px; background:white; border-radius:8px; font-size:0.8rem; color:#8A9696;">
+                ✦ Prerequisiti: <strong style="color:#55B1AE;">Nessuno.</strong> Accesso libero anche senza esperienza AI pregressa.
+            </div>
+        </div>
     </div>
 </section>
 

@@ -94,6 +94,16 @@
     @if($progressPercent >= 70 && $finalQuiz)
     <div style="background:linear-gradient(135deg,#1A1F1F,#252B2B); border-radius:16px; padding:24px; margin-top:16px; border:2px solid rgba(85,177,174,0.4); text-align:center;">
         <div style="font-size:2rem; margin-bottom:12px;">🎓</div>
+        @if($certificationPassed)
+        <h3 style="color:#55B1AE; font-weight:700; margin-bottom:6px;">Esame finale superato!</h3>
+        <p style="color:#8A9696; font-size:0.875rem; margin-bottom:8px;">
+            Hai ottenuto: <span style="color:#55B1AE; font-weight:600;">{{ $course->certification_name }}</span>
+        </p>
+        <a href="/learn/certificate/{{ $course->slug }}"
+           style="display:inline-block; margin-top:12px; padding:10px 24px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:700; text-decoration:none;">
+            ⬇ Scarica il tuo certificato
+        </a>
+        @else
         <h3 style="color:white; font-weight:700; margin-bottom:6px;">Pronto per l'esame finale?</h3>
         <p style="color:#8A9696; font-size:0.875rem; margin-bottom:16px;">
             Hai completato il {{ $progressPercent }}% del corso. Puoi sostenere l'esame finale.
@@ -102,6 +112,7 @@
            style="display:inline-block; padding:12px 32px; background:#55B1AE; color:white; border-radius:8px; font-weight:700; text-decoration:none; font-size:0.9rem;">
             Esame finale →
         </a>
+        @endif
     </div>
     @endif
 

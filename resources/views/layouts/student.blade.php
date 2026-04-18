@@ -42,6 +42,12 @@
         </div>
         <div style="color:#E8EDED; font-size:0.8rem; font-weight:600;">{{ session('student_name') }}</div>
         <div style="color:#8A9696; font-size:0.7rem;">{{ session('student_email') }}</div>
+        @php $currentStudent = \App\Models\Student::find(session('student_id')); @endphp
+        @if($currentStudent && $currentStudent->is_demo)
+        <div style="margin-top:6px; padding:3px 8px; background:rgba(226,138,83,0.2); border:1px solid #E28A53; border-radius:4px; display:inline-block;">
+            <span style="color:#E28A53; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Versione Demo</span>
+        </div>
+        @endif
     </div>
 
     <nav style="padding: 12px 0;">
