@@ -63,12 +63,12 @@
 
         @if($materials->isNotEmpty())
         <div style="background:white; border-radius:12px; padding:20px; margin-bottom:20px;">
-            <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:12px; font-size:0.9rem;">&#128206; Materiali del modulo</h3>
+            <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:12px; font-size:0.9rem;">📎 Materiali del modulo</h3>
             @foreach($materials as $material)
             <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #F5F7F7;">
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span style="font-size:1.2rem;">
-                        {{ $material->file_type === 'pdf' ? '📕' : ($material->file_type === 'video' ? '🎬' : '📄') }}
+                        {{ $material->file_type === 'canvas' ? '🎯' : ($material->file_type === 'pdf' ? '📕' : ($material->file_type === 'video' ? '🎬' : '📄')) }}
                     </span>
                     <div>
                         <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">{{ $material->title }}</div>
@@ -77,39 +77,80 @@
                         @endif
                     </div>
                 </div>
-                @if($material->is_downloadable && $material->file_path)
-                <a href="/storage/{{ $material->file_path }}" download style="padding:5px 12px; background:#E8F5F5; color:#3A8C89; border-radius:6px; font-size:0.75rem; font-weight:600; text-decoration:none;">Scarica</a>
+                @if($material->file_type === 'canvas' && $material->file_path)
+                    <a href="/storage/{{ $material->file_path }}" target="_blank"
+                       style="padding:6px 14px; background:linear-gradient(135deg,#55B1AE,#3A8C89); color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
+                        Apri canvas →
+                    </a>
+                @elseif($material->is_downloadable && $material->file_path)
+                    <a href="/storage/{{ $material->file_path }}" download
+                       style="padding:5px 12px; background:#E8F5F5; color:#3A8C89; border-radius:6px; font-size:0.75rem; font-weight:600; text-decoration:none;">
+                        Scarica
+                    </a>
                 @elseif($material->external_url)
-                <a href="{{ $material->external_url }}" target="_blank" style="padding:5px 12px; background:#E8F5F5; color:#3A8C89; border-radius:6px; font-size:0.75rem; font-weight:600; text-decoration:none;">Apri &rarr;</a>
+                    <a href="{{ $material->external_url }}" target="_blank"
+                       style="padding:5px 12px; background:#E8F5F5; color:#3A8C89; border-radius:6px; font-size:0.75rem; font-weight:600; text-decoration:none;">
+                        Apri →
+                    </a>
                 @endif
             </div>
             @endforeach
         </div>
         @endif
 
-        @if(!empty($canvases))
-        <div style="background:linear-gradient(135deg,#1A1F1F,#252B2B); border-radius:12px; padding:20px; margin-bottom:20px;">
-            <h3 style="color:#55B1AE; font-weight:700; margin-bottom:12px; font-size:0.9rem;">&#127919; Canvas interattivi</h3>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                @foreach($canvases as $canvas)
-                <a href="/learn/course/{{ $course->slug }}/module/{{ $module->id }}/canvas/{{ $canvas }}" target="_blank" style="padding:8px 16px; background:rgba(85,177,174,0.2); color:#55B1AE; border:1px solid rgba(85,177,174,0.4); border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
-                    {{ str_replace('-', ' ', ucfirst($canvas)) }} &rarr;
-                </a>
-                @endforeach
-            </div>
+        @if($quiz)
+        <div style="background:linear-gradient(135deg,#E28A53,#c97a45); border-radius:12px; padding:20px; margin-bottom:20px;">
+            <h3 style="color:white; font-weight:700; margin-bottom:4px; font-size:1rem;">📝 {{ $quiz->title }}</h3>
+            <p style="color:rgba(255,255,255,0.85); font-size:0.8rem; margin-bottom:12px;">
+                {{ $quiz->questions()->count() }} domande · Soglia: {{ $quiz->passing_score }}%
+                @if($quiz->time_limit_minutes) · ⏱ {{ $quiz->time_limit_minutes }} min @endif
+            </p>
+            <a href="/learn/quiz/{{ $quiz->id }}"
+               style="display:inline-block; padding:8px 20px; background:white; color:#c97a45; border-radius:6px; font-size:0.875rem; font-weight:700; text-decoration:none;">
+                Inizia il quiz →
+            </a>
         </div>
         @endif
 
-        @if($quiz)
-        <div style="background:linear-gradient(135deg,#E28A53,#c97a45); border-radius:12px; padding:20px; margin-bottom:20px;">
-            <h3 style="color:white; font-weight:700; margin-bottom:4px;">&#128221; {{ $quiz->title }}</h3>
-            <p style="color:rgba(255,255,255,0.85); font-size:0.8rem; margin-bottom:12px;">
-                Soglia superamento: {{ $quiz->passing_score }}%
-                @if($quiz->time_limit_minutes) &middot; Tempo: {{ $quiz->time_limit_minutes }} minuti @endif
-            </p>
-            <a href="/learn/quiz/{{ $quiz->id }}" style="display:inline-block; padding:8px 20px; background:white; color:#c97a45; border-radius:6px; font-size:0.875rem; font-weight:700; text-decoration:none;">
-                Inizia il quiz &rarr;
-            </a>
+        @if(isset($finalQuiz) && $finalQuiz)
+        <div style="background:linear-gradient(135deg,#1A1F1F,#252B2B); border-radius:16px; padding:28px; margin-bottom:20px; border:2px solid rgba(85,177,174,0.3);">
+            @if($certificationPassed)
+            <div style="text-align:center;">
+                <div style="font-size:3rem; margin-bottom:12px;">🏆</div>
+                <h3 style="color:#55B1AE; font-weight:700; font-size:1.1rem; margin-bottom:8px;">
+                    Esame finale superato!
+                </h3>
+                <p style="color:#8A9696; font-size:0.875rem; margin-bottom:16px;">
+                    Hai superato l'esame finale per {{ $course->name }}.
+                </p>
+                <div style="display:inline-block; padding:8px 20px; background:rgba(85,177,174,0.15); border:1px solid #55B1AE; border-radius:8px; color:#55B1AE; font-size:0.8rem; font-weight:700;">
+                    {{ $course->certification_name }}
+                </div>
+            </div>
+            @else
+            <div style="display:flex; align-items:flex-start; gap:20px;">
+                <div style="font-size:2.5rem; flex-shrink:0;">🎓</div>
+                <div style="flex:1;">
+                    <div style="color:#55B1AE; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">
+                        Esame finale
+                    </div>
+                    <h3 style="color:white; font-weight:700; font-size:1.1rem; margin-bottom:6px;">
+                        {{ $finalQuiz->title }}
+                    </h3>
+                    <p style="color:#8A9696; font-size:0.8rem; margin-bottom:4px;">
+                        {{ $finalQuiz->questions()->count() }} domande · Soglia: {{ $finalQuiz->passing_score }}%
+                        @if($finalQuiz->time_limit_minutes) · ⏱ {{ $finalQuiz->time_limit_minutes }} minuti @endif
+                    </p>
+                    <p style="color:#8A9696; font-size:0.8rem; margin-bottom:16px;">
+                        Al superamento ricevi: <span style="color:#55B1AE; font-weight:600;">{{ $course->certification_name }}</span>
+                    </p>
+                    <a href="/learn/quiz/{{ $finalQuiz->id }}"
+                       style="display:inline-block; padding:12px 28px; background:#55B1AE; color:white; border-radius:8px; font-size:0.9rem; font-weight:700; text-decoration:none;">
+                        Sostieni l'esame →
+                    </a>
+                </div>
+            </div>
+            @endif
         </div>
         @endif
 

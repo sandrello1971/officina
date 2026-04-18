@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Module;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use App\Models\Student;
 use App\Models\StudentModuleProgress;
 use Illuminate\Http\Request;
@@ -13,25 +15,39 @@ class CourseController extends Controller
 {
     public function show(Course $course)
     {
-        $this->ensureEnrolled($course);
+        $student = $this->checkAccess($course);
+        $modules = $course->modules()->where('is_active', true)->orderBy('sort_order')->get();
 
-        $student = Student::findOrFail(session('student_id'));
-        $modules = $course->modules()->where('is_active', true)->with('materials')->get();
-
-        $progressByModule = $student->moduleProgress()
+        $progress = StudentModuleProgress::where('student_id', $student->id)
             ->whereIn('module_id', $modules->pluck('id'))
-            ->get()
-            ->keyBy('module_id');
+            ->get()->keyBy('module_id');
 
-        return view('student.course.show', compact('course', 'modules', 'progressByModule'));
+        $modules->each(function ($module) use ($progress) {
+            $p = $progress->get($module->id);
+            $module->progress_status = $p?->status ?? 'not_started';
+        });
+
+        $totalModules = $modules->count();
+        $completedModules = $modules->where('progress_status', 'completed')->count();
+        $progressPercent = $totalModules > 0 ? round(($completedModules / $totalModules) * 100) : 0;
+
+        $finalQuiz = Quiz::where('course_id', $course->id)
+            ->whereNull('module_id')
+            ->where('is_active', true)
+            ->first();
+
+        $progressByModule = $progress;
+
+        return view('student.course.show', compact(
+            'course', 'modules', 'progressPercent',
+            'completedModules', 'totalModules', 'finalQuiz', 'progressByModule'
+        ));
     }
 
     public function module(Course $course, Module $module)
     {
-        $this->ensureEnrolled($course);
+        $student = $this->checkAccess($course);
         abort_unless($module->course_id === $course->id, 404);
-
-        $student = Student::findOrFail(session('student_id'));
 
         $progress = StudentModuleProgress::firstOrCreate(
             ['student_id' => $student->id, 'module_id' => $module->id],
@@ -42,26 +58,51 @@ class CourseController extends Controller
             $progress->update(['status' => 'in_progress', 'started_at' => now()]);
         }
 
-        $module->load('materials', 'quizzes');
-
-        $materials = $module->materials;
-        $quiz = $module->quizzes->first();
+        $materials = $module->materials()->orderBy('sort_order')->get();
+        $prevModule = $course->modules()->where('sort_order', '<', $module->sort_order)->orderBy('sort_order', 'desc')->first();
+        $nextModule = $course->modules()->where('sort_order', '>', $module->sort_order)->orderBy('sort_order')->first();
         $canvases = is_array($module->metadata ?? null) ? ($module->metadata['canvases'] ?? []) : [];
 
-        $orderedModules = $course->modules()->where('is_active', true)->get();
-        $currentIndex = $orderedModules->search(fn($m) => $m->id === $module->id);
-        $prevModule = $currentIndex > 0 ? $orderedModules[$currentIndex - 1] : null;
-        $nextModule = $currentIndex !== false && $currentIndex < $orderedModules->count() - 1 ? $orderedModules[$currentIndex + 1] : null;
+        $quiz = Quiz::where('module_id', $module->id)->where('is_active', true)->first();
 
-        return view('student.course.module', compact('course', 'module', 'progress', 'materials', 'quiz', 'canvases', 'prevModule', 'nextModule'));
+        $finalQuiz = null;
+        $isLastModule = !$nextModule;
+
+        if ($isLastModule) {
+            $finalQuiz = Quiz::where('course_id', $course->id)
+                ->whereNull('module_id')
+                ->where('is_active', true)
+                ->first();
+
+            $totalModules = $course->modules()->count();
+            $completedModules = StudentModuleProgress::where('student_id', $student->id)
+                ->whereIn('module_id', $course->modules()->pluck('id'))
+                ->where('status', 'completed')
+                ->count();
+
+            if ($completedModules < ceil($totalModules * 0.7)) {
+                $finalQuiz = null;
+            }
+        }
+
+        $certificationPassed = false;
+        if ($finalQuiz) {
+            $certificationPassed = QuizAttempt::where('quiz_id', $finalQuiz->id)
+                ->where('student_id', $student->id)
+                ->where('passed', true)
+                ->exists();
+        }
+
+        return view('student.course.module', compact(
+            'course', 'module', 'materials', 'quiz', 'finalQuiz',
+            'certificationPassed', 'progress', 'prevModule', 'nextModule', 'canvases'
+        ));
     }
 
     public function completeModule(Course $course, Module $module)
     {
-        $this->ensureEnrolled($course);
+        $student = $this->checkAccess($course);
         abort_unless($module->course_id === $course->id, 404);
-
-        $student = Student::findOrFail(session('student_id'));
 
         StudentModuleProgress::updateOrCreate(
             ['student_id' => $student->id, 'module_id' => $module->id],
@@ -73,13 +114,13 @@ class CourseController extends Controller
 
     public function canvas(Course $course, Module $module, string $canvas)
     {
-        $this->ensureEnrolled($course);
+        $this->checkAccess($course);
         abort_unless($module->course_id === $course->id, 404);
 
         return view('student.course.canvas', compact('course', 'module', 'canvas'));
     }
 
-    private function ensureEnrolled(Course $course): void
+    private function checkAccess(Course $course): Student
     {
         $student = Student::findOrFail(session('student_id'));
         $enrolled = $student->courses()
@@ -88,5 +129,7 @@ class CourseController extends Controller
             ->exists();
 
         abort_unless($enrolled, 403, 'Non sei iscritto a questo corso.');
+
+        return $student;
     }
 }
