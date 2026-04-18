@@ -6,6 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="noindex, nofollow">
 
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="shortcut icon" type="image/png" href="/images/logo.png">
+
     <title>@yield('title', 'Dashboard') — Noscite Admin</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,7 +106,7 @@
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                     Vedi sito
                 </a>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="/nosciteadmin/logout">
                     @csrf
                     <button type="submit"
                             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-red-900/30 hover:text-red-400 transition-colors">
@@ -126,11 +129,16 @@
                 <h1 class="text-lg font-semibold text-gray-900 hidden lg:block">@yield('page-title', 'Dashboard')</h1>
 
                 <div class="flex items-center gap-4">
+                    @php $adminUser = session('admin_user'); @endphp
                     <div class="flex items-center gap-2">
+                        @if($adminUser['avatar'] ?? null)
+                        <img src="{{ $adminUser['avatar'] }}" alt="" class="w-8 h-8 rounded-full object-cover">
+                        @else
                         <div class="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-sm font-semibold">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                            {{ strtoupper(substr($adminUser['name'] ?? 'A', 0, 1)) }}
                         </div>
-                        <span class="text-sm font-medium text-gray-700 hidden sm:block">{{ auth()->user()->name }}</span>
+                        @endif
+                        <span class="text-sm font-medium text-gray-700 hidden sm:block">{{ $adminUser['name'] ?? 'Admin' }}</span>
                     </div>
                 </div>
             </header>

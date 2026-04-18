@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'intranet.auth' => \App\Http\Middleware\IntranetAuth::class,
+            'admin.auth' => \App\Http\Middleware\AdminAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

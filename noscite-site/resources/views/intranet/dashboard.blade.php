@@ -41,27 +41,15 @@
                 <a href="/intranet/tools" style="margin-left:auto; font-size:0.75rem; color:#55B1AE; font-weight:400;">Vedi tutti →</a>
             </h3>
             <div style="display:flex; flex-direction:column; gap:8px;">
-                <a href="https://claude.ai" target="_blank" style="display:flex; align-items:center; gap:10px; padding:10px; background:#F5F7F7; border-radius:8px; text-decoration:none;">
-                    <span style="font-size:1.2rem;">✦</span>
+                @foreach($tools->where('section', 'AI Tools')->take(3) as $tool)
+                <a href="{{ $tool->url }}" target="_blank" style="display:flex; align-items:center; gap:10px; padding:10px; background:#F5F7F7; border-radius:8px; text-decoration:none;">
+                    <span style="font-size:1.2rem;">{{ $tool->icon }}</span>
                     <div>
-                        <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">Claude</div>
-                        <div style="font-size:0.75rem; color:#8A9696;">AI assistant principale</div>
+                        <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">{{ $tool->name }}</div>
+                        <div style="font-size:0.75rem; color:#8A9696;">{{ \Illuminate\Support\Str::limit($tool->description, 50) }}</div>
                     </div>
                 </a>
-                <a href="https://perplexity.ai" target="_blank" style="display:flex; align-items:center; gap:10px; padding:10px; background:#F5F7F7; border-radius:8px; text-decoration:none;">
-                    <span style="font-size:1.2rem;">🔍</span>
-                    <div>
-                        <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">Perplexity</div>
-                        <div style="font-size:0.75rem; color:#8A9696;">Ricerca verificata con fonti</div>
-                    </div>
-                </a>
-                <a href="https://chatgpt.com" target="_blank" style="display:flex; align-items:center; gap:10px; padding:10px; background:#F5F7F7; border-radius:8px; text-decoration:none;">
-                    <span style="font-size:1.2rem;">🤖</span>
-                    <div>
-                        <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">ChatGPT</div>
-                        <div style="font-size:0.75rem; color:#8A9696;">Output e formattazione</div>
-                    </div>
-                </a>
+                @endforeach
             </div>
         </div>
 
@@ -71,26 +59,57 @@
                 <a href="/intranet/poc" style="margin-left:auto; font-size:0.75rem; color:#55B1AE; font-weight:400;">Vedi tutti →</a>
             </h3>
             <div style="display:flex; flex-direction:column; gap:8px;">
-                <a href="https://mcphub.noscite.it" target="_blank" style="display:flex; align-items:center; gap:10px; padding:10px; background:#F5F7F7; border-radius:8px; text-decoration:none;">
-                    <span style="font-size:1.2rem;">⚡</span>
+                @forelse($poc as $item)
+                <a href="{{ $item->url }}" target="_blank"
+                   style="display:flex; align-items:center; gap:10px; padding:10px; background:#F5F7F7; border-radius:8px; text-decoration:none;">
+                    <span style="font-size:1.2rem;">{{ $item->icon }}</span>
                     <div>
-                        <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">MCPHub Noscite</div>
-                        <div style="font-size:0.75rem; color:#8A9696;">Server MCP aziendale</div>
+                        <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">{{ $item->name }}</div>
+                        <div style="font-size:0.75rem; color:#8A9696;">{{ \Illuminate\Support\Str::limit($item->description, 50) }}</div>
                     </div>
+                    @if($item->status)
+                    <span style="margin-left:auto; font-size:0.7rem; background:#E8F5F5; color:#3A8C89; padding:2px 6px; border-radius:4px; font-weight:700;">{{ $item->status }}</span>
+                    @endif
                 </a>
-                <div style="padding:10px; background:#F5F7F7; border-radius:8px; border:1px dashed #C8D0D0;">
-                    <div style="font-size:0.85rem; color:#8A9696; text-align:center;">+ Aggiungi POC</div>
-                </div>
+                @empty
+                <p style="color:#8A9696; font-size:0.8rem; text-align:center; padding:8px;">Nessun POC configurato.</p>
+                @endforelse
+                @if(session('intranet_user')['is_admin'] ?? false)
+                <a href="/intranet/manage"
+                   style="display:flex; align-items:center; justify-content:center; padding:10px; background:#F5F7F7; border-radius:8px; border:1px dashed #C8D0D0; text-decoration:none; color:#8A9696; font-size:0.8rem;">
+                    + Gestisci POC
+                </a>
+                @endif
             </div>
         </div>
     </div>
+
+    @if($services->count() > 0)
+    <div class="card" style="margin-top:16px;">
+        <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+            🏢 <span>Servizi</span>
+            <a href="/intranet/services" style="margin-left:auto; font-size:0.75rem; color:#55B1AE; font-weight:400;">Vedi tutti →</a>
+        </h3>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            @foreach($services->take(3) as $service)
+            <a href="{{ $service->url }}" target="_blank"
+               style="display:flex; align-items:center; gap:10px; padding:10px; background:#F5F7F7; border-radius:8px; text-decoration:none;">
+                <span style="font-size:1.2rem;">{{ $service->icon }}</span>
+                <div>
+                    <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">{{ $service->name }}</div>
+                    <div style="font-size:0.75rem; color:#8A9696;">{{ \Illuminate\Support\Str::limit($service->description, 50) }}</div>
+                </div>
+            </a>
+            @endforeach
+        </div>
+    </div>
+    @endif
 
     <div class="card" style="margin-top:16px;">
         <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
             🖥 <span>VPS Attivi</span>
             <a href="/intranet/servers" style="margin-left:auto; font-size:0.75rem; color:#55B1AE; font-weight:400;">Vedi tutti →</a>
         </h3>
-        @php $servers = \App\Models\IntranetServer::orderBy('sort_order')->get(); @endphp
         <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">
             @foreach($servers as $server)
             <a href="{{ $server->url }}" target="_blank"

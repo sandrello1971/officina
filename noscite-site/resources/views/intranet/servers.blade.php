@@ -156,6 +156,10 @@
 
             @if(session('intranet_user')['is_admin'] ?? false)
             <div style="display:flex; gap:8px; flex-shrink:0;">
+                <button onclick="const el=document.getElementById('edit-{{ $server->id }}'); el.style.display=el.style.display==='none'?'block':'none'"
+                        style="padding:5px 12px; background:#E8F5F5; color:#55B1AE; border:1px solid #55B1AE; border-radius:6px; font-size:0.75rem; cursor:pointer;">
+                    ✏ Modifica
+                </button>
                 <form method="POST" action="/intranet/servers/{{ $server->id }}" onsubmit="return confirm('Eliminare {{ $server->name }}?')">
                     @csrf @method('DELETE')
                     <button type="submit"
@@ -166,6 +170,89 @@
             </div>
             @endif
         </div>
+
+        @if(session('intranet_user')['is_admin'] ?? false)
+        <div id="edit-{{ $server->id }}" style="display:none; margin-top:12px; padding:16px; background:#F5F7F7; border-radius:8px;">
+            <form method="POST" action="/intranet/servers/{{ $server->id }}">
+                @csrf @method('PATCH')
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px;">
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">Nome</label>
+                        <input type="text" name="name" value="{{ $server->name }}"
+                               style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">IP</label>
+                        <input type="text" name="ip_address" value="{{ $server->ip_address }}"
+                               style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">Hostname</label>
+                        <input type="text" name="hostname" value="{{ $server->hostname }}"
+                               style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">URL</label>
+                        <input type="url" name="url" value="{{ $server->url }}"
+                               style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">GitHub</label>
+                        <input type="url" name="github_url" value="{{ $server->github_url }}"
+                               style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">Provider</label>
+                        <select name="provider" style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                            <option value="OVH" {{ $server->provider === 'OVH' ? 'selected' : '' }}>OVH</option>
+                            <option value="ARUBA" {{ $server->provider === 'ARUBA' ? 'selected' : '' }}>ARUBA</option>
+                            <option value="AWS" {{ $server->provider === 'AWS' ? 'selected' : '' }}>AWS</option>
+                            <option value="Hetzner" {{ $server->provider === 'Hetzner' ? 'selected' : '' }}>Hetzner</option>
+                            <option value="Altro" {{ $server->provider === 'Altro' ? 'selected' : '' }}>Altro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">OS</label>
+                        <input type="text" name="os" value="{{ $server->os }}"
+                               style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">Specs</label>
+                        <input type="text" name="specs" value="{{ $server->specs }}"
+                               style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">Status</label>
+                        <select name="status" style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                            <option value="active" {{ $server->status === 'active' ? 'selected' : '' }}>✅ Attivo</option>
+                            <option value="maintenance" {{ $server->status === 'maintenance' ? 'selected' : '' }}>🔧 Manutenzione</option>
+                            <option value="offline" {{ $server->status === 'offline' ? 'selected' : '' }}>❌ Offline</option>
+                        </select>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">Servizio</label>
+                        <input type="text" name="service" value="{{ $server->service }}"
+                               style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none;">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label style="font-size:0.75rem; font-weight:600; color:#4A5252; display:block; margin-bottom:4px;">Note</label>
+                        <textarea name="notes" rows="2"
+                                  style="width:100%; padding:7px 10px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem; outline:none; resize:none;">{{ $server->notes }}</textarea>
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="submit"
+                            style="padding:7px 20px; background:#55B1AE; color:white; border:none; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+                        Salva modifiche
+                    </button>
+                    <button type="button" onclick="document.getElementById('edit-{{ $server->id }}').style.display='none'"
+                            style="padding:7px 16px; border:1px solid #C8D0D0; color:#4A5252; background:white; border-radius:6px; font-size:0.8rem; cursor:pointer;">
+                        Annulla
+                    </button>
+                </div>
+            </form>
+        </div>
+        @endif
     </div>
     @endforeach
 </div>

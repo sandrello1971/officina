@@ -18,21 +18,25 @@ class IntranetAuthController extends Controller
     public function redirect()
     {
         return Socialite::driver('microsoft')
+            ->redirectUrl(url('/intranet/auth/callback'))
             ->scopes(['openid', 'profile', 'email', 'User.Read'])
+            ->with(['prompt' => 'select_account'])
             ->redirect();
     }
 
     public function callback()
     {
         try {
-            $msUser = Socialite::driver('microsoft')->user();
+            $msUser = Socialite::driver('microsoft')
+                ->redirectUrl(url('/intranet/auth/callback'))
+                ->user();
 
             if (!str_ends_with($msUser->getEmail(), '@noscite.it')) {
                 return redirect()->route('intranet.login')
                     ->with('error', 'Accesso riservato al team Noscite (@noscite.it).');
             }
 
-            $admins = array_map('trim', explode(',', env('INTRANET_ADMINS', '')));
+            $admins = config('intranet.admins', []);
             $isAdmin = in_array($msUser->getEmail(), $admins);
 
             session([

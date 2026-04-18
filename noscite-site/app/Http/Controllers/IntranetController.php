@@ -11,29 +11,53 @@ class IntranetController extends Controller
     {
         $user = session('intranet_user');
         $tools = IntranetTool::where('type', 'tool')->where('active', true)->orderBy('sort_order')->get();
-        $poc = IntranetTool::where('type', 'poc')->where('active', true)->orderBy('sort_order')->get();
-        return view('intranet.dashboard', compact('user', 'tools', 'poc'));
+        $poc = IntranetTool::whereIn('type', ['poc', 'demo', 'mvp'])->where('active', true)->orderBy('sort_order')->get();
+        $services = IntranetTool::where('type', 'servizio')->where('active', true)->orderBy('sort_order')->get();
+        $servers = \App\Models\IntranetServer::orderBy('sort_order')->get();
+        return view('intranet.dashboard', compact('user', 'tools', 'poc', 'services', 'servers'));
+    }
+
+    public function services()
+    {
+        $user = session('intranet_user');
+        $services = IntranetTool::where('type', 'servizio')
+            ->where('active', true)
+            ->orderBy('sort_order')
+            ->get();
+        return view('intranet.services', compact('user', 'services'));
     }
 
     public function tools()
     {
         $user = session('intranet_user');
-        $tools = IntranetTool::where('type', 'tool')->where('active', true)->orderBy('sort_order')->get()->groupBy('section');
+        $tools = IntranetTool::where('type', 'tool')
+            ->where('active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy('section');
         return view('intranet.tools', compact('user', 'tools'));
     }
 
     public function poc()
     {
         $user = session('intranet_user');
-        $poc = IntranetTool::where('type', 'poc')->where('active', true)->orderBy('sort_order')->get();
-        return view('intranet.poc', compact('user', 'poc'));
+        $items = IntranetTool::whereIn('type', ['poc', 'demo', 'mvp'])
+            ->where('active', true)
+            ->orderBy('type')
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy('type');
+        return view('intranet.poc', compact('user', 'items'));
     }
 
     public function manage()
     {
         $user = session('intranet_user');
         if (!($user['is_admin'] ?? false)) abort(403);
-        $tools = IntranetTool::orderBy('type')->orderBy('sort_order')->get();
+        $tools = IntranetTool::orderBy('type')
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy('type');
         return view('intranet.manage', compact('user', 'tools'));
     }
 
@@ -43,7 +67,7 @@ class IntranetController extends Controller
         if (!($user['is_admin'] ?? false)) abort(403);
 
         $data = $request->validate([
-            'type' => 'required|in:tool,poc',
+            'type' => 'required|in:tool,poc,demo,servizio,mvp',
             'section' => 'required|string|max:100',
             'icon' => 'nullable|string|max:10',
             'name' => 'required|string|max:255',
@@ -72,6 +96,27 @@ class IntranetController extends Controller
         if (!($user['is_admin'] ?? false)) abort(403);
         $tool->update(['active' => !$tool->active]);
         return back();
+    }
+
+    public function update(Request $request, IntranetTool $tool)
+    {
+        $user = session('intranet_user');
+        if (!($user['is_admin'] ?? false)) abort(403);
+
+        $data = $request->validate([
+            'type' => 'required|in:tool,poc,demo,servizio,mvp',
+            'section' => 'required|string|max:100',
+            'icon' => 'nullable|string|max:10',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:500',
+            'url' => 'required|url|max:500',
+            'label' => 'nullable|string|max:100',
+            'credentials' => 'nullable|string|max:255',
+            'status' => 'nullable|string|max:20',
+        ]);
+
+        $tool->update($data);
+        return back()->with('success', 'Strumento aggiornato!');
     }
 
     public function servers()
@@ -116,7 +161,21 @@ class IntranetController extends Controller
     {
         $user = session('intranet_user');
         if (!($user['is_admin'] ?? false)) abort(403);
-        $server->update($request->only(['status', 'notes', 'specs', 'os']));
+
+        $data = $request->validate([
+            'name' => 'nullable|string|max:100',
+            'hostname' => 'nullable|string|max:255',
+            'ip_address' => 'nullable|string|max:50',
+            'url' => 'nullable|url|max:255',
+            'github_url' => 'nullable|url|max:255',
+            'provider' => 'nullable|string|max:50',
+            'service' => 'nullable|string|max:255',
+            'os' => 'nullable|string|max:100',
+            'specs' => 'nullable|string|max:255',
+            'status' => 'nullable|in:active,maintenance,offline',
+            'notes' => 'nullable|string',
+        ]);
+        $server->update($data);
         return back()->with('success', 'Server aggiornato.');
     }
 }

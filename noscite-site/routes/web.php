@@ -32,12 +32,14 @@ Route::get('/commentarium/{post:slug}', [BlogController::class, 'show'])->name('
 Route::get('/card/{username}', [BusinessCardController::class, 'show'])->name('card.show');
 Route::get('/card/{username}/vcard', [BusinessCardController::class, 'vcard'])->name('card.vcard');
 
-// Admin login
+// Admin login (Microsoft OAuth)
 Route::get('/nosciteadmin/auth', [Admin\AdminController::class, 'loginForm'])->name('admin.login');
-Route::post('/nosciteadmin/auth', [Admin\AdminController::class, 'login'])->name('admin.login.submit');
+Route::get('/nosciteadmin/auth/redirect', [Admin\AdminController::class, 'redirectToMicrosoft'])->name('admin.auth.redirect');
+Route::get('/nosciteadmin/auth/callback', [Admin\AdminController::class, 'microsoftCallback'])->name('admin.auth.callback');
+Route::post('/nosciteadmin/logout', [Admin\AdminController::class, 'logout'])->name('admin.logout');
 
-// Admin (protetto da auth + ruolo admin)
-Route::prefix('nosciteadmin')->middleware(['auth', 'role:admin'])->name('admin.')->group(function () {
+// Admin (protetto da session admin_user)
+Route::prefix('nosciteadmin')->middleware(['admin.auth'])->name('admin.')->group(function () {
     Route::get('/', [Admin\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/contacts', [Admin\AdminController::class, 'contacts'])->name('contacts');
     Route::get('/blog/new', function () {
@@ -71,11 +73,13 @@ Route::prefix('intranet')->name('intranet.')->group(function () {
         Route::get('/', [App\Http\Controllers\IntranetController::class, 'index'])->name('dashboard');
         Route::get('/tools', [App\Http\Controllers\IntranetController::class, 'tools'])->name('tools');
         Route::get('/poc', [App\Http\Controllers\IntranetController::class, 'poc'])->name('poc');
+        Route::get('/services', [App\Http\Controllers\IntranetController::class, 'services'])->name('services');
 
         Route::get('/manage', [App\Http\Controllers\IntranetController::class, 'manage'])->name('manage');
         Route::post('/manage', [App\Http\Controllers\IntranetController::class, 'store'])->name('store');
         Route::delete('/manage/{tool}', [App\Http\Controllers\IntranetController::class, 'destroy'])->name('destroy');
         Route::post('/manage/{tool}/toggle', [App\Http\Controllers\IntranetController::class, 'toggle'])->name('toggle');
+        Route::patch('/manage/{tool}/edit', [App\Http\Controllers\IntranetController::class, 'update'])->name('update');
 
         Route::get('/servers', [App\Http\Controllers\IntranetController::class, 'servers'])->name('servers');
         Route::post('/servers', [App\Http\Controllers\IntranetController::class, 'storeServer'])->name('servers.store');

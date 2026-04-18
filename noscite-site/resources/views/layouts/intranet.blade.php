@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Intranet') — Noscite</title>
     <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="shortcut icon" type="image/png" href="/images/logo.png">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
     <style>
         body { font-family: 'Calibri', system-ui, sans-serif; background:#F5F7F7; }
@@ -51,7 +52,10 @@
             🔧 Strumenti
         </a>
         <a href="/intranet/poc" class="nav-item {{ request()->routeIs('intranet.poc') ? 'active' : '' }}">
-            🧪 POC & Demo
+            🧪 POC, Demo & MVP
+        </a>
+        <a href="/intranet/services" class="nav-item {{ request()->routeIs('intranet.services') ? 'active' : '' }}">
+            🏢 Servizi
         </a>
         <a href="/intranet/servers" class="nav-item {{ request()->routeIs('intranet.servers') ? 'active' : '' }}">
             🖥 Infrastruttura VPS

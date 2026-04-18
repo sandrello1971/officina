@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'admins' => array_filter(array_map('trim', explode(',', env('INTRANET_ADMINS', '')))),
+
     'tools' => [
         [
             'section' => 'AI Tools',

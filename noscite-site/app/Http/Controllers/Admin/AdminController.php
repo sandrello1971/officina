@@ -5,40 +5,64 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Laravel\Socialite\Facades\Socialite;
 
 class AdminController extends Controller
 {
     public function loginForm(): View|RedirectResponse
     {
-        if (Auth::check() && Auth::user()->hasRole('admin')) {
+        if (session('admin_user')) {
             return redirect()->route('admin.dashboard');
         }
-
-        return view('auth.noscite-admin-login');
+        return view('admin.auth.login');
     }
 
-    public function login(Request $request): RedirectResponse
+    public function redirectToMicrosoft()
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        return Socialite::driver('microsoft')
+            ->redirectUrl(url('/nosciteadmin/auth/callback'))
+            ->scopes(['openid', 'profile', 'email', 'User.Read'])
+            ->with(['prompt' => 'select_account'])
+            ->redirect();
+    }
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
+    public function microsoftCallback()
+    {
+        try {
+            $msUser = Socialite::driver('microsoft')
+                ->redirectUrl(url('/nosciteadmin/auth/callback'))
+                ->user();
 
-            if (!Auth::user()->hasRole('admin')) {
-                Auth::logout();
-                return back()->withErrors(['email' => 'Non hai i permessi per accedere all\'area admin.']);
+            $admins = config('intranet.admins', []);
+
+            if (!in_array($msUser->getEmail(), $admins)) {
+                return redirect()->route('admin.login')
+                    ->with('error', 'Accesso non autorizzato. Solo ' . implode(', ', $admins) . ' può accedere.');
             }
 
-            return redirect()->intended(route('admin.dashboard'));
-        }
+            session([
+                'admin_user' => [
+                    'id' => $msUser->getId(),
+                    'name' => $msUser->getName(),
+                    'email' => $msUser->getEmail(),
+                    'avatar' => $msUser->getAvatar(),
+                ],
+            ]);
 
-        return back()->withErrors(['email' => 'Credenziali non valide.'])->onlyInput('email');
+            return redirect()->route('admin.dashboard');
+        } catch (\Exception $e) {
+            Log::error('Admin Microsoft OAuth error: ' . $e->getMessage());
+            return redirect()->route('admin.login')
+                ->with('error', 'Errore di autenticazione. Riprova.');
+        }
+    }
+
+    public function logout(): RedirectResponse
+    {
+        session()->forget('admin_user');
+        return redirect()->route('admin.login');
     }
 
     public function dashboard(): View
@@ -49,7 +73,6 @@ class AdminController extends Controller
     public function contacts(): View
     {
         $messages = ContactMessage::latest()->paginate(20);
-
         return view('admin.contacts', compact('messages'));
     }
 }
