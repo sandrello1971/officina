@@ -46,6 +46,12 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/certificate/{course:slug}/view', [App\Http\Controllers\Student\CertificateController::class, 'show'])->name('certificate.show');
 
         Route::post('/notes/{module}', [App\Http\Controllers\Student\NoteController::class, 'save'])->name('notes.save');
+
+        Route::get('/video/{videoId}/stream', [App\Http\Controllers\Student\VideoController::class, 'stream'])->name('video.stream');
+        Route::get('/video/{videoId}/thumbnail', [App\Http\Controllers\Student\VideoController::class, 'thumbnail'])->name('video.thumbnail');
+        Route::post('/video/{videoId}/chat', [App\Http\Controllers\Student\VideoController::class, 'chat'])->name('video.chat');
+        Route::get('/video/{videoId}/transcript', [App\Http\Controllers\Student\VideoController::class, 'transcript'])->name('video.transcript');
+        Route::get('/video/{videoId}/status', [App\Http\Controllers\Student\VideoController::class, 'status'])->name('video.status');
     });
 });
 

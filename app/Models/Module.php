@@ -13,6 +13,7 @@ class Module extends Model
     protected $fillable = [
         'course_id', 'title', 'description', 'content',
         'duration_minutes', 'sort_order', 'is_active', 'video_url',
+        'video_ai_id', 'video_filename', 'video_status',
     ];
 
     protected $casts = [

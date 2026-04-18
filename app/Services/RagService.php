@@ -3,13 +3,12 @@
 namespace App\Services;
 
 use App\Models\DocumentRag;
+use App\Models\Module;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class RagService
 {
-    /**
-     * Indicizza un documento nel RAG.
-     * Stub: salva il documento per chunk. L'embedding verra generato quando pgvector e attivo.
-     */
     public function indexDocument(string $text, string $title, string $courseId, ?string $moduleId, ?string $filePath): void
     {
         $chunks = $this->chunkText($text, 1000, 200);
@@ -30,9 +29,70 @@ class RagService
         }
     }
 
-    /**
-     * Suddivide il testo in chunk con overlap.
-     */
+    public function search(string $query, ?string $courseId = null, int $limit = 5)
+    {
+        $terms = array_filter(array_map('trim', preg_split('/\s+/', $query)), fn($t) => mb_strlen($t) >= 3);
+        if (empty($terms)) $terms = [$query];
+
+        $q = DocumentRag::query();
+        if ($courseId) $q->where('course_id', $courseId);
+
+        $q->where(function ($w) use ($terms) {
+            foreach ($terms as $term) {
+                $w->orWhere('content', 'ILIKE', '%' . $term . '%')
+                  ->orWhere('title', 'ILIKE', '%' . $term . '%');
+            }
+        });
+
+        return $q->limit($limit)->get();
+    }
+
+    public function searchVideos(string $query, ?string $courseId = null, int $limit = 3): array
+    {
+        try {
+            $modulesQuery = Module::whereNotNull('video_ai_id');
+            if ($courseId) {
+                $modulesQuery->where('course_id', $courseId);
+            }
+            $modules = $modulesQuery->with('course')->get();
+
+            if ($modules->isEmpty()) return [];
+
+            $videoIds = $modules->pluck('video_ai_id')->toArray();
+
+            $response = Http::timeout(15)
+                ->post(config('services.videoai.url') . '/api/search', [
+                    'question' => $query,
+                    'video_ids' => $videoIds,
+                ]);
+
+            if ($response->failed()) return [];
+
+            $results = $response->json();
+
+            $formatted = [];
+            foreach (array_slice($results ?? [], 0, $limit) as $result) {
+                $module = $modules->firstWhere('video_ai_id', $result['video_id']);
+                foreach (array_slice($result['matches'] ?? [], 0, 2) as $match) {
+                    $formatted[] = [
+                        'content' => $match['text'],
+                        'title' => '🎬 Video: ' . ($result['title'] ?? $module?->title ?? 'Video'),
+                        'type' => 'video',
+                        'timestamp' => $match['timestamp_str'] ?? null,
+                        'video_ai_id' => $result['video_id'],
+                        'module_id' => $module?->id,
+                        'course_slug' => $module?->course?->slug,
+                    ];
+                }
+            }
+
+            return $formatted;
+        } catch (\Exception $e) {
+            Log::error('VideoAI search error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     private function chunkText(string $text, int $chunkSize = 1000, int $overlap = 200): array
     {
         $text = trim($text);
