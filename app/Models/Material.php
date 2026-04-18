@@ -13,6 +13,7 @@ class Material extends Model
     protected $fillable = [
         'module_id', 'title', 'description', 'file_path', 'file_type',
         'file_size', 'external_url', 'sort_order', 'is_downloadable',
+        'video_ai_id',
     ];
 
     protected $casts = [
