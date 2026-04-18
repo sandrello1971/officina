@@ -60,5 +60,25 @@ Route::get('/sitemap.xml', function () {
     return response()->file(public_path('sitemap.xml'), ['Content-Type' => 'application/xml']);
 });
 
+// INTRANET
+Route::prefix('intranet')->name('intranet.')->group(function () {
+    Route::get('/login', [App\Http\Controllers\IntranetAuthController::class, 'login'])->name('login');
+    Route::get('/auth/redirect', [App\Http\Controllers\IntranetAuthController::class, 'redirect'])->name('auth.redirect');
+    Route::get('/auth/callback', [App\Http\Controllers\IntranetAuthController::class, 'callback'])->name('auth.callback');
+    Route::post('/logout', [App\Http\Controllers\IntranetAuthController::class, 'logout'])->name('logout');
+
+    Route::middleware(['intranet.auth'])->group(function () {
+        Route::get('/', [App\Http\Controllers\IntranetController::class, 'index'])->name('dashboard');
+        Route::get('/tools', [App\Http\Controllers\IntranetController::class, 'tools'])->name('tools');
+        Route::get('/poc', [App\Http\Controllers\IntranetController::class, 'poc'])->name('poc');
+
+        Route::get('/manage', [App\Http\Controllers\IntranetController::class, 'manage'])->name('manage');
+        Route::post('/manage', [App\Http\Controllers\IntranetController::class, 'store'])->name('store');
+        Route::delete('/manage/{tool}', [App\Http\Controllers\IntranetController::class, 'destroy'])->name('destroy');
+        Route::post('/manage/{tool}/toggle', [App\Http\Controllers\IntranetController::class, 'toggle'])->name('toggle');
+    });
+});
+
 // Auth (Breeze)
 require __DIR__.'/auth.php';
+

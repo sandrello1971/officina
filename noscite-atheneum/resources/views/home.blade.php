@@ -17,9 +17,52 @@
         <p class="text-base mb-4" style="color:#4A5252">Per imprenditori, manager e team operativi che vogliono usare l'AI ogni giorno in azienda, senza improvvisare.</p>
         <p class="text-xl font-semibold mb-3" style="color:#1A1F1F">Formazione AI per le PMI che vogliono crescere davvero.</p>
         <p class="text-base mb-8 max-w-2xl mx-auto" style="color:#4A5252">La conoscenza che non diventa competenza operativa non cambia nulla. Per questo la formazione Noscite non trasmette nozioni: costruisce competenza. I percorsi sono modulari, interattivi e fondati su casi reali.</p>
+        <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:16px; margin-bottom:24px;">
+            <div style="display:flex; align-items:center; gap:6px; padding:8px 16px; background:rgba(85,177,174,0.1); border:1px solid rgba(85,177,174,0.3); border-radius:20px;">
+                <span>👔</span>
+                <span style="font-size:0.85rem; color:#3A8C89; font-weight:600;">Imprenditori e dirigenti PMI</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; padding:8px 16px; background:rgba(85,177,174,0.1); border:1px solid rgba(85,177,174,0.3); border-radius:20px;">
+                <span>👥</span>
+                <span style="font-size:0.85rem; color:#3A8C89; font-weight:600;">Team aziendali e manager</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; padding:6px 14px;
+                 background:rgba(85,177,174,0.1); border:1px solid rgba(85,177,174,0.3);
+                 border-radius:20px;">
+                <span>🎓</span>
+                <span style="font-size:0.8rem; color:#3A8C89; font-weight:600;">Studenti</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; padding:8px 16px; background:rgba(226,138,83,0.1); border:1px solid rgba(226,138,83,0.3); border-radius:20px;">
+                <span>🚀</span>
+                <span style="font-size:0.85rem; color:#c97a45; font-weight:600;">Nessun prerequisito tecnico</span>
+            </div>
+        </div>
         <div class="flex gap-4 justify-center flex-wrap">
             <a href="#corsi" class="btn-primary">Scopri i corsi</a>
             <a href="/contatti" class="btn-outline">Contattaci</a>
+        </div>
+
+        <div style="margin-top:24px; display:inline-flex; align-items:center; gap:16px;
+             padding:16px 28px; background:linear-gradient(135deg,#1A1F1F,#252B2B);
+             border-radius:16px; border:1px solid rgba(85,177,174,0.3);">
+            <div style="text-align:left;">
+                <div style="color:#55B1AE; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px;">
+                    ✦ Prova subito
+                </div>
+                <div style="color:white; font-weight:700; font-size:1rem; margin-bottom:2px;">
+                    Accedi alla Demo gratuita
+                </div>
+                <div style="color:#8A9696; font-size:0.75rem;">
+                    Esplora la piattaforma senza registrazione
+                </div>
+            </div>
+            <a href="https://atheneum.noscite.it/learn/login?demo=1"
+               onclick="document.cookie='demo_autofill=1;path=/'; return true;"
+               style="padding:12px 24px; background:#E28A53; color:white; border-radius:10px;
+                      font-size:0.9rem; font-weight:700; text-decoration:none; white-space:nowrap;
+                      flex-shrink:0;">
+                Entra nella Demo →
+            </a>
         </div>
     </div>
 </section>
@@ -37,7 +80,7 @@
                     <tr style="background:#E8F5F5">
                         <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Corso</th>
                         <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Durata</th>
-                        <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Per chi</th>
+                        <th class="text-left p-3 border font-bold" style="border-color:#C8D0D0;color:#1A1F1F">Per chi</th>
                         <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Obiettivo</th>
                         <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Formato</th>
                     </tr>
@@ -46,35 +89,35 @@
                     <tr style="background:#F5F7F7">
                         <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#8A9696">PRIMUS</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">4 ore &middot; mezza giornata</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Imprenditori e dirigenti PMI</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Studenti e team aziendali — primo approccio all'AI</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Mappa di Maturita Digitale personalizzata</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">In presenza o online sincrono</td>
                     </tr>
                     <tr>
                         <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#55B1AE">CONSILIUM</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">7 ore &middot; 1 giornata</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Board, Imprenditori, Direzione</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Studenti e team aziendali — visione strategica</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Visione strategica AI e roadmap 90 giorni</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">In presenza o online sincrono</td>
                     </tr>
                     <tr style="background:#F5F7F7">
                         <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#55B1AE">INITIUM</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">20h + 3h esame</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Tutta l'azienda che usa AI</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Studenti e team aziendali — uso operativo quotidiano</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">AI literacy operativa &middot; compliance AI Act</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">In presenza o ibrido</td>
                     </tr>
                     <tr>
                         <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#55B1AE">STRUCTURA</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">24 ore &middot; 6 moduli</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Knowledge worker, PM, Manager</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Studenti e team aziendali — gestione della conoscenza</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Second Brain aziendale con Obsidian</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">In presenza o online sincrono</td>
                     </tr>
                     <tr style="background:#F5F7F7">
                         <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#55B1AE">AI AGENTS & MCP</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">~9 ore (L1+L2)</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Innovazione, IT, PM</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Responsabili IT, innovation manager, team tecnici</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Governance agenti AI e protocollo MCP</td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">L1 asincrono + L2 in presenza</td>
                     </tr>

@@ -64,6 +64,20 @@ class QuizController extends Controller
                 'time_spent_seconds' => now()->diffInSeconds($attempt->started_at),
             ]);
         }
+
+        if ($request->passed && $quiz->course_id && !$quiz->module_id) {
+            $student = Student::findOrFail(session('student_id'));
+            $course = $quiz->course;
+            if ($course) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($student->email)
+                        ->send(new \App\Mail\CertificationPassedMail($student, $course, (int) $request->score));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Email certificato fallita: ' . $e->getMessage());
+                }
+            }
+        }
+
         return response()->json(['success' => true]);
     }
 

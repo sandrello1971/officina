@@ -77,7 +77,11 @@
                         @endif
                     </div>
                 </div>
-                @if($material->file_type === 'canvas' && $material->file_path)
+                @if(isset($isDemo) && $isDemo && ($material->file_path || $material->external_url))
+                    <span style="padding:5px 12px; background:#F5F7F7; color:#8A9696; border-radius:6px; font-size:0.75rem;">
+                        🔒 Solo versione completa
+                    </span>
+                @elseif($material->file_type === 'canvas' && $material->file_path)
                     <a href="/storage/{{ $material->file_path }}" target="_blank"
                        style="padding:6px 14px; background:linear-gradient(135deg,#55B1AE,#3A8C89); color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                         Apri canvas →
@@ -125,6 +129,16 @@
                 </p>
                 <div style="display:inline-block; padding:8px 20px; background:rgba(85,177,174,0.15); border:1px solid #55B1AE; border-radius:8px; color:#55B1AE; font-size:0.8rem; font-weight:700;">
                     {{ $course->certification_name }}
+                </div>
+                <div style="display:flex; gap:10px; justify-content:center; margin-top:16px;">
+                    <a href="/learn/certificate/{{ $course->slug }}"
+                       style="padding:10px 24px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:700; text-decoration:none;">
+                        ⬇ Scarica certificato PDF
+                    </a>
+                    <a href="/learn/certificate/{{ $course->slug }}/view" target="_blank"
+                       style="padding:10px 24px; border:1px solid #55B1AE; color:#55B1AE; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">
+                        👁 Anteprima
+                    </a>
                 </div>
             </div>
             @else
@@ -191,6 +205,20 @@
             </a>
         </div>
 
+        <div style="background:white; border-radius:12px; padding:16px; margin-bottom:16px;">
+            <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:10px; font-size:0.85rem;">📝 Le tue note</h3>
+            <textarea id="student-note"
+                      placeholder="Scrivi i tuoi appunti su questo modulo..."
+                      style="width:100%; min-height:120px; padding:10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.8rem; outline:none; resize:vertical; color:#1A1F1F; line-height:1.6;">{{ $note?->content }}</textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                <span id="note-status" style="font-size:0.75rem; color:#8A9696;"></span>
+                <button onclick="saveNote()"
+                        style="padding:5px 14px; background:#55B1AE; color:white; border:none; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                    Salva
+                </button>
+            </div>
+        </div>
+
         <div style="background:white; border-radius:12px; padding:16px;">
             <div style="color:#8A9696; font-size:0.75rem; margin-bottom:8px; font-weight:700; text-transform:uppercase;">Corso</div>
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
@@ -232,6 +260,37 @@ async function completeModule() {
     } catch(e) {
         btn.disabled = false;
         btn.textContent = 'Segna come completato';
+    }
+}
+
+const noteTextarea = document.getElementById('student-note');
+let noteTimer = null;
+
+if (noteTextarea) {
+    noteTextarea.addEventListener('input', () => {
+        clearTimeout(noteTimer);
+        document.getElementById('note-status').textContent = 'Modifica in corso...';
+        noteTimer = setTimeout(saveNote, 2000);
+    });
+}
+
+async function saveNote() {
+    if (!noteTextarea) return;
+    try {
+        await fetch('/learn/notes/{{ $module->id }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({ content: noteTextarea.value }),
+        });
+        document.getElementById('note-status').textContent = '✓ Salvato';
+        setTimeout(() => {
+            document.getElementById('note-status').textContent = '';
+        }, 2000);
+    } catch(e) {
+        document.getElementById('note-status').textContent = 'Errore salvataggio';
     }
 }
 
