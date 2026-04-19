@@ -81,6 +81,12 @@ Route::prefix('intranet')->name('intranet.')->group(function () {
         Route::post('/manage/{tool}/toggle', [App\Http\Controllers\IntranetController::class, 'toggle'])->name('toggle');
         Route::patch('/manage/{tool}/edit', [App\Http\Controllers\IntranetController::class, 'update'])->name('update');
 
+        Route::get('/kb', [App\Http\Controllers\IntranetKbController::class, 'index'])->name('kb.index');
+        Route::get('/kb/sync', [App\Http\Controllers\IntranetKbController::class, 'sync'])->name('kb.sync');
+        Route::post('/kb/upload', [App\Http\Controllers\IntranetKbController::class, 'upload'])->name('kb.upload');
+        Route::get('/kb/{document}', [App\Http\Controllers\IntranetKbController::class, 'show'])->name('kb.show');
+        Route::get('/kb/{document}/download', [App\Http\Controllers\IntranetKbController::class, 'download'])->name('kb.download');
+
         Route::get('/servers', [App\Http\Controllers\IntranetController::class, 'servers'])->name('servers');
         Route::post('/servers', [App\Http\Controllers\IntranetController::class, 'storeServer'])->name('servers.store');
         Route::delete('/servers/{server}', [App\Http\Controllers\IntranetController::class, 'destroyServer'])->name('servers.destroy');

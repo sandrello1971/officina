@@ -60,6 +60,9 @@
         <a href="/intranet/servers" class="nav-item {{ request()->routeIs('intranet.servers') ? 'active' : '' }}">
             🖥 Infrastruttura VPS
         </a>
+        <a href="/intranet/kb" class="nav-item {{ request()->routeIs('intranet.kb*') ? 'active' : '' }}">
+            📚 Knowledge Base
+        </a>
 
         @if($intranetUser['is_admin'] ?? false)
         <div style="margin:16px 8px 4px; padding:0 12px;">
