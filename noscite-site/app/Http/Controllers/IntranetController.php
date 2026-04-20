@@ -19,35 +19,24 @@ class IntranetController extends Controller
 
     public function services()
     {
-        $user = session('intranet_user');
-        $services = IntranetTool::where('type', 'servizio')
-            ->where('active', true)
-            ->orderBy('sort_order')
-            ->get();
-        return view('intranet.services', compact('user', 'services'));
+        return redirect()->route('intranet.tools');
     }
 
     public function tools()
     {
         $user = session('intranet_user');
-        $tools = IntranetTool::where('type', 'tool')
-            ->where('active', true)
+        $tools = IntranetTool::with('server')
+            ->orderBy('type')
             ->orderBy('sort_order')
-            ->get()
-            ->groupBy('section');
-        return view('intranet.tools', compact('user', 'tools'));
+            ->orderBy('name')
+            ->get();
+        $servers = \App\Models\IntranetServer::orderBy('name')->get();
+        return view('intranet.tools', compact('user', 'tools', 'servers'));
     }
 
     public function poc()
     {
-        $user = session('intranet_user');
-        $items = IntranetTool::whereIn('type', ['poc', 'demo', 'mvp'])
-            ->where('active', true)
-            ->orderBy('type')
-            ->orderBy('sort_order')
-            ->get()
-            ->groupBy('type');
-        return view('intranet.poc', compact('user', 'items'));
+        return redirect()->route('intranet.tools');
     }
 
     public function manage()
@@ -68,7 +57,7 @@ class IntranetController extends Controller
 
         $data = $request->validate([
             'type' => 'required|in:tool,poc,demo,servizio,mvp',
-            'section' => 'required|string|max:100',
+            'section' => 'nullable|string|max:100',
             'icon' => 'nullable|string|max:10',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
@@ -76,6 +65,7 @@ class IntranetController extends Controller
             'label' => 'nullable|string|max:100',
             'credentials' => 'nullable|string|max:255',
             'status' => 'nullable|string|max:20',
+            'server_id' => 'nullable|exists:intranet_servers,id',
         ]);
         $data['sort_order'] = (IntranetTool::max('sort_order') ?? 0) + 1;
         IntranetTool::create($data);
@@ -105,7 +95,7 @@ class IntranetController extends Controller
 
         $data = $request->validate([
             'type' => 'required|in:tool,poc,demo,servizio,mvp',
-            'section' => 'required|string|max:100',
+            'section' => 'nullable|string|max:100',
             'icon' => 'nullable|string|max:10',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
@@ -113,10 +103,59 @@ class IntranetController extends Controller
             'label' => 'nullable|string|max:100',
             'credentials' => 'nullable|string|max:255',
             'status' => 'nullable|string|max:20',
+            'server_id' => 'nullable|exists:intranet_servers,id',
         ]);
 
         $tool->update($data);
         return back()->with('success', 'Strumento aggiornato!');
+    }
+
+    public function updateField(Request $request, IntranetTool $tool)
+    {
+        $user = session('intranet_user');
+        if (!($user['is_admin'] ?? false)) {
+            return response()->json(['ok' => false, 'error' => 'forbidden'], 403);
+        }
+
+        $allowed = ['name', 'type', 'icon', 'description', 'url', 'label', 'status', 'server_id', 'active'];
+        $field = $request->input('field');
+        if (!in_array($field, $allowed, true)) {
+            return response()->json(['ok' => false, 'error' => 'invalid field'], 422);
+        }
+
+        $rules = [
+            'name'        => 'required|string|max:255',
+            'section'     => 'required|string|max:100',
+            'type'        => 'required|in:tool,poc,demo,servizio,mvp',
+            'icon'        => 'nullable|string|max:10',
+            'description' => 'nullable|string|max:500',
+            'url'         => 'nullable|url|max:500',
+            'label'       => 'nullable|string|max:100',
+            'status'      => 'nullable|string|max:20',
+            'server_id'   => 'nullable|exists:intranet_servers,id',
+            'active'      => 'required|boolean',
+        ];
+
+        $raw = $request->input('value');
+        if ($field === 'active') {
+            $raw = filter_var($raw, FILTER_VALIDATE_BOOLEAN);
+        }
+        if ($field === 'server_id' && ($raw === '' || $raw === null)) {
+            $raw = null;
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make(
+            [$field => $raw],
+            [$field => $rules[$field]]
+        );
+        if ($validator->fails()) {
+            return response()->json(['ok' => false, 'error' => $validator->errors()->first()], 422);
+        }
+
+        $tool->{$field} = $raw;
+        $tool->save();
+
+        return response()->json(['ok' => true, 'value' => $tool->{$field}]);
     }
 
     public function servers()

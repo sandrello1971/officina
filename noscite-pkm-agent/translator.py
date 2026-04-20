@@ -48,10 +48,14 @@ REGOLE DI FORMATTAZIONE — obbligatorie:
 - Righe vuote tra sezioni: conservale"""
 
 
-def translate(filename: str, text: str, meta: dict, tech_meta: dict, safe_stem: str = None) -> dict | None:
+def translate(filename: str, text: str, meta: dict, tech_meta: dict, safe_stem: str = None,
+              return_content: bool = False) -> dict | None:
     """
     Genera il file _IT.md se il documento è in inglese.
     Restituisce dict con token usati e translation_stem, o None se non applicabile.
+
+    Se return_content=True, NON scrive su filesystem e ritorna anche 'translation_content'
+    (per upload via Graph in SharePoint edition).
     """
     language = meta.get("language", "")
     if language not in ("en", "en+it"):
@@ -64,7 +68,7 @@ def translate(filename: str, text: str, meta: dict, tech_meta: dict, safe_stem: 
 
     stem = safe_stem if safe_stem is not None else Path(filename).stem
     translation_stem = f"{stem}_IT"
-    dest_path = Config.METADATA_DIR / f"{translation_stem}.md"
+    dest_path = None if return_content else Config.METADATA_DIR / f"{translation_stem}.md"
 
     tokens_input = 0
     tokens_output = 0
@@ -181,6 +185,14 @@ created: {now}
 
 *Traduzione generata automaticamente da PKM Agent — {now}*
 """
+
+    if return_content:
+        return {
+            "translation_stem": translation_stem,
+            "translation_content": content,
+            "_trans_tokens_input": tokens_input,
+            "_trans_tokens_output": tokens_output,
+        }
 
     dest_path.write_text(content, encoding="utf-8")
     log.info(f"    ✓ Traduzione salvata: {translation_stem}.md")

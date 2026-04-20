@@ -1,21 +1,20 @@
 """
-Orchestratore: coordina estrazione → analisi AI → salvataggio .md → indice.
+Orchestratore: coordina estrazione → analisi AI → generazione md content.
+
+In architettura SharePoint edition: NON scrive su filesystem e NON sposta file.
+Il chiamante (watcher) gestisce upload/move via Graph.
 """
 
 import logging
 import re
-import shutil
+import time
 import unicodedata
 from pathlib import Path
 
 import extractor
 import analyzer
 import md_generator
-import index_builder
-import html_dashboard
-import linker
 import translator
-import dashboard_server
 from config import Config
 
 log = logging.getLogger(__name__)
@@ -23,46 +22,40 @@ log = logging.getLogger(__name__)
 
 def _sanitize_stem(stem: str) -> str:
     """
-    Rimuove o sostituisce i caratteri che causano problemi nei wikilink di Obsidian:
-      - # → causa interpretazione come heading anchor
-      - | → causa interpretazione come alias
-      - [ ] ^ → sintassi wikilink/block reference
-      - Lettere accentate → normalizzate in ASCII per evitare mismatch filesystem
+    Rimuove o sostituisce caratteri problematici per wikilink Obsidian.
     """
-    # Normalizza lettere accentate in ASCII (é→e, à→a, ecc.)
     stem = unicodedata.normalize("NFKD", stem)
     stem = stem.encode("ascii", errors="ignore").decode("ascii")
-    # Rimuovi caratteri problematici per Obsidian
     stem = re.sub(r"[#|\[\]\^]", "", stem)
-    # Comprimi spazi multipli e rimuovi spazi iniziali/finali
     stem = re.sub(r"\s+", " ", stem).strip()
     return stem
 
 
 def _notify(filename, step, total, desc):
-    try:
-        dashboard_server.notify_activity(filename, step, total, desc)
-    except Exception:
-        pass
+    # Hook disabilitato in fase 2A (dashboard_server passa a Graph in 2B).
+    pass
 
 
 class FileProcessor:
-    def process(self, path: Path):
+    def process(self, path: Path) -> dict | None:
+        """
+        Processa un file scaricato da SharePoint (path temporaneo).
+        Ritorna dict con:
+        - stem: nome sanificato
+        - md_content: stringa markdown da uploadare in _metadata
+        - translation_stem / translation_content: opzionali
+        - archive_filename: nome originale per _archive
+        Ritorna None in caso di errore fatale.
+        """
         filename = path.name
         safe_stem = _sanitize_stem(path.stem)
         if safe_stem != path.stem:
             log.info(f"  ⚠ Nome sanificato: '{path.stem}' → '{safe_stem}'")
-        md_dest = Config.METADATA_DIR / (safe_stem + ".md")
-
-        # Salta se già catalogato
-        if md_dest.exists():
-            log.info(f"Già catalogato, skippato: {filename}")
-            return
 
         log.info(f"▶ Processing: {filename}")
 
         try:
-            # 1. Estrai testo e metadati tecnici
+            # 1. Extract
             _notify(filename, 1, 5, "Estrazione contenuto...")
             log.info("  [1/4] Estrazione contenuto...")
             extracted = extractor.extract(path)
@@ -73,85 +66,69 @@ class FileProcessor:
             if text:
                 tech_meta["caratteri"] = f"{len(text):,}".replace(",", ".")
 
-            # 2. Analisi AI
+            # 2. Analyze
             _notify(filename, 2, 5, "Analisi AI con Claude...")
             log.info("  [2/4] Analisi AI con Claude...")
             meta = analyzer.analyze(filename, text, tech_meta)
 
-            # Aggiungi token analisi ai metadati tecnici
             if meta.get("_tokens_total"):
                 tech_meta["token_analisi"] = (
                     f"{meta['_tokens_input']:,} in / {meta['_tokens_output']:,} out"
                     .replace(",", ".")
                 )
 
-            # 3. Sposta file originale in archive
-            archive_dest = Config.ARCHIVE_DIR / filename
-            if not archive_dest.exists():
-                try:
-                    shutil.move(str(path), str(archive_dest))
-                    log.info(f"  ✓ Archiviato: {filename} → _archive/")
-                except FileNotFoundError:
-                    log.warning(f"  ⚠ File non trovato durante archiviazione (già spostato?): {filename}")
-                except Exception as e:
-                    log.warning(f"  ⚠ Errore archiviazione {filename}: {e}")
-            else:
-                log.info(f"  · {filename} già presente in _archive/, skip archiviazione")
-
-            # 4. Traduzione (solo documenti in inglese)
+            # 3. Translation (opzionale, solo docs in inglese)
             translation_stem = None
+            translation_content = None
             if meta.get("language") in ("en", "en+it"):
                 _notify(filename, 3, 5, "Traduzione in italiano...")
                 log.info(f"  [3b] Traduzione in italiano (testo: {len(text):,} car.)...")
                 try:
-                    tr = translator.translate(filename, text, meta, tech_meta, safe_stem=safe_stem)
+                    tr = translator.translate(filename, text, meta, tech_meta,
+                                              safe_stem=safe_stem, return_content=True)
                     if tr:
-                        translation_stem = tr["translation_stem"]
-                        log.info(f"  ✓ Traduzione salvata: {translation_stem}.md")
+                        translation_stem = tr.get("translation_stem")
+                        translation_content = tr.get("translation_content")
+                        if translation_stem:
+                            log.info(f"  ✓ Traduzione generata: {translation_stem}.md")
+                except TypeError:
+                    # Se translator non supporta return_content (compat legacy), skip
+                    log.warning("  ⚠ translator.translate non supporta return_content, skip")
                 except Exception as e:
                     log.warning(f"  ⚠ Traduzione fallita: {e}")
 
-            # 5. Genera e salva file .md base
-            _notify(filename, 3, 5, "Generazione file metadati...")
-            log.info("  [3/5] Generazione file metadati...")
-            md_content = md_generator.generate(filename, meta, tech_meta, translation_stem=translation_stem, safe_stem=safe_stem, full_text=text)
-            md_dest.write_text(md_content, encoding="utf-8")
-            log.info(f"  ✓ Salvato: {md_dest.name}")
+            # 4. Genera md content (NO write)
+            _notify(filename, 3, 5, "Generazione metadati...")
+            log.info("  [3/5] Generazione contenuto .md...")
+            md_content = md_generator.generate(
+                filename, meta, tech_meta,
+                translation_stem=translation_stem,
+                safe_stem=safe_stem,
+                full_text=text,
+            )
 
-            # Pausa per evitare rate limit tra analisi/traduzione e linker
-            import time
+            # Pausa leggera per ridurre rate pressure
             pause = 60 if meta.get("language") in ("en", "en+it") else 3
             if pause > 3:
-                log.info(f"  ⏱ Pausa {pause}s (documento in inglese tradotto)...")
+                log.info(f"  ⏱ Pausa {pause}s (rate-limit cushion)...")
             time.sleep(pause)
 
-            # 5. Collega documenti semanticamente affini
-            _notify(filename, 4, 5, "Ricerca documenti correlati...")
-            log.info("  [4/5] Ricerca documenti correlati...")
-            linker_tokens = linker.link(safe_stem, meta)
-            if linker_tokens:
-                token_str = (
-                    f"{linker_tokens['_linker_tokens_input']:,} in / {linker_tokens['_linker_tokens_output']:,} out"
-                    .replace(",", ".")
-                )
-                current = md_dest.read_text(encoding="utf-8")
-                if "token_linker:" not in current:
-                    current = current.replace(
-                        "token_analisi:",
-                        f'token_linker: "{token_str}"\ntoken_analisi:'
-                    )
-                    md_dest.write_text(current, encoding="utf-8")
+            # 5-7. Linker / Index / Dashboard — TODO sotto-fase 2B
+            # linker.link() legge da filesystem: da riadattare via Graph.
+            # index_builder.update() scrive _INDEX.md: da riadattare.
+            # html_dashboard.update() scrive dashboard.html: da riadattare.
+            log.info("  [4/5] Linker/Index/Dashboard: skipped (TODO 2B)")
 
-            # 6. Aggiorna indice globale
-            _notify(filename, 5, 5, "Aggiornamento indice e dashboard...")
-            log.info("  [5/5] Aggiornamento indice...")
-            index_builder.update(filename, meta, tech_meta)
+            log.info(f"✅ Completato (processor): {filename}")
 
-            # 7. Rigenera dashboard HTML
-            html_dashboard.update()
-            dashboard_server.notify_complete()
-
-            log.info(f"✅ Completato: {filename}\n")
+            return {
+                "stem": safe_stem,
+                "md_content": md_content,
+                "translation_stem": translation_stem,
+                "translation_content": translation_content,
+                "archive_filename": filename,
+            }
 
         except Exception as e:
             log.error(f"❌ Errore processing {filename}: {e}", exc_info=True)
+            return None

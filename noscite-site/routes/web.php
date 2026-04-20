@@ -80,6 +80,7 @@ Route::prefix('intranet')->name('intranet.')->group(function () {
         Route::delete('/manage/{tool}', [App\Http\Controllers\IntranetController::class, 'destroy'])->name('destroy');
         Route::post('/manage/{tool}/toggle', [App\Http\Controllers\IntranetController::class, 'toggle'])->name('toggle');
         Route::patch('/manage/{tool}/edit', [App\Http\Controllers\IntranetController::class, 'update'])->name('update');
+        Route::patch('/manage/{tool}/field', [App\Http\Controllers\IntranetController::class, 'updateField'])->name('update.field');
 
         Route::get('/kb', [App\Http\Controllers\IntranetKbController::class, 'index'])->name('kb.index');
         Route::get('/kb/sync', [App\Http\Controllers\IntranetKbController::class, 'sync'])->name('kb.sync');

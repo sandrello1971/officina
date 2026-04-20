@@ -1,30 +1,36 @@
 """
-config.py — Configurazione centralizzata PKM Agent
+config.py — Configurazione centralizzata PKM Agent (SharePoint edition).
 """
 
 import os
-from dotenv import load_dotenv
-load_dotenv()
 from pathlib import Path
 from dataclasses import dataclass
 
-VAULT_ROOT = Path(os.environ.get("OBSIDIAN_VAULT", "~/ObsidianVault")).expanduser()
+from dotenv import load_dotenv
+load_dotenv()
 
 
 @dataclass
 class Config:
-    VAULT_ROOT:   Path = VAULT_ROOT
-    INBOX_DIR:    Path = VAULT_ROOT / "_inbox"
-    METADATA_DIR: Path = VAULT_ROOT / "_metadata"
-    ARCHIVE_DIR:  Path = VAULT_ROOT / "_archive"
-    REMOVE_DIR:   Path = VAULT_ROOT / "_remove"
+    # SharePoint folder names (logical paths dentro il drive del site)
+    SP_INBOX:    str = "_inbox"
+    SP_METADATA: str = "_metadata"
+    SP_ARCHIVE:  str = "_archive"
 
-    LOG_FILE:   Path = Path(__file__).parent / "agent.log"
-    INDEX_FILE: Path = VAULT_ROOT / "_metadata" / "_INDEX.md"
+    # Tempdir volatile per download/processing
+    TEMP_DIR: Path = Path("/tmp/pkm-agent")
 
+    # Stato locale persistente (SQLite)
+    STATE_DB: Path = Path(__file__).parent / "state.db"
+
+    # Log
+    LOG_FILE: Path = Path(__file__).parent / "agent.log"
+
+    # Modelli Claude
     CLAUDE_MODEL:      str = "claude-sonnet-4-6"
     CLAUDE_MODEL_FAST: str = "claude-haiku-4-5-20251001"
 
+    # Parametri di processing
     MAX_TYPE_CHARS:     int = 8_000
     MAX_TEXT_CHARS:     int = 200_000
     CHUNK_SIZE:         int = 4_000
@@ -33,7 +39,13 @@ class Config:
     OVERLOAD_RETRIES:   int = 3
     OVERLOAD_BASE_WAIT: int = 15
 
+    # Polling
+    POLL_INTERVAL_SECONDS: int = int(os.environ.get("PKM_POLL_INTERVAL", "30"))
+    POLL_MODE:             str = os.environ.get("PKM_POLL_MODE", "loop")  # "loop" | "once"
+
+    # Laravel sync
+    LARAVEL_APP_PATH: str = os.environ.get("LARAVEL_APP_PATH", "/var/www/noscite-site")
+
     @classmethod
     def ensure_dirs(cls):
-        for d in (cls.INBOX_DIR, cls.METADATA_DIR, cls.ARCHIVE_DIR, cls.REMOVE_DIR):
-            d.mkdir(parents=True, exist_ok=True)
+        cls.TEMP_DIR.mkdir(parents=True, exist_ok=True)

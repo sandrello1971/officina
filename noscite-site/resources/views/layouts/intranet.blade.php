@@ -51,12 +51,6 @@
         <a href="/intranet/tools" class="nav-item {{ request()->routeIs('intranet.tools') ? 'active' : '' }}">
             🔧 Strumenti
         </a>
-        <a href="/intranet/poc" class="nav-item {{ request()->routeIs('intranet.poc') ? 'active' : '' }}">
-            🧪 POC, Demo & MVP
-        </a>
-        <a href="/intranet/services" class="nav-item {{ request()->routeIs('intranet.services') ? 'active' : '' }}">
-            🏢 Servizi
-        </a>
         <a href="/intranet/servers" class="nav-item {{ request()->routeIs('intranet.servers') ? 'active' : '' }}">
             🖥 Infrastruttura VPS
         </a>

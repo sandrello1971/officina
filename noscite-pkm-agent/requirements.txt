@@ -1,8 +1,12 @@
-# Obsidian AI Metadata Agent — dipendenze Python
+# Noscite PKM Agent — dipendenze Python
 
 # Core
 anthropic>=0.40.0
-watchdog>=4.0.0
+
+# Microsoft Graph (SharePoint backend)
+msal>=1.28.0
+httpx>=0.27.0
+python-dotenv>=1.0.0
 
 # Dev tools
 pytest>=8.0.0
