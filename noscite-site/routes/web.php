@@ -83,9 +83,12 @@ Route::prefix('intranet')->name('intranet.')->group(function () {
 
         Route::get('/kb', [App\Http\Controllers\IntranetKbController::class, 'index'])->name('kb.index');
         Route::get('/kb/sync', [App\Http\Controllers\IntranetKbController::class, 'sync'])->name('kb.sync');
+        Route::get('/kb/processing-status', [App\Http\Controllers\IntranetKbController::class, 'processingStatus'])->name('kb.processing-status');
         Route::post('/kb/upload', [App\Http\Controllers\IntranetKbController::class, 'upload'])->name('kb.upload');
+        Route::get('/kb/download/{stem}', [App\Http\Controllers\IntranetKbController::class, 'downloadOriginal'])->name('kb.download');
         Route::get('/kb/{document}', [App\Http\Controllers\IntranetKbController::class, 'show'])->name('kb.show');
-        Route::get('/kb/{document}/download', [App\Http\Controllers\IntranetKbController::class, 'download'])->name('kb.download');
+        Route::get('/kb/{document}/download', [App\Http\Controllers\IntranetKbController::class, 'download'])->name('kb.download-by-id');
+        Route::delete('/kb/{document}', [App\Http\Controllers\IntranetKbController::class, 'destroy'])->name('kb.destroy');
 
         Route::get('/servers', [App\Http\Controllers\IntranetController::class, 'servers'])->name('servers');
         Route::post('/servers', [App\Http\Controllers\IntranetController::class, 'storeServer'])->name('servers.store');

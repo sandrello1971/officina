@@ -58,6 +58,7 @@ class KbSyncService
         if ($end === false) return [];
 
         $fm = substr($content, 3, $end - 3);
+        $bodyMd = trim(substr($content, $end + 3));
         $data = [];
 
         foreach (explode("\n", $fm) as $line) {
@@ -72,8 +73,12 @@ class KbSyncService
             if ($val) $data[$key] = $val;
         }
 
-        foreach (['tags', 'argomenti'] as $field) {
-            $data[$field] = $this->parseYamlList($fm, $field);
+        foreach (['tags', 'argomenti', 'persone', 'luoghi', 'parole_chiave'] as $field) {
+            $listVal = $this->parseYamlList($fm, $field);
+            if (empty($listVal) && !empty($data[$field])) {
+                $listVal = $this->parseList($data[$field]);
+            }
+            $data[$field] = $listVal;
         }
 
         return [
@@ -81,12 +86,20 @@ class KbSyncService
             'tipo_documento' => $data['tipo_documento'] ?? null,
             'lingua' => $data['lingua'] ?? 'it',
             'sommario' => $data['sommario'] ?? null,
+            'body_md' => $bodyMd ?: null,
             'tags' => $data['tags'] ?? [],
             'argomenti' => $data['argomenti'] ?? [],
             'file_originale' => $data['file_originale'] ?? null,
             'data_catalogazione' => $data['data_catalogazione'] ?? null,
             'file_path' => $this->findOriginalFile($data['file_originale'] ?? ''),
             'file_type' => $this->getFileType($data['file_originale'] ?? ''),
+            'data_documento' => $this->parseDate($data['data_documento'] ?? null),
+            'organizzazioni' => $data['organizzazioni'] ?? null,
+            'sentiment' => $data['sentiment'] ?? null,
+            'complessita' => $data['complessita'] ?? null,
+            'persone' => $data['persone'] ?? [],
+            'luoghi' => $data['luoghi'] ?? [],
+            'parole_chiave' => $data['parole_chiave'] ?? [],
         ];
     }
 
@@ -111,6 +124,23 @@ class KbSyncService
         }
 
         return $items;
+    }
+
+    private function parseDate($val): ?string
+    {
+        if (!$val || $val === 'N/D' || $val === '-') return null;
+        try {
+            return \Carbon\Carbon::parse($val)->toDateString();
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function parseList($val): ?array
+    {
+        if (!$val || $val === 'N/D') return null;
+        if (is_array($val)) return $val;
+        return array_filter(array_map('trim', explode(',', $val)));
     }
 
     private function findOriginalFile(string $fileOriginal): ?string

@@ -322,6 +322,28 @@ tbody tr:hover td { background:var(--bg3); }
                     <option value="en" {{ request('lingua') === 'en' ? 'selected' : '' }}>🇬🇧 English</option>
                 </select>
             </div>
+            <div class="filter-group">
+                <label>Organizzazione</label>
+                <input type="text" id="f-org" placeholder="Es: Rossi SRL"
+                       value="{{ $organizzazioni ?? '' }}" oninput="filterDebounce()">
+            </div>
+            <div class="filter-group">
+                <label>Data doc. da</label>
+                <input type="date" id="f-data-from" value="{{ $dataFrom ?? '' }}" onchange="applyFilters()">
+            </div>
+            <div class="filter-group">
+                <label>Data doc. a</label>
+                <input type="date" id="f-data-to" value="{{ $dataTo ?? '' }}" onchange="applyFilters()">
+            </div>
+            <div class="filter-group">
+                <label>Sentiment</label>
+                <select id="f-sentiment" onchange="applyFilters()">
+                    <option value="">Tutti</option>
+                    <option value="neutro" {{ ($sentiment ?? '') === 'neutro' ? 'selected' : '' }}>⚪ Neutro</option>
+                    <option value="positivo" {{ ($sentiment ?? '') === 'positivo' ? 'selected' : '' }}>🟢 Positivo</option>
+                    <option value="negativo" {{ ($sentiment ?? '') === 'negativo' ? 'selected' : '' }}>🔴 Negativo</option>
+                </select>
+            </div>
             <button class="btn-reset" onclick="resetFilters()">✕ Reset</button>
             <div class="results-pill"><span id="results-count">{{ $totalDocs }}</span> risultati</div>
         </div>
@@ -367,8 +389,11 @@ tbody tr:hover td { background:var(--bg3); }
                             <th onclick="sortTable(0)">Titolo</th>
                             <th onclick="sortTable(1)">Tipo</th>
                             <th onclick="sortTable(2)">Lingua</th>
-                            <th onclick="sortTable(3)">Tag</th>
-                            <th onclick="sortTable(4)">Data</th>
+                            <th onclick="sortTable(3)">Organizzazione</th>
+                            <th onclick="sortTable(4)">Sentiment</th>
+                            <th onclick="sortTable(5)">Tag</th>
+                            <th onclick="sortTable(6)">Data doc.</th>
+                            <th onclick="sortTable(7)">Data cat.</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -377,7 +402,10 @@ tbody tr:hover td { background:var(--bg3); }
                         <tr data-title="{{ strtolower($doc->title ?? $doc->file_stem) }}"
                             data-tipo="{{ $doc->tipo_documento }}"
                             data-tags="{{ implode(' ', $doc->tags ?? []) }}"
-                            data-sommario="{{ strtolower($doc->sommario ?? '') }}">
+                            data-sommario="{{ strtolower($doc->sommario ?? '') }}"
+                            data-org="{{ strtolower($doc->organizzazioni ?? '') }}"
+                            data-sentiment="{{ $doc->sentiment ?? '' }}"
+                            data-data-doc="{{ $doc->data_documento?->format('Y-m-d') ?? '' }}">
                             <td>
                                 <a href="/intranet/kb/{{ $doc->id }}" class="doc-link">
                                     {{ $doc->title ?? $doc->file_stem }}
@@ -398,10 +426,27 @@ tbody tr:hover td { background:var(--bg3); }
                                 @endif
                             </td>
                             <td style="color:var(--muted);">{{ $doc->lingua ?? 'it' }}</td>
+                            <td style="color:var(--muted); font-size:0.9em;">
+                                {{ $doc->organizzazioni ?? '—' }}
+                            </td>
+                            <td>
+                                @if($doc->sentiment === 'positivo')
+                                <span style="color:var(--green); letter-spacing:1px;">🟢 positivo</span>
+                                @elseif($doc->sentiment === 'negativo')
+                                <span style="color:var(--red); letter-spacing:1px;">🔴 negativo</span>
+                                @elseif($doc->sentiment === 'neutro')
+                                <span style="color:var(--muted); letter-spacing:1px;">⚪ neutro</span>
+                                @else
+                                <span style="color:var(--dim);">—</span>
+                                @endif
+                            </td>
                             <td>
                                 @foreach(($doc->tags ?? []) as $t)
                                 <span class="row-tag" onclick="filterByTag('{{ $t }}')">{{ $t }}</span>
                                 @endforeach
+                            </td>
+                            <td style="color:var(--muted); white-space:nowrap;">
+                                {{ $doc->data_documento?->format('d/m/Y') ?? '—' }}
                             </td>
                             <td style="color:var(--muted); white-space:nowrap;">
                                 {{ $doc->data_catalogazione?->format('d/m/Y') ?? '—' }}
@@ -413,11 +458,24 @@ tbody tr:hover td { background:var(--bg3); }
                                     ⬇ Scarica
                                 </a>
                                 @endif
+                                @if(session('intranet_user')['is_admin'] ?? false)
+                                <form method="POST" action="/intranet/kb/{{ $doc->id }}"
+                                      onsubmit="return confirm('Eliminare {{ addslashes($doc->title ?? $doc->file_stem) }}?')"
+                                      style="display:inline; margin-left:8px;">
+                                    @csrf @method('DELETE')
+                                    <button type="submit"
+                                            style="background:transparent; border:1px solid #FF6666; color:#FF6666; padding:2px 8px; font-family:var(--font); font-size:0.8em; letter-spacing:1px; cursor:pointer; transition:all .15s;"
+                                            onmouseover="this.style.background='rgba(255,102,102,0.15)'"
+                                            onmouseout="this.style.background='transparent'">
+                                        ✕ Elimina
+                                    </button>
+                                </form>
+                                @endif
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" style="text-align:center; padding:40px; color:var(--muted); letter-spacing:2px;">
+                            <td colspan="9" style="text-align:center; padding:40px; color:var(--muted); letter-spacing:2px;">
                                 NESSUN DOCUMENTO — Carica file nella inbox
                             </td>
                         </tr>
@@ -508,6 +566,10 @@ function applyFilters() {
     const q = document.getElementById('f-search').value.toLowerCase();
     const tipo = document.getElementById('f-tipo').value;
     const lingua = document.getElementById('f-lingua').value;
+    const org = document.getElementById('f-org').value.toLowerCase();
+    const dataFrom = document.getElementById('f-data-from').value;
+    const dataTo = document.getElementById('f-data-to').value;
+    const sentiment = document.getElementById('f-sentiment').value;
     const rows = document.querySelectorAll('#docs-tbody tr[data-title]');
     let visible = 0;
 
@@ -516,14 +578,22 @@ function applyFilters() {
         const rowTipo = row.dataset.tipo || '';
         const tags = row.dataset.tags || '';
         const sommario = row.dataset.sommario || '';
+        const rowOrg = row.dataset.org || '';
+        const rowSentiment = row.dataset.sentiment || '';
+        const rowDataDoc = row.dataset.dataDoc || '';
         const lang = row.querySelector('td:nth-child(3)')?.textContent?.trim() || '';
 
         const matchQ = !q || title.includes(q) || tags.includes(q) || sommario.includes(q);
         const matchTipo = !tipo || rowTipo === tipo;
         const matchLang = !lingua || lang === lingua;
         const matchTag = !activeTag || tags.includes(activeTag);
+        const matchOrg = !org || rowOrg.includes(org);
+        const matchSentiment = !sentiment || rowSentiment === sentiment;
+        const matchFrom = !dataFrom || (rowDataDoc && rowDataDoc >= dataFrom);
+        const matchTo = !dataTo || (rowDataDoc && rowDataDoc <= dataTo);
 
-        const show = matchQ && matchTipo && matchLang && matchTag;
+        const show = matchQ && matchTipo && matchLang && matchTag
+                  && matchOrg && matchSentiment && matchFrom && matchTo;
         row.style.display = show ? '' : 'none';
         if (show) visible++;
     });
@@ -547,6 +617,10 @@ function resetFilters() {
     document.getElementById('f-search').value = '';
     document.getElementById('f-tipo').value = '';
     document.getElementById('f-lingua').value = '';
+    document.getElementById('f-org').value = '';
+    document.getElementById('f-data-from').value = '';
+    document.getElementById('f-data-to').value = '';
+    document.getElementById('f-sentiment').value = '';
     activeTag = '';
     document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('active'));
     applyFilters();
@@ -592,6 +666,8 @@ async function uploadFiles(files) {
     statusEl.textContent = `Caricando ${files.length} file...`;
     statusEl.className = 'upload-status uploading';
 
+    const uploadedNames = Array.from(files).map(f => f.name);
+
     const fd = new FormData();
     Array.from(files).forEach(f => fd.append('files[]', f));
     fd.append('_token', '{{ csrf_token() }}');
@@ -599,13 +675,148 @@ async function uploadFiles(files) {
     try {
         const res = await fetch('/intranet/kb/upload', { method: 'POST', body: fd });
         const data = await res.json();
-        statusEl.textContent = `✓ ${data.count} file caricati`;
+        statusEl.textContent = `✓ ${data.count} file in elaborazione`;
         statusEl.className = 'upload-status ok';
-        setTimeout(() => location.reload(), 2000);
+        showProcessingPanel(uploadedNames);
+        startProcessingPolling(uploadedNames);
     } catch(e) {
         statusEl.textContent = 'Errore upload';
         statusEl.className = 'upload-status err';
     }
+}
+
+// ── PROCESSING PANEL + POLLING ──
+function showProcessingPanel(filenames) {
+    let panel = document.getElementById('processing-panel');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'processing-panel';
+        panel.style.cssText = 'background:var(--bg2); border:1px solid var(--orange); border-left:4px solid var(--orange); padding:14px 20px; margin:8px 12px;';
+        document.querySelector('.lcars-main').insertBefore(panel, document.querySelector('.stats').nextSibling);
+    }
+    panel.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:12px;">
+            <div style="color:var(--orange); font-weight:700; letter-spacing:3px; text-transform:uppercase; font-size:0.82em;">
+                ⚙ Elaborazione in corso
+            </div>
+            <div style="color:var(--muted); font-size:0.75em; letter-spacing:1px;" id="pp-timer">0s</div>
+            <button onclick="location.reload()" style="padding:4px 14px; background:transparent; border:1px solid var(--teal); color:var(--teal); font-family:var(--font); font-size:0.75em; letter-spacing:2px; text-transform:uppercase; cursor:pointer;">
+                Ricarica subito
+            </button>
+        </div>
+        <div id="pp-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+    `;
+
+    const list = document.getElementById('pp-list');
+    filenames.forEach(name => {
+        const row = document.createElement('div');
+        row.dataset.filename = name;
+        row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:6px 10px; background:var(--bg3); border:1px solid var(--border); font-size:0.88em;';
+        row.innerHTML = `
+            <span class="pp-icon" style="font-size:1.1em;">⏳</span>
+            <span class="pp-name" style="flex:1; color:var(--text); letter-spacing:0.5px;">${name}</span>
+            <span class="pp-status" style="color:var(--orange); font-size:0.8em; letter-spacing:2px;">IN CODA</span>
+        `;
+        list.appendChild(row);
+    });
+}
+
+let pollTimer = null;
+let pollStartTime = 0;
+
+// Auto-detect: se ci sono file davvero in elaborazione (non orfani), mostra il panel
+(async function autoDetectProcessing() {
+    try {
+        const res = await fetch('/intranet/kb/processing-status');
+        const data = await res.json();
+        const processing = (data.inbox || []).filter(f => !f.orphan);
+        if (processing.length > 0) {
+            const names = processing.map(f => f.filename);
+            showProcessingPanel(names);
+            startProcessingPolling(names);
+        }
+    } catch(e) {}
+})();
+
+function startProcessingPolling(filenames) {
+    pollStartTime = Date.now();
+    const pollInterval = 3000;
+    let remaining = new Set(filenames);
+    let initialDocsCount = null;
+    let initialRecentCount = null;
+
+    async function tick() {
+        const elapsed = Math.floor((Date.now() - pollStartTime) / 1000);
+        const timerEl = document.getElementById('pp-timer');
+        if (timerEl) timerEl.textContent = `${elapsed}s`;
+
+        try {
+            const res = await fetch('/intranet/kb/processing-status');
+            const data = await res.json();
+            const inboxNames = new Set(data.inbox.map(f => f.filename));
+
+            if (initialDocsCount === null) {
+                initialDocsCount = data.total_docs;
+                initialRecentCount = (data.recent || []).length;
+            }
+
+            document.querySelectorAll('#pp-list [data-filename]').forEach(row => {
+                const name = row.dataset.filename;
+                const iconEl = row.querySelector('.pp-icon');
+                const statusEl = row.querySelector('.pp-status');
+
+                if (inboxNames.has(name)) {
+                    iconEl.textContent = '⚙';
+                    statusEl.textContent = 'IN ELABORAZIONE';
+                    statusEl.style.color = 'var(--orange)';
+                } else if (remaining.has(name)) {
+                    // scomparso da inbox MA deve essere apparso anche in DB
+                    iconEl.textContent = '⏱';
+                    statusEl.textContent = 'SYNC DB...';
+                    statusEl.style.color = 'var(--blue)';
+                }
+            });
+
+            // Lo stato "recente" è il segnale affidabile: documenti con last_synced_at negli ultimi 2 min
+            const recentCount = data.recent ? data.recent.length : 0;
+            const newRecentDocs = recentCount - initialRecentCount;  // solo incremento rispetto al primo tick
+            const newDocs = data.total_docs - initialDocsCount;
+            const goneFromInbox = filenames.filter(n => !inboxNames.has(n)).length;
+
+            // Criterio completamento — tutti ora misurano DELTA rispetto all'inizio del polling:
+            // A) è apparso almeno +N documenti syncati di recente DALL'INIZIO del polling
+            // B) il contatore totale è aumentato di +N
+            // C) tutti i file sono usciti da inbox (archiviazione riuscita)
+            const done = (newRecentDocs >= filenames.length)
+                      || (newDocs >= filenames.length)
+                      || (goneFromInbox === filenames.length && elapsed > 5);
+
+            if (done) {
+                document.querySelectorAll('#pp-list [data-filename]').forEach(row => {
+                    const iconEl = row.querySelector('.pp-icon');
+                    const statusEl = row.querySelector('.pp-status');
+                    iconEl.textContent = '✓';
+                    statusEl.textContent = 'COMPLETATO';
+                    statusEl.style.color = 'var(--green)';
+                    row.style.borderLeftColor = 'var(--green)';
+                });
+                clearInterval(pollTimer);
+                setTimeout(() => { window.location.href = window.location.pathname + '?t=' + Date.now(); }, 1500);
+                return;
+            }
+
+            // timeout safety: 10 min
+            if (elapsed > 600) {
+                clearInterval(pollTimer);
+                document.getElementById('pp-timer').textContent = `Timeout (${elapsed}s) — ricarica manualmente`;
+            }
+        } catch(e) {
+            console.error('polling error', e);
+        }
+    }
+
+    tick();
+    pollTimer = setInterval(tick, pollInterval);
 }
 </script>
 
