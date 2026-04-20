@@ -1,0 +1,24 @@
+# Obsidian AI Metadata Agent — dipendenze Python
+
+# Core
+anthropic>=0.40.0
+watchdog>=4.0.0
+
+# Dev tools
+pytest>=8.0.0
+ruff>=0.4.0
+
+# Estrazione documenti
+pdfplumber>=0.11.0        # PDF (preferito)
+pdfminer.six>=20221105    # PDF (fallback)
+python-docx>=1.1.0        # Word .docx
+python-pptx>=1.0.0        # PowerPoint .pptx
+openpyxl>=3.1.0           # Excel .xlsx
+
+# Immagini (opzionale, per metadati dimensioni)
+Pillow>=10.0.0
+
+# ffprobe per video/audio è uno strumento di sistema:
+# macOS:  brew install ffmpeg
+# Ubuntu: sudo apt install ffmpeg
+# Windows: https://ffmpeg.org/download.html

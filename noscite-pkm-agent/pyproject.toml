@@ -1,0 +1,28 @@
+[project]
+name = "obsidian-pkm-agent"
+version = "0.1.0"
+description = "AI metadata agent for Obsidian PKM vaults"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["venv/"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = [
+    "E501",  # righe lunghe nei prompt AI sono accettabili
+    "E402",  # import dopo logging setup: pattern intenzionale nel progetto
+    "E701",  # istruzioni su una riga: stile allineato intenzionale
+    "W291",  # trailing whitespace: usato nei template Markdown (line break)
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+exclude = "venv/"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
