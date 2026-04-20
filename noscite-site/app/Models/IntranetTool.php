@@ -8,7 +8,7 @@ class IntranetTool extends Model
 {
     protected $fillable = [
         'section', 'type', 'icon', 'name', 'description',
-        'url', 'label', 'credentials', 'status', 'active', 'sort_order',
+        'url', 'github_url', 'label', 'credentials', 'status', 'active', 'sort_order',
         'server_id',
     ];
 

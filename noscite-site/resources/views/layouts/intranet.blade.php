@@ -49,7 +49,7 @@
             🏠 Dashboard
         </a>
         <a href="/intranet/tools" class="nav-item {{ request()->routeIs('intranet.tools') ? 'active' : '' }}">
-            🔧 Strumenti
+            🔧 Catalogo
         </a>
         <a href="/intranet/servers" class="nav-item {{ request()->routeIs('intranet.servers') ? 'active' : '' }}">
             🖥 Infrastruttura VPS
@@ -57,15 +57,6 @@
         <a href="/intranet/kb" class="nav-item {{ request()->routeIs('intranet.kb*') ? 'active' : '' }}">
             📚 Knowledge Base
         </a>
-
-        @if($intranetUser['is_admin'] ?? false)
-        <div style="margin:16px 8px 4px; padding:0 12px;">
-            <div style="color:#4A5252; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Admin</div>
-        </div>
-        <a href="/intranet/manage" class="nav-item {{ request()->routeIs('intranet.manage') ? 'active' : '' }}">
-            ⚙ Gestione strumenti
-        </a>
-        @endif
 
         <div style="margin:16px 8px 4px; padding:0 12px;">
             <div style="color:#4A5252; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Link rapidi</div>

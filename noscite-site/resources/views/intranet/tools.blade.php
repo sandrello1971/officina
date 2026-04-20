@@ -1,5 +1,5 @@
 @extends('layouts.intranet')
-@section('title', 'Strumenti')
+@section('title', 'Catalogo')
 @section('content')
 
 @php
@@ -61,8 +61,12 @@ $typeOptions = [
 .cell-select[data-field="server_id"] { min-width:200px; }
 .cell-input[data-field="status"]     { min-width:90px; width:90px; }
 .cell-input[data-field="name"]       { min-width:180px; }
-.cell-input[data-field="description"]{ min-width:220px; }
-.cell-input[data-field="url"]        { min-width:260px; }
+.cell-input[data-field="description"]{ min-width:380px; }
+.cell-input[data-field="url"]        { min-width:240px; }
+.cell-input[data-field="github_url"] { min-width:220px; }
+.col-description .cell-input         { text-overflow:clip; }
+td.col-description                    { max-width:420px; white-space:normal !important; }
+td.col-description .cell-input       { white-space:normal; }
 .cell-saved { background:#E8F5F5 !important; transition:background-color .5s; }
 .cell-error { background:#fff3ec !important; border-color:#E28A53 !important; }
 .cell-icon { width:42px; text-align:center; font-size:1.2rem; }
@@ -127,7 +131,7 @@ dialog#add-dialog input:focus, dialog#add-dialog select:focus, dialog#add-dialog
 
 <div class="tools-wrap">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
-        <h1 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">🔧 Strumenti aziendali</h1>
+        <h1 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">🔧 Catalogo</h1>
         @if($isAdmin)
         <button type="button" class="add-btn" onclick="document.getElementById('add-dialog').showModal()">+ Nuova voce</button>
         @endif
@@ -140,16 +144,16 @@ dialog#add-dialog input:focus, dialog#add-dialog select:focus, dialog#add-dialog
     @endif
 
     <div class="tools-filters">
-        <input type="text" id="f-q" placeholder="Cerca per nome o descrizione..." oninput="filterRows()">
+        <input type="text" id="f-q" placeholder="Cerca per tool o descrizione..." oninput="filterRows()">
         <select id="f-type" onchange="filterRows()">
-            <option value="">Tutti i tipi</option>
+            <option value="">Tutti gli status</option>
             @foreach($typeOptions as $k => $v)
             <option value="{{ $k }}">{{ $v }}</option>
             @endforeach
         </select>
         <select id="f-server" onchange="filterRows()">
-            <option value="">Tutti i VPS</option>
-            <option value="__none__">Nessun VPS</option>
+            <option value="">Tutti gli hosting</option>
+            <option value="__none__">Nessun hosting</option>
             @foreach($servers as $s)
             <option value="{{ $s->id }}">{{ $s->name }}</option>
             @endforeach
@@ -169,12 +173,13 @@ dialog#add-dialog input:focus, dialog#add-dialog select:focus, dialog#add-dialog
             <thead>
                 <tr>
                     <th class="col-shrink"></th>
-                    <th>Nome</th>
-                    <th>Tipo</th>
-                    <th>Descrizione</th>
-                    <th>URL</th>
-                    <th>VPS</th>
+                    <th>Tool</th>
                     <th>Status</th>
+                    <th>Descrizione</th>
+                    <th>Accesso diretto</th>
+                    <th>GitHub</th>
+                    <th>Hosting</th>
+                    <th>Version</th>
                     <th class="col-shrink">Attivo</th>
                     @if($isAdmin)<th class="col-shrink"></th>@endif
                 </tr>
@@ -227,21 +232,49 @@ dialog#add-dialog input:focus, dialog#add-dialog select:focus, dialog#add-dialog
                         <input type="text" class="cell-input" data-field="description"
                                value="{{ $t->description }}" placeholder="—">
                         @else
-                        <span style="color:#8A9696;">{{ $t->description }}</span>
+                        <span style="color:#4A5252; font-size:0.85rem; line-height:1.4;">{{ $t->description }}</span>
                         @endif
                     </td>
 
-                    {{-- URL --}}
+                    {{-- ACCESSO DIRETTO --}}
                     <td>
                         @if($isAdmin)
                         <div class="url-cell">
                             <input type="url" class="cell-input" data-field="url" value="{{ $t->url }}">
                             <a href="{{ $t->url ?: '#' }}" target="_blank" rel="noopener"
-                               class="url-link-btn {{ $t->url ? '' : 'disabled' }}" title="Apri URL">🔗</a>
+                               class="url-link-btn {{ $t->url ? '' : 'disabled' }}" title="Apri — accesso diretto">▶</a>
                         </div>
                         @else
+                        @if($t->url)
                         <a href="{{ $t->url }}" target="_blank" rel="noopener"
-                           style="color:#55B1AE; font-size:0.85rem;">{{ $t->label ?? parse_url($t->url, PHP_URL_HOST) }}</a>
+                           style="display:inline-flex; align-items:center; gap:6px; padding:4px 12px; background:#E8F5F5; color:#3A8C89; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;"
+                           title="Apri — accesso diretto">
+                            ▶ Apri
+                        </a>
+                        @else
+                        <span style="color:#C8D0D0;">—</span>
+                        @endif
+                        @endif
+                    </td>
+
+                    {{-- GITHUB --}}
+                    <td>
+                        @if($isAdmin)
+                        <div class="url-cell">
+                            <input type="url" class="cell-input" data-field="github_url" value="{{ $t->github_url }}" placeholder="https://github.com/...">
+                            <a href="{{ $t->github_url ?: '#' }}" target="_blank" rel="noopener"
+                               class="url-link-btn {{ $t->github_url ? '' : 'disabled' }}" title="Apri repo GitHub">📦</a>
+                        </div>
+                        @else
+                        @if($t->github_url)
+                        <a href="{{ $t->github_url }}" target="_blank" rel="noopener"
+                           style="display:inline-flex; align-items:center; gap:6px; padding:4px 12px; background:#F5F7F7; color:#1A1F1F; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600; border:1px solid #C8D0D0;"
+                           title="Apri repo GitHub">
+                            📦 Repo
+                        </a>
+                        @else
+                        <span style="color:#C8D0D0;">—</span>
+                        @endif
                         @endif
                     </td>
 
@@ -303,7 +336,7 @@ dialog#add-dialog input:focus, dialog#add-dialog select:focus, dialog#add-dialog
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="{{ $isAdmin ? 9 : 8 }}" style="padding:40px; text-align:center; color:#8A9696;">
+                    <td colspan="{{ $isAdmin ? 10 : 9 }}" style="padding:40px; text-align:center; color:#8A9696;">
                         Nessuno strumento. Aggiungine uno con "+ Nuova voce".
                     </td>
                 </tr>
@@ -321,7 +354,7 @@ dialog#add-dialog input:focus, dialog#add-dialog select:focus, dialog#add-dialog
         @csrf
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
             <div>
-                <label>Tipo *</label>
+                <label>Status *</label>
                 <select name="type" required>
                     @foreach($typeOptions as $k => $v)
                     <option value="{{ $k }}">{{ $v }}</option>
@@ -333,27 +366,31 @@ dialog#add-dialog input:focus, dialog#add-dialog select:focus, dialog#add-dialog
                 <input type="text" name="icon" placeholder="🔧" maxlength="4">
             </div>
             <div style="grid-column:1/-1;">
-                <label>Nome *</label>
+                <label>Tool *</label>
                 <input type="text" name="name" required>
             </div>
             <div style="grid-column:1/-1;">
                 <label>Descrizione</label>
-                <textarea name="description" rows="2"></textarea>
+                <textarea name="description" rows="3"></textarea>
             </div>
             <div style="grid-column:1/-1;">
-                <label>URL *</label>
+                <label>Accesso diretto (URL) *</label>
                 <input type="url" name="url" required placeholder="https://...">
+            </div>
+            <div style="grid-column:1/-1;">
+                <label>Repository GitHub</label>
+                <input type="url" name="github_url" placeholder="https://github.com/...">
             </div>
             <div>
                 <label>Label</label>
                 <input type="text" name="label">
             </div>
             <div>
-                <label>Status</label>
+                <label>Version</label>
                 <input type="text" name="status" list="status-list">
             </div>
             <div style="grid-column:1/-1;">
-                <label>VPS</label>
+                <label>Hosting</label>
                 <select name="server_id">
                     <option value="">— nessuno —</option>
                     @foreach($servers as $s)

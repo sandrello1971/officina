@@ -62,6 +62,7 @@ class IntranetController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'url' => 'required|url|max:500',
+            'github_url' => 'nullable|url|max:500',
             'label' => 'nullable|string|max:100',
             'credentials' => 'nullable|string|max:255',
             'status' => 'nullable|string|max:20',
@@ -100,6 +101,7 @@ class IntranetController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'url' => 'required|url|max:500',
+            'github_url' => 'nullable|url|max:500',
             'label' => 'nullable|string|max:100',
             'credentials' => 'nullable|string|max:255',
             'status' => 'nullable|string|max:20',
@@ -117,7 +119,7 @@ class IntranetController extends Controller
             return response()->json(['ok' => false, 'error' => 'forbidden'], 403);
         }
 
-        $allowed = ['name', 'type', 'icon', 'description', 'url', 'label', 'status', 'server_id', 'active'];
+        $allowed = ['name', 'type', 'icon', 'description', 'url', 'github_url', 'label', 'status', 'server_id', 'active'];
         $field = $request->input('field');
         if (!in_array($field, $allowed, true)) {
             return response()->json(['ok' => false, 'error' => 'invalid field'], 422);
@@ -130,6 +132,7 @@ class IntranetController extends Controller
             'icon'        => 'nullable|string|max:10',
             'description' => 'nullable|string|max:500',
             'url'         => 'nullable|url|max:500',
+            'github_url'  => 'nullable|url|max:500',
             'label'       => 'nullable|string|max:100',
             'status'      => 'nullable|string|max:20',
             'server_id'   => 'nullable|exists:intranet_servers,id',
