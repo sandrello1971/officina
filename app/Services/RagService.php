@@ -161,17 +161,16 @@ class RagService
     private function chunkText(string $text, int $chunkSize = 1000, int $overlap = 200): array
     {
         $text = trim($text);
-        if (strlen($text) <= $chunkSize) {
+        $length = mb_strlen($text, 'UTF-8');
+        if ($length <= $chunkSize) {
             return [$text];
         }
 
         $chunks = [];
         $start = 0;
-        $length = strlen($text);
 
         while ($start < $length) {
-            $chunk = substr($text, $start, $chunkSize);
-            $chunks[] = $chunk;
+            $chunks[] = mb_substr($text, $start, $chunkSize, 'UTF-8');
             $start += $chunkSize - $overlap;
         }
 
