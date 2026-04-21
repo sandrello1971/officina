@@ -39,4 +39,8 @@ return [
         'url' => env('VIDEO_AI_URL', 'http://127.0.0.1:8001'),
     ],
 
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+    ],
+
 ];

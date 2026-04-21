@@ -139,6 +139,10 @@ SYSTEM;
             ]);
 
             if ($response->failed()) {
+                \Log::error('Minerva Claude API failed', [
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 500),
+                ]);
                 return ['content' => 'Errore nella risposta. Riprova.', 'tokens' => null];
             }
 
