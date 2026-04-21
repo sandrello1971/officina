@@ -100,7 +100,7 @@ class ChatController extends Controller
 
         $lengthRule = $mode === 'expand'
             ? "Rispondi in modo approfondito e dettagliato, con esempi e sezioni. Usa markdown: ## per titoli di sezione, **grassetto**, liste, citazioni >."
-            : "Rispondi in modo sintetico ma completo (max ~200 parole). Usa markdown leggero: **grassetto** per i termini chiave, liste puntate quando serve.";
+            : "Rispondi in 2-3 frasi brevi, massimo 60 parole complessive. Una risposta diretta, senza liste, senza titoli, senza esempi multipli. Lo studente potrà chiedere l'approfondimento con un tasto dedicato. Usa al massimo un **grassetto** sul concetto centrale. NON usare bullet, numerazioni, markdown di struttura. Vai dritto al punto.";
 
         $scopeRule = $isSingleCourse
             ? "Lo studente ha accesso SOLO al corso: {$coursesList}. Rispondi basandoti sui contenuti di quel corso. Se la domanda tocca argomenti che vengono approfonditi in ALTRI corsi di Atheneum (non iscritti), accenna brevemente al fatto che 'altri corsi di Atheneum approfondiscono questo tema' — senza nominarli esplicitamente — e offri la risposta più utile possibile sul suo corso."
@@ -133,7 +133,7 @@ SYSTEM;
                 'content-type' => 'application/json',
             ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
                 'model' => 'claude-sonnet-4-5',
-                'max_tokens' => $mode === 'expand' ? 4096 : 1024,
+                'max_tokens' => $mode === 'expand' ? 4096 : 200,
                 'system' => $systemPrompt,
                 'messages' => $messages,
             ]);
