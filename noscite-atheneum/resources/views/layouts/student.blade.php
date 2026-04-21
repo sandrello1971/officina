@@ -120,8 +120,7 @@
         ✦
     </button>
 
-    <div x-show="open" x-cloak x-transition
-         style="width:380px; max-width:calc(100vw - 40px); height:560px; max-height:calc(100vh - 80px); background:white; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden;">
+    <div x-show="open" x-cloak x-transition class="minerva-panel">
 
         <div style="background:linear-gradient(135deg,#1A1F1F,#3A8C89); padding:14px 18px; display:flex; align-items:center; gap:10px;">
             <div style="width:34px; height:34px; border-radius:50%; background:#55B1AE; display:flex; align-items:center; justify-content:center; color:white; font-size:1rem;">✦</div>
@@ -135,7 +134,7 @@
                     style="background:none; border:none; color:rgba(255,255,255,0.85); cursor:pointer; font-size:1.2rem; line-height:1;">×</button>
         </div>
 
-        <div x-ref="msgs" style="flex:1; min-height:0; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:#F5F7F7;">
+        <div x-ref="msgs" class="minerva-msgs">
             <template x-if="messages.length === 0">
                 <div style="padding:18px; background:white; border-radius:10px; color:#4A5252; font-size:0.85rem; line-height:1.6;">
                     Ciao! Sono <strong>Minerva</strong>. Fammi una domanda sui contenuti dei tuoi corsi.
@@ -190,6 +189,28 @@
 .minerva-md em { font-style:italic; color:#4A5252; }
 .minerva-md blockquote { margin:6px 0; padding:6px 10px; border-left:3px solid #55B1AE; background:#E8F5F5; color:#3A8C89; font-size:0.8rem; border-radius:0 6px 6px 0; }
 .minerva-md code { background:#F5F7F7; padding:1px 5px; border-radius:3px; font-family:monospace; font-size:0.78rem; color:#E28A53; }
+.minerva-panel {
+    width: 380px;
+    max-width: calc(100vw - 40px);
+    height: 560px;
+    max-height: calc(100vh - 80px);
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+.minerva-msgs {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #F5F7F7;
+}
 </style>
 
 <script>
