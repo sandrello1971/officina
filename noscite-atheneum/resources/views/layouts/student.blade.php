@@ -135,7 +135,7 @@
                     style="background:none; border:none; color:rgba(255,255,255,0.85); cursor:pointer; font-size:1.2rem; line-height:1;">×</button>
         </div>
 
-        <div x-ref="msgs" style="flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:#F5F7F7;">
+        <div x-ref="msgs" style="flex:1; min-height:0; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:#F5F7F7;">
             <template x-if="messages.length === 0">
                 <div style="padding:18px; background:white; border-radius:10px; color:#4A5252; font-size:0.85rem; line-height:1.6;">
                     Ciao! Sono <strong>Minerva</strong>. Fammi una domanda sui contenuti dei tuoi corsi.
