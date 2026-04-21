@@ -70,6 +70,14 @@ class ModuleController extends Controller
             $file = $request->file('video_file');
             $videoAI = app(\App\Services\VideoAIService::class);
 
+            if ($module->video_ai_id) {
+                try {
+                    $videoAI->deleteVideo($module->video_ai_id);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('VideoAI delete (module) old video failed: ' . $e->getMessage());
+                }
+            }
+
             try {
                 $result = $videoAI->ingestVideo(
                     $file->getPathname(),

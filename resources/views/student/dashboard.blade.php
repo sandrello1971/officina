@@ -33,13 +33,25 @@
                     <span style="font-size:1.5rem;">{{ $course->icon }}</span>
                     <div>
                         <div style="color:white; font-weight:700;">{{ $course->name }}</div>
+                        @unless($student->is_demo)
                         <div style="color:rgba(255,255,255,0.8); font-size:0.75rem;">{{ $course->short_description }}</div>
+                        @endunless
                     </div>
                 </div>
+                @unless($student->is_demo)
                 <div style="color:white; font-size:1.25rem; font-weight:700;">{{ $course->progress_pct }}%</div>
+                @endunless
             </div>
 
             <div style="padding:16px 20px;">
+                @if($student->is_demo)
+                <div style="display:flex; align-items:center; justify-content:flex-end;">
+                    <a href="/learn/course/{{ $course->slug }}"
+                       style="padding:6px 16px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
+                        Entra nel corso &rarr;
+                    </a>
+                </div>
+                @else
                 <div class="progress-bar" style="margin-bottom:12px;">
                     <div class="progress-fill" style="width:{{ $course->progress_pct }}%"></div>
                 </div>
@@ -59,6 +71,7 @@
                         </a>
                     </div>
                 </div>
+                @endif
             </div>
         </div>
         @endforeach

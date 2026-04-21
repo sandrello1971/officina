@@ -13,6 +13,7 @@ class Course extends Model
     protected $fillable = [
         'name', 'slug', 'description', 'short_description', 'color',
         'icon', 'duration_hours', 'certification_name', 'is_active', 'sort_order',
+        'video_ai_id', 'video_filename', 'video_status',
     ];
 
     protected $casts = [

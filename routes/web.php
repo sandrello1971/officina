@@ -21,6 +21,7 @@ Route::get('/sitemap.xml', function () {
 
 // ===== AREA STUDENTI =====
 Route::prefix('learn')->name('student.')->group(function () {
+    Route::get('/demo', [App\Http\Controllers\Student\DemoController::class, 'start'])->name('demo.start');
     Route::get('/login', [App\Http\Controllers\Student\AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\Student\AuthController::class, 'login'])->name('login.post');
     Route::post('/logout', [App\Http\Controllers\Student\AuthController::class, 'logout'])->name('logout');
@@ -41,6 +42,7 @@ Route::prefix('learn')->name('student.')->group(function () {
 
         Route::get('/chat/{course:slug}', [App\Http\Controllers\Student\ChatController::class, 'show'])->name('chat.show');
         Route::post('/chat/message', [App\Http\Controllers\Student\ChatController::class, 'sendMessage'])->name('chat.message');
+        Route::post('/minerva/ask', [App\Http\Controllers\Student\ChatController::class, 'minervaAsk'])->name('minerva.ask');
 
         Route::get('/certificate/{course:slug}', [App\Http\Controllers\Student\CertificateController::class, 'download'])->name('certificate.download');
         Route::get('/certificate/{course:slug}/view', [App\Http\Controllers\Student\CertificateController::class, 'show'])->name('certificate.show');
@@ -52,12 +54,20 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::post('/video/{videoId}/chat', [App\Http\Controllers\Student\VideoController::class, 'chat'])->name('video.chat');
         Route::get('/video/{videoId}/transcript', [App\Http\Controllers\Student\VideoController::class, 'transcript'])->name('video.transcript');
         Route::get('/video/{videoId}/status', [App\Http\Controllers\Student\VideoController::class, 'status'])->name('video.status');
+        Route::get('/course/{course:slug}/video-search', [App\Http\Controllers\Student\VideoController::class, 'searchInCourse'])->name('video.search.course');
+        Route::get('/course/{course:slug}/module/{module}/video-search', [App\Http\Controllers\Student\VideoController::class, 'searchInModule'])->name('video.search.module');
     });
 });
 
 // ===== AREA ADMIN ATHENEUM =====
 Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('courses/ingest', [App\Http\Controllers\Admin\CourseIngestController::class, 'form'])->name('courses.ingest.form');
+    Route::post('courses/ingest/parse', [App\Http\Controllers\Admin\CourseIngestController::class, 'parse'])->name('courses.ingest.parse');
+    Route::get('courses/ingest/preview', [App\Http\Controllers\Admin\CourseIngestController::class, 'preview'])->name('courses.ingest.preview');
+    Route::post('courses/ingest/confirm', [App\Http\Controllers\Admin\CourseIngestController::class, 'confirm'])->name('courses.ingest.confirm');
+    Route::post('courses/ingest/cancel', [App\Http\Controllers\Admin\CourseIngestController::class, 'cancel'])->name('courses.ingest.cancel');
 
     Route::resource('courses', App\Http\Controllers\Admin\CourseController::class);
     Route::resource('courses.modules', App\Http\Controllers\Admin\ModuleController::class);

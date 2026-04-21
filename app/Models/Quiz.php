@@ -14,12 +14,14 @@ class Quiz extends Model
         'module_id', 'course_id', 'title', 'description',
         'passing_score', 'time_limit_minutes', 'max_attempts',
         'randomize_questions', 'show_results_immediately', 'is_active',
+        'is_demo',
     ];
 
     protected $casts = [
         'randomize_questions' => 'boolean',
         'show_results_immediately' => 'boolean',
         'is_active' => 'boolean',
+        'is_demo' => 'boolean',
     ];
 
     public function module()

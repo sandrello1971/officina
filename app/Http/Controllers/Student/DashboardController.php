@@ -13,11 +13,14 @@ class DashboardController extends Controller
     {
         $student = Student::findOrFail(session('student_id'));
 
-        $courses = $student->courses()
+        $coursesQ = $student->courses()
             ->wherePivot('is_active', true)
             ->with('modules')
-            ->orderBy('sort_order')
-            ->get()
+            ->orderBy('sort_order');
+        if ($student->is_demo) {
+            $coursesQ->where('courses.slug', 'primus');
+        }
+        $courses = $coursesQ->get()
             ->map(function ($course) use ($student) {
                 $totalModules = $course->modules->count();
                 $completedModules = StudentModuleProgress::where('student_id', $student->id)

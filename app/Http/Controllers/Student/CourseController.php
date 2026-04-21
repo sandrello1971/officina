@@ -46,9 +46,13 @@ class CourseController extends Controller
 
         $progressByModule = $progress;
 
+        $hasAnyVideo = (bool) $course->video_ai_id
+            || $modules->contains(fn($m) => !empty($m->video_ai_id));
+
         return view('student.course.show', compact(
             'course', 'modules', 'progressPercent',
-            'completedModules', 'totalModules', 'finalQuiz', 'certificationPassed', 'progressByModule'
+            'completedModules', 'totalModules', 'finalQuiz', 'certificationPassed', 'progressByModule',
+            'hasAnyVideo'
         ));
     }
 
@@ -57,13 +61,17 @@ class CourseController extends Controller
         $student = $this->checkAccess($course);
         abort_unless($module->course_id === $course->id, 404);
 
-        $progress = StudentModuleProgress::firstOrCreate(
-            ['student_id' => $student->id, 'module_id' => $module->id],
-            ['status' => 'in_progress', 'started_at' => now()]
-        );
+        if ($student->is_demo) {
+            $progress = new StudentModuleProgress(['status' => 'in_progress', 'student_id' => $student->id, 'module_id' => $module->id]);
+        } else {
+            $progress = StudentModuleProgress::firstOrCreate(
+                ['student_id' => $student->id, 'module_id' => $module->id],
+                ['status' => 'in_progress', 'started_at' => now()]
+            );
 
-        if ($progress->status === 'not_started') {
-            $progress->update(['status' => 'in_progress', 'started_at' => now()]);
+            if ($progress->status === 'not_started') {
+                $progress->update(['status' => 'in_progress', 'started_at' => now()]);
+            }
         }
 
         $materials = $module->materials()->orderBy('sort_order')->get();
@@ -107,6 +115,10 @@ class CourseController extends Controller
             ->where('module_id', $module->id)
             ->first();
 
+        if ($isDemo) {
+            $module->video_ai_id = null;
+        }
+
         if ($isDemo && $module->content) {
             $lines = explode("\n", $module->content);
             $module->content = implode("\n", array_slice($lines, 0, 20));
@@ -135,6 +147,10 @@ class CourseController extends Controller
     {
         $student = $this->checkAccess($course);
         abort_unless($module->course_id === $course->id, 404);
+
+        if ($student->is_demo) {
+            return back()->with('success', 'Demo: completamento non salvato.');
+        }
 
         StudentModuleProgress::updateOrCreate(
             ['student_id' => $student->id, 'module_id' => $module->id],

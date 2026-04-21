@@ -16,7 +16,17 @@ class QuizController extends Controller
     {
         $student = Student::findOrFail(session('student_id'));
 
+        if ($student->is_demo && !$quiz->is_demo) {
+            abort(403, 'In modalità demo puoi vedere solo il quiz di prova.');
+        }
+        if (!$student->is_demo && $quiz->is_demo) {
+            abort(404);
+        }
+
         $questions = $quiz->questions()->orderBy('sort_order')->get();
+        if ($quiz->randomize_questions) {
+            $questions = $questions->shuffle()->values();
+        }
 
         $pastAttempts = QuizAttempt::where('quiz_id', $quiz->id)
             ->where('student_id', $student->id)
@@ -41,6 +51,10 @@ class QuizController extends Controller
     {
         $student = Student::findOrFail(session('student_id'));
 
+        if ($student->is_demo) {
+            return response()->json(['attempt_id' => 'demo-' . uniqid()]);
+        }
+
         $attempt = QuizAttempt::create([
             'quiz_id' => $quiz->id,
             'student_id' => $student->id,
@@ -55,6 +69,11 @@ class QuizController extends Controller
 
     public function submit(Request $request, Quiz $quiz)
     {
+        $student = Student::find(session('student_id'));
+        if ($student && $student->is_demo) {
+            return response()->json(['success' => true, 'demo' => true]);
+        }
+
         $attempt = QuizAttempt::find($request->attempt_id);
         if ($attempt) {
             $attempt->update([

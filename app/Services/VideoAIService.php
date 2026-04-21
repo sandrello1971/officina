@@ -78,4 +78,18 @@ class VideoAIService
             ->delete("{$this->baseUrl}/api/videos/{$videoId}");
         return $response->successful();
     }
+
+    public function search(string $query, array $videoIds): array
+    {
+        if (empty($videoIds)) return [];
+
+        $response = Http::timeout(15)
+            ->post("{$this->baseUrl}/api/search", [
+                'question' => $query,
+                'video_ids' => array_values(array_unique($videoIds)),
+            ]);
+
+        if ($response->failed()) return [];
+        return $response->json() ?? [];
+    }
 }

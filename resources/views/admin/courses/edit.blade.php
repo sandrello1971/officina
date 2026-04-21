@@ -10,7 +10,7 @@
     </div>
 
     <div style="background:white; border-radius:10px; padding:24px;">
-        <form method="POST" action="/admin/courses/{{ $course->id }}" id="edit-course-form">
+        <form method="POST" action="/admin/courses/{{ $course->id }}" id="edit-course-form" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -76,6 +76,34 @@
                         <input type="checkbox" name="is_active" value="1" {{ old('is_active', $course->is_active) ? 'checked' : '' }}>
                         <span style="font-size:0.875rem; color:#1A1F1F;">Corso attivo</span>
                     </label>
+                </div>
+
+                <div style="background:linear-gradient(135deg,#1A1F1F,#252B2B); border-radius:10px; padding:20px; margin-top:8px;">
+                    <h3 style="color:#55B1AE; font-weight:700; margin-bottom:12px; font-size:0.9rem;">🎬 Video del corso</h3>
+                    <p style="color:#8A9696; font-size:0.75rem; margin-bottom:12px; line-height:1.5;">
+                        Il video del corso vale come video introduttivo/generale: sarà disponibile sulla pagina del corso e la trascrizione sarà indicizzata da Minerva per l'intero corso.
+                    </p>
+
+                    @if($course->video_ai_id)
+                    <div style="padding:10px 14px; background:rgba(85,177,174,0.1); border-radius:8px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+                        <div>
+                            <div style="color:#55B1AE; font-size:0.85rem; font-weight:600;">✓ {{ $course->video_filename }}</div>
+                            <div style="color:#8A9696; font-size:0.75rem;">Status: {{ $course->video_status }}</div>
+                        </div>
+                        <div style="font-size:0.75rem; color:#8A9696; font-family:monospace;">{{ substr($course->video_ai_id, 0, 12) }}...</div>
+                    </div>
+                    @endif
+
+                    <div>
+                        <label style="font-size:0.8rem; color:#8A9696; display:block; margin-bottom:6px;">
+                            {{ $course->video_ai_id ? 'Sostituisci video' : 'Carica video' }} (MP4, MOV, AVI — max 2GB)
+                        </label>
+                        <input type="file" name="video_file" accept="video/*"
+                               style="width:100%; padding:10px; border:1px dashed rgba(85,177,174,0.4); border-radius:8px; color:#8A9696; font-size:0.8rem; background:rgba(255,255,255,0.05);">
+                        <p style="color:#4A5252; font-size:0.75rem; margin-top:6px;">
+                            Il video verrà trascritto automaticamente con AI e indicizzato per il chatbot Minerva.
+                        </p>
+                    </div>
                 </div>
 
                 <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">

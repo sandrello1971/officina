@@ -34,6 +34,124 @@ class ChatController extends Controller
         return view('student.chat.show', compact('course', 'conversation', 'messages'));
     }
 
+    public function minervaAsk(Request $request)
+    {
+        $studentId = session('student_id');
+        abort_unless($studentId, 403);
+
+        $data = $request->validate([
+            'question' => 'required|string|max:4000',
+            'history' => 'nullable|array',
+            'history.*.role' => 'required_with:history|in:user,assistant',
+            'history.*.content' => 'required_with:history|string',
+            'mode' => 'nullable|in:summary,expand',
+        ]);
+
+        $student = Student::with(['courses' => fn($q) => $q->wherePivot('is_active', true)])
+            ->findOrFail($studentId);
+
+        $courseIds = $student->courses->pluck('id')->all();
+        $courseNames = $student->courses->pluck('name')->all();
+        $mode = $data['mode'] ?? 'summary';
+
+        $docs = $this->rag->searchInCourses($data['question'], $courseIds, 4, true);
+        $videoDocs = [];
+        if (!empty($courseIds)) {
+            foreach ($courseIds as $cid) {
+                $found = $this->rag->searchVideos($data['question'], $cid, null, 1);
+                foreach ($found as $f) $videoDocs[] = $f;
+            }
+            $videoDocs = array_slice($videoDocs, 0, 2);
+        }
+
+        $context = '';
+        if (!empty($docs) && count($docs) > 0) {
+            $context .= "📚 DOCUMENTI DEI CORSI:\n\n";
+            foreach ($docs as $doc) {
+                $content = is_array($doc) ? $doc['content'] : $doc->content;
+                $title = is_array($doc) ? $doc['title'] : $doc->title;
+                $context .= "--- {$title} ---\n{$content}\n\n";
+            }
+        }
+        if (!empty($videoDocs)) {
+            $context .= "\n🎬 CONTENUTO VIDEO:\n\n";
+            foreach ($videoDocs as $doc) {
+                $ts = $doc['timestamp'] ?? '';
+                $tsStr = $ts ? " [{$ts}]" : '';
+                $title = $doc['title'] ?? 'Video';
+                $content = $doc['content'] ?? '';
+                $context .= "--- {$title}{$tsStr} ---\n{$content}\n\n";
+            }
+        }
+
+        $reply = $this->callClaudeForMinerva($data['question'], $data['history'] ?? [], $context, $courseNames, $mode);
+
+        return response()->json([
+            'answer' => $reply['content'],
+            'tokens' => $reply['tokens'] ?? null,
+            'mode' => $mode,
+        ]);
+    }
+
+    private function callClaudeForMinerva(string $question, array $history, string $context, array $courseNames, string $mode): array
+    {
+        $coursesList = empty($courseNames) ? 'nessun corso attivo' : implode(', ', $courseNames);
+        $isSingleCourse = count($courseNames) === 1;
+
+        $lengthRule = $mode === 'expand'
+            ? "Rispondi in modo approfondito e dettagliato, con esempi e sezioni. Usa markdown: ## per titoli di sezione, **grassetto**, liste, citazioni >."
+            : "Rispondi in modo sintetico ma completo (max ~200 parole). Usa markdown leggero: **grassetto** per i termini chiave, liste puntate quando serve.";
+
+        $scopeRule = $isSingleCourse
+            ? "Lo studente ha accesso SOLO al corso: {$coursesList}. Rispondi basandoti sui contenuti di quel corso. Se la domanda tocca argomenti che vengono approfonditi in ALTRI corsi di Atheneum (non iscritti), accenna brevemente al fatto che 'altri corsi di Atheneum approfondiscono questo tema' — senza nominarli esplicitamente — e offri la risposta più utile possibile sul suo corso."
+            : "Lo studente ha accesso ai corsi: {$coursesList}. Rispondi sui contenuti di tutti questi corsi, e anche sul contesto della piattaforma Atheneum Noscite.";
+
+        $systemPrompt = <<<SYSTEM
+Sei Minerva, l'assistente AI di Atheneum Noscite.
+
+{$scopeRule}
+
+{$lengthRule}
+
+Regole:
+- Rispondi in italiano
+- Se citi un video con timestamp, formatta come [MM:SS] — lo studente può cliccarci
+- Se citi un documento, cita il titolo
+- Non inventare. Se l'informazione non è nei materiali forniti, dillo onestamente e usa il tuo buon senso generale
+- Sii diretto, chiaro, incoraggiante
+
+{$context}
+SYSTEM;
+
+        $messages = array_values($history);
+        $messages[] = ['role' => 'user', 'content' => $question];
+
+        try {
+            $response = Http::withHeaders([
+                'x-api-key' => config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY'),
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+                'model' => 'claude-sonnet-4-5',
+                'max_tokens' => $mode === 'expand' ? 4096 : 1024,
+                'system' => $systemPrompt,
+                'messages' => $messages,
+            ]);
+
+            if ($response->failed()) {
+                return ['content' => 'Errore nella risposta. Riprova.', 'tokens' => null];
+            }
+
+            $body = $response->json();
+            return [
+                'content' => $body['content'][0]['text'] ?? 'Risposta vuota.',
+                'tokens' => ($body['usage']['input_tokens'] ?? 0) + ($body['usage']['output_tokens'] ?? 0),
+            ];
+        } catch (\Throwable $e) {
+            return ['content' => 'Assistente momentaneamente non disponibile.', 'tokens' => null];
+        }
+    }
+
     public function sendMessage(Request $request)
     {
         $studentId = session('student_id');
@@ -56,7 +174,7 @@ class ChatController extends Controller
         ]);
 
         $docs = $this->rag->search($data['message'], $conversation->course_id, 4);
-        $videoDocs = $this->rag->searchVideos($data['message'], $conversation->course_id, 2);
+        $videoDocs = $this->rag->searchVideos($data['message'], $conversation->course_id, null, 2);
 
         $context = '';
         if (!empty($docs) && count($docs) > 0) {
