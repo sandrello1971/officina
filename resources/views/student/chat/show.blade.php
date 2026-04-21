@@ -13,7 +13,7 @@
         </div>
     </div>
 
-    <div id="messages-container" style="flex:1; overflow-y:auto; background:white; padding:20px; display:flex; flex-direction:column; gap:12px;">
+    <div id="messages-container" style="flex:1; min-height:0; overflow-y:auto; background:white; padding:20px; display:flex; flex-direction:column; gap:12px;">
 
         <div style="display:flex; gap:10px; align-items:flex-start;">
             <div style="width:32px; height:32px; border-radius:50%; background:#55B1AE; display:flex; align-items:center; justify-content:center; color:white; font-size:0.8rem; flex-shrink:0;">&#10022;</div>
