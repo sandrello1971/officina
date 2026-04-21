@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course;
 use App\Models\Module;
 use App\Models\Student;
+use App\Services\RagService;
 use App\Services\VideoAIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -18,12 +20,30 @@ class VideoController extends Controller
         $student = Student::findOrFail(session('student_id'));
 
         $module = Module::where('video_ai_id', $videoId)->first();
-        if (!$module) return false;
+        $courseId = $module?->course_id;
+
+        if (!$courseId) {
+            $course = Course::where('video_ai_id', $videoId)->first();
+            $courseId = $course?->id;
+        }
+
+        if (!$courseId) return false;
 
         return $student->courses()
             ->wherePivot('is_active', true)
-            ->where('courses.id', $module->course_id)
+            ->where('courses.id', $courseId)
             ->exists();
+    }
+
+    private function ensureEnrolled(Course $course): Student
+    {
+        $student = Student::findOrFail(session('student_id'));
+        $enrolled = $student->courses()
+            ->where('courses.id', $course->id)
+            ->wherePivot('is_active', true)
+            ->exists();
+        abort_unless($enrolled, 403, 'Non sei iscritto a questo corso.');
+        return $student;
     }
 
     public function stream(Request $request, string $videoId)
@@ -36,17 +56,31 @@ class VideoController extends Controller
             $headers['Range'] = $request->header('Range');
         }
 
-        $response = Http::withHeaders($headers)
-            ->timeout(0)
-            ->get($url);
+        $client = new \GuzzleHttp\Client();
+        $upstream = $client->get($url, [
+            'headers' => $headers,
+            'stream' => true,
+            'timeout' => 0,
+            'http_errors' => false,
+        ]);
 
-        return response($response->body(), $response->status())
-            ->withHeaders([
-                'Content-Type' => $response->header('Content-Type') ?? 'video/mp4',
-                'Content-Length' => $response->header('Content-Length') ?? '',
-                'Content-Range' => $response->header('Content-Range') ?? '',
-                'Accept-Ranges' => 'bytes',
-            ]);
+        $body = $upstream->getBody();
+        $status = $upstream->getStatusCode();
+
+        $responseHeaders = array_filter([
+            'Content-Type' => $upstream->getHeaderLine('Content-Type') ?: 'video/mp4',
+            'Content-Length' => $upstream->getHeaderLine('Content-Length') ?: null,
+            'Content-Range' => $upstream->getHeaderLine('Content-Range') ?: null,
+            'Accept-Ranges' => 'bytes',
+        ]);
+
+        return response()->stream(function () use ($body) {
+            while (!$body->eof()) {
+                echo $body->read(8192);
+                if (ob_get_level() > 0) ob_flush();
+                flush();
+            }
+        }, $status, $responseHeaders);
     }
 
     public function thumbnail(string $videoId)
@@ -91,5 +125,22 @@ class VideoController extends Controller
     {
         if (!$this->checkVideoAccess($videoId)) abort(403);
         return response()->json($this->videoAI->getStatus($videoId));
+    }
+
+    public function searchInCourse(Request $request, Course $course, RagService $rag)
+    {
+        $this->ensureEnrolled($course);
+        $data = $request->validate(['q' => 'required|string|max:500']);
+        $results = $rag->searchVideos($data['q'], $course->id, null, 10);
+        return response()->json(['results' => $results]);
+    }
+
+    public function searchInModule(Request $request, Course $course, Module $module, RagService $rag)
+    {
+        $this->ensureEnrolled($course);
+        abort_unless($module->course_id === $course->id, 404);
+        $data = $request->validate(['q' => 'required|string|max:500']);
+        $results = $rag->searchVideos($data['q'], $course->id, $module->id, 10);
+        return response()->json(['results' => $results]);
     }
 }

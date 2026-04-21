@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Services\VideoAIService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CourseController extends Controller
@@ -36,12 +38,18 @@ class CourseController extends Controller
             'certification_name' => 'nullable|string|max:255',
             'is_active' => 'sometimes|boolean',
             'sort_order' => 'nullable|integer',
+            'video_file' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/webm|max:2048000',
         ]);
 
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active');
+        unset($data['video_file']);
 
         $course = Course::create($data);
+
+        if ($request->hasFile('video_file')) {
+            $this->handleVideoUpload($course, $request->file('video_file'));
+        }
 
         return redirect("/admin/courses/{$course->id}/edit")
             ->with('success', 'Corso creato. Aggiungi i moduli.');
@@ -74,18 +82,41 @@ class CourseController extends Controller
             'certification_name' => 'nullable|string|max:255',
             'is_active' => 'sometimes|boolean',
             'sort_order' => 'nullable|integer',
+            'video_file' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/webm|max:2048000',
         ]);
 
         $data['is_active'] = $request->boolean('is_active');
+        unset($data['video_file']);
 
         $course->update($data);
+
+        if ($request->hasFile('video_file')) {
+            $error = $this->handleVideoUpload($course, $request->file('video_file'));
+            if ($error) return back()->with('error', $error);
+        }
 
         return redirect()->route('admin.courses.index')->with('success', 'Corso aggiornato.');
     }
 
     public function destroy(string $id)
     {
-        Course::findOrFail($id)->delete();
+        $course = Course::with('modules')->findOrFail($id);
+
+        $videoAI = app(VideoAIService::class);
+        $videoIds = array_filter(array_merge(
+            [$course->video_ai_id],
+            $course->modules->pluck('video_ai_id')->toArray(),
+        ));
+
+        foreach ($videoIds as $vid) {
+            try {
+                $videoAI->deleteVideo($vid);
+            } catch (\Exception $e) {
+                Log::warning("VideoAI delete failed during course destroy ({$vid}): " . $e->getMessage());
+            }
+        }
+
+        $course->delete();
         return redirect()->route('admin.courses.index')->with('success', 'Corso eliminato.');
     }
 
@@ -112,5 +143,35 @@ class CourseController extends Controller
 
         return redirect("/admin/quizzes/{$quiz->id}/questions")
             ->with('success', "Quiz generato con {$quiz->questions()->count()} domande!");
+    }
+
+    private function handleVideoUpload(Course $course, $file): ?string
+    {
+        $videoAI = app(VideoAIService::class);
+
+        if ($course->video_ai_id) {
+            try {
+                $videoAI->deleteVideo($course->video_ai_id);
+            } catch (\Exception $e) {
+                Log::warning('VideoAI delete (course) old video failed: ' . $e->getMessage());
+            }
+        }
+
+        try {
+            $result = $videoAI->ingestVideo(
+                $file->getPathname(),
+                $file->getClientOriginalName()
+            );
+
+            $course->update([
+                'video_ai_id' => $result['video_id'],
+                'video_filename' => $file->getClientOriginalName(),
+                'video_status' => $result['status'] ?? 'processing',
+            ]);
+            return null;
+        } catch (\Exception $e) {
+            Log::error('VideoAI upload (course) error: ' . $e->getMessage());
+            return 'Upload video fallito: ' . $e->getMessage();
+        }
     }
 }

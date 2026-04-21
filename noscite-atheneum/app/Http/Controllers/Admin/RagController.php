@@ -79,24 +79,7 @@ class RagController extends Controller
 
     private function extractText($file): string
     {
-        $extension = strtolower($file->getClientOriginalExtension());
-        $tmpPath = $file->getPathname();
-
-        if ($extension === 'txt') {
-            return file_get_contents($tmpPath);
-        }
-
-        if (in_array($extension, ['doc', 'docx'])) {
-            $output = shell_exec('extract-text ' . escapeshellarg($tmpPath) . ' 2>/dev/null');
-            return $output ?: '';
-        }
-
-        if ($extension === 'pdf') {
-            $output = shell_exec('pdftotext ' . escapeshellarg($tmpPath) . ' - 2>/dev/null');
-            return $output ?: '';
-        }
-
-        return '';
+        return app(\App\Services\CourseIngestionService::class)->extractText($file);
     }
 
     public function destroy($id)

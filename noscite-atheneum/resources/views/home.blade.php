@@ -56,8 +56,7 @@
                     Esplora la piattaforma senza registrazione
                 </div>
             </div>
-            <a href="https://atheneum.noscite.it/learn/login?demo=1"
-               onclick="document.cookie='demo_autofill=1;path=/'; return true;"
+            <a href="/learn/demo"
                style="padding:12px 24px; background:#E28A53; color:white; border-radius:10px;
                       font-size:0.9rem; font-weight:700; text-decoration:none; white-space:nowrap;
                       flex-shrink:0;">

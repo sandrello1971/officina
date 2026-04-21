@@ -4,7 +4,10 @@
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Gestione Corsi</h2>
-    <a href="/admin/courses/create" style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">+ Nuovo corso</a>
+    <div style="display:flex; gap:8px;">
+        <a href="/admin/courses/ingest" style="padding:8px 18px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">📥 Crea da documenti</a>
+        <a href="/admin/courses/create" style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">+ Nuovo corso</a>
+    </div>
 </div>
 
 <div style="background:white; border-radius:10px; overflow:hidden;">

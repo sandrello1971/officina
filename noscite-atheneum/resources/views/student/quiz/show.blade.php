@@ -85,7 +85,7 @@
                 <div style="display:flex; flex-direction:column; gap:10px;">
                     <template x-for="(opt, oidx) in q.options" :key="oidx">
                         <button type="button"
-                                @click="selectAnswer(idx, opt)"
+                                @click="proposeAnswer(idx, opt)"
                                 :disabled="answered[idx] !== undefined"
                                 :style="getOptionStyle(idx, opt)"
                                 style="padding:14px 18px; border-radius:10px; text-align:left; cursor:pointer; font-size:0.9rem; transition:all 0.2s; display:flex; align-items:center; gap:12px;">
@@ -128,6 +128,31 @@
                     style="padding:10px 24px; background:#E28A53; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700;">
                 Consegna quiz ✓
             </button>
+        </div>
+    </div>
+
+    {{-- MODAL CONFERMA RISPOSTA --}}
+    <div x-show="pendingAnswer" x-cloak
+         style="position:fixed; inset:0; background:rgba(26,31,31,0.75); display:flex; align-items:center; justify-content:center; z-index:200;">
+        <div style="background:white; border-radius:16px; padding:28px; max-width:400px; width:90%; text-align:center;">
+            <div style="font-size:2rem; margin-bottom:8px;">🎯</div>
+            <div style="font-weight:700; color:#1A1F1F; font-size:1.05rem; margin-bottom:6px;">La accendiamo?</div>
+            <div style="color:#8A9696; font-size:0.85rem; margin-bottom:10px; line-height:1.5;">
+                Vuoi confermare la tua risposta?
+            </div>
+            <div x-show="pendingAnswer" style="padding:10px 14px; background:#F5F7F7; border-radius:8px; margin-bottom:16px; font-size:0.85rem; color:#4A5252; text-align:left;">
+                <span x-text="pendingAnswer?.opt"></span>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button @click="cancelAnswer()" type="button"
+                        style="padding:10px 22px; border:1px solid #C8D0D0; background:white; color:#4A5252; border-radius:8px; font-size:0.85rem; cursor:pointer;">
+                    Annulla
+                </button>
+                <button @click="confirmAnswer()" type="button"
+                        style="padding:10px 28px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:700; cursor:pointer;">
+                    OK, confermo
+                </button>
+            </div>
         </div>
     </div>
 
@@ -264,10 +289,23 @@ function quizApp() {
             @endif
         },
 
-        selectAnswer(idx, opt) {
+        pendingAnswer: null,
+
+        proposeAnswer(idx, opt) {
             if (this.answered[idx] !== undefined) return;
+            this.pendingAnswer = { idx, opt };
+        },
+
+        cancelAnswer() {
+            this.pendingAnswer = null;
+        },
+
+        confirmAnswer() {
+            if (!this.pendingAnswer) return;
+            const { idx, opt } = this.pendingAnswer;
             this.answered[idx] = opt;
             this.answered = { ...this.answered };
+            this.pendingAnswer = null;
         },
 
         getOptionStyle(idx, opt) {
