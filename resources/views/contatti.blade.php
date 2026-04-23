@@ -40,6 +40,15 @@
         </div>
 
         <div>
+            @if(request('msg'))
+            <div style="padding:12px 16px; background:rgba(226,138,83,0.08);
+                        border:1px solid rgba(226,138,83,0.3); border-radius:8px;
+                        margin-bottom:16px; font-size:0.85rem; color:#5A6464;">
+                📋 Hai cliccato <strong>"Richiedi info"</strong>. Il tuo messaggio è già pre-compilato —
+                aggiungi i tuoi dettagli e invialo.
+            </div>
+            @endif
+
             <form action="/contatti" method="POST" class="flex flex-col gap-4">
                 @csrf
                 <div>
@@ -67,7 +76,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1" style="color:#1A1F1F">Messaggio *</label>
-                    <textarea name="message" rows="4" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" style="border-color:#C8D0D0"></textarea>
+                    <textarea name="message" rows="4" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" style="border-color:#C8D0D0">{{ old('message', request('msg')) }}</textarea>
                 </div>
                 <div class="flex items-start gap-2">
                     <input type="checkbox" name="privacy" required class="mt-1">

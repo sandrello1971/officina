@@ -47,8 +47,9 @@
                 </div>
 
                 <div>
-                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Ruolo</label>
-                    <input type="text" name="role" value="{{ old('role', $student->role) }}"
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Ruolo aziendale</label>
+                    <input type="text" name="job_title" value="{{ old('job_title', $student->job_title) }}"
+                           placeholder="es. CEO, Marketing Manager"
                            style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
                 </div>
 
@@ -66,6 +67,78 @@
                         Salva modifiche
                     </button>
                 </div>
+            </div>
+        </form>
+    </div>
+
+    {{-- Sezione separata: Permessi sistema --}}
+    <div style="background:white; border:2px solid #E28A53; border-radius:12px;
+                padding:20px; margin-top:24px; margin-bottom:24px;">
+
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+            <div style="font-size:1.4rem;">🔑</div>
+            <div>
+                <div style="font-weight:700; color:#1A1F1F; font-size:1rem;">
+                    Permessi sistema
+                </div>
+                <div style="font-size:0.75rem; color:#8A9696;">
+                    Cambia il ruolo dell'utente nel sistema (separato dal job title)
+                </div>
+            </div>
+        </div>
+
+        <form method="POST"
+              action="{{ route('admin.students.update-system-role', $student->id) }}">
+            @csrf
+            @method('PATCH')
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:end; margin-bottom:14px;">
+                <div>
+                    <label style="font-size:0.75rem; color:#8A9696; font-weight:600;">
+                        Ruolo sistema
+                    </label>
+                    <select name="role"
+                            style="width:100%; padding:10px; border:1px solid #E8F5F5;
+                                   border-radius:6px; font-size:0.9rem;">
+                        <option value="" {{ is_null($student->role) ? 'selected' : '' }}>
+                            — Studente normale (default) —
+                        </option>
+                        @foreach(\App\Models\Student::SYSTEM_ROLES as $key => $label)
+                        <option value="{{ $key }}" {{ $student->role === $key ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; padding-top:14px;">
+                        <input type="checkbox" name="auto_enroll_all_courses" value="1"
+                               {{ $student->auto_enroll_all_courses ? 'checked' : '' }}>
+                        Auto-iscrizione a tutti i corsi
+                    </label>
+                    <div style="font-size:0.7rem; color:#8A9696; margin-top:2px;">
+                        Tipico per formatori interni Noscite
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size:0.75rem; color:#5A6464; background:#FFFBEB;
+                        padding:10px 14px; border-radius:6px; margin-bottom:14px;
+                        border:1px solid rgba(226,138,83,0.3);">
+                <strong>⚠️ Attenzione:</strong> assegnare il ruolo "Formatore" dà accesso ai
+                manuali formatore, alle annotazioni private e alla sezione "Note per il formatore"
+                di Minerva. "Amministratore" dà controllo totale. Promuovi solo membri fidati del
+                team Noscite.
+            </div>
+
+            <div style="display:flex; justify-content:flex-end;">
+                <button type="submit"
+                        style="padding:10px 20px; background:#E28A53; color:white;
+                               border:none; border-radius:6px; font-size:0.85rem;
+                               font-weight:600; cursor:pointer;">
+                    💾 Salva permessi
+                </button>
             </div>
         </form>
     </div>

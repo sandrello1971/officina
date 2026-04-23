@@ -122,6 +122,55 @@
     @endPushOnce
     @endif
 
+    @if($instructorMaterials->isNotEmpty())
+    <div style="background:linear-gradient(135deg, rgba(226,138,83,0.08), rgba(226,138,83,0.12));
+                border:1px solid rgba(226,138,83,0.3);
+                border-radius:12px; padding:20px; margin-bottom:20px;">
+
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+            <div style="font-size:1.3rem;">🎓</div>
+            <div style="font-weight:700; color:#1A1F1F; font-size:1rem;">
+                Materiali Formatore
+            </div>
+            <div style="margin-left:auto; padding:3px 10px;
+                        background:rgba(226,138,83,0.2); color:#D87840;
+                        border-radius:12px; font-size:0.7rem; font-weight:700;">
+                SOLO DOCENTI
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            @foreach($instructorMaterials as $im)
+            <div style="display:flex; align-items:center; gap:12px;
+                        padding:10px 14px; background:white; border-radius:8px;">
+                <div style="flex:1;">
+                    <div style="font-weight:600; color:#1A1F1F; font-size:0.9rem;">
+                        {{ $im->title }}
+                    </div>
+                    @if($im->description)
+                    <div style="color:#8A9696; font-size:0.75rem; margin-top:2px;">
+                        {{ $im->description }}
+                    </div>
+                    @endif
+                </div>
+                <a href="{{ route('student.instructor.material.show', [$course->slug, $im->id]) }}"
+                   style="padding:6px 12px; background:#E28A53; color:white;
+                          border-radius:6px; text-decoration:none;
+                          font-size:0.8rem; font-weight:600;">
+                    Consulta
+                </a>
+                <a href="{{ route('student.instructor.material.download', [$course->slug, $im->id]) }}"
+                   style="padding:6px 12px; background:white; color:#E28A53;
+                          border:1px solid #E28A53; border-radius:6px;
+                          text-decoration:none; font-size:0.8rem; font-weight:600;">
+                    📥 .docx
+                </a>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     <div style="display:flex; flex-direction:column; gap:8px;">
         @foreach($modules as $index => $module)
         @php

@@ -43,4 +43,12 @@ return [
         'key' => env('ANTHROPIC_API_KEY'),
     ],
 
+    'azure' => [
+        'client_id'     => env('AZURE_AD_CLIENT_ID'),
+        'client_secret' => env('AZURE_AD_CLIENT_SECRET'),
+        'redirect'      => env('AZURE_AD_REDIRECT_URI'),
+        'tenant'        => env('AZURE_AD_TENANT_ID'),
+        'proxy'         => env('HTTPS_PROXY', null),
+    ],
+
 ];

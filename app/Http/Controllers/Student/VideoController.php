@@ -29,6 +29,10 @@ class VideoController extends Controller
 
         if (!$courseId) return false;
 
+        if ($student->auto_enroll_all_courses) {
+            return Course::where('id', $courseId)->where('is_active', true)->exists();
+        }
+
         return $student->courses()
             ->wherePivot('is_active', true)
             ->where('courses.id', $courseId)
@@ -38,6 +42,11 @@ class VideoController extends Controller
     private function ensureEnrolled(Course $course): Student
     {
         $student = Student::findOrFail(session('student_id'));
+
+        if ($student->auto_enroll_all_courses && $course->is_active) {
+            return $student;
+        }
+
         $enrolled = $student->courses()
             ->where('courses.id', $course->id)
             ->wherePivot('is_active', true)

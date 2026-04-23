@@ -25,6 +25,13 @@ class Course extends Model
         return $this->hasMany(Module::class)->orderBy('sort_order');
     }
 
+    public function instructorMaterials()
+    {
+        return $this->hasMany(Material::class)
+            ->where('is_instructor_only', true)
+            ->orderBy('sort_order');
+    }
+
     public function quizzes()
     {
         return $this->hasMany(Quiz::class);

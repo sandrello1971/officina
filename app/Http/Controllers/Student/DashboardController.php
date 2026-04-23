@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course;
 use App\Models\QuizAttempt;
 use App\Models\Student;
 use App\Models\StudentModuleProgress;
@@ -13,10 +14,16 @@ class DashboardController extends Controller
     {
         $student = Student::findOrFail(session('student_id'));
 
-        $coursesQ = $student->courses()
-            ->wherePivot('is_active', true)
-            ->with('modules')
-            ->orderBy('sort_order');
+        if ($student->auto_enroll_all_courses) {
+            $coursesQ = Course::where('is_active', true)
+                ->with('modules')
+                ->orderBy('sort_order');
+        } else {
+            $coursesQ = $student->courses()
+                ->wherePivot('is_active', true)
+                ->with('modules')
+                ->orderBy('sort_order');
+        }
         if ($student->is_demo) {
             $coursesQ->where('courses.slug', 'primus');
         }

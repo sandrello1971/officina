@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -40,7 +41,7 @@ class StudentController extends Controller
             'email' => 'required|email|unique:students,email',
             'phone' => 'nullable|string|max:50',
             'company' => 'nullable|string|max:255',
-            'role' => 'nullable|string|max:100',
+            'job_title' => 'nullable|string|max:100',
             'course_ids' => 'nullable|array',
             'course_ids.*' => 'uuid|exists:courses,id',
         ]);
@@ -53,7 +54,7 @@ class StudentController extends Controller
             'password' => $tempPassword,
             'phone' => $data['phone'] ?? null,
             'company' => $data['company'] ?? null,
-            'role' => $data['role'] ?? null,
+            'job_title' => $data['job_title'] ?? null,
             'is_active' => true,
             'must_change_password' => true,
         ]);
@@ -97,7 +98,7 @@ class StudentController extends Controller
             'email' => 'required|email|unique:students,email,' . $student->id,
             'phone' => 'nullable|string|max:50',
             'company' => 'nullable|string|max:255',
-            'role' => 'nullable|string|max:100',
+            'job_title' => 'nullable|string|max:100',
             'is_active' => 'sometimes|boolean',
         ]);
 
@@ -158,5 +159,51 @@ class StudentController extends Controller
         } catch (\Throwable $e) {
             return back()->withErrors(['email' => 'Invio fallito: ' . $e->getMessage()]);
         }
+    }
+
+    public function updateSystemRole(Request $request, Student $student)
+    {
+        $validRoles = array_keys(Student::SYSTEM_ROLES);
+
+        $data = $request->validate([
+            'role' => 'nullable|in:' . implode(',', $validRoles),
+            'auto_enroll_all_courses' => 'sometimes|boolean',
+        ]);
+
+        $newRole = empty($data['role']) ? null : $data['role'];
+        $newAutoEnroll = $request->boolean('auto_enroll_all_courses');
+
+        $currentAdminEmail = session('admin_email');
+        if ($currentAdminEmail && $student->email === $currentAdminEmail
+            && $student->role === 'admin' && $newRole !== 'admin') {
+            return back()->with('error',
+                'Non puoi declassare te stesso (anti-lockout). Chiedi a un altro admin.');
+        }
+
+        $oldRole = $student->role;
+        $oldAutoEnroll = $student->auto_enroll_all_courses;
+
+        $student->update([
+            'role' => $newRole,
+            'auto_enroll_all_courses' => $newAutoEnroll,
+        ]);
+
+        Log::info('Admin updated student system role', [
+            'admin' => $currentAdminEmail ?? 'unknown',
+            'student' => $student->email,
+            'role_change' => "$oldRole → $newRole",
+            'auto_enroll_change' => ($oldAutoEnroll ? 'true' : 'false') . ' → '
+                . ($newAutoEnroll ? 'true' : 'false'),
+        ]);
+
+        $msg = 'Permessi aggiornati.';
+        if ($oldRole !== $newRole) {
+            $oldLabel = $oldRole ? Student::SYSTEM_ROLES[$oldRole] : 'Studente';
+            $newLabel = $newRole ? Student::SYSTEM_ROLES[$newRole] : 'Studente';
+            $msg = "Ruolo cambiato: $oldLabel → $newLabel.";
+        }
+
+        return redirect()->route('admin.students.show', $student)
+            ->with('success', $msg);
     }
 }

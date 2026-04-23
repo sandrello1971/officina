@@ -8,11 +8,33 @@
     {{-- Info studente --}}
     <div class="p-5 rounded-xl" style="background:white;border:1px solid #C8D0D0">
         <h3 class="font-bold mb-4">Informazioni</h3>
+
+        @if($student->role || $student->auto_enroll_all_courses)
+        <div style="margin-bottom:14px;">
+            @if($student->role)
+            <span style="display:inline-block; padding:4px 12px; border-radius:14px;
+                         font-size:0.7rem; font-weight:700;
+                         background:{{ $student->role === 'admin' ? 'rgba(197,42,42,0.15)' : 'rgba(226,138,83,0.15)' }};
+                         color:{{ $student->role === 'admin' ? '#C52A2A' : '#D87840' }};">
+                {{ \App\Models\Student::SYSTEM_ROLES[$student->role] ?? $student->role }}
+            </span>
+            @endif
+
+            @if($student->auto_enroll_all_courses)
+            <span style="display:inline-block; padding:4px 10px; border-radius:14px;
+                         font-size:0.7rem; font-weight:600; margin-left:6px;
+                         background:rgba(85,177,174,0.15); color:#3A8C89;">
+                🔓 Auto-iscritto a tutti i corsi
+            </span>
+            @endif
+        </div>
+        @endif
+
         <dl class="text-sm space-y-2">
             <div><dt class="text-xs font-bold" style="color:#8A9696">EMAIL</dt><dd>{{ $student->email }}</dd></div>
             <div><dt class="text-xs font-bold" style="color:#8A9696">TELEFONO</dt><dd>{{ $student->phone ?? '—' }}</dd></div>
             <div><dt class="text-xs font-bold" style="color:#8A9696">AZIENDA</dt><dd>{{ $student->company ?? '—' }}</dd></div>
-            <div><dt class="text-xs font-bold" style="color:#8A9696">RUOLO</dt><dd>{{ $student->role ?? '—' }}</dd></div>
+            <div><dt class="text-xs font-bold" style="color:#8A9696">RUOLO AZIENDALE</dt><dd>{{ $student->job_title ?? '—' }}</dd></div>
             <div><dt class="text-xs font-bold" style="color:#8A9696">ULTIMO ACCESSO</dt><dd>{{ $student->last_login_at?->format('d/m/Y H:i') ?? 'Mai' }}</dd></div>
             <div><dt class="text-xs font-bold" style="color:#8A9696">STATO</dt><dd>{{ $student->is_active ? 'Attivo' : 'Inattivo' }}</dd></div>
         </dl>

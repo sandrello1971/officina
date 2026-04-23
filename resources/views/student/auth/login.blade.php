@@ -19,11 +19,45 @@
                 <p class="text-sm mt-1" style="color:#8A9696">Area studenti — accesso riservato</p>
             </div>
 
+            @if(session('error'))
+            <div style="padding:10px 14px; background:rgba(226,82,82,0.1);
+                        border:1px solid rgba(226,82,82,0.4); border-radius:8px;
+                        color:#fca5a5; font-size:0.85rem; margin-bottom:16px;">
+                {{ session('error') }}
+            </div>
+            @endif
+
             @if($errors->any())
             <div class="mb-4 p-3 rounded-lg text-sm" style="background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.3);color:#fca5a5">
                 @foreach($errors->all() as $err)<div>{{ $err }}</div>@endforeach
             </div>
             @endif
+
+            <a href="{{ route('student.microsoft.redirect') }}"
+               style="display:flex; align-items:center; justify-content:center;
+                      gap:10px; width:100%; padding:12px 16px; background:white;
+                      border:1px solid #C8D0D0; border-radius:8px; color:#1A1F1F;
+                      text-decoration:none; font-weight:600; margin-bottom:16px;
+                      transition:all 0.2s;"
+               onmouseover="this.style.borderColor='#55B1AE'"
+               onmouseout="this.style.borderColor='#C8D0D0'">
+                <svg width="20" height="20" viewBox="0 0 23 23" style="flex-shrink:0;">
+                    <rect width="10" height="10" fill="#f25022"/>
+                    <rect x="12" width="10" height="10" fill="#7fba00"/>
+                    <rect y="12" width="10" height="10" fill="#00a4ef"/>
+                    <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+                </svg>
+                <span>Accedi con Microsoft</span>
+            </a>
+
+            <div style="text-align:center; color:#8A9696; font-size:0.8rem;
+                        margin:16px 0 16px 0; position:relative;">
+                <span style="background:#1A1F1F; padding:0 12px; position:relative; z-index:1;">
+                    oppure con email
+                </span>
+                <div style="position:absolute; top:50%; left:0; right:0;
+                            height:1px; background:rgba(232,237,237,0.15); z-index:0;"></div>
+            </div>
 
             @if(request('demo'))
             <div style="margin-bottom:20px; padding:14px 16px; background:rgba(226,138,83,0.15);

@@ -21,7 +21,9 @@ class ChatController extends Controller
         abort_unless($studentId, 403);
 
         $student = Student::findOrFail($studentId);
-        $enrolled = $student->courses()->where('courses.id', $course->id)->exists();
+        $enrolled = $student->auto_enroll_all_courses
+            ? $course->is_active
+            : $student->courses()->where('courses.id', $course->id)->exists();
         abort_unless($enrolled, 403);
 
         $conversation = ChatConversation::firstOrCreate(
@@ -50,11 +52,26 @@ class ChatController extends Controller
         $student = Student::with(['courses' => fn($q) => $q->wherePivot('is_active', true)])
             ->findOrFail($studentId);
 
-        $courseIds = $student->courses->pluck('id')->all();
-        $courseNames = $student->courses->pluck('name')->all();
+        $isInstructor = ($student->role === 'instructor');
+
+        if ($isInstructor) {
+            $allCourses = Course::where('is_active', true)->get();
+            $courseIds = $allCourses->pluck('id')->all();
+            $courseNames = $allCourses->pluck('name')->all();
+        } else {
+            $courseIds = $student->courses->pluck('id')->all();
+            $courseNames = $student->courses->pluck('name')->all();
+        }
+
         $mode = $data['mode'] ?? 'summary';
 
-        $docs = $this->rag->searchInCourses($data['question'], $courseIds, 4, true);
+        $docs = $this->rag->searchForUser(
+            $data['question'],
+            $courseIds,
+            $isInstructor,
+            $isInstructor ? 6 : 4
+        );
+
         $videoDocs = [];
         if (!empty($courseIds)) {
             foreach ($courseIds as $cid) {
@@ -84,7 +101,7 @@ class ChatController extends Controller
             }
         }
 
-        $reply = $this->callClaudeForMinerva($data['question'], $data['history'] ?? [], $context, $courseNames, $mode);
+        $reply = $this->callClaudeForMinerva($data['question'], $data['history'] ?? [], $context, $courseNames, $mode, $isInstructor);
 
         return response()->json([
             'answer' => $reply['content'],
@@ -93,8 +110,14 @@ class ChatController extends Controller
         ]);
     }
 
-    private function callClaudeForMinerva(string $question, array $history, string $context, array $courseNames, string $mode): array
-    {
+    private function callClaudeForMinerva(
+        string $question,
+        array $history,
+        string $context,
+        array $courseNames,
+        string $mode,
+        bool $isInstructor = false
+    ): array {
         $coursesList = empty($courseNames) ? 'nessun corso attivo' : implode(', ', $courseNames);
         $isSingleCourse = count($courseNames) === 1;
 
@@ -102,14 +125,29 @@ class ChatController extends Controller
             ? "Rispondi in modo approfondito e dettagliato, con esempi e sezioni. Usa markdown: ## per titoli di sezione, **grassetto**, liste, citazioni >."
             : "Rispondi in 2-3 frasi brevi, massimo 60 parole complessive. Una risposta diretta, senza liste, senza titoli, senza esempi multipli. Lo studente potrà chiedere l'approfondimento con un tasto dedicato. Usa al massimo un **grassetto** sul concetto centrale. NON usare bullet, numerazioni, markdown di struttura. Vai dritto al punto.";
 
-        $scopeRule = $isSingleCourse
-            ? "Lo studente ha accesso SOLO al corso: {$coursesList}. Rispondi basandoti sui contenuti di quel corso. Se la domanda tocca argomenti che vengono approfonditi in ALTRI corsi di Atheneum (non iscritti), accenna brevemente al fatto che 'altri corsi di Atheneum approfondiscono questo tema' — senza nominarli esplicitamente — e offri la risposta più utile possibile sul suo corso."
-            : "Lo studente ha accesso ai corsi: {$coursesList}. Rispondi sui contenuti di tutti questi corsi, e anche sul contesto della piattaforma Atheneum Noscite.";
+        $scopeRule = $isInstructor
+            ? "Stai rispondendo a un formatore. Il formatore ha accesso a tutti i corsi di Atheneum: {$coursesList}."
+            : ($isSingleCourse
+                ? "Lo studente ha accesso SOLO al corso: {$coursesList}. Rispondi basandoti sui contenuti di quel corso. Se la domanda tocca argomenti che vengono approfonditi in ALTRI corsi di Atheneum (non iscritti), accenna brevemente al fatto che 'altri corsi di Atheneum approfondiscono questo tema' — senza nominarli esplicitamente — e offri la risposta più utile possibile sul suo corso."
+                : "Lo studente ha accesso ai corsi: {$coursesList}. Rispondi sui contenuti di tutti questi corsi, e anche sul contesto della piattaforma Atheneum Noscite.");
+
+        $rolePrompt = $isInstructor
+            ? "IMPORTANTE: stai rispondendo a un FORMATORE di Atheneum Noscite, non a uno studente. Il formatore usa queste risposte per preparare lezioni e gestire l'aula. Quando rispondi:\n"
+              . "- Fornisci la risposta come la daresti a uno studente, MA poi aggiungi una sezione finale intitolata '## 🎓 Note per il formatore' con:\n"
+              . "  • suggerimenti didattici su come spiegare il concetto in aula\n"
+              . "  • errori comuni degli studenti da anticipare\n"
+              . "  • analogie o esempi aggiuntivi utili per chiarire\n"
+              . "  • eventuali collegamenti con altri moduli/corsi\n"
+              . "- Se nei documenti forniti ci sono chunks marcati come 'Manuale Formatore' o simile, USALI soprattutto per la sezione Note formatore.\n"
+              . "- Il formatore ha accesso a tutti i corsi di Atheneum, non limitare lo scope al singolo corso."
+            : "";
 
         $systemPrompt = <<<SYSTEM
 Sei Minerva, l'assistente AI di Atheneum Noscite.
 
 {$scopeRule}
+
+{$rolePrompt}
 
 {$lengthRule}
 

@@ -14,11 +14,12 @@ class DocumentRag extends Model
 
     protected $fillable = [
         'course_id', 'module_id', 'title', 'content',
-        'file_path', 'chunk_index', 'metadata',
+        'file_path', 'chunk_index', 'metadata', 'is_instructor_only',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'is_instructor_only' => 'boolean',
     ];
 
     public function course()

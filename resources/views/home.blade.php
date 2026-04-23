@@ -66,6 +66,147 @@
     </div>
 </section>
 
+<!-- PERCORSO AI -->
+<section id="percorso-ai" style="padding:60px 20px; background:linear-gradient(135deg, #F7F9FC 0%, #E8F5F5 100%);">
+    <div style="max-width:1200px; margin:0 auto;">
+
+        <div style="text-align:center; margin-bottom:40px;">
+            <div style="display:inline-block; padding:6px 16px; background:rgba(226,138,83,0.15);
+                        color:#D87840; border-radius:20px; font-size:0.75rem; font-weight:700;
+                        letter-spacing:1px; margin-bottom:14px;">
+                FORMAZIONE AI PER PMI ITALIANE
+            </div>
+            <h2 style="font-size:2rem; color:#1A1F1F; margin:0 0 12px; font-weight:700; line-height:1.2;">
+                Il Percorso AI di Noscite
+            </h2>
+            <p style="font-size:1rem; color:#5A6464; max-width:600px; margin:0 auto; line-height:1.5;">
+                Tre corsi, tre domande: <em>perché farlo</em>, <em>cosa fare</em>, <em>come farlo</em>.
+            </p>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom:40px;">
+
+            {{-- PRIMUS --}}
+            <a href="{{ url('/primus') }}" style="text-decoration:none; color:inherit;">
+                <div style="background:white; border:2px solid #E8F5F5; border-radius:16px;
+                            padding:28px 22px; transition:all 0.2s; height:100%;
+                            display:flex; flex-direction:column;"
+                     onmouseover="this.style.borderColor='#E28A53'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 20px rgba(226,138,83,0.15)'"
+                     onmouseout="this.style.borderColor='#E8F5F5'; this.style.transform=''; this.style.boxShadow=''">
+
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+                        <div style="font-size:2.5rem; font-weight:900; color:#E28A53; line-height:1;">01</div>
+                        <div style="font-size:0.7rem; color:#8A9696; font-style:italic;">perché farlo</div>
+                    </div>
+
+                    <h3 style="font-size:1.4rem; color:#1A1F1F; margin:0 0 8px; font-weight:700; letter-spacing:1px;">PRIMUS</h3>
+                    <p style="font-size:0.85rem; color:#5A6464; margin:0 0 4px; font-style:italic;">
+                        Il risveglio consapevole
+                    </p>
+                    <p style="font-size:0.9rem; color:#D87840; font-weight:700; margin:0 0 16px;">
+                        4 ore · Workshop esperienziale
+                    </p>
+
+                    <div style="flex:1;">
+                        <p style="font-size:0.85rem; color:#5A6464; line-height:1.5; margin:0 0 16px;">
+                            Scopri quanto tempo e quanti soldi oggi si perdono senza l'AI, e dove può fare davvero la differenza.
+                        </p>
+                    </div>
+
+                    <div style="font-size:0.85rem; color:#3A8C89; font-weight:600;">
+                        Scopri il corso →
+                    </div>
+                </div>
+            </a>
+
+            {{-- CONSILIUM --}}
+            <a href="{{ url('/consilium') }}" style="text-decoration:none; color:inherit;">
+                <div style="background:white; border:2px solid #E8F5F5; border-radius:16px;
+                            padding:28px 22px; transition:all 0.2s; height:100%;
+                            display:flex; flex-direction:column;"
+                     onmouseover="this.style.borderColor='#E28A53'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 20px rgba(226,138,83,0.15)'"
+                     onmouseout="this.style.borderColor='#E8F5F5'; this.style.transform=''; this.style.boxShadow=''">
+
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+                        <div style="font-size:2.5rem; font-weight:900; color:#E28A53; line-height:1;">02</div>
+                        <div style="font-size:0.7rem; color:#8A9696; font-style:italic;">cosa fare</div>
+                    </div>
+
+                    <h3 style="font-size:1.4rem; color:#1A1F1F; margin:0 0 8px; font-weight:700; letter-spacing:1px;">CONSILIUM</h3>
+                    <p style="font-size:0.85rem; color:#5A6464; margin:0 0 4px; font-style:italic;">
+                        La bussola strategica
+                    </p>
+                    <p style="font-size:0.9rem; color:#D87840; font-weight:700; margin:0 0 16px;">
+                        7 ore · Laboratorio direzionale
+                    </p>
+
+                    <div style="flex:1;">
+                        <p style="font-size:0.85rem; color:#5A6464; line-height:1.5; margin:0 0 16px;">
+                            La direzione decide dove usare l'AI. Esce con tre progetti scelti, un piano a 90 giorni e regole d'uso.
+                        </p>
+                    </div>
+
+                    <div style="font-size:0.85rem; color:#3A8C89; font-weight:600;">
+                        Scopri il corso →
+                    </div>
+                </div>
+            </a>
+
+            {{-- INITIUM --}}
+            <a href="{{ url('/initium') }}" style="text-decoration:none; color:inherit;">
+                <div style="background:white; border:2px solid #E8F5F5; border-radius:16px;
+                            padding:28px 22px; transition:all 0.2s; height:100%;
+                            display:flex; flex-direction:column;"
+                     onmouseover="this.style.borderColor='#E28A53'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 20px rgba(226,138,83,0.15)'"
+                     onmouseout="this.style.borderColor='#E8F5F5'; this.style.transform=''; this.style.boxShadow=''">
+
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+                        <div style="font-size:2.5rem; font-weight:900; color:#E28A53; line-height:1;">03</div>
+                        <div style="font-size:0.7rem; color:#8A9696; font-style:italic;">come farlo</div>
+                    </div>
+
+                    <h3 style="font-size:1.4rem; color:#1A1F1F; margin:0 0 8px; font-weight:700; letter-spacing:1px;">INITIUM</h3>
+                    <p style="font-size:0.85rem; color:#5A6464; margin:0 0 4px; font-style:italic;">
+                        Le fondamenta operative
+                    </p>
+                    <p style="font-size:0.9rem; color:#D87840; font-weight:700; margin:0 0 16px;">
+                        20 ore + esame · Certificazione
+                    </p>
+
+                    <div style="flex:1;">
+                        <p style="font-size:0.85rem; color:#5A6464; line-height:1.5; margin:0 0 16px;">
+                            Come si usa davvero l'AI sul lavoro: prompt, strumenti, sicurezza. 70% pratica, 30% teoria.
+                        </p>
+                    </div>
+
+                    <div style="font-size:0.85rem; color:#3A8C89; font-weight:600;">
+                        Scopri il corso →
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        {{-- Trust signal EU AI Act --}}
+        <div style="text-align:center; padding:20px 20px 30px; font-size:0.85rem; color:#5A6464;
+                    border-top:1px solid rgba(138,150,150,0.2); max-width:800px; margin:0 auto;">
+            <strong style="color:#3A8C89;">✓ Conformità EU AI Act</strong> — Reg. UE 2024/1689 Art. 4 (AI literacy).
+            INITIUM è il corso di compliance primaria, CONSILIUM copre l'area direzionale, PRIMUS prepara al percorso.
+        </div>
+
+        {{-- CTA finale --}}
+        <div style="text-align:center; margin-top:20px;">
+            <a href="{{ url('/contatti') }}?msg={{ urlencode('Vorrei ricevere informazioni sul Percorso AI di Noscite (PRIMUS, CONSILIUM, INITIUM).') }}"
+               style="display:inline-block; padding:14px 32px; background:#E28A53; color:white;
+                      border-radius:10px; text-decoration:none; font-weight:700; font-size:0.95rem;
+                      box-shadow:0 4px 12px rgba(226,138,83,0.25); transition:all 0.2s;"
+               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(226,138,83,0.4)'"
+               onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 12px rgba(226,138,83,0.25)'">
+                📩 Richiedi info sul Percorso AI
+            </a>
+        </div>
+    </div>
+</section>
+
 <!-- 4 CORSI -->
 <section id="corsi" class="py-16 px-4">
     <div class="max-w-4xl mx-auto">
