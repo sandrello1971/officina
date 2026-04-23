@@ -86,6 +86,99 @@
         </div>
         @endif
 
+        @if(isset($instructorManualSections) && $instructorManualSections->isNotEmpty())
+        <div style="background:linear-gradient(135deg, rgba(226,138,83,0.08), rgba(226,138,83,0.12));
+                    border:1px solid rgba(226,138,83,0.3);
+                    border-radius:12px; padding:18px; margin-bottom:20px;">
+
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                <div style="font-size:1.3rem;">🎓</div>
+                <div style="font-weight:700; color:#1A1F1F; font-size:0.95rem;">
+                    Sezioni del Manuale Formatore per questo modulo
+                </div>
+                <div style="margin-left:auto; padding:3px 10px;
+                            background:rgba(226,138,83,0.2); color:#D87840;
+                            border-radius:12px; font-size:0.7rem; font-weight:700;">
+                    SOLO DOCENTI
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                @foreach($instructorManualSections as $section)
+                <div style="background:white; border-radius:8px; padding:14px;">
+                    <div style="font-weight:600; color:#1A1F1F; font-size:0.9rem; margin-bottom:6px;">
+                        {{ $section->title }}
+                    </div>
+                    <div style="color:#5A6464; font-size:0.8rem; line-height:1.5;
+                                max-height:80px; overflow:hidden; position:relative;
+                                margin-bottom:10px;">
+                        {{ mb_substr(strip_tags($section->content_html), 0, 280) }}…
+                    </div>
+                    <a href="{{ route('student.instructor.material.show', [$course->slug, $section->material_id]) }}#{{ $section->anchor }}"
+                       style="display:inline-block; padding:6px 14px; background:#E28A53;
+                              color:white; border-radius:6px; text-decoration:none;
+                              font-size:0.8rem; font-weight:600;">
+                        📖 Apri sezione nel manuale completo
+                    </a>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        @if(isset($instructorNotes) && session('student_id'))
+        @php
+            $loggedStudent = \App\Models\Student::find(session('student_id'));
+        @endphp
+        @if($loggedStudent && $loggedStudent->role === 'instructor')
+        <div style="background:white; border:1px solid #E8F5F5; border-radius:12px; padding:20px; margin:20px 0;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                <div style="font-size:1.3rem;">📓</div>
+                <div style="font-weight:700; color:#1A1F1F; font-size:0.95rem;">
+                    Note formatore per questo modulo ({{ $instructorNotes->count() }})
+                </div>
+                <a href="{{ route('student.knowledge_base.create', ['course_id' => $course->id, 'module_id' => $module->id, 'return_url' => url()->current()]) }}"
+                   style="margin-left:auto; padding:6px 14px; background:#55B1AE; color:white;
+                          border-radius:6px; text-decoration:none; font-size:0.78rem; font-weight:600;">
+                    + Aggiungi nota
+                </a>
+            </div>
+
+            @if($instructorNotes->isEmpty())
+            <div style="color:#8A9696; font-size:0.85rem; padding:20px; text-align:center;">
+                Nessuna nota per questo modulo. Crea la prima.
+            </div>
+            @else
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                @foreach($instructorNotes as $n)
+                <div style="border:1px solid #F0F4F4; border-radius:8px; padding:12px;
+                            border-left:3px solid {{ $n->is_shared ? '#E28A53' : '#55B1AE' }};">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+                        <span style="font-size:1.1rem;">{{ $n->emoji }}</span>
+                        <span style="font-weight:600; color:#1A1F1F; font-size:0.85rem;">{{ $n->title }}</span>
+                        @if($n->is_shared && $n->instructor_id !== session('student_id'))
+                        <span style="margin-left:auto; font-size:0.7rem; color:#D87840;">
+                            🔁 {{ $n->instructor->email }}
+                        </span>
+                        @endif
+                    </div>
+                    <div style="color:#5A6464; font-size:0.8rem; line-height:1.4; padding-left:24px;">
+                        {{ Str::limit(strip_tags($n->body_markdown), 180) }}
+                    </div>
+                    @if($n->instructor_id === session('student_id'))
+                    <a href="{{ route('student.knowledge_base.edit', $n->id) }}"
+                       style="margin-top:6px; display:inline-block; margin-left:24px; color:#3A8C89; font-size:0.75rem; text-decoration:none;">
+                        ✎ modifica
+                    </a>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+            @endif
+        </div>
+        @endif
+        @endif
+
         @if($materials->isNotEmpty())
         <div style="background:white; border-radius:12px; padding:20px; margin-bottom:20px;">
             <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:12px; font-size:0.9rem;">📎 Materiali del modulo</h3>

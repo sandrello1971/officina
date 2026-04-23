@@ -78,6 +78,13 @@
         <a href="#" @click.prevent="$dispatch('minerva-toggle')" class="nav-item">
             <span>&#10022;</span> Assistente AI
         </a>
+
+        @if($sidebarStudent && $sidebarStudent->role === 'instructor')
+        <a href="{{ route('student.knowledge_base.index') }}"
+           class="nav-item {{ request()->routeIs('student.knowledge_base.*') ? 'active' : '' }}">
+            <span>📓</span> Knowledge Base
+        </a>
+        @endif
     </nav>
 
     <div style="position:absolute; bottom:0; left:0; right:0; padding:16px 20px; border-top:1px solid rgba(85,177,174,0.1);">
@@ -197,9 +204,9 @@
     background: white;
     border-radius: 14px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 .minerva-msgs {
     flex: 1 1 0 !important;

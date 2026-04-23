@@ -9,8 +9,14 @@ use Illuminate\Support\Facades\Log;
 
 class RagService
 {
-    public function indexDocument(string $text, string $title, ?string $courseId, ?string $moduleId, ?string $filePath): void
-    {
+    public function indexDocument(
+        string $text,
+        string $title,
+        ?string $courseId,
+        ?string $moduleId,
+        ?string $filePath,
+        bool $isInstructorOnly = false
+    ): void {
         $chunks = $this->chunkText($text, 1000, 200);
 
         foreach ($chunks as $index => $chunk) {
@@ -21,6 +27,7 @@ class RagService
                 'module_id' => $moduleId,
                 'file_path' => $filePath,
                 'chunk_index' => $index,
+                'is_instructor_only' => $isInstructorOnly,
                 'metadata' => [
                     'chunks_total' => count($chunks),
                     'source_title' => $title,
@@ -31,20 +38,72 @@ class RagService
 
     public function search(string $query, ?string $courseId = null, int $limit = 5)
     {
-        return $this->searchInCourses($query, $courseId ? [$courseId] : null, $limit, true);
+        return $this->searchInCourses(
+            $query,
+            $courseId ? [$courseId] : null,
+            $limit,
+            true,   // includePlatform
+            false   // includeInstructorOnly — esclude di default
+        );
     }
 
-    public function searchInCourses(string $query, ?array $courseIds = null, int $limit = 5, bool $includePlatform = true)
-    {
+    public function searchInCourses(
+        string $query,
+        ?array $courseIds = null,
+        int $limit = 5,
+        bool $includePlatform = true,
+        bool $includeInstructorOnly = false
+    ) {
         $terms = array_filter(array_map('trim', preg_split('/\s+/', $query)), fn($t) => mb_strlen($t) >= 3);
         if (empty($terms)) $terms = [$query];
 
         $q = DocumentRag::query();
 
+        if (!$includeInstructorOnly) {
+            $q->where('is_instructor_only', false);
+        }
+
         if (is_array($courseIds)) {
             $q->where(function ($w) use ($courseIds, $includePlatform) {
                 if (!empty($courseIds)) $w->whereIn('course_id', $courseIds);
                 if ($includePlatform) $w->orWhereNull('course_id');
+            });
+        }
+
+        $q->where(function ($w) use ($terms) {
+            foreach ($terms as $term) {
+                $w->orWhere('content', 'ILIKE', '%' . $term . '%')
+                  ->orWhere('title', 'ILIKE', '%' . $term . '%');
+            }
+        });
+
+        return $q->limit($limit)->get();
+    }
+
+    public function searchForUser(
+        string $query,
+        array $courseIds,
+        bool $isInstructor,
+        int $limit = 5
+    ) {
+        $terms = array_filter(
+            array_map('trim', preg_split('/\s+/', $query)),
+            fn($t) => mb_strlen($t) >= 3
+        );
+        if (empty($terms)) $terms = [$query];
+
+        $q = DocumentRag::query();
+
+        if ($isInstructor) {
+            // Instructor: no filter on course_id, no filter on is_instructor_only.
+            // Coerente con auto_enroll_all_courses=true.
+        } else {
+            $q->where('is_instructor_only', false);
+            $q->where(function ($w) use ($courseIds) {
+                if (!empty($courseIds)) {
+                    $w->whereIn('course_id', $courseIds);
+                }
+                $w->orWhereNull('course_id');
             });
         }
 

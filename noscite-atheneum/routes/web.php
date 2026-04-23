@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\MicrosoftAuthController as AdminMicrosoftAuthController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\Student\MicrosoftAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PageController::class, 'index'])->name('home');
@@ -49,6 +51,25 @@ Route::prefix('learn')->name('student.')->group(function () {
 
         Route::post('/notes/{module}', [App\Http\Controllers\Student\NoteController::class, 'save'])->name('notes.save');
 
+        Route::get('/course/{course:slug}/instructor/{material}', [App\Http\Controllers\Student\InstructorMaterialController::class, 'show'])->name('instructor.material.show');
+        Route::get('/course/{course:slug}/instructor/{material}/download', [App\Http\Controllers\Student\InstructorMaterialController::class, 'download'])->name('instructor.material.download');
+
+        Route::prefix('knowledge-base')->name('knowledge_base.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Student\InstructorNoteController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Student\InstructorNoteController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Student\InstructorNoteController::class, 'store'])->name('store');
+
+            Route::post('/upload-image', [App\Http\Controllers\Student\InstructorNoteController::class, 'uploadImage'])->name('upload-image');
+            Route::get('/tag-suggest', [App\Http\Controllers\Student\InstructorNoteController::class, 'tagSuggest'])->name('tag-suggest');
+            Route::get('/modules/{courseId}', [App\Http\Controllers\Student\InstructorNoteController::class, 'modulesByCourse'])->name('modules');
+            Route::get('/sections/{courseId}', [App\Http\Controllers\Student\InstructorNoteController::class, 'sectionsByCourse'])->name('sections');
+
+            Route::get('/{note}/edit', [App\Http\Controllers\Student\InstructorNoteController::class, 'edit'])->name('edit');
+            Route::put('/{note}', [App\Http\Controllers\Student\InstructorNoteController::class, 'update'])->name('update');
+            Route::delete('/{note}', [App\Http\Controllers\Student\InstructorNoteController::class, 'destroy'])->name('destroy');
+            Route::post('/{note}/restore', [App\Http\Controllers\Student\InstructorNoteController::class, 'restore'])->name('restore');
+        });
+
         Route::get('/video/{videoId}/stream', [App\Http\Controllers\Student\VideoController::class, 'stream'])->name('video.stream');
         Route::get('/video/{videoId}/thumbnail', [App\Http\Controllers\Student\VideoController::class, 'thumbnail'])->name('video.thumbnail');
         Route::post('/video/{videoId}/chat', [App\Http\Controllers\Student\VideoController::class, 'chat'])->name('video.chat');
@@ -57,6 +78,22 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/course/{course:slug}/video-search', [App\Http\Controllers\Student\VideoController::class, 'searchInCourse'])->name('video.search.course');
         Route::get('/course/{course:slug}/module/{module}/video-search', [App\Http\Controllers\Student\VideoController::class, 'searchInModule'])->name('video.search.module');
     });
+});
+
+// ===== MICROSOFT ENTRA ID SSO (pubbliche, fuori da student.auth) =====
+Route::prefix('auth/microsoft')->group(function () {
+    Route::get('/', [MicrosoftAuthController::class, 'redirect'])
+        ->name('student.microsoft.redirect');
+    Route::get('/callback', [MicrosoftAuthController::class, 'callback'])
+        ->name('student.microsoft.callback');
+});
+
+// ===== ADMIN MICROSOFT SSO (pubbliche, fuori da admin.auth) =====
+Route::prefix('admin/auth/microsoft')->group(function () {
+    Route::get('/', [AdminMicrosoftAuthController::class, 'redirect'])
+        ->name('admin.microsoft.redirect');
+    Route::get('/callback', [AdminMicrosoftAuthController::class, 'callback'])
+        ->name('admin.microsoft.callback');
 });
 
 // ===== AREA ADMIN ATHENEUM =====
@@ -73,10 +110,25 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::resource('courses.modules', App\Http\Controllers\Admin\ModuleController::class);
     Route::resource('courses.modules.materials', App\Http\Controllers\Admin\MaterialController::class);
 
+    Route::prefix('courses/{course}/instructor-materials')
+        ->name('courses.instructor-materials.')
+        ->group(function () {
+            Route::post('/', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'store'])->name('store');
+            Route::put('/{material}', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'update'])->name('update');
+            Route::post('/{material}/regenerate', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'regenerate'])->name('regenerate');
+            Route::delete('/{material}', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'destroy'])->name('destroy');
+            Route::get('/{material}/sections', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'manageSections'])->name('sections');
+            Route::put('/{material}/sections', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'updateSections'])->name('sections.update');
+            Route::post('/{material}/sections/reset', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'resetSections'])->name('sections.reset');
+        });
+
+    Route::get('knowledge-base', [App\Http\Controllers\Admin\KnowledgeBaseController::class, 'index'])->name('knowledge-base.index');
+
     Route::resource('students', App\Http\Controllers\Admin\StudentController::class);
     Route::post('students/{student}/courses', [App\Http\Controllers\Admin\StudentController::class, 'assignCourse'])->name('students.assign-course');
     Route::delete('students/{student}/courses/{course}', [App\Http\Controllers\Admin\StudentController::class, 'removeCourse'])->name('students.remove-course');
     Route::post('students/{student}/send-credentials', [App\Http\Controllers\Admin\StudentController::class, 'sendCredentials'])->name('students.send-credentials');
+    Route::patch('students/{student}/system-role', [App\Http\Controllers\Admin\StudentController::class, 'updateSystemRole'])->name('students.update-system-role');
 
     Route::resource('quizzes', App\Http\Controllers\Admin\QuizController::class);
     Route::resource('quizzes.questions', App\Http\Controllers\Admin\QuizQuestionController::class);

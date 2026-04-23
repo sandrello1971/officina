@@ -40,6 +40,12 @@ class Module extends Model
         return $this->hasMany(DocumentRag::class);
     }
 
+    public function instructorManualSections()
+    {
+        return $this->hasMany(InstructorManualSection::class, 'module_id')
+            ->orderBy('sort_order');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

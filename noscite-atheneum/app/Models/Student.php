@@ -11,9 +11,16 @@ class Student extends Authenticatable
 {
     use HasFactory, HasUuids, Notifiable;
 
+    public const SYSTEM_ROLES = [
+        'student'    => 'Studente',
+        'instructor' => 'Formatore',
+        'admin'      => 'Amministratore',
+    ];
+
     protected $fillable = [
-        'name', 'email', 'password', 'phone', 'company', 'role',
+        'name', 'email', 'password', 'phone', 'company', 'job_title', 'role',
         'avatar_url', 'is_active', 'is_demo', 'must_change_password',
+        'microsoft_id', 'auto_enroll_all_courses',
     ];
 
     protected $hidden = [
@@ -24,6 +31,7 @@ class Student extends Authenticatable
         'is_active' => 'boolean',
         'is_demo' => 'boolean',
         'must_change_password' => 'boolean',
+        'auto_enroll_all_courses' => 'boolean',
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
         'password' => 'hashed',
@@ -49,5 +57,10 @@ class Student extends Authenticatable
     public function chatConversations()
     {
         return $this->hasMany(ChatConversation::class);
+    }
+
+    public function instructorNotes()
+    {
+        return $this->hasMany(InstructorNote::class, 'instructor_id');
     }
 }

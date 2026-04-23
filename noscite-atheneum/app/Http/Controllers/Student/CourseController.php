@@ -49,10 +49,14 @@ class CourseController extends Controller
         $hasAnyVideo = (bool) $course->video_ai_id
             || $modules->contains(fn($m) => !empty($m->video_ai_id));
 
+        $instructorMaterials = $student->role === 'instructor'
+            ? $course->instructorMaterials
+            : collect();
+
         return view('student.course.show', compact(
             'course', 'modules', 'progressPercent',
             'completedModules', 'totalModules', 'finalQuiz', 'certificationPassed', 'progressByModule',
-            'hasAnyVideo'
+            'hasAnyVideo', 'instructorMaterials'
         ));
     }
 
@@ -74,7 +78,7 @@ class CourseController extends Controller
             }
         }
 
-        $materials = $module->materials()->orderBy('sort_order')->get();
+        $materials = $module->materials()->forStudents()->orderBy('sort_order')->get();
         $prevModule = $course->modules()->where('sort_order', '<', $module->sort_order)->orderBy('sort_order', 'desc')->first();
         $nextModule = $course->modules()->where('sort_order', '>', $module->sort_order)->orderBy('sort_order')->first();
         $canvases = is_array($module->metadata ?? null) ? ($module->metadata['canvases'] ?? []) : [];
@@ -136,10 +140,23 @@ class CourseController extends Controller
             </div>';
         }
 
+        $instructorManualSections = collect();
+        $instructorNotes = collect();
+        if ($student->role === 'instructor') {
+            $instructorManualSections = \App\Models\InstructorManualSection::where('module_id', $module->id)
+                ->with('material')
+                ->orderBy('sort_order')->get();
+
+            $instructorNotes = \App\Models\InstructorNote::visibleTo($student->id)
+                ->where('module_id', $module->id)
+                ->with(['instructor', 'section'])
+                ->latest()->get();
+        }
+
         return view('student.course.module', compact(
             'course', 'module', 'materials', 'quiz', 'finalQuiz',
             'certificationPassed', 'progress', 'prevModule', 'nextModule',
-            'canvases', 'isDemo', 'note'
+            'canvases', 'isDemo', 'note', 'instructorManualSections', 'instructorNotes'
         ));
     }
 
@@ -171,6 +188,11 @@ class CourseController extends Controller
     private function checkAccess(Course $course): Student
     {
         $student = Student::findOrFail(session('student_id'));
+
+        if ($student->auto_enroll_all_courses && $course->is_active) {
+            return $student;
+        }
+
         $enrolled = $student->courses()
             ->where('courses.id', $course->id)
             ->wherePivot('is_active', true)

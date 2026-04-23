@@ -13,6 +13,7 @@
             <tr style="background:#F5F7F7;">
                 <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Studente</th>
                 <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Azienda</th>
+                <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Ruolo sistema</th>
                 <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Corsi</th>
                 <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Ultimo accesso</th>
                 <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Stato</th>
@@ -27,6 +28,15 @@
                     <div style="color:#8A9696; font-size:0.75rem;">{{ $student->email }}</div>
                 </td>
                 <td style="padding:12px 16px; color:#4A5252; font-size:0.875rem;">{{ $student->company ?? '—' }}</td>
+                <td style="padding:12px 16px;">
+                    @if($student->role === 'admin')
+                        <span style="padding:3px 10px; background:rgba(197,42,42,0.15); color:#C52A2A; border-radius:10px; font-size:0.7rem; font-weight:700;">ADMIN</span>
+                    @elseif($student->role === 'instructor')
+                        <span style="padding:3px 10px; background:rgba(226,138,83,0.15); color:#D87840; border-radius:10px; font-size:0.7rem; font-weight:700;">FORMATORE</span>
+                    @else
+                        <span style="color:#8A9696; font-size:0.75rem;">Studente</span>
+                    @endif
+                </td>
                 <td style="padding:12px 16px;">
                     <div style="display:flex; flex-wrap:wrap; gap:4px;">
                         @foreach($student->courses()->wherePivot('is_active',true)->get() as $c)

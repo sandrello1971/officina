@@ -30,8 +30,9 @@
                                style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
                     </div>
                     <div>
-                        <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Ruolo</label>
-                        <input type="text" name="role" value="{{ old('role') }}"
+                        <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Ruolo aziendale</label>
+                        <input type="text" name="job_title" value="{{ old('job_title') }}"
+                               placeholder="es. CEO, Marketing Manager"
                                style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
                     </div>
                 </div>
