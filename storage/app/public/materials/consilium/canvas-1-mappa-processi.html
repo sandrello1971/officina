@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Canvas 1 — Mappa dei processi per funzione | CONSILIUM</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --blue: #1A3F6F; --teal: #3A8C89; --teal-light: #E8F5F5;
+    --accent: #55B1AE; --gray: #6B7280; --dark: #1F2937;
+    --bg: #F7F9FC; --border: #CBD5E1;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--dark); -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 12mm 6mm; }
+@page { size: A3 landscape; margin: 8mm; }
+
+.toolbar { position: sticky; top: 0; background: var(--blue); color: white; padding: 10px 16px; margin: -12mm -6mm 12mm -6mm; display: flex; align-items: center; gap: 14px; font-family: 'Space Grotesk', sans-serif; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 100; }
+.toolbar .title { font-weight: 700; flex: 1; }
+.toolbar .status { font-size: 13px; opacity: 0.85; min-width: 130px; text-align: right; font-weight: 500; }
+.toolbar .status.saved { color: #BEF5C8; }
+.toolbar .status.saving { color: #FDE68A; }
+.toolbar .status.error { color: #FCA5A5; }
+.toolbar .btn { background: var(--accent); color: white; border: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; font-size: 13px; }
+.toolbar .btn:hover { background: var(--teal); }
+@media print {
+    body { background: white; padding: 0; }
+    .toolbar { display: none; }
+}
+
+.page { width: 410mm; min-height: 280mm; margin: 0 auto; padding: 8mm; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+@media print { .page { box-shadow: none; padding: 0; } }
+
+.header { display: flex; align-items: center; justify-content: space-between; background: var(--blue); color: white; padding: 6mm 8mm; border-radius: 3mm; margin-bottom: 5mm; }
+.header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 9mm; font-weight: 700; letter-spacing: 0.3mm; }
+.header h1 span { color: var(--accent); }
+.header .meta { font-size: 3.5mm; text-align: right; line-height: 1.4; opacity: 0.85; }
+.subtitle { font-family: 'Space Grotesk', sans-serif; color: var(--blue); font-size: 4mm; margin-bottom: 4mm; line-height: 1.5; }
+.subtitle strong { color: var(--teal); }
+
+.azienda-row { display: flex; gap: 4mm; margin-bottom: 4mm; }
+.azienda-cell { flex: 1; border: 1px solid var(--border); border-radius: 2mm; padding: 2.5mm 3mm; background: var(--bg); }
+.azienda-cell label { font-size: 2.6mm; color: var(--gray); text-transform: uppercase; letter-spacing: 0.4mm; font-weight: 600; display: block; margin-bottom: 1mm; }
+
+table.matrix { width: 100%; border-collapse: collapse; margin-bottom: 4mm; }
+table.matrix th { background: var(--blue); color: white; padding: 3mm; font-family: 'Space Grotesk', sans-serif; font-size: 3.5mm; text-align: left; border: 0.3mm solid var(--blue); }
+table.matrix th.func { width: 22%; background: var(--teal); }
+table.matrix td { border: 0.3mm solid var(--border); padding: 0; vertical-align: top; }
+table.matrix td.func-cell { background: var(--teal-light); padding: 3mm; font-weight: 600; color: var(--teal); font-family: 'Space Grotesk', sans-serif; font-size: 3.6mm; vertical-align: middle; }
+table.matrix td.func-cell .hint { display: block; color: var(--gray); font-size: 2.6mm; font-weight: 400; margin-top: 1mm; font-family: 'DM Sans', sans-serif; }
+table.matrix td.fillable { padding: 0; background: white; }
+
+textarea.canvas-input {
+    width: 100%; border: none;
+    background: repeating-linear-gradient(to bottom, transparent 0, transparent 5mm, var(--border) 5mm, var(--border) 5.15mm);
+    font-family: 'DM Sans', sans-serif; font-size: 3.2mm; line-height: 5mm;
+    color: var(--dark); resize: vertical; padding: 0 2mm; outline: none; min-height: 28mm;
+}
+textarea.canvas-input:focus { background: rgba(85, 177, 174, 0.08); }
+textarea.canvas-input.h-2 { min-height: 10mm; }
+textarea.canvas-input.h-3 { min-height: 15mm; }
+input.canvas-text {
+    width: 100%; border: none; border-bottom: 0.4mm solid var(--border);
+    background: transparent; font-family: 'DM Sans', sans-serif;
+    font-size: 3.2mm; padding: 1mm 1mm; color: var(--dark); outline: none;
+}
+input.canvas-text:focus { border-bottom-color: var(--accent); background: rgba(85,177,174,0.05); }
+@media print {
+    textarea.canvas-input { background: white !important; }
+    input.canvas-text { border-bottom: 0.3mm solid var(--border) !important; background: white !important; }
+}
+
+.footer { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 4mm; padding-top: 3mm; border-top: 0.3mm solid var(--border); font-size: 2.8mm; color: var(--gray); }
+.footer .observations { flex: 1; margin-right: 6mm; }
+.footer .observations strong { color: var(--blue); display: block; margin-bottom: 1.5mm; font-family: 'Space Grotesk', sans-serif; }
+.brand { font-family: 'Space Grotesk', sans-serif; color: var(--teal); font-weight: 600; text-align: right; line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+    <span class="title">Canvas 1 — Mappa dei processi per funzione</span>
+    <span class="status" id="save-status">In attesa…</span>
+    <button class="btn" onclick="window.print()">🖨 Stampa</button>
+</div>
+
+<div class="page">
+
+    <div class="header">
+        <h1>Canvas <span>1</span> — Mappa dei processi per funzione</h1>
+        <div class="meta">
+            CONSILIUM &middot; Modulo 2<br>
+            Strategia AI per PMI &middot; v2.0
+        </div>
+    </div>
+
+    <div class="subtitle">
+        Mappa le attività principali di ogni funzione aziendale, il tempo settimanale dedicato e le dipendenze da persone specifiche.
+        <strong>Obiettivo:</strong> rendere visibili i processi che oggi consumano tempo e individuare i colli di bottiglia.
+    </div>
+
+    <div class="azienda-row">
+        <div class="azienda-cell">
+            <label>Azienda</label>
+            <input type="text" class="canvas-text" data-field="company_name">
+        </div>
+        <div class="azienda-cell">
+            <label>Settore</label>
+            <input type="text" class="canvas-text" data-field="sector">
+        </div>
+        <div class="azienda-cell">
+            <label>Compilato il</label>
+            <input type="text" class="canvas-text" data-field="compiled_at" placeholder="gg/mm/aaaa">
+        </div>
+        <div class="azienda-cell">
+            <label>Partecipanti</label>
+            <input type="text" class="canvas-text" data-field="participants">
+        </div>
+    </div>
+
+    <table class="matrix">
+        <thead>
+            <tr>
+                <th class="func">Funzione</th>
+                <th>Attività principali</th>
+                <th style="width:18%">Tempo medio settimanale</th>
+                <th style="width:22%">Dipendenza da persone specifiche</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="func-cell">Commerciale<span class="hint">Vendite, gestione clienti, offerte, follow-up</span></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="commercial_activities"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="commercial_time"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="commercial_dependencies"></textarea></td>
+            </tr>
+            <tr>
+                <td class="func-cell">Operation<span class="hint">Produzione, logistica, gestione ordini, qualità</span></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="operation_activities"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="operation_time"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="operation_dependencies"></textarea></td>
+            </tr>
+            <tr>
+                <td class="func-cell">Amministrazione<span class="hint">Fatturazione, contabilità, controllo di gestione</span></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="admin_activities"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="admin_time"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="admin_dependencies"></textarea></td>
+            </tr>
+            <tr>
+                <td class="func-cell">HR<span class="hint">Selezione, onboarding, formazione, organizzazione</span></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="hr_activities"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="hr_time"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="hr_dependencies"></textarea></td>
+            </tr>
+            <tr>
+                <td class="func-cell">Direzione<span class="hint">Strategia, decisioni chiave, relazioni esterne</span></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="direction_activities"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="direction_time"></textarea></td>
+                <td class="fillable"><textarea class="canvas-input" data-field="direction_dependencies"></textarea></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <div class="observations">
+            <strong>Osservazioni del board: dove vediamo tempo sprecato, dipendenze rischiose o connessioni manuali tra funzioni</strong>
+            <textarea class="canvas-input h-3" data-field="board_observations"></textarea>
+        </div>
+        <div class="brand" style="min-width:30mm;">
+            NOSCITE<br>
+            <span style="color:var(--gray); font-weight:400; font-size:2.4mm;">In digitālī nova virtūs</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function() {
+    const status = document.getElementById('save-status');
+    const params = new URLSearchParams(window.location.search);
+    const materialId = params.get('mid');
+    if (!materialId) { status.textContent = '⚠ Apri questo canvas dal corso (manca mid)'; status.className = 'status error'; return; }
+    const fields = document.querySelectorAll('[data-field]');
+    let saveTimer = null;
+    function getCsrf() { const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/); return m ? decodeURIComponent(m[1]) : null; }
+    function setStatus(text, cls) { status.textContent = text; status.className = 'status ' + (cls || ''); }
+    function collectData() { const data = {}; fields.forEach(el => { const k = el.dataset.field; if (el.type === 'checkbox') data[k] = el.checked; else data[k] = el.value; }); return data; }
+    function applyData(data) { fields.forEach(el => { const k = el.dataset.field; if (data[k] === undefined) return; if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k] ?? ''; }); }
+    async function load() { setStatus('Caricamento…'); try { const res = await fetch(`/learn/canvas/${materialId}/data`, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }); if (!res.ok) { setStatus(res.status === 403 || res.status === 401 ? '⚠ Devi essere loggato' : '⚠ Errore caricamento (' + res.status + ')', 'error'); return; } const json = await res.json(); applyData(json.data || {}); setStatus(json.updated_at ? 'Salvato ✓' : 'Pronto', 'saved'); } catch (e) { setStatus('⚠ Errore rete: ' + e.message, 'error'); } }
+    async function save() { setStatus('Salvataggio…', 'saving'); try { const res = await fetch(`/learn/canvas/${materialId}/data`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrf() || '' }, credentials: 'same-origin', body: JSON.stringify({ data: collectData() }) }); if (!res.ok) { setStatus('⚠ Errore salvataggio (' + res.status + ')', 'error'); return; } const json = await res.json(); setStatus(json.demo ? 'Demo — non salvato' : 'Salvato ✓', json.demo ? 'saving' : 'saved'); } catch (e) { setStatus('⚠ Errore rete: ' + e.message, 'error'); } }
+    function debouncedSave() { clearTimeout(saveTimer); setStatus('Modifica…', 'saving'); saveTimer = setTimeout(save, 700); }
+    fields.forEach(el => { el.addEventListener('input', debouncedSave); el.addEventListener('change', debouncedSave); });
+    load();
+})();
+</script>
+
+</body>
+</html>

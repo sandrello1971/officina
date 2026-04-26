@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Scheda Make vs Buy — Agenti AI e MCP</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root{--blue:#1A3F6F;--accent:#2E7DC9;--light:#D5E8F7;--gray:#6B7280;--dark:#1F2937;--border:#CBD5E1;--bg:#F7F9FC;--green:#059669;--green-bg:#D1FAE5;--amber:#B45309;--amber-bg:#FEF3C7;--red:#991B1B;--red-bg:#FEE2E2;--purple:#5B21B6;--purple-bg:#EDE9FE;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:white;color:var(--dark);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{size:A4 portrait;margin:8mm;}
+  .page{width:190mm;min-height:274mm;margin:0 auto;}
+
+  .header{background:var(--blue);color:white;padding:5mm 6mm;border-radius:2mm;margin-bottom:4mm;display:flex;justify-content:space-between;align-items:center;}
+  .h-tag{font-family:'Space Grotesk',sans-serif;font-size:7pt;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:1.5mm;}
+  .h-title{font-family:'Space Grotesk',sans-serif;font-size:16pt;font-weight:700;}
+  .h-title em{color:#7EC8F4;font-style:normal;}
+  .h-badge{background:rgba(255,255,255,.15);border-radius:1.5mm;padding:2mm 4mm;text-align:center;}
+  .h-badge .b-num{font-family:'Space Grotesk',sans-serif;font-size:18pt;font-weight:700;color:#7EC8F4;}
+  .h-badge .b-lab{font-size:7pt;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px;}
+
+  /* MAIN 3-COL TABLE */
+  .mvb-table{width:100%;border-collapse:collapse;margin-bottom:4mm;border-radius:2mm;overflow:hidden;border:1.5px solid var(--border);}
+  .mvb-table th{padding:3mm 3.5mm;font-family:'Space Grotesk',sans-serif;font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:white;text-align:left;}
+  .col-dim{background:#374151;width:25%;}
+  .col-build{background:#1D4ED8;width:25%;}
+  .col-buy{background:#0369A1;width:25%;}
+  .col-hybrid{background:#0E7C5E;width:25%;}
+  .mvb-table td{padding:2.5mm 3.5mm;font-size:8.5pt;color:var(--dark);vertical-align:top;border-bottom:1px solid var(--border);}
+  .mvb-table tr:last-child td{border-bottom:none;}
+  .mvb-table tr:nth-child(even) td{background:var(--bg);}
+  .mvb-table tr:nth-child(odd) td{background:white;}
+  .dim-label{font-family:'Space Grotesk',sans-serif;font-size:8pt;font-weight:700;color:var(--dark);}
+  .dim-q{font-size:7.5pt;color:var(--gray);font-style:italic;margin-top:.5mm;}
+  .pro{color:var(--green);font-weight:500;}
+  .con{color:var(--red);font-weight:500;}
+
+  /* DECISION GUIDE */
+  .dec-section{background:var(--bg);border-radius:2mm;padding:4mm;margin-bottom:4mm;border:1.5px solid var(--border);}
+  .dec-title{font-family:'Space Grotesk',sans-serif;font-size:9pt;font-weight:700;color:var(--blue);margin-bottom:3mm;display:flex;align-items:center;gap:2mm;}
+  .dec-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2.5mm;}
+  .dec-card{border-radius:1.5mm;padding:3mm;border:1.5px solid;}
+  .dec-card.build{background:#EFF6FF;border-color:#BFDBFE;}
+  .dec-card.buy{background:#F0F9FF;border-color:#BAE6FD;}
+  .dec-card.hybrid{background:#F0FDF4;border-color:#A7F3D0;}
+  .dec-head{font-family:'Space Grotesk',sans-serif;font-size:8.5pt;font-weight:700;margin-bottom:2mm;}
+  .dec-card.build .dec-head{color:#1D4ED8;}
+  .dec-card.buy .dec-head{color:#0369A1;}
+  .dec-card.hybrid .dec-head{color:var(--green);}
+  .dec-when{font-size:7.5pt;color:var(--dark);line-height:1.3;margin-bottom:1.5mm;}
+  .dec-cond{font-size:7pt;color:var(--gray);font-style:italic;}
+
+  /* VENDOR CHECKLIST */
+  .vendor-section{margin-bottom:4mm;}
+  .vsec-title{font-family:'Space Grotesk',sans-serif;font-size:9pt;font-weight:700;color:var(--blue);margin-bottom:2.5mm;text-transform:uppercase;letter-spacing:.5px;}
+  .vendor-grid{display:grid;grid-template-columns:1fr 1fr;gap:2mm;}
+  .v-item{display:flex;align-items:flex-start;gap:2mm;padding:2mm;background:var(--bg);border-radius:1.5mm;border:1px solid var(--border);}
+  .v-num{font-family:'Space Grotesk',sans-serif;font-size:7pt;font-weight:700;color:white;background:var(--accent);width:5mm;height:5mm;border-radius:.5mm;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .v-text{font-size:7.5pt;color:var(--dark);line-height:1.3;}
+  .v-text strong{color:var(--blue);}
+
+  /* MY DECISION */
+  .my-dec{background:var(--light);border-radius:2mm;padding:3.5mm;margin-bottom:4mm;border:1.5px solid var(--accent);}
+  .my-dec-title{font-family:'Space Grotesk',sans-serif;font-size:9pt;font-weight:700;color:var(--blue);margin-bottom:2.5mm;}
+  .my-dec-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2.5mm;margin-bottom:2.5mm;}
+  .my-field{display:flex;flex-direction:column;gap:.5mm;}
+  .my-label{font-size:7pt;font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;}
+  .my-line{border-bottom:1px dashed #93C5FD;min-height:6mm;}
+
+  .footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:2.5mm;}
+  .footer-brand{font-family:'Space Grotesk',sans-serif;font-size:8pt;font-weight:700;color:var(--blue);}
+  .footer-brand span{font-weight:400;color:var(--gray);font-size:7pt;margin-left:1.5mm;}
+  @media print{body{background:white;}.page{margin:0;padding:0;width:100%;}}
+</style>
+</head>
+<body><div class="page">
+
+  <div class="header">
+    <div>
+      <div class="h-tag">Corso Agenti AI e MCP — Livello 2 · Blocco D</div>
+      <div class="h-title">Framework <em>Make vs Buy</em> per Agenti AI</div>
+    </div>
+    <div class="h-badge">
+      <div class="b-num">3</div>
+      <div class="b-lab">assi decisionali</div>
+    </div>
+  </div>
+
+  <!-- MAIN TABLE -->
+  <table class="mvb-table">
+    <thead>
+      <tr>
+        <th class="col-dim">Dimensione</th>
+        <th class="col-build">🔨 Build (costruisci)</th>
+        <th class="col-buy">🛒 Buy (acquista)</th>
+        <th class="col-hybrid">⚡ Hybrid (ibrido)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><div class="dim-label">💰 Costo totale (TCO)</div><div class="dim-q">Quanto costa davvero nei 24 mesi?</div></td>
+        <td><span class="pro">+ Nessun canone ricorrente</span><br><span class="con">– Dev cost elevato (€15-50K+)</span><br><span class="con">– Manutenzione interna</span></td>
+        <td><span class="pro">+ Costi prevedibili (SaaS)</span><br><span class="pro">+ Time-to-market rapido</span><br><span class="con">– Canone mensile/utente</span></td>
+        <td><span class="pro">+ Bilanciamento flessibile</span><br><span class="pro">+ Costi core + sviluppo custom</span><br><span class="con">– Gestione doppio vendor</span></td>
+      </tr>
+      <tr>
+        <td><div class="dim-label">⏱️ Tempo al go-live</div><div class="dim-q">Quando è operativo?</div></td>
+        <td><span class="con">– 3-9 mesi (sviluppo + test)</span><br><span class="pro">+ Personalizzazione totale</span></td>
+        <td><span class="pro">+ 1-6 settimane</span><br><span class="con">– Customizzazione limitata</span></td>
+        <td><span class="pro">+ 6-12 settimane (core)</span><br><span class="con">– Custom +4-8 settimane</span></td>
+      </tr>
+      <tr>
+        <td><div class="dim-label">🔒 Rischio lock-in</div><div class="dim-q">Quanto sei vincolato?</div></td>
+        <td><span class="pro">+ Piena ownership del codice</span><br><span class="pro">+ Zero dipendenza vendor</span><br><span class="con">– Dipendi dalle tue risorse</span></td>
+        <td><span class="con">– Alto: cambio vendor costoso</span><br><span class="con">– Dati nel cloud vendor</span><br><span class="pro">+ SLA garantiti</span></td>
+        <td><span class="pro">+ Dati critici in house</span><br><span class="pro">+ Funzioni standard su SaaS</span><br><span class="con">– Architettura più complessa</span></td>
+      </tr>
+      <tr>
+        <td><div class="dim-label">🧠 Competenze richieste</div><div class="dim-q">Cosa devi avere in casa?</div></td>
+        <td><span class="con">– Dev Python/JS + AI/MCP</span><br><span class="con">– DevOps per il deploy</span><br><span class="con">– Manutenzione continua</span></td>
+        <td><span class="pro">+ Solo configurazione</span><br><span class="pro">+ Formazione rapida team</span><br><span class="con">– Dipendi dal supporto vendor</span></td>
+        <td><span class="pro">+ Dev solo per il custom</span><br><span class="pro">+ Vendor per il core</span><br><span class="con">– Integrazione più complessa</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- DECISION GUIDE -->
+  <div class="dec-section">
+    <div class="dec-title">🧭 Quando scegliere quale opzione</div>
+    <div class="dec-grid">
+      <div class="dec-card build">
+        <div class="dec-head">🔨 Scegli BUILD se...</div>
+        <div class="dec-when">Hai un processo molto specifico senza equivalenti sul mercato, hai risorse IT interne, il vantaggio competitivo dipende dall'IP del codice, o hai requisiti di sicurezza/compliance che vietano dati in cloud terzi.</div>
+        <div class="dec-cond">Es: banca, sanità, industria difesa</div>
+      </div>
+      <div class="dec-card buy">
+        <div class="dec-head">🛒 Scegli BUY se...</div>
+        <div class="dec-when">Il tuo caso d'uso è standard (classificazione email, summary, CRM enrichment), vuoi results in poche settimane, il team IT è piccolo, e il processo non è un vantaggio competitivo differenziante.</div>
+        <div class="dec-cond">Es: PMI, studio professionale, retail</div>
+      </div>
+      <div class="dec-card hybrid">
+        <div class="dec-head">⚡ Scegli HYBRID se...</div>
+        <div class="dec-when">Hai un core standard + logiche custom di business, vuoi data sovereignty su dati sensibili ma non su tutto, o vuoi partire rapido (buy) ed evolvere verso build nel tempo.</div>
+        <div class="dec-cond">Es: agenzia viaggi, manifattura, PA</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VENDOR CHECKLIST -->
+  <div class="vendor-section">
+    <div class="vsec-title">✅ 8 criteri per valutare un partner / vendor MCP</div>
+    <div class="vendor-grid">
+      <div class="v-item"><div class="v-num">1</div><div class="v-text"><strong>Esperienza MCP reale:</strong> Ha MCP server già in produzione? Chiedi demo live, non slide.</div></div>
+      <div class="v-item"><div class="v-num">2</div><div class="v-text"><strong>Trasparenza sui costi:</strong> TCO a 24 mesi documentato. Attenzione ai costi variabili (API usage).</div></div>
+      <div class="v-item"><div class="v-num">3</div><div class="v-text"><strong>Data residency:</strong> Dove vivono i tuoi dati? EU? On-premise? Richiedi contratto GDPR.</div></div>
+      <div class="v-item"><div class="v-num">4</div><div class="v-text"><strong>Supporto post go-live:</strong> Chi mantiene il sistema? SLA definiti? Costo della manutenzione?</div></div>
+      <div class="v-item"><div class="v-num">5</div><div class="v-text"><strong>Referenze settoriali:</strong> Clienti simili al tuo? In quale settore? Puoi parlare con loro?</div></div>
+      <div class="v-item"><div class="v-num">6</div><div class="v-text"><strong>Exit strategy:</strong> Se cambi vendor, i dati e le configurazioni sono esportabili? In quale formato?</div></div>
+      <div class="v-item"><div class="v-num">7</div><div class="v-text"><strong>Formazione inclusa:</strong> Il team viene formato? Quante ore? Materiali in italiano?</div></div>
+      <div class="v-item"><div class="v-num">8</div><div class="v-text"><strong>Human-in-the-loop:</strong> Il sistema permette supervisione umana granulare? È configurabile senza dev?</div></div>
+    </div>
+  </div>
+
+  <!-- MY DECISION -->
+  <div class="my-dec">
+    <div class="my-dec-title">📝 La mia decisione per il processo: ___________________________</div>
+    <div class="my-dec-row">
+      <div class="my-field"><span class="my-label">Scelta (Build/Buy/Hybrid)</span><div class="my-line"></div></div>
+      <div class="my-field"><span class="my-label">Budget max</span><div class="my-line"></div></div>
+      <div class="my-field"><span class="my-label">Timeline target</span><div class="my-line"></div></div>
+    </div>
+    <div class="my-field"><span class="my-label">Motivazione principale della scelta</span><div class="my-line"></div><div class="my-line"></div></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">NOSCITE <span>S.r.l.s. · Livello 2 Blocco D · noscite.it</span></div>
+    <div style="font-size:6.5pt;color:var(--gray);font-style:italic;">in digitali nova virtus</div>
+  </div>
+
+</div></body>
+</html>

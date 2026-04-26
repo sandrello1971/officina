@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Canvas 3 — Matrice impatto/fattibilità | CONSILIUM</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root { --blue: #1A3F6F; --teal: #3A8C89; --teal-light: #E8F5F5; --accent: #55B1AE; --gray: #6B7280; --dark: #1F2937; --bg: #F7F9FC; --border: #CBD5E1; --green: #0E7C5E; --green-light: #D1FAE5; --amber: #92400E; --amber-light: #FEF3C7; --red: #991B1B; --red-light: #FEE2E2; --purple: #5B21B6; --purple-light: #EDE9FE; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--dark); -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 12mm 6mm; }
+@page { size: A3 landscape; margin: 8mm; }
+.toolbar { position: sticky; top: 0; background: var(--blue); color: white; padding: 10px 16px; margin: -12mm -6mm 12mm -6mm; display: flex; align-items: center; gap: 14px; font-family: 'Space Grotesk', sans-serif; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 100; }
+.toolbar .title { font-weight: 700; flex: 1; }
+.toolbar .status { font-size: 13px; opacity: 0.85; min-width: 130px; text-align: right; font-weight: 500; }
+.toolbar .status.saved { color: #BEF5C8; }
+.toolbar .status.saving { color: #FDE68A; }
+.toolbar .status.error { color: #FCA5A5; }
+.toolbar .btn { background: var(--accent); color: white; border: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; font-size: 13px; }
+.toolbar .btn:hover { background: var(--teal); }
+@media print { body { background: white; padding: 0; } .toolbar { display: none; } }
+.page { width: 410mm; min-height: 280mm; margin: 0 auto; padding: 8mm; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+@media print { .page { box-shadow: none; padding: 0; } }
+.header { display: flex; align-items: center; justify-content: space-between; background: var(--blue); color: white; padding: 6mm 8mm; border-radius: 3mm; margin-bottom: 5mm; }
+.header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 9mm; font-weight: 700; }
+.header h1 span { color: var(--accent); }
+.header .meta { font-size: 3.5mm; text-align: right; line-height: 1.4; opacity: 0.85; }
+.subtitle { font-family: 'Space Grotesk', sans-serif; color: var(--blue); font-size: 4mm; margin-bottom: 5mm; line-height: 1.5; }
+.subtitle strong { color: var(--teal); }
+
+.matrix-container { display: grid; grid-template-columns: 8mm 1fr 1fr; grid-template-rows: 1fr 1fr 8mm; gap: 2mm; height: 195mm; margin-bottom: 5mm; }
+.y-label { grid-column: 1; grid-row: 1 / 3; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--blue); font-size: 4mm; letter-spacing: 0.5mm; text-transform: uppercase; align-self: center; justify-self: center; }
+.x-label { grid-column: 2 / 4; grid-row: 3; text-align: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--blue); font-size: 4mm; letter-spacing: 0.5mm; text-transform: uppercase; align-self: center; }
+.quadrant { border: 0.4mm solid var(--border); border-radius: 2mm; padding: 4mm; position: relative; display: flex; flex-direction: column; }
+.q-tag { position: absolute; top: 4mm; right: 4mm; font-family: 'Space Grotesk', sans-serif; font-size: 2.8mm; padding: 1mm 3mm; border-radius: 1mm; text-transform: uppercase; letter-spacing: 0.4mm; font-weight: 700; }
+.q-title { font-family: 'Space Grotesk', sans-serif; font-size: 5mm; font-weight: 700; margin-bottom: 1.5mm; line-height: 1.2; }
+.q-desc { font-size: 3mm; color: var(--gray); margin-bottom: 3mm; line-height: 1.4; }
+.q-area { flex: 1; border-top: 0.3mm dashed var(--border); margin-top: 2mm; padding-top: 2mm; min-height: 50mm; display: flex; }
+.q-area textarea { flex: 1; }
+.q-tl { background: var(--green-light); border-color: var(--green); }
+.q-tl .q-tag { background: var(--green); color: white; }
+.q-tl .q-title { color: var(--green); }
+.q-tr { background: var(--purple-light); border-color: var(--purple); }
+.q-tr .q-tag { background: var(--purple); color: white; }
+.q-tr .q-title { color: var(--purple); }
+.q-bl { background: var(--amber-light); border-color: var(--amber); }
+.q-bl .q-tag { background: var(--amber); color: white; }
+.q-bl .q-title { color: var(--amber); }
+.q-br { background: var(--red-light); border-color: var(--red); }
+.q-br .q-tag { background: var(--red); color: white; }
+.q-br .q-title { color: var(--red); }
+
+textarea.canvas-input { width: 100%; border: none; background: repeating-linear-gradient(to bottom, transparent 0, transparent 5mm, rgba(0,0,0,0.12) 5mm, rgba(0,0,0,0.12) 5.15mm); font-family: 'DM Sans', sans-serif; font-size: 3.2mm; line-height: 5mm; color: var(--dark); resize: vertical; padding: 0 1mm; outline: none; min-height: 50mm; }
+textarea.canvas-input:focus { background: rgba(255,255,255,0.5); }
+input.canvas-text { width: 100%; border: none; border-bottom: 0.4mm solid var(--border); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 3.2mm; padding: 1mm 1mm; color: var(--dark); outline: none; }
+input.canvas-text:focus { border-bottom-color: var(--accent); background: rgba(85,177,174,0.05); }
+@media print { textarea.canvas-input { background: white !important; } input.canvas-text { border-bottom: 0.3mm solid var(--border) !important; background: white !important; } }
+
+.legend { display: flex; gap: 3mm; font-size: 2.7mm; color: var(--gray); align-items: center; }
+.footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4mm; padding-top: 3mm; border-top: 0.3mm solid var(--border); font-size: 2.8mm; color: var(--gray); }
+.footer-fields { display: flex; gap: 4mm; align-items: center; flex: 1; }
+.footer-fields > span { white-space: nowrap; }
+.brand { font-family: 'Space Grotesk', sans-serif; color: var(--teal); font-weight: 600; text-align: right; line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+    <span class="title">Canvas 3 — Matrice impatto / fattibilità</span>
+    <span class="status" id="save-status">In attesa…</span>
+    <button class="btn" onclick="window.print()">🖨 Stampa</button>
+</div>
+
+<div class="page">
+
+    <div class="header">
+        <h1>Canvas <span>3</span> — Matrice impatto / fattibilità</h1>
+        <div class="meta">CONSILIUM &middot; Modulo 2<br>Strategia AI per PMI &middot; v2.0</div>
+    </div>
+
+    <div class="subtitle">
+        Posiziona ogni caso d'uso del Canvas 2 in uno dei 4 quadranti tramite votazione del board (alzata di mano o dot voting).
+        <strong>I quadranti danno priorità di azione</strong>: i candidati per il Modulo 3 sono in alto a sinistra.
+    </div>
+
+    <div class="matrix-container">
+        <div class="y-label">Impatto sul business &uarr; alto</div>
+
+        <div class="quadrant q-tl">
+            <div class="q-tag">Priorità 1</div>
+            <div class="q-title">Candidati naturali per il Modulo 3</div>
+            <div class="q-desc">Alto impatto + alta fattibilità con risorse attuali. Da selezionare come progetti prioritari nel pomeriggio.</div>
+            <div class="q-area"><textarea class="canvas-input" data-field="q_high_high" placeholder="elenca qui i casi d'uso ad alto impatto / alta fattibilità"></textarea></div>
+        </div>
+
+        <div class="quadrant q-tr">
+            <div class="q-tag">Strategici</div>
+            <div class="q-title">Da pianificare a medio termine</div>
+            <div class="q-desc">Alto impatto ma fattibilità bassa: serve investimento, formazione o cambio organizzativo. Nel piano post-90 giorni.</div>
+            <div class="q-area"><textarea class="canvas-input" data-field="q_high_low" placeholder="elenca qui i casi d'uso ad alto impatto / bassa fattibilità"></textarea></div>
+        </div>
+
+        <div class="quadrant q-bl">
+            <div class="q-tag">Quick win</div>
+            <div class="q-title">Attivare subito con investimento minimo</div>
+            <div class="q-desc">Basso impatto ma alta fattibilità: producono valore subito a costo quasi zero. Da aggiungere alla roadmap come "side project".</div>
+            <div class="q-area"><textarea class="canvas-input" data-field="q_low_high" placeholder="elenca qui i casi d'uso a basso impatto / alta fattibilità"></textarea></div>
+        </div>
+
+        <div class="quadrant q-br">
+            <div class="q-tag">Accantonare</div>
+            <div class="q-title">Non investire ora</div>
+            <div class="q-desc">Basso impatto e bassa fattibilità. Documentare come "considerati e scartati" per evitare di tornarci a discuterne in futuro.</div>
+            <div class="q-area"><textarea class="canvas-input" data-field="q_low_low" placeholder="elenca qui i casi d'uso a basso impatto / bassa fattibilità"></textarea></div>
+        </div>
+
+        <div></div>
+        <div class="x-label">Fattibilità con risorse attuali &rarr;</div>
+    </div>
+
+    <div class="footer">
+        <div class="legend">
+            <span><strong style="color:var(--red);">●</strong> Post-it rosso = caso che attiva GDPR / AI Act</span>
+        </div>
+        <div class="footer-fields">
+            <span style="color:var(--blue);"><strong>Compilato il:</strong></span>
+            <input type="text" class="canvas-text" data-field="compiled_at" style="max-width:40mm;" placeholder="gg/mm/aaaa">
+        </div>
+        <div class="brand">NOSCITE<br><span style="color:var(--gray); font-weight:400; font-size:2.4mm;">In digitālī nova virtūs</span></div>
+    </div>
+
+</div>
+
+<script>
+(function() {
+    const status = document.getElementById('save-status');
+    const params = new URLSearchParams(window.location.search);
+    const materialId = params.get('mid');
+    if (!materialId) { status.textContent = '⚠ Apri questo canvas dal corso (manca mid)'; status.className = 'status error'; return; }
+    const fields = document.querySelectorAll('[data-field]');
+    let saveTimer = null;
+    function getCsrf() { const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/); return m ? decodeURIComponent(m[1]) : null; }
+    function setStatus(text, cls) { status.textContent = text; status.className = 'status ' + (cls || ''); }
+    function collectData() { const data = {}; fields.forEach(el => { const k = el.dataset.field; if (el.type === 'checkbox') data[k] = el.checked; else data[k] = el.value; }); return data; }
+    function applyData(data) { fields.forEach(el => { const k = el.dataset.field; if (data[k] === undefined) return; if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k] ?? ''; }); }
+    async function load() { setStatus('Caricamento…'); try { const res = await fetch(`/learn/canvas/${materialId}/data`, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }); if (!res.ok) { setStatus(res.status === 403 || res.status === 401 ? '⚠ Devi essere loggato' : '⚠ Errore caricamento (' + res.status + ')', 'error'); return; } const json = await res.json(); applyData(json.data || {}); setStatus(json.updated_at ? 'Salvato ✓' : 'Pronto', 'saved'); } catch (e) { setStatus('⚠ Errore rete: ' + e.message, 'error'); } }
+    async function save() { setStatus('Salvataggio…', 'saving'); try { const res = await fetch(`/learn/canvas/${materialId}/data`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrf() || '' }, credentials: 'same-origin', body: JSON.stringify({ data: collectData() }) }); if (!res.ok) { setStatus('⚠ Errore salvataggio (' + res.status + ')', 'error'); return; } const json = await res.json(); setStatus(json.demo ? 'Demo — non salvato' : 'Salvato ✓', json.demo ? 'saving' : 'saved'); } catch (e) { setStatus('⚠ Errore rete: ' + e.message, 'error'); } }
+    function debouncedSave() { clearTimeout(saveTimer); setStatus('Modifica…', 'saving'); saveTimer = setTimeout(save, 700); }
+    fields.forEach(el => { el.addEventListener('input', debouncedSave); el.addEventListener('change', debouncedSave); });
+    load();
+})();
+</script>
+
+</body>
+</html>

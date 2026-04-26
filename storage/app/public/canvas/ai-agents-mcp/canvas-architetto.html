@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Canvas — Architetto dell'Agente</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #1A3F6F;
+    --accent: #2E7DC9;
+    --light: #D5E8F7;
+    --gray: #6B7280;
+    --dark: #1F2937;
+    --white: #FFFFFF;
+    --bg: #F7F9FC;
+    --border: #CBD5E1;
+    --green: #0E7C5E;
+    --green-light: #D1FAE5;
+    --amber: #92400E;
+    --amber-light: #FEF3C7;
+    --red: #991B1B;
+    --red-light: #FEE2E2;
+    --purple: #5B21B6;
+    --purple-light: #EDE9FE;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--white);
+    color: var(--dark);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    size: A3 landscape;
+    margin: 10mm;
+  }
+
+  .page {
+    width: 410mm;
+    min-height: 280mm;
+    margin: 0 auto;
+    padding: 8mm;
+    background: var(--white);
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--blue);
+    color: white;
+    padding: 6mm 8mm;
+    border-radius: 3mm;
+    margin-bottom: 5mm;
+  }
+
+  .header-left .tag {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 2mm;
+  }
+
+  .header-left h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20pt;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .header-left h1 span {
+    color: #7EC8F4;
+  }
+
+  .header-meta {
+    display: flex;
+    gap: 8mm;
+    font-size: 8pt;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .header-meta .meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1mm;
+  }
+
+  .header-meta .meta-label {
+    font-size: 7pt;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .header-meta .meta-val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 9pt;
+    font-weight: 600;
+    color: white;
+    background: rgba(255,255,255,0.12);
+    padding: 1mm 3mm;
+    border-radius: 1mm;
+    min-width: 35mm;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 3mm;
+  }
+
+  /* CELLS */
+  .cell {
+    border: 1.5px solid var(--border);
+    border-radius: 2.5mm;
+    padding: 4mm;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    min-height: 55mm;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cell::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2.5mm;
+    border-radius: 2.5mm 2.5mm 0 0;
+  }
+
+  .cell.blue::before { background: var(--accent); }
+  .cell.green::before { background: #059669; }
+  .cell.amber::before { background: #D97706; }
+  .cell.red::before { background: #DC2626; }
+  .cell.purple::before { background: #7C3AED; }
+  .cell.teal::before { background: #0891B2; }
+  .cell.indigo::before { background: #4F46E5; }
+
+  .cell-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22pt;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 1mm;
+    opacity: 0.12;
+    position: absolute;
+    top: 3mm;
+    right: 4mm;
+  }
+
+  .cell-num.blue { color: var(--accent); }
+  .cell-num.green { color: #059669; }
+  .cell-num.amber { color: #D97706; }
+  .cell-num.red { color: #DC2626; }
+  .cell-num.purple { color: #7C3AED; }
+  .cell-num.teal { color: #0891B2; }
+  .cell-num.indigo { color: #4F46E5; }
+
+  .cell-header {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    margin-bottom: 3mm;
+    padding-top: 3mm;
+  }
+
+  .cell-icon {
+    font-size: 13pt;
+    line-height: 1;
+  }
+
+  .cell-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    color: var(--dark);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .cell-subtitle {
+    font-size: 7.5pt;
+    color: var(--gray);
+    font-style: italic;
+    margin-bottom: 3mm;
+    line-height: 1.3;
+  }
+
+  .write-area {
+    flex: 1;
+    background: var(--bg);
+    border-radius: 1.5mm;
+    padding: 3mm;
+    position: relative;
+  }
+
+  .write-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    height: 100%;
+  }
+
+  .line {
+    border-bottom: 1px dashed #CBD5E1;
+    flex: 1;
+    min-height: 6mm;
+  }
+
+  .hint {
+    position: absolute;
+    bottom: 2mm;
+    right: 3mm;
+    font-size: 6.5pt;
+    color: #94A3B8;
+    font-style: italic;
+  }
+
+  .tags-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5mm;
+    padding: 2mm 0;
+    min-height: 20mm;
+  }
+
+  .tag-chip {
+    background: var(--light);
+    color: var(--blue);
+    font-size: 7pt;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    padding: 1mm 2.5mm;
+    border-radius: 1mm;
+    border: 1px dashed #93C5FD;
+    min-width: 20mm;
+    height: 6mm;
+  }
+
+  /* SPAN */
+  .col-span-2 {
+    grid-column: span 2;
+  }
+
+  /* KPI CELL */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm;
+    flex: 1;
+  }
+
+  .kpi-item {
+    background: var(--bg);
+    border-radius: 1.5mm;
+    padding: 2.5mm;
+    display: flex;
+    flex-direction: column;
+    gap: 1mm;
+  }
+
+  .kpi-label {
+    font-size: 7pt;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+  }
+
+  .kpi-line {
+    border-bottom: 1px dashed #CBD5E1;
+    flex: 1;
+    min-height: 5mm;
+  }
+
+  /* FOOTER */
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4mm;
+    padding-top: 3mm;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    color: var(--blue);
+  }
+
+  .footer-logo span {
+    font-size: 7pt;
+    font-weight: 400;
+    color: var(--gray);
+    margin-left: 2mm;
+  }
+
+  .footer-instructions {
+    font-size: 7pt;
+    color: var(--gray);
+    font-style: italic;
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 5mm;
+    font-size: 7pt;
+    color: var(--gray);
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5mm;
+  }
+
+  .legend-dot {
+    width: 3mm;
+    height: 3mm;
+    border-radius: 50%;
+  }
+
+  /* SEMAFORO */
+  .semaforo {
+    display: flex;
+    gap: 2mm;
+    padding: 2mm 0;
+  }
+
+  .sem-item {
+    flex: 1;
+    padding: 2mm;
+    border-radius: 1.5mm;
+    text-align: center;
+  }
+
+  .sem-item .sem-label {
+    font-size: 6.5pt;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+    margin-bottom: 1mm;
+  }
+
+  .sem-item.verde { background: var(--green-light); }
+  .sem-item.verde .sem-label { color: var(--green); }
+  .sem-item.giallo { background: var(--amber-light); }
+  .sem-item.giallo .sem-label { color: var(--amber); }
+  .sem-item.rosso { background: var(--red-light); }
+  .sem-item.rosso .sem-label { color: var(--red); }
+
+  .sem-lines { display: flex; flex-direction: column; gap: 0; }
+  .sem-line { border-bottom: 1px dashed #CBD5E1; min-height: 5mm; }
+
+  /* HUMAN */
+  .hil-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm;
+    flex: 1;
+  }
+
+  .hil-item {
+    background: var(--bg);
+    border-radius: 1.5mm;
+    padding: 2.5mm;
+  }
+
+  .hil-label {
+    font-size: 7pt;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    color: #DC2626;
+    margin-bottom: 1.5mm;
+    display: flex;
+    align-items: center;
+    gap: 1mm;
+  }
+
+  .hil-label.green { color: #059669; }
+
+  .hil-lines { display: flex; flex-direction: column; gap: 0; }
+  .hil-line { border-bottom: 1px dashed #CBD5E1; min-height: 5.5mm; }
+
+  @media print {
+    body { background: white; }
+    .page { margin: 0; padding: 5mm; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="tag">Corso Agenti AI e MCP in Azienda — Livello 2 · Workshop</div>
+      <h1>Canvas <span>Architetto</span> dell'Agente</h1>
+    </div>
+    <div class="header-meta">
+      <div class="meta-item">
+        <span class="meta-label">Partecipante</span>
+        <span class="meta-val">&nbsp;</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Azienda / Ente</span>
+        <span class="meta-val">&nbsp;</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Data</span>
+        <span class="meta-val">&nbsp;</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="grid">
+
+    <!-- 1. OBIETTIVO -->
+    <div class="cell blue">
+      <span class="cell-num blue">1</span>
+      <div class="cell-header">
+        <span class="cell-icon">🎯</span>
+        <span class="cell-title">Obiettivo dell'Agente</span>
+      </div>
+      <div class="cell-subtitle">Cosa deve fare? In una frase: "L'agente deve [verbo] [oggetto] per [beneficiario]"</div>
+      <div class="write-area">
+        <div class="write-lines">
+          <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+        </div>
+        <span class="hint">massimo 2 righe</span>
+      </div>
+    </div>
+
+    <!-- 2. DATI -->
+    <div class="cell green">
+      <span class="cell-num green">2</span>
+      <div class="cell-header">
+        <span class="cell-icon">🗄️</span>
+        <span class="cell-title">Dati Disponibili</span>
+      </div>
+      <div class="cell-subtitle">Quali fonti di dati può usare l'agente? (CRM, email, file, DB, API...)</div>
+      <div class="tags-area">
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+      </div>
+    </div>
+
+    <!-- 3. TOOL -->
+    <div class="cell amber">
+      <span class="cell-num amber">3</span>
+      <div class="cell-header">
+        <span class="cell-icon">🔧</span>
+        <span class="cell-title">Tool Necessari</span>
+      </div>
+      <div class="cell-subtitle">Quali azioni deve poter compiere? (leggi, scrivi, calcola, invia, prenota...)</div>
+      <div class="tags-area">
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+        <div class="tag-chip"></div>
+      </div>
+    </div>
+
+    <!-- 4. TRIGGER -->
+    <div class="cell teal">
+      <span class="cell-num teal">4</span>
+      <div class="cell-header">
+        <span class="cell-icon">⚡</span>
+        <span class="cell-title">Trigger (Avvio)</span>
+      </div>
+      <div class="cell-subtitle">Cosa avvia l'agente? Evento automatico, orario, azione utente, webhook?</div>
+      <div class="write-area">
+        <div class="write-lines">
+          <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. OUTPUT -->
+    <div class="cell purple">
+      <span class="cell-num purple">5</span>
+      <div class="cell-header">
+        <span class="cell-icon">📤</span>
+        <span class="cell-title">Output Attesi</span>
+      </div>
+      <div class="cell-subtitle">Cosa produce l'agente? (testo, azione su sistema, notifica, report, aggiornamento DB)</div>
+      <div class="write-area">
+        <div class="write-lines">
+          <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. PRESIDIO UMANO -->
+    <div class="cell red col-span-2">
+      <span class="cell-num red">6</span>
+      <div class="cell-header">
+        <span class="cell-icon">🧑‍✈️</span>
+        <span class="cell-title">Presidio Umano (Human-in-the-Loop)</span>
+      </div>
+      <div class="cell-subtitle">Dove l'agente si ferma e aspetta approvazione? Dove agisce in autonomia?</div>
+      <div class="hil-grid">
+        <div class="hil-item">
+          <div class="hil-label">🔴 Si ferma / chiede ok</div>
+          <div class="hil-lines">
+            <div class="hil-line"></div><div class="hil-line"></div><div class="hil-line"></div>
+          </div>
+        </div>
+        <div class="hil-item">
+          <div class="hil-label green">🟢 Agisce in autonomia</div>
+          <div class="hil-lines">
+            <div class="hil-line"></div><div class="hil-line"></div><div class="hil-line"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. KPI -->
+    <div class="cell indigo col-span-2">
+      <span class="cell-num indigo">7</span>
+      <div class="cell-header">
+        <span class="cell-icon">📊</span>
+        <span class="cell-title">KPI di Successo</span>
+      </div>
+      <div class="cell-subtitle">Come misuriamo che l'agente funziona? Definisci 4 indicatori concreti e misurabili.</div>
+      <div class="kpi-grid">
+        <div class="kpi-item">
+          <div class="kpi-label">KPI 1 — Efficienza</div>
+          <div class="kpi-line"></div><div class="kpi-line"></div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">KPI 2 — Qualità</div>
+          <div class="kpi-line"></div><div class="kpi-line"></div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">KPI 3 — Rischio / Errori</div>
+          <div class="kpi-line"></div><div class="kpi-line"></div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">KPI 4 — Business</div>
+          <div class="kpi-line"></div><div class="kpi-line"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-logo">NOSCITE <span>S.r.l.s. · noscite.it · in digitali nova virtus</span></div>
+    <div class="footer-instructions">📌 Compila a matita o penna · Fotografa il canvas al termine · Porta con te il Piano d'Azione 90gg</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#2E7DC9"></div> Dove sei ora</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#059669"></div> Dati certi</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#D97706"></div> Da verificare</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

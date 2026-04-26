@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Piano d'Azione 90 Giorni — Agenti AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #1A3F6F;
+    --accent: #2E7DC9;
+    --light: #D5E8F7;
+    --gray: #6B7280;
+    --dark: #1F2937;
+    --border: #CBD5E1;
+    --bg: #F7F9FC;
+    --green: #059669;
+    --green-bg: #D1FAE5;
+    --amber: #B45309;
+    --amber-bg: #FEF3C7;
+    --red: #991B1B;
+    --red-bg: #FEE2E2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: white;
+    color: var(--dark);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  .page {
+    width: 190mm;
+    min-height: 274mm;
+    margin: 0 auto;
+    padding: 0;
+    background: white;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--blue);
+    color: white;
+    padding: 5mm 6mm;
+    border-radius: 2mm;
+    margin-bottom: 4mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .h-left .tag {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 7pt;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 1.5mm;
+  }
+
+  .h-left h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15pt;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .h-left h1 em {
+    color: #7EC8F4;
+    font-style: normal;
+  }
+
+  .h-right {
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
+    align-items: flex-end;
+  }
+
+  .meta-field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5mm;
+  }
+
+  .meta-label {
+    font-size: 6.5pt;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .meta-val {
+    background: rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    min-width: 50mm;
+    height: 5mm;
+    border-radius: 0.5mm 0.5mm 0 0;
+  }
+
+  /* CONTEXT STRIP */
+  .context-strip {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 2.5mm;
+    margin-bottom: 4mm;
+  }
+
+  .ctx-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 2mm;
+    padding: 3mm;
+  }
+
+  .ctx-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 7pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+    margin-bottom: 2mm;
+    display: flex;
+    align-items: center;
+    gap: 1.5mm;
+  }
+
+  .lines { display: flex; flex-direction: column; gap: 0; }
+  .l { border-bottom: 1px dashed var(--border); min-height: 5.5mm; flex: 1; }
+
+  /* PHASES */
+  .phases {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2.5mm;
+    margin-bottom: 4mm;
+  }
+
+  .phase {
+    border-radius: 2mm;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .phase-header {
+    padding: 2.5mm 3mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .phase-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: white;
+  }
+
+  .phase-badge {
+    font-size: 6.5pt;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 0.5mm 2mm;
+    border-radius: 1mm;
+  }
+
+  .phase-1 .phase-header { background: #1D4ED8; }
+  .phase-2 .phase-header { background: #0369A1; }
+  .phase-3 .phase-header { background: #0E7C5E; }
+
+  .phase-body {
+    padding: 3mm;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5mm;
+  }
+
+  .milestone {
+    background: var(--bg);
+    border-radius: 1.5mm;
+    padding: 2.5mm;
+    border-left: 3px solid;
+  }
+
+  .milestone.m1 { border-color: #1D4ED8; }
+  .milestone.m2 { border-color: #0369A1; }
+  .milestone.m3 { border-color: #0E7C5E; }
+
+  .ms-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 6.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray);
+    margin-bottom: 1.5mm;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .ms-label span {
+    font-size: 6pt;
+    background: var(--light);
+    color: var(--accent);
+    padding: 0 1.5mm;
+    border-radius: 0.5mm;
+  }
+
+  .ms-lines { display: flex; flex-direction: column; gap: 0; }
+  .ms-line { border-bottom: 1px dashed var(--border); min-height: 5mm; }
+
+  .owner-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm;
+  }
+
+  .owner-box {
+    background: var(--bg);
+    border-radius: 1mm;
+    padding: 2mm;
+  }
+
+  .owner-label {
+    font-size: 6pt;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: 'Space Grotesk', sans-serif;
+    margin-bottom: 1mm;
+  }
+
+  .owner-line {
+    border-bottom: 1px dashed var(--border);
+    min-height: 4.5mm;
+  }
+
+  /* BOTTOM GRID */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2.5mm;
+    margin-bottom: 4mm;
+  }
+
+  .b-box {
+    border: 1px solid var(--border);
+    border-radius: 2mm;
+    overflow: hidden;
+  }
+
+  .b-header {
+    padding: 2mm 3mm;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .b-header.risk { background: var(--red-bg); color: var(--red); }
+  .b-header.resources { background: var(--amber-bg); color: var(--amber); }
+  .b-header.commitment { background: var(--green-bg); color: var(--green); }
+
+  .b-body {
+    padding: 2.5mm 3mm;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
+    min-height: 35mm;
+  }
+
+  .risk-item, .res-item, .comm-item {
+    background: var(--bg);
+    border-radius: 1mm;
+    padding: 2mm;
+  }
+
+  .risk-label { font-size: 6.5pt; color: var(--gray); margin-bottom: 1mm; font-family: 'Space Grotesk', sans-serif; font-weight: 600; }
+
+  .risk-line { border-bottom: 1px dashed var(--border); min-height: 4.5mm; }
+
+  /* COMMIT BOX */
+  .commit-area {
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
+  }
+
+  .commit-line-big {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    background: var(--bg);
+    border-radius: 1mm;
+    padding: 2mm 3mm;
+  }
+
+  .commit-prefix {
+    font-size: 7pt;
+    font-weight: 500;
+    color: var(--gray);
+    white-space: nowrap;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .commit-underline {
+    flex: 1;
+    border-bottom: 1px solid var(--border);
+    min-height: 5mm;
+  }
+
+  /* SIGN */
+  .sign-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3mm;
+    padding: 3mm;
+    background: var(--bg);
+    border-radius: 2mm;
+    border: 1px solid var(--border);
+    margin-bottom: 3mm;
+  }
+
+  .sign-field { display: flex; flex-direction: column; gap: 1mm; }
+  .sign-label { font-size: 6.5pt; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Space Grotesk', sans-serif; }
+  .sign-line { border-bottom: 1px solid #9CA3AF; min-height: 7mm; }
+
+  /* FOOTER */
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 2.5mm;
+  }
+
+  .footer-brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 8pt;
+    font-weight: 700;
+    color: var(--blue);
+  }
+
+  .footer-brand span { font-weight: 400; color: var(--gray); font-size: 7pt; margin-left: 1.5mm; }
+
+  .footer-note { font-size: 6.5pt; color: var(--gray); font-style: italic; }
+
+  @media print {
+    body { background: white; }
+    .page { margin: 0; padding: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="h-left">
+      <div class="tag">Corso Agenti AI e MCP in Azienda — Livello 2 · Output del Workshop</div>
+      <h1>Piano d'Azione <em>90 Giorni</em></h1>
+    </div>
+    <div class="h-right">
+      <div class="meta-field">
+        <span class="meta-label">Partecipante</span>
+        <div class="meta-val"></div>
+      </div>
+      <div class="meta-field">
+        <span class="meta-label">Azienda / Ente</span>
+        <div class="meta-val"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEXT STRIP -->
+  <div class="context-strip">
+    <div class="ctx-box">
+      <div class="ctx-title">🎯 Il mio agente (dall'Architetto)</div>
+      <div class="lines">
+        <div class="l"></div><div class="l"></div><div class="l"></div>
+      </div>
+    </div>
+    <div class="ctx-box">
+      <div class="ctx-title">💰 Budget stimato</div>
+      <div class="lines">
+        <div class="l"></div><div class="l"></div><div class="l"></div>
+      </div>
+    </div>
+    <div class="ctx-box">
+      <div class="ctx-title">🏁 Go-Live target</div>
+      <div class="lines">
+        <div class="l"></div><div class="l"></div><div class="l"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASES -->
+  <div class="phases">
+
+    <!-- FASE 1: Mese 1 -->
+    <div class="phase phase-1">
+      <div class="phase-header">
+        <span class="phase-title">Fase 1 — Fondamenta</span>
+        <span class="phase-badge">Mese 1</span>
+      </div>
+      <div class="phase-body">
+        <div class="milestone m1">
+          <div class="ms-label">Milestone A <span>Strategia</span></div>
+          <div class="ms-lines">
+            <div class="ms-line"></div><div class="ms-line"></div><div class="ms-line"></div>
+          </div>
+        </div>
+        <div class="milestone m1">
+          <div class="ms-label">Milestone B <span>Organizzazione</span></div>
+          <div class="ms-lines">
+            <div class="ms-line"></div><div class="ms-line"></div><div class="ms-line"></div>
+          </div>
+        </div>
+        <div class="owner-row">
+          <div class="owner-box">
+            <div class="owner-label">👤 Owner A</div>
+            <div class="owner-line"></div>
+          </div>
+          <div class="owner-box">
+            <div class="owner-label">📅 Scadenza</div>
+            <div class="owner-line"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 2: Mese 2 -->
+    <div class="phase phase-2">
+      <div class="phase-header">
+        <span class="phase-title">Fase 2 — Prototipo</span>
+        <span class="phase-badge">Mese 2</span>
+      </div>
+      <div class="phase-body">
+        <div class="milestone m2">
+          <div class="ms-label">Milestone C <span>Tecnica</span></div>
+          <div class="ms-lines">
+            <div class="ms-line"></div><div class="ms-line"></div><div class="ms-line"></div>
+          </div>
+        </div>
+        <div class="milestone m2">
+          <div class="ms-label">Milestone D <span>Test</span></div>
+          <div class="ms-lines">
+            <div class="ms-line"></div><div class="ms-line"></div><div class="ms-line"></div>
+          </div>
+        </div>
+        <div class="owner-row">
+          <div class="owner-box">
+            <div class="owner-label">👤 Owner C</div>
+            <div class="owner-line"></div>
+          </div>
+          <div class="owner-box">
+            <div class="owner-label">📅 Scadenza</div>
+            <div class="owner-line"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 3: Mese 3 -->
+    <div class="phase phase-3">
+      <div class="phase-header">
+        <span class="phase-title">Fase 3 — Go-Live</span>
+        <span class="phase-badge">Mese 3</span>
+      </div>
+      <div class="phase-body">
+        <div class="milestone m3">
+          <div class="ms-label">Milestone E <span>Deploy</span></div>
+          <div class="ms-lines">
+            <div class="ms-line"></div><div class="ms-line"></div><div class="ms-line"></div>
+          </div>
+        </div>
+        <div class="milestone m3">
+          <div class="ms-label">Milestone F <span>Misura</span></div>
+          <div class="ms-lines">
+            <div class="ms-line"></div><div class="ms-line"></div><div class="ms-line"></div>
+          </div>
+        </div>
+        <div class="owner-row">
+          <div class="owner-box">
+            <div class="owner-label">👤 Owner E</div>
+            <div class="owner-line"></div>
+          </div>
+          <div class="owner-box">
+            <div class="owner-label">📅 Scadenza</div>
+            <div class="owner-line"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM GRID: RISCHI · RISORSE · IMPEGNO -->
+  <div class="bottom-grid">
+
+    <div class="b-box">
+      <div class="b-header risk">⚠️ Rischi principali</div>
+      <div class="b-body">
+        <div class="risk-item">
+          <div class="risk-label">Rischio 1</div>
+          <div class="risk-line"></div>
+          <div class="risk-label" style="margin-top:1mm">Mitigazione</div>
+          <div class="risk-line"></div>
+        </div>
+        <div class="risk-item">
+          <div class="risk-label">Rischio 2</div>
+          <div class="risk-line"></div>
+          <div class="risk-label" style="margin-top:1mm">Mitigazione</div>
+          <div class="risk-line"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="b-box">
+      <div class="b-header resources">🛠️ Risorse necessarie</div>
+      <div class="b-body">
+        <div class="res-item">
+          <div class="risk-label">Tecnologia / Tool</div>
+          <div class="risk-line"></div>
+        </div>
+        <div class="res-item">
+          <div class="risk-label">Competenze / Partner</div>
+          <div class="risk-line"></div>
+        </div>
+        <div class="res-item">
+          <div class="risk-label">Budget dettaglio</div>
+          <div class="risk-line"></div>
+          <div class="risk-line"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="b-box">
+      <div class="b-header commitment">✅ Il mio impegno</div>
+      <div class="b-body">
+        <div class="commit-area">
+          <div class="commit-line-big">
+            <span class="commit-prefix">Prossima azione entro:</span>
+            <div class="commit-underline"></div>
+          </div>
+          <div class="commit-line-big">
+            <span class="commit-prefix">Prima cosa che faccio:</span>
+            <div class="commit-underline"></div>
+          </div>
+          <div class="res-item">
+            <div class="risk-label">Chiedo supporto a:</div>
+            <div class="risk-line"></div>
+          </div>
+          <div class="res-item">
+            <div class="risk-label">Condivido i risultati con:</div>
+            <div class="risk-line"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FIRMA -->
+  <div class="sign-row">
+    <div class="sign-field">
+      <span class="sign-label">Firma del partecipante</span>
+      <div class="sign-line"></div>
+    </div>
+    <div class="sign-field">
+      <span class="sign-label">Check-in previsto (data)</span>
+      <div class="sign-line"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">NOSCITE <span>S.r.l.s. · noscite.it · in digitali nova virtus</span></div>
+    <div class="footer-note">📌 Porta questo canvas a casa · Follow-up call in 30gg con il tuo formatore Noscite</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -53,6 +53,9 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/notes/{module}', [App\Http\Controllers\Student\NoteController::class, 'list'])->name('notes.list');
         Route::delete('/notes/{note}', [App\Http\Controllers\Student\NoteController::class, 'delete'])->name('notes.delete');
 
+        Route::get('/canvas/{material}/data', [App\Http\Controllers\Student\CanvasController::class, 'getData'])->name('canvas.get');
+        Route::patch('/canvas/{material}/data', [App\Http\Controllers\Student\CanvasController::class, 'saveData'])->name('canvas.save');
+
         Route::get('/course/{course:slug}/instructor/{material}', [App\Http\Controllers\Student\InstructorMaterialController::class, 'show'])->name('instructor.material.show');
         Route::get('/course/{course:slug}/instructor/{material}/download', [App\Http\Controllers\Student\InstructorMaterialController::class, 'download'])->name('instructor.material.download');
 

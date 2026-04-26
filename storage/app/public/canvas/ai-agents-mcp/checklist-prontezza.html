@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Checklist — Il mio processo è pronto per un agente?</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root{--blue:#1A3F6F;--accent:#2E7DC9;--light:#D5E8F7;--gray:#6B7280;--dark:#1F2937;--border:#CBD5E1;--bg:#F7F9FC;--green:#059669;--green-bg:#D1FAE5;--amber:#B45309;--amber-bg:#FEF3C7;--red:#991B1B;--red-bg:#FEE2E2;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:white;color:var(--dark);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{size:A4 portrait;margin:8mm;}
+  .page{width:190mm;min-height:274mm;margin:0 auto;}
+
+  .header{background:var(--blue);color:white;padding:5mm 6mm;border-radius:2mm;margin-bottom:5mm;}
+  .h-tag{font-family:'Space Grotesk',sans-serif;font-size:7pt;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:1.5mm;}
+  .h-title{font-family:'Space Grotesk',sans-serif;font-size:16pt;font-weight:700;}
+  .h-title em{color:#7EC8F4;font-style:normal;}
+  .h-sub{font-size:9pt;color:rgba(255,255,255,.7);margin-top:1.5mm;}
+
+  .instructions{background:var(--light);border-radius:2mm;padding:3mm 4mm;margin-bottom:5mm;font-size:8pt;color:var(--dark);}
+  .instructions strong{color:var(--blue);}
+
+  .section-title{font-family:'Space Grotesk',sans-serif;font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin:0 0 2.5mm 0;padding-bottom:1.5mm;border-bottom:1.5px solid var(--light);}
+
+  .item{display:flex;align-items:flex-start;gap:3mm;padding:2.5mm 0;border-bottom:1px dashed var(--border);}
+  .item:last-child{border-bottom:none;}
+  .check-group{display:flex;gap:1.5mm;flex-shrink:0;margin-top:.5mm;}
+  .check-box{width:5mm;height:5mm;border:1.5px solid;border-radius:.5mm;display:flex;align-items:center;justify-content:center;font-size:6pt;font-family:'Space Grotesk',sans-serif;font-weight:700;}
+  .check-box.g{border-color:var(--green);color:var(--green);}
+  .check-box.y{border-color:var(--amber);color:var(--amber);}
+  .check-box.r{border-color:var(--red);color:var(--red);}
+  .item-content{flex:1;}
+  .item-q{font-size:9pt;font-weight:500;color:var(--dark);margin-bottom:1mm;line-height:1.3;}
+  .item-hints{display:flex;gap:2mm;flex-wrap:wrap;}
+  .hint-badge{font-size:7pt;font-family:'Space Grotesk',sans-serif;font-weight:600;padding:.5mm 2mm;border-radius:.5mm;}
+  .hint-badge.g{background:var(--green-bg);color:var(--green);}
+  .hint-badge.y{background:var(--amber-bg);color:var(--amber);}
+  .hint-badge.r{background:var(--red-bg);color:var(--red);}
+
+  .groups{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-bottom:5mm;}
+  .group{border:1.5px solid var(--border);border-radius:2mm;overflow:hidden;}
+  .group-header{padding:2.5mm 3.5mm;font-family:'Space Grotesk',sans-serif;font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+  .group-header.blue{background:var(--blue);color:white;}
+  .group-header.green{background:#065F46;color:white;}
+  .group-header.amber{background:#92400E;color:white;}
+  .group-header.red{background:#991B1B;color:white;}
+  .group-header.purple{background:#5B21B6;color:white;}
+  .group-body{padding:2mm 3.5mm 3mm;}
+
+  /* SCORE */
+  .score-section{background:var(--bg);border-radius:2mm;padding:4mm;margin-bottom:5mm;}
+  .score-title{font-family:'Space Grotesk',sans-serif;font-size:9pt;font-weight:700;color:var(--blue);margin-bottom:3mm;}
+  .score-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3mm;}
+  .score-box{border-radius:1.5mm;padding:3mm;text-align:center;}
+  .score-box.green{background:var(--green-bg);border:1px solid #A7F3D0;}
+  .score-box.yellow{background:var(--amber-bg);border:1px solid #FDE68A;}
+  .score-box.red{background:var(--red-bg);border:1px solid #FECACA;}
+  .score-range{font-family:'Space Grotesk',sans-serif;font-size:12pt;font-weight:700;margin-bottom:1mm;}
+  .score-box.green .score-range{color:var(--green);}
+  .score-box.yellow .score-range{color:var(--amber);}
+  .score-box.red .score-range{color:var(--red);}
+  .score-label{font-size:7.5pt;font-weight:500;margin-bottom:1.5mm;}
+  .score-desc{font-size:7pt;color:var(--gray);}
+
+  .my-score{display:flex;align-items:center;gap:3mm;margin-top:3mm;}
+  .my-score-label{font-size:8pt;font-weight:600;color:var(--dark);}
+  .score-counter{display:flex;gap:1mm;}
+  .sc{width:6mm;height:6mm;border:1.5px solid var(--border);border-radius:.5mm;font-size:7pt;font-family:'Space Grotesk',sans-serif;color:var(--gray);display:flex;align-items:center;justify-content:center;}
+
+  .footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:2.5mm;margin-top:2mm;}
+  .footer-brand{font-family:'Space Grotesk',sans-serif;font-size:8pt;font-weight:700;color:var(--blue);}
+  .footer-brand span{font-weight:400;color:var(--gray);font-size:7pt;margin-left:1.5mm;}
+  @media print{body{background:white;}.page{margin:0;padding:0;width:100%;}}
+</style>
+</head>
+<body><div class="page">
+
+  <div class="header">
+    <div class="h-tag">Corso Agenti AI e MCP — Livello 1 · Modulo 4</div>
+    <div class="h-title">Il mio processo è <em>pronto</em> per un agente?</div>
+    <div class="h-sub">Checklist di valutazione in 10 domande — Semaforo verde / giallo / rosso</div>
+  </div>
+
+  <div class="instructions">
+    <strong>Come usarla:</strong> Per ogni domanda, metti una crocetta nella casella corrispondente: 🟢 Sì / Quasi sempre &nbsp;|&nbsp; 🟡 In parte / A volte &nbsp;|&nbsp; 🔴 No / Raramente. Conta i punteggi: Verde = 3 pt, Giallo = 1 pt, Rosso = 0 pt. Leggi il risultato nella sezione Punteggio.
+  </div>
+
+  <div class="groups">
+
+    <!-- GRUPPO A: DATI -->
+    <div class="group">
+      <div class="group-header blue">📊 A — Qualità dei Dati</div>
+      <div class="group-body">
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">A1. I dati necessari sono già in formato digitale?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">Sì → file, DB, API</span>
+              <span class="hint-badge r">No → ancora su carta</span>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">A2. I dati sono accessibili via software (API, DB, file condivisi)?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">API disponibile</span>
+              <span class="hint-badge y">Solo export manuale</span>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">A3. I dati contengono informazioni sensibili/GDPR che richiedono protezione speciale?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">No / gestibile</span>
+              <span class="hint-badge r">Dati sensibili non classificati</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPPO B: PROCESSO -->
+    <div class="group">
+      <div class="group-header green">🔄 B — Struttura del Processo</div>
+      <div class="group-body">
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">B1. Il processo è ripetitivo e segue regole relativamente stabili?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">Sempre uguale</span>
+              <span class="hint-badge y">Variabile ma prevedibile</span>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">B2. L'output del processo è chiaro e misurabile (sai quando è "fatto bene")?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">Criteri definiti</span>
+              <span class="hint-badge r">Output soggettivo</span>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">B3. Il processo richiede poca creatività o giudizio contestuale complesso?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">Procedurale</span>
+              <span class="hint-badge r">Richiede esperienza senior</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPPO C: RISCHIO -->
+    <div class="group">
+      <div class="group-header amber">⚠️ C — Gestione del Rischio</div>
+      <div class="group-body">
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">C1. Un errore dell'agente è reversibile o a basso impatto economico?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">Reversibile (&lt;€500)</span>
+              <span class="hint-badge r">Irreversibile o alto impatto</span>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">C2. È possibile definire chiaramente quando l'agente deve fermarsi e chiedere ok?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">Soglie definibili</span>
+              <span class="hint-badge y">Richiede ragionamento</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPPO D: ORGANIZZAZIONE -->
+    <div class="group">
+      <div class="group-header purple">🏢 D — Prontezza Organizzativa</div>
+      <div class="group-body">
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">D1. C'è un owner interno che sponsorizzerà il progetto?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">Owner identificato</span>
+              <span class="hint-badge r">Nessuno disposto</span>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="check-group">
+            <div class="check-box g">✓</div><div class="check-box y">~</div><div class="check-box r">✗</div>
+          </div>
+          <div class="item-content">
+            <div class="item-q">D2. Il team che usa il processo è aperto al cambiamento?</div>
+            <div class="item-hints">
+              <span class="hint-badge g">Curiosi e collaborativi</span>
+              <span class="hint-badge r">Forte resistenza</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCORE -->
+  <div class="score-section">
+    <div class="score-title">📊 Il mio punteggio</div>
+    <div class="score-grid">
+      <div class="score-box green">
+        <div class="score-range">22 – 30 pt</div>
+        <div class="score-label">🟢 Pronto</div>
+        <div class="score-desc">Ottimo candidato. Puoi procedere con la progettazione nel workshop L2.</div>
+      </div>
+      <div class="score-box yellow">
+        <div class="score-range">12 – 21 pt</div>
+        <div class="score-label">🟡 Quasi pronto</div>
+        <div class="score-desc">Ci sono gap da colmare (dati o governance). Portalo al workshop per analizzarlo.</div>
+      </div>
+      <div class="score-box red">
+        <div class="score-range">0 – 11 pt</div>
+        <div class="score-label">🔴 Da preparare</div>
+        <div class="score-desc">Mancano fondamenta digitali o c'è alto rischio. Risolvi prima di procedere.</div>
+      </div>
+    </div>
+    <div class="my-score">
+      <span class="my-score-label">Il mio punteggio totale:</span>
+      <div class="score-counter">
+        <div class="sc">0</div><div class="sc">5</div><div class="sc">10</div><div class="sc">15</div><div class="sc">20</div><div class="sc">25</div><div class="sc">30</div>
+      </div>
+      <span style="font-size:8pt;color:var(--gray);font-style:italic;margin-left:2mm;">→ Cerchia il valore più vicino</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">NOSCITE <span>S.r.l.s. · Livello 1 Modulo 4 · noscite.it</span></div>
+    <div style="font-size:6.5pt;color:var(--gray);font-style:italic;">Verde=3pt · Giallo=1pt · Rosso=0pt · Max 30pt (10 domande)</div>
+  </div>
+
+</div></body>
+</html>

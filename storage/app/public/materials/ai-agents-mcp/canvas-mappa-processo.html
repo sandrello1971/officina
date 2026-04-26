@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Canvas — Mappa il tuo Processo Candidato</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue:#1A3F6F; --accent:#2E7DC9; --light:#D5E8F7;
+    --gray:#6B7280; --dark:#1F2937; --border:#CBD5E1; --bg:#F7F9FC;
+    --green:#059669; --green-bg:#D1FAE5; --amber:#B45309; --amber-bg:#FEF3C7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:white;color:var(--dark);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{size:A4 portrait;margin:8mm;}
+  .page{width:190mm;min-height:274mm;margin:0 auto;}
+
+  .header{background:var(--blue);color:white;padding:5mm 6mm;border-radius:2mm;margin-bottom:4mm;display:flex;justify-content:space-between;align-items:flex-end;}
+  .h-tag{font-family:'Space Grotesk',sans-serif;font-size:7pt;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:1.5mm;}
+  .h-title{font-family:'Space Grotesk',sans-serif;font-size:15pt;font-weight:700;}
+  .h-title em{color:#7EC8F4;font-style:normal;}
+  .meta-row{display:flex;flex-direction:column;gap:2mm;align-items:flex-end;}
+  .meta-f{display:flex;flex-direction:column;align-items:flex-end;gap:.5mm;}
+  .meta-l{font-size:6.5pt;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;font-family:'Space Grotesk',sans-serif;}
+  .meta-v{background:rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.3);min-width:50mm;height:5mm;border-radius:.5mm .5mm 0 0;}
+
+  .intro-box{background:var(--light);border:1.5px solid var(--accent);border-radius:2mm;padding:3mm 4mm;margin-bottom:4mm;}
+  .intro-title{font-family:'Space Grotesk',sans-serif;font-size:8pt;font-weight:700;color:var(--blue);margin-bottom:1.5mm;}
+  .intro-text{font-size:8pt;color:var(--dark);line-height:1.4;}
+
+  .section{border:1.5px solid var(--border);border-radius:2mm;margin-bottom:3mm;overflow:hidden;}
+  .s-header{padding:2.5mm 4mm;display:flex;align-items:center;gap:2mm;}
+  .s-num{font-family:'Space Grotesk',sans-serif;font-size:14pt;font-weight:700;color:white;background:var(--accent);width:7mm;height:7mm;border-radius:1mm;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .s-title{font-family:'Space Grotesk',sans-serif;font-size:9pt;font-weight:700;color:var(--dark);text-transform:uppercase;letter-spacing:.5px;}
+  .s-subtitle{font-size:7.5pt;color:var(--gray);font-style:italic;margin-left:auto;}
+  .s-body{padding:3mm 4mm;background:white;}
+
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:3mm;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2.5mm;}
+
+  .field{display:flex;flex-direction:column;gap:1mm;}
+  .f-label{font-family:'Space Grotesk',sans-serif;font-size:7pt;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;}
+  .f-line{border-bottom:1px dashed var(--border);min-height:6mm;}
+  .f-line-sm{border-bottom:1px dashed var(--border);min-height:5mm;}
+
+  .lines{display:flex;flex-direction:column;gap:0;}
+  .l{border-bottom:1px dashed var(--border);min-height:6mm;}
+  .l-sm{border-bottom:1px dashed var(--border);min-height:5mm;}
+
+  .tag-row{display:flex;flex-wrap:wrap;gap:1.5mm;padding:1mm 0;}
+  .tag{background:var(--bg);border:1px dashed var(--border);border-radius:1mm;min-width:22mm;height:6mm;font-size:7pt;font-family:'Space Grotesk',sans-serif;color:var(--gray);}
+
+  .scale-row{display:flex;gap:1mm;align-items:center;padding:2mm 0;}
+  .scale-label{font-size:7pt;color:var(--gray);min-width:12mm;}
+  .scale-boxes{display:flex;gap:1mm;}
+  .scale-box{width:7mm;height:7mm;border:1.5px solid var(--border);border-radius:.5mm;font-size:6.5pt;font-family:'Space Grotesk',sans-serif;color:var(--gray);display:flex;align-items:center;justify-content:center;}
+  .scale-end{font-size:7pt;color:var(--gray);min-width:12mm;text-align:right;}
+
+  .semaforo{display:flex;gap:2mm;}
+  .sem{flex:1;border-radius:1.5mm;padding:2mm;text-align:center;}
+  .sem.v{background:var(--green-bg);}
+  .sem.g{background:var(--amber-bg);}
+  .sem.r{background:#FEE2E2;}
+  .sem .s-l{font-family:'Space Grotesk',sans-serif;font-size:7pt;font-weight:700;margin-bottom:1mm;}
+  .sem.v .s-l{color:var(--green);}
+  .sem.g .s-l{color:var(--amber);}
+  .sem.r .s-l{color:#991B1B;}
+  .sem .s-line{border-bottom:1px dashed var(--border);min-height:5mm;}
+
+  .footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:2.5mm;margin-top:3mm;}
+  .footer-brand{font-family:'Space Grotesk',sans-serif;font-size:8pt;font-weight:700;color:var(--blue);}
+  .footer-brand span{font-weight:400;color:var(--gray);font-size:7pt;margin-left:1.5mm;}
+  .footer-note{font-size:6.5pt;color:var(--gray);font-style:italic;}
+  @media print{body{background:white;}.page{margin:0;padding:0;width:100%;}}
+</style>
+</head>
+<body><div class="page">
+
+  <div class="header">
+    <div>
+      <div class="h-tag">Corso Agenti AI e MCP — Livello 1 · Modulo 3 · Attività individuale</div>
+      <div class="h-title">Mappa il tuo <em>Processo Candidato</em></div>
+    </div>
+    <div class="meta-row">
+      <div class="meta-f"><span class="meta-l">Nome</span><div class="meta-v"></div></div>
+      <div class="meta-f"><span class="meta-l">Organizzazione</span><div class="meta-v"></div></div>
+    </div>
+  </div>
+
+  <div class="intro-box">
+    <div class="intro-title">📌 Come usare questo canvas</div>
+    <div class="intro-text">Scegli un processo della tua organizzazione che pensi possa beneficiare di un agente AI. Non deve essere perfetto: l'obiettivo è capire cosa hai, cosa manca, e se vale la pena esplorarlo nel workshop. <strong>Porta questo canvas compilato al Livello 2.</strong></div>
+  </div>
+
+  <!-- SEZ 1: NOME E CONTESTO -->
+  <div class="section">
+    <div class="s-header" style="background:#EFF6FF;">
+      <div class="s-num">1</div>
+      <span class="s-title">Il Processo</span>
+      <span class="s-subtitle">Descrivilo in modo semplice</span>
+    </div>
+    <div class="s-body">
+      <div class="two-col">
+        <div class="field">
+          <span class="f-label">Nome del processo</span>
+          <div class="f-line"></div><div class="f-line"></div>
+        </div>
+        <div class="field">
+          <span class="f-label">Reparto / team coinvolto</span>
+          <div class="f-line"></div><div class="f-line"></div>
+        </div>
+      </div>
+      <div style="margin-top:2.5mm;" class="field">
+        <span class="f-label">Descrivilo in una frase: "Ogni [frequenza], [chi] fa [cosa] usando [strumenti] per produrre [output]"</span>
+        <div class="f-line"></div><div class="f-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZ 2: DATI E STRUMENTI -->
+  <div class="section">
+    <div class="s-header" style="background:#F0FDF4;">
+      <div class="s-num" style="background:#059669;">2</div>
+      <span class="s-title">Dati e Strumenti</span>
+      <span class="s-subtitle">Con cosa lavora questo processo oggi?</span>
+    </div>
+    <div class="s-body">
+      <div class="two-col">
+        <div class="field">
+          <span class="f-label">Fonti di dati usate</span>
+          <div class="tag-row">
+            <div class="tag"></div><div class="tag"></div><div class="tag"></div><div class="tag"></div><div class="tag"></div><div class="tag"></div>
+          </div>
+        </div>
+        <div class="field">
+          <span class="f-label">Strumenti / software coinvolti</span>
+          <div class="tag-row">
+            <div class="tag"></div><div class="tag"></div><div class="tag"></div><div class="tag"></div><div class="tag"></div><div class="tag"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZ 3: DIMENSIONAMENTO -->
+  <div class="section">
+    <div class="s-header" style="background:#FFFBEB;">
+      <div class="s-num" style="background:#D97706;">3</div>
+      <span class="s-title">Dimensionamento</span>
+      <span class="s-subtitle">Quanto pesa oggi questo processo?</span>
+    </div>
+    <div class="s-body">
+      <div class="three-col">
+        <div class="field"><span class="f-label">Ore/settimana dedicate</span><div class="f-line"></div><div class="f-line-sm"></div></div>
+        <div class="field"><span class="f-label">Frequenza di esecuzione</span><div class="f-line"></div><div class="f-line-sm"></div></div>
+        <div class="field"><span class="f-label">N. persone coinvolte</span><div class="f-line"></div><div class="f-line-sm"></div></div>
+      </div>
+      <div style="margin-top:2.5mm;" class="two-col">
+        <div class="field"><span class="f-label">Principale fonte di errori oggi</span><div class="f-line"></div><div class="f-line"></div></div>
+        <div class="field"><span class="f-label">Costo stimato degli errori</span><div class="f-line"></div><div class="f-line"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZ 4: PRONTEZZA -->
+  <div class="section">
+    <div class="s-header" style="background:#FFF1F2;">
+      <div class="s-num" style="background:#DC2626;">4</div>
+      <span class="s-title">Valutazione di Prontezza</span>
+      <span class="s-subtitle">Questo processo è pronto per un agente?</span>
+    </div>
+    <div class="s-body">
+      <div style="margin-bottom:3mm;">
+        <div class="scale-row">
+          <span class="scale-label">Ripetitività</span>
+          <div class="scale-boxes">
+            <div class="scale-box">1</div><div class="scale-box">2</div><div class="scale-box">3</div><div class="scale-box">4</div><div class="scale-box">5</div>
+          </div>
+          <span class="scale-end">→ Alta</span>
+        </div>
+        <div class="scale-row">
+          <span class="scale-label">Dati digitali</span>
+          <div class="scale-boxes">
+            <div class="scale-box">1</div><div class="scale-box">2</div><div class="scale-box">3</div><div class="scale-box">4</div><div class="scale-box">5</div>
+          </div>
+          <span class="scale-end">→ Tutto digitale</span>
+        </div>
+        <div class="scale-row">
+          <span class="scale-label">Output chiaro</span>
+          <div class="scale-boxes">
+            <div class="scale-box">1</div><div class="scale-box">2</div><div class="scale-box">3</div><div class="scale-box">4</div><div class="scale-box">5</div>
+          </div>
+          <span class="scale-end">→ Ben definito</span>
+        </div>
+        <div class="scale-row">
+          <span class="scale-label">Rischio errore</span>
+          <div class="scale-boxes">
+            <div class="scale-box">1</div><div class="scale-box">2</div><div class="scale-box">3</div><div class="scale-box">4</div><div class="scale-box">5</div>
+          </div>
+          <span class="scale-end">→ Critico</span>
+        </div>
+      </div>
+      <div class="semaforo">
+        <div class="sem v"><div class="s-l">🟢 Pronto</div><div class="s-line"></div><div class="s-line"></div></div>
+        <div class="sem g"><div class="s-l">🟡 Quasi pronto</div><div class="s-line"></div><div class="s-line"></div></div>
+        <div class="sem r"><div class="s-l">🔴 Da preparare</div><div class="s-line"></div><div class="s-line"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZ 5: NEXT STEP -->
+  <div class="section">
+    <div class="s-header" style="background:#EDE9FE;">
+      <div class="s-num" style="background:#7C3AED;">5</div>
+      <span class="s-title">La mia domanda per il Workshop</span>
+      <span class="s-subtitle">Cosa voglio capire meglio nel Livello 2?</span>
+    </div>
+    <div class="s-body">
+      <div class="lines">
+        <div class="l"></div><div class="l"></div><div class="l"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">NOSCITE <span>S.r.l.s. · Porta questo canvas al workshop Livello 2</span></div>
+    <div class="footer-note">Corsi Noscite 2025 · noscite.it · in digitali nova virtus</div>
+  </div>
+</div></body>
+</html>
