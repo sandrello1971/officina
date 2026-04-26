@@ -115,12 +115,26 @@ class CourseController extends Controller
 
         $isDemo = $student->is_demo;
 
+        // Nota generale (anchor IS NULL) — retrocompatibile con il textarea esistente
         $note = \App\Models\StudentNote::where('student_id', $student->id)
             ->where('module_id', $module->id)
+            ->whereNull('anchor')
             ->first();
+
+        // Tutte le note dello studente per questo modulo (incluse anchored)
+        $studentNotes = \App\Models\StudentNote::where('student_id', $student->id)
+            ->where('module_id', $module->id)
+            ->get(['id', 'anchor', 'content', 'updated_at']);
 
         if ($isDemo) {
             $module->video_ai_id = null;
+        }
+
+        // Inietta gli anchor (id="p-001"...) nei blocchi annotabili del content.
+        // Va fatto PRIMA del trim demo così l'utente normale ottiene anchor stabili
+        // sull'HTML completo; il demo opera comunque sulle prime 20 righe.
+        if ($module->content) {
+            $module->content = app(\App\Services\NoteAnchorInjector::class)->inject($module->content);
         }
 
         if ($isDemo && $module->content) {
@@ -156,7 +170,8 @@ class CourseController extends Controller
         return view('student.course.module', compact(
             'course', 'module', 'materials', 'quiz', 'finalQuiz',
             'certificationPassed', 'progress', 'prevModule', 'nextModule',
-            'canvases', 'isDemo', 'note', 'instructorManualSections', 'instructorNotes'
+            'canvases', 'isDemo', 'note', 'studentNotes',
+            'instructorManualSections', 'instructorNotes'
         ));
     }
 

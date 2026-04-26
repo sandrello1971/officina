@@ -218,48 +218,63 @@
             <table class="w-full text-sm border-collapse">
                 <thead>
                     <tr style="background:#E8F5F5">
-                        <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Corso</th>
+                        <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Servizio</th>
                         <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Durata</th>
-                        <th class="text-left p-3 border font-bold" style="border-color:#C8D0D0;color:#1A1F1F">Per chi</th>
-                        <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Obiettivo</th>
-                        <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Formato</th>
+                        <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F;display:none;">Listino</th>
+                        <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#D87840;display:none;">Early Access</th>
+                        <th class="text-left p-3 border" style="border-color:#C8D0D0;color:#1A1F1F">Target</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr style="background:#F5F7F7">
-                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#8A9696">PRIMUS</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">4 ore &middot; mezza giornata</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Studenti e team aziendali — primo approccio all'AI</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Mappa di Maturita Digitale personalizzata</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">In presenza o online sincrono</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">
+                            <div class="font-bold" style="color:#8A9696">PRIMUS</div>
+                            <div class="text-xs mt-1" style="color:#8A9696">Prima di tutto il perché &mdash; evento di consapevolezza AI</div>
+                        </td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">4h &middot; mezza giornata</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252;display:none;">&euro; 2.500</td>
+                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#D87840;background:rgba(226,138,83,0.05);display:none;">&euro; 1.500</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Imprenditori e dirigenti senza esperienza AI pregressa</td>
                     </tr>
                     <tr>
-                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#55B1AE">CONSILIUM</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">7 ore &middot; 1 giornata</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Studenti e team aziendali — visione strategica</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Visione strategica AI e roadmap 90 giorni</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">In presenza o online sincrono</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">
+                            <div class="font-bold" style="color:#55B1AE">CONSILIUM</div>
+                            <div class="text-xs mt-1" style="color:#8A9696">Workshop direzionale o consulenza strategica facilitata</div>
+                        </td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">7h &middot; 1 giornata</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252;display:none;">&euro; 5.000</td>
+                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#D87840;background:rgba(226,138,83,0.05);display:none;">&euro; 2.500</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Direzione, board, comitato innovazione</td>
                     </tr>
                     <tr style="background:#F5F7F7">
-                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#55B1AE">INITIUM</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">
+                            <div class="font-bold" style="color:#55B1AE">INITIUM</div>
+                            <div class="text-xs mt-1" style="color:#8A9696">Fondamenta AI Operativa con certificazione</div>
+                        </td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">20h + 3h esame</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Studenti e team aziendali — uso operativo quotidiano</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">AI literacy operativa &middot; compliance AI Act</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">In presenza o ibrido</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252;display:none;">&euro; 7.500</td>
+                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#D87840;background:rgba(226,138,83,0.05);display:none;">&euro; 4.800</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Personale che usa strumenti AI</td>
                     </tr>
                     <tr>
-                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#55B1AE">STRUCTURA</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">24 ore &middot; 6 moduli</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Studenti e team aziendali — gestione della conoscenza</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Second Brain aziendale con Obsidian</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">In presenza o online sincrono</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">
+                            <div class="font-bold" style="color:#55B1AE">STRUCTURA</div>
+                            <div class="text-xs mt-1" style="color:#8A9696">Second Brain Aziendale &mdash; vault Obsidian incluso</div>
+                        </td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">24h &middot; 6 moduli</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252;display:none;">&euro; 8.500</td>
+                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#D87840;background:rgba(226,138,83,0.05);display:none;">&euro; 5.400</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Knowledge worker, Project Manager</td>
                     </tr>
                     <tr style="background:#F5F7F7">
-                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#55B1AE">AI AGENTS & MCP</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">~9 ore (L1+L2)</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Responsabili IT, innovation manager, team tecnici</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">Governance agenti AI e protocollo MCP</td>
-                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">L1 asincrono + L2 in presenza</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">
+                            <div class="font-bold" style="color:#55B1AE">AGENTI AI E MCP</div>
+                            <div class="text-xs mt-1" style="color:#8A9696">Agenti AI in azienda, governance HITL</div>
+                        </td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">~9h asincrono + workshop</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252;display:none;">&euro; 4.900</td>
+                        <td class="p-3 border font-bold" style="border-color:#C8D0D0;color:#D87840;background:rgba(226,138,83,0.05);display:none;">&euro; 3.200</td>
+                        <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">PM, responsabili innovazione, IT</td>
                     </tr>
                 </tbody>
             </table>
