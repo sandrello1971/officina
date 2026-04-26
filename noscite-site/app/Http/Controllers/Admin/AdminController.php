@@ -16,6 +16,26 @@ class AdminController extends Controller
         if (session('admin_user')) {
             return redirect()->route('admin.dashboard');
         }
+
+        $intranetUser = session('intranet_user');
+        if ($intranetUser && !empty($intranetUser['email'])) {
+            $admins = config('intranet.admins', []);
+            if (in_array($intranetUser['email'], $admins)) {
+                session([
+                    'admin_user' => [
+                        'id' => $intranetUser['id'],
+                        'name' => $intranetUser['name'],
+                        'email' => $intranetUser['email'],
+                        'avatar' => $intranetUser['avatar'] ?? null,
+                    ],
+                ]);
+                Log::info('Admin auto-promoted from intranet session', [
+                    'email' => $intranetUser['email'],
+                ]);
+                return redirect()->route('admin.dashboard');
+            }
+        }
+
         return view('admin.auth.login');
     }
 
@@ -24,7 +44,6 @@ class AdminController extends Controller
         return Socialite::driver('microsoft')
             ->redirectUrl(url('/nosciteadmin/auth/callback'))
             ->scopes(['openid', 'profile', 'email', 'User.Read'])
-            ->with(['prompt' => 'select_account'])
             ->redirect();
     }
 

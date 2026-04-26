@@ -20,7 +20,6 @@ class IntranetAuthController extends Controller
         return Socialite::driver('microsoft')
             ->redirectUrl(url('/intranet/auth/callback'))
             ->scopes(['openid', 'profile', 'email', 'User.Read'])
-            ->with(['prompt' => 'select_account'])
             ->redirect();
     }
 

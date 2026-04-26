@@ -72,9 +72,146 @@
                 .module-content code { background:#F5F7F7; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:0.875rem; color:#E28A53; }
                 .module-content pre { background:#1A1F1F; color:#E8EDED; padding:16px; border-radius:8px; overflow-x:auto; margin:1rem 0; }
             </style>
-            <div class="module-content">
-                {!! $module->content !!}
+            <div class="module-content"
+                 x-data="anchoredNotes({
+                    moduleId: '{{ $module->id }}',
+                    csrf: '{{ csrf_token() }}',
+                    isDemo: {{ $isDemo ? 'true' : 'false' }},
+                    initial: {{ Js::from($studentNotes->where('anchor', '!=', null)->values()) }}
+                 })"
+                 x-init="init()"
+                 x-ref="contentRoot">
+                <div x-ref="contentBody">
+                    {!! $module->content !!}
+                </div>
+
+                @unless($isDemo)
+                {{-- FAB floating "Mie note" --}}
+                <button x-show="totalAnchored > 0" type="button"
+                        @click="panelOpen = !panelOpen"
+                        style="position:fixed; top:90px; right:20px; z-index:60;
+                               padding:10px 16px; background:#E28A53; color:white;
+                               border:none; border-radius:24px; cursor:pointer;
+                               font-size:0.85rem; font-weight:700;
+                               box-shadow:0 4px 12px rgba(226,138,83,0.35);
+                               display:flex; align-items:center; gap:8px;"
+                        title="Mostra le tue note ancorate">
+                    📝 <span x-text="totalAnchored"></span>
+                </button>
+
+                {{-- Backdrop --}}
+                <div x-show="panelOpen" x-transition.opacity
+                     @click="panelOpen = false"
+                     style="position:fixed; inset:0; background:rgba(26,31,31,0.4); z-index:65; cursor:pointer;"></div>
+
+                {{-- Pannello laterale --}}
+                <aside x-show="panelOpen" x-transition
+                       style="position:fixed; top:0; right:0; bottom:0; width:340px; max-width:90vw;
+                              background:white; box-shadow:-8px 0 24px rgba(26,31,31,0.15);
+                              z-index:70; display:flex; flex-direction:column;">
+                    <header style="padding:16px 20px; border-bottom:1px solid #E8F5F5;
+                                   display:flex; align-items:center; gap:10px;">
+                        <span style="font-weight:700; color:#1A1F1F; font-size:0.95rem;">📝 Le tue note</span>
+                        <span style="color:#8A9696; font-size:0.85rem;" x-text="'(' + totalAnchored + ')'"></span>
+                        <button @click="panelOpen = false" type="button"
+                                style="margin-left:auto; background:none; border:none;
+                                       font-size:1.4rem; cursor:pointer; color:#8A9696; line-height:1;">×</button>
+                    </header>
+                    <div style="flex:1; overflow-y:auto; padding:16px 20px;">
+                        <template x-if="notes.length === 0">
+                            <div style="color:#8A9696; font-size:0.85rem; text-align:center; padding:40px 0;">
+                                Nessuna nota ancorata.<br>
+                                Passa il mouse su un paragrafo e clicca <strong>+</strong> per crearne una.
+                            </div>
+                        </template>
+                        <template x-for="note in notes" :key="note.anchor">
+                            <article style="background:#F5F7F7; border-radius:8px; padding:12px; margin-bottom:10px;
+                                            border-left:3px solid #E28A53;">
+                                <div style="font-size:0.7rem; color:#D87840; font-weight:700; margin-bottom:4px;"
+                                     x-text="'📍 ' + note.anchor.toUpperCase()"></div>
+                                <div style="font-size:0.85rem; color:#1A1F1F; line-height:1.5;
+                                            white-space:pre-wrap; margin-bottom:8px;"
+                                     x-text="note.content"></div>
+                                <div style="display:flex; gap:6px;">
+                                    <button type="button" @click="goToAnchor(note.anchor); panelOpen = false"
+                                            style="padding:4px 10px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:5px; font-size:0.7rem; font-weight:600; cursor:pointer;">↗ vai</button>
+                                    <button type="button" @click="openPopoverFor(note.anchor); panelOpen = false"
+                                            style="padding:4px 10px; background:white; color:#5A6464; border:1px solid #C8D0D0; border-radius:5px; font-size:0.7rem; cursor:pointer;">✎ modifica</button>
+                                    <button type="button" @click="if (confirm('Cancellare questa nota?')) deleteNote(note.anchor)"
+                                            style="padding:4px 10px; background:white; color:#C52A2A; border:1px solid #E28282; border-radius:5px; font-size:0.7rem; cursor:pointer;">🗑</button>
+                                </div>
+                            </article>
+                        </template>
+                    </div>
+                </aside>
+
+                {{-- Popover scrittura nota --}}
+                <div x-show="popoverAnchor" x-transition
+                     style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+                            width:480px; max-width:calc(100vw - 32px); z-index:75;
+                            background:white; border-radius:12px; padding:16px;
+                            box-shadow:0 8px 32px rgba(26,31,31,0.25); border:1px solid #E8F5F5;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <span style="font-weight:700; color:#1A1F1F; font-size:0.85rem;">📝 Nota a</span>
+                        <span style="background:#E28A53; color:white; padding:2px 8px; border-radius:6px;
+                                     font-size:0.7rem; font-weight:700; font-family:monospace;"
+                              x-text="popoverAnchor?.toUpperCase()"></span>
+                        <button type="button" @click="popoverAnchor = null"
+                                style="margin-left:auto; background:none; border:none;
+                                       color:#8A9696; cursor:pointer; font-size:1.2rem; line-height:1;">×</button>
+                    </div>
+                    <textarea x-model="popoverContent"
+                              x-ref="popoverTextarea"
+                              @keydown.ctrl.enter.prevent="savePopover()"
+                              @keydown.meta.enter.prevent="savePopover()"
+                              placeholder="Scrivi la tua nota… (Ctrl+Invio per salvare)"
+                              style="width:100%; min-height:100px; padding:10px;
+                                     border:1px solid #C8D0D0; border-radius:6px;
+                                     font-size:0.85rem; line-height:1.5; resize:vertical;
+                                     outline:none; font-family:inherit;"></textarea>
+                    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+                        <span style="font-size:0.75rem; color:#8A9696; margin-right:auto;"
+                              x-text="popoverStatus"></span>
+                        <button type="button" @click="popoverAnchor = null"
+                                style="padding:6px 14px; background:white; color:#5A6464;
+                                       border:1px solid #C8D0D0; border-radius:6px;
+                                       font-size:0.8rem; cursor:pointer;">Annulla</button>
+                        <button type="button" @click="savePopover()"
+                                style="padding:6px 16px; background:#55B1AE; color:white;
+                                       border:none; border-radius:6px; font-size:0.8rem;
+                                       font-weight:600; cursor:pointer;">💾 Salva</button>
+                    </div>
+                </div>
+                @endunless
             </div>
+
+            <style>
+                .annotated-block { display:flex; align-items:flex-start; gap:0; }
+                .annotated-block > *:not(.note-pin-wrapper) { flex:1; min-width:0; }
+                .note-pin-wrapper { width:0; flex-shrink:0; align-self:stretch; position:relative; }
+                .note-pin {
+                    position:sticky; top:84px; left:-36px;
+                    width:28px; height:28px;
+                    background:white; border:1.5px solid #C8D0D0; border-radius:50%;
+                    color:#8A9696; font-size:1rem; font-weight:700;
+                    cursor:pointer; opacity:0; transition:opacity 0.15s, background 0.15s;
+                    display:flex; align-items:center; justify-content:center;
+                    z-index:5; padding:0; line-height:1;
+                    transform:translateX(-36px);
+                }
+                .annotated-block:hover .note-pin { opacity:1; }
+                .note-pin.has-note { opacity:1; background:#E28A53; border-color:#E28A53; color:white; }
+                .note-pin:hover { background:#3A8C89; border-color:#3A8C89; color:white; }
+                .note-pin.has-note:hover { background:#D87840; border-color:#D87840; }
+                .module-content [data-note-anchor].anchor-flash {
+                    animation: anchorFlash 1.8s ease-out;
+                }
+                @keyframes anchorFlash {
+                    0%   { background:rgba(226,138,83,0); }
+                    20%  { background:rgba(226,138,83,0.25); }
+                    100% { background:rgba(226,138,83,0); }
+                }
+            </style>
         </div>
         @else
         <div style="background:white; border-radius:12px; padding:28px; margin-bottom:20px; color:#8A9696; text-align:center;">
@@ -421,6 +558,161 @@ if (progressBar) {
         const scrolled = docHeight > 0 ? (window.scrollY / docHeight) * 100 : 0;
         progressBar.style.width = Math.min(scrolled, 100) + '%';
     });
+}
+
+// Note ancorate per paragrafo (Alpine component)
+function anchoredNotes(opts) {
+    return {
+        moduleId: opts.moduleId,
+        csrf: opts.csrf,
+        isDemo: opts.isDemo,
+        notes: opts.initial || [],
+        panelOpen: false,
+        popoverAnchor: null,
+        popoverContent: '',
+        popoverStatus: '',
+
+        get totalAnchored() { return this.notes.length; },
+
+        init() {
+            if (this.isDemo) return;
+            this.$nextTick(() => this.injectPins());
+        },
+
+        injectPins() {
+            const root = this.$refs.contentBody;
+            if (!root) return;
+            const blocks = root.querySelectorAll('[data-note-anchor]');
+            blocks.forEach((el) => {
+                if (el.dataset.pinInjected) return;
+                const anchor = el.dataset.noteAnchor;
+                if (!anchor) return;
+
+                // Wrappa l'elemento in un container flex
+                const wrapper = document.createElement('div');
+                wrapper.className = 'annotated-block';
+                el.parentNode.insertBefore(wrapper, el);
+
+                // Wrapper del pin (width:0 per non rubare layout, sticky inside)
+                const pinWrap = document.createElement('div');
+                pinWrap.className = 'note-pin-wrapper';
+
+                const pin = document.createElement('button');
+                pin.type = 'button';
+                pin.className = 'note-pin';
+                pin.dataset.anchor = anchor;
+                pin.title = 'Aggiungi/modifica nota a questo paragrafo';
+                pin.textContent = '+';
+                pin.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.openPopoverFor(anchor);
+                });
+
+                pinWrap.appendChild(pin);
+                wrapper.appendChild(pinWrap);
+                wrapper.appendChild(el);
+
+                el.dataset.pinInjected = '1';
+                this.refreshPin(anchor);
+            });
+        },
+
+        refreshPin(anchor) {
+            const root = this.$refs.contentBody;
+            if (!root) return;
+            const pin = root.querySelector(`.note-pin[data-anchor="${anchor}"]`);
+            if (!pin) return;
+            const has = this.notes.some(n => n.anchor === anchor);
+            if (has) {
+                pin.classList.add('has-note');
+                pin.textContent = '📝';
+            } else {
+                pin.classList.remove('has-note');
+                pin.textContent = '+';
+            }
+        },
+
+        openPopoverFor(anchor) {
+            const existing = this.notes.find(n => n.anchor === anchor);
+            this.popoverAnchor = anchor;
+            this.popoverContent = existing?.content || '';
+            this.popoverStatus = '';
+            this.$nextTick(() => this.$refs.popoverTextarea?.focus());
+        },
+
+        async savePopover() {
+            if (!this.popoverAnchor) return;
+            this.popoverStatus = 'Salvataggio…';
+            try {
+                const res = await fetch(`/learn/notes/${this.moduleId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf,
+                    },
+                    body: JSON.stringify({
+                        anchor: this.popoverAnchor,
+                        content: this.popoverContent,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    this.popoverStatus = 'Errore di salvataggio';
+                    return;
+                }
+                const anchor = this.popoverAnchor;
+                if (data.deleted) {
+                    this.notes = this.notes.filter(n => n.anchor !== anchor);
+                } else if (data.note) {
+                    const idx = this.notes.findIndex(n => n.anchor === anchor);
+                    const noteData = {
+                        id: data.note.id,
+                        anchor: data.note.anchor,
+                        content: data.note.content,
+                    };
+                    if (idx >= 0) this.notes[idx] = noteData;
+                    else this.notes.push(noteData);
+                }
+                this.refreshPin(anchor);
+                this.popoverStatus = 'Salvato ✓';
+                setTimeout(() => {
+                    if (this.popoverStatus === 'Salvato ✓') this.popoverAnchor = null;
+                }, 800);
+            } catch (e) {
+                this.popoverStatus = 'Errore: ' + e.message;
+            }
+        },
+
+        async deleteNote(anchor) {
+            try {
+                const res = await fetch(`/learn/notes/${this.moduleId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf,
+                    },
+                    body: JSON.stringify({ anchor: anchor, content: '' }),
+                });
+                if (res.ok) {
+                    this.notes = this.notes.filter(n => n.anchor !== anchor);
+                    this.refreshPin(anchor);
+                }
+            } catch (e) { /* silent */ }
+        },
+
+        goToAnchor(anchor) {
+            const root = this.$refs.contentBody;
+            if (!root) return;
+            const el = root.querySelector(`[data-note-anchor="${anchor}"]`);
+            if (!el) return;
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.remove('anchor-flash');
+            void el.offsetWidth; // restart animation
+            el.classList.add('anchor-flash');
+        },
+    };
 }
 </script>
 @endpush

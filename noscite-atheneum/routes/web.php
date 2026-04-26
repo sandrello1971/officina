@@ -50,6 +50,8 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/certificate/{course:slug}/view', [App\Http\Controllers\Student\CertificateController::class, 'show'])->name('certificate.show');
 
         Route::post('/notes/{module}', [App\Http\Controllers\Student\NoteController::class, 'save'])->name('notes.save');
+        Route::get('/notes/{module}', [App\Http\Controllers\Student\NoteController::class, 'list'])->name('notes.list');
+        Route::delete('/notes/{note}', [App\Http\Controllers\Student\NoteController::class, 'delete'])->name('notes.delete');
 
         Route::get('/course/{course:slug}/instructor/{material}', [App\Http\Controllers\Student\InstructorMaterialController::class, 'show'])->name('instructor.material.show');
         Route::get('/course/{course:slug}/instructor/{material}/download', [App\Http\Controllers\Student\InstructorMaterialController::class, 'download'])->name('instructor.material.download');

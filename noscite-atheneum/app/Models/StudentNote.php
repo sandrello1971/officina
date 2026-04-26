@@ -9,5 +9,10 @@ class StudentNote extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['student_id', 'module_id', 'content'];
+    protected $fillable = ['student_id', 'module_id', 'anchor', 'content'];
+
+    public function module()
+    {
+        return $this->belongsTo(Module::class);
+    }
 }
