@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Canvas 5 — AI Usage Policy essenziale | CONSILIUM</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --blue: #1A3F6F; --teal: #3A8C89; --teal-light: #E8F5F5;
+    --accent: #55B1AE; --gray: #6B7280; --dark: #1F2937;
+    --bg: #F7F9FC; --border: #CBD5E1;
+    --green: #0E7C5E; --green-light: #D1FAE5;
+    --amber: #92400E; --amber-light: #FEF3C7;
+    --red: #991B1B; --red-light: #FEE2E2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--dark); -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 12mm 6mm; }
+@page { size: A3 landscape; margin: 8mm; }
+
+/* Toolbar (solo schermo) */
+.toolbar {
+    position: sticky; top: 0;
+    background: var(--blue); color: white;
+    padding: 10px 16px; margin: -12mm -6mm 12mm -6mm;
+    display: flex; align-items: center; gap: 14px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+.toolbar .title { font-weight: 700; flex: 1; }
+.toolbar .status { font-size: 13px; opacity: 0.85; min-width: 130px; text-align: right; font-weight: 500; }
+.toolbar .status.saved { color: #BEF5C8; }
+.toolbar .status.saving { color: #FDE68A; }
+.toolbar .status.error { color: #FCA5A5; }
+.toolbar .btn { background: var(--accent); color: white; border: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; font-size: 13px; }
+.toolbar .btn:hover { background: var(--teal); }
+
+@media print {
+    body { background: white; padding: 0; }
+    .toolbar { display: none; }
+}
+
+.page { width: 410mm; min-height: 280mm; margin: 0 auto; padding: 8mm; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+@media print { .page { box-shadow: none; padding: 0; } }
+
+.header { display: flex; align-items: center; justify-content: space-between; background: var(--blue); color: white; padding: 6mm 8mm; border-radius: 3mm; margin-bottom: 5mm; }
+.header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 9mm; font-weight: 700; }
+.header h1 span { color: var(--accent); }
+.header .meta { font-size: 3.5mm; text-align: right; line-height: 1.4; opacity: 0.85; }
+.subtitle { font-family: 'Space Grotesk', sans-serif; color: var(--blue); font-size: 4mm; margin-bottom: 4mm; line-height: 1.5; }
+.subtitle strong { color: var(--teal); }
+
+.section { border: 0.4mm solid var(--border); border-radius: 2mm; padding: 4mm; margin-bottom: 3mm; background: white; }
+.section-num { font-family: 'Space Grotesk', sans-serif; font-size: 7mm; font-weight: 700; color: var(--accent); float: left; line-height: 1; margin-right: 3mm; }
+.section-title { font-family: 'Space Grotesk', sans-serif; font-size: 4.5mm; font-weight: 700; color: var(--blue); }
+.section-desc { font-size: 2.8mm; color: var(--gray); margin-top: 1mm; line-height: 1.4; }
+.s-body { clear: both; padding-top: 3mm; }
+
+.data-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3mm; }
+.data-cell { padding: 3mm; border-radius: 2mm; }
+.data-cell.public { background: var(--green-light); border: 0.4mm solid var(--green); }
+.data-cell.internal { background: var(--amber-light); border: 0.4mm solid var(--amber); }
+.data-cell.confidential { background: var(--red-light); border: 0.4mm solid var(--red); }
+.data-cell h4 { font-family: 'Space Grotesk', sans-serif; font-size: 3.6mm; margin-bottom: 1.5mm; }
+.data-cell.public h4 { color: var(--green); }
+.data-cell.internal h4 { color: var(--amber); }
+.data-cell.confidential h4 { color: var(--red); }
+.data-cell .examples { font-size: 2.6mm; color: var(--gray); margin-bottom: 2mm; line-height: 1.4; }
+.data-cell .rule { font-weight: 600; font-size: 2.9mm; padding: 2mm; background: rgba(255,255,255,0.6); border-radius: 1.5mm; margin-bottom: 2mm; }
+.data-cell .label-input { font-size:2.6mm; color:var(--gray); margin-bottom:1mm; }
+
+.platforms { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5mm; }
+.platform-row { display: flex; align-items: center; gap: 2.5mm; padding: 2mm; border: 0.3mm solid var(--border); border-radius: 1.5mm; }
+.platform-row .name { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 3.2mm; }
+.platform-row .plan { font-size: 2.6mm; color: var(--gray); margin-left: auto; }
+.platform-row input[type="checkbox"] { width: 4mm; height: 4mm; cursor: pointer; flex-shrink: 0; accent-color: var(--blue); }
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+
+/* TEXTAREA come righe */
+textarea.canvas-input {
+    width: 100%;
+    border: none;
+    background: repeating-linear-gradient(to bottom, transparent 0, transparent 5mm, var(--border) 5mm, var(--border) 5.15mm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 3.2mm;
+    line-height: 5mm;
+    color: var(--dark);
+    resize: vertical;
+    padding: 0 1mm;
+    outline: none;
+}
+textarea.canvas-input:focus {
+    background: rgba(85, 177, 174, 0.08);
+}
+textarea.canvas-input.h-2 { min-height: 10mm; }
+textarea.canvas-input.h-3 { min-height: 15mm; }
+textarea.canvas-input.h-4 { min-height: 20mm; }
+
+input.canvas-text {
+    width: 100%; border: none;
+    border-bottom: 0.4mm solid var(--border);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 3.2mm; padding: 1mm 1mm;
+    color: var(--dark); outline: none;
+}
+input.canvas-text:focus { border-bottom-color: var(--accent); background: rgba(85,177,174,0.05); }
+
+@media print {
+    textarea.canvas-input, input.canvas-text {
+        background: white !important;
+        border: none !important;
+    }
+    textarea.canvas-input {
+        border-bottom: 0 !important;
+    }
+    input.canvas-text {
+        border-bottom: 0.3mm solid var(--border) !important;
+    }
+}
+
+.footer { display: flex; justify-content: space-between; align-items: center; margin-top: 3mm; padding-top: 2.5mm; border-top: 0.3mm solid var(--border); font-size: 2.8mm; color: var(--gray); }
+.footer-fields { display: flex; gap: 6mm; flex: 1; }
+.footer-fields > div { flex: 1; }
+.footer-fields label { display: block; color: var(--gray); font-size: 2.4mm; margin-bottom: 0.5mm; }
+.brand { font-family: 'Space Grotesk', sans-serif; color: var(--teal); font-weight: 600; text-align: right; line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+    <span class="title">Canvas 5 — AI Usage Policy essenziale</span>
+    <span class="status" id="save-status">In attesa…</span>
+    <button class="btn" onclick="window.print()">🖨 Stampa</button>
+</div>
+
+<div class="page">
+
+    <div class="header">
+        <h1>Canvas <span>5</span> — AI Usage Policy essenziale</h1>
+        <div class="meta">
+            CONSILIUM &middot; Modulo 4<br>
+            Strategia AI per PMI &middot; v2.0
+        </div>
+    </div>
+
+    <div class="subtitle">
+        Il "minimo vitale" della policy AI aziendale. <strong>Da estendere</strong> in INITIUM (Modulo 5: Data Governance e Private AI) con DPIA, gestione incidenti, conformità GDPR avanzata.
+    </div>
+
+    <div class="section">
+        <span class="section-num">1</span>
+        <div class="section-title">Classificazione dei dati</div>
+        <div class="section-desc">Ogni informazione aziendale ha un livello di sensibilità che determina come può essere usata con strumenti AI.</div>
+        <div class="s-body">
+            <div class="data-grid">
+                <div class="data-cell public">
+                    <h4>● Dati pubblici</h4>
+                    <div class="examples">Catalogo, sito web, brochure commerciali, comunicati stampa, informazioni di dominio pubblico.</div>
+                    <div class="rule">✓ Qualsiasi strumento AI consentito</div>
+                    <div class="label-input">Esempi specifici per la nostra azienda:</div>
+                    <textarea class="canvas-input h-3" data-field="examples_public" placeholder="es. catalogo prodotti, sito vetrina, comunicati stampa..."></textarea>
+                </div>
+                <div class="data-cell internal">
+                    <h4>● Dati interni</h4>
+                    <div class="examples">Procedure, organigramma, template operativi, comunicazioni interne, knowledge base aziendale.</div>
+                    <div class="rule">✓ Solo strumenti con opt-out addestramento (Team/Enterprise)</div>
+                    <div class="label-input">Esempi specifici per la nostra azienda:</div>
+                    <textarea class="canvas-input h-3" data-field="examples_internal" placeholder="es. procedure operative, comunicazioni interne..."></textarea>
+                </div>
+                <div class="data-cell confidential">
+                    <h4>● Dati riservati</h4>
+                    <div class="examples">Dati personali clienti/dipendenti, dati finanziari, segreti industriali, NDA.</div>
+                    <div class="rule">✓ Anonimizzare prima dell'uso o solo Enterprise con DPA</div>
+                    <div class="label-input">Esempi specifici per la nostra azienda:</div>
+                    <textarea class="canvas-input h-3" data-field="examples_confidential" placeholder="es. dati clienti, contratti, dati finanziari..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <span class="section-num">2</span>
+        <div class="section-title">Piattaforme autorizzate</div>
+        <div class="section-desc">Solo gli strumenti elencati possono essere usati con dati aziendali. Indicare il piano tariffario approvato.</div>
+        <div class="s-body">
+            <div class="platforms">
+                <div class="platform-row"><input type="checkbox" data-field="auth_chatgpt"><span class="name">ChatGPT</span><span class="plan">Team / Enterprise (con opt-out)</span></div>
+                <div class="platform-row"><input type="checkbox" data-field="auth_claude"><span class="name">Claude</span><span class="plan">Pro / Team (no addestramento di default)</span></div>
+                <div class="platform-row"><input type="checkbox" data-field="auth_perplexity"><span class="name">Perplexity</span><span class="plan">Pro (per la ricerca)</span></div>
+                <div class="platform-row"><input type="checkbox" data-field="auth_copilot"><span class="name">Microsoft Copilot 365</span><span class="plan">se M365 già attivo</span></div>
+                <div class="platform-row" style="grid-column:1 / -1;"><input type="checkbox" data-field="auth_other"><span class="name">Altri:</span><input type="text" class="canvas-text" data-field="auth_other_specify" style="flex:1; margin-left:2mm;" placeholder="specificare nome strumento e piano"></div>
+                <div class="platform-row" style="background:var(--red-light); border-color:var(--red); grid-column:1 / -1;"><span class="name" style="color:var(--red);">⚠ ChatGPT Free</span><span class="plan" style="color:var(--red);">SCONSIGLIATO uso aziendale (pubblicità + profilazione dal 2026)</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row-2">
+        <div class="section">
+            <span class="section-num">3</span>
+            <div class="section-title">Verifica degli output</div>
+            <div class="section-desc">L'AI è assistente, mai decisore autonomo. Per contesti critici (clienti, legale, finanza, offerte), serve verifica umana prima dell'invio.</div>
+            <div class="s-body">
+                <div style="font-size:2.7mm; color:var(--gray); margin-bottom:1mm; font-style:italic;">Output critici nella nostra azienda + responsabili della verifica:</div>
+                <textarea class="canvas-input h-3" data-field="verification_outputs" placeholder="es. offerte commerciali → responsabile commerciale; comunicazioni clienti → CEO..."></textarea>
+            </div>
+        </div>
+
+        <div class="section">
+            <span class="section-num">4</span>
+            <div class="section-title">Responsabilità</div>
+            <div class="section-desc">Chi mantiene la policy operativa, chi forma i nuovi assunti, chi è il punto di contatto per dubbi e incidenti.</div>
+            <div class="s-body">
+                <div style="font-size:2.7mm; color:var(--gray); margin-bottom:1mm; font-style:italic;">Owner aggiornamento policy / formatore / referente incidenti:</div>
+                <textarea class="canvas-input h-3" data-field="responsibilities" placeholder="es. Mario Rossi (CEO) — owner policy; Anna Bianchi (HR) — formatrice; ..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" style="background:var(--teal-light); border-color:var(--teal);">
+        <span class="section-num" style="color:var(--teal);">5</span>
+        <div class="section-title" style="color:var(--teal);">Prossimi passi per la policy completa</div>
+        <div class="section-desc">Questa policy è il "minimo vitale". La versione completa (procedure dettagliate, DPIA, incidenti, GDPR avanzato) si sviluppa nel percorso INITIUM.</div>
+        <div class="s-body">
+            <textarea class="canvas-input h-3" data-field="next_steps" placeholder="es. avvio INITIUM entro 30gg; revisione DPIA entro 60gg; ..."></textarea>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-fields">
+            <div>
+                <label>Approvata da</label>
+                <input type="text" class="canvas-text" data-field="approved_by" placeholder="nome e ruolo">
+            </div>
+            <div>
+                <label>Firma</label>
+                <input type="text" class="canvas-text" data-field="signature" placeholder="(in stampa)">
+            </div>
+            <div>
+                <label>Data</label>
+                <input type="text" class="canvas-text" data-field="signed_at" placeholder="gg/mm/aaaa">
+            </div>
+        </div>
+        <div class="brand">
+            NOSCITE<br>
+            <span style="color:var(--gray); font-weight:400; font-size:2.4mm;">In digitālī nova virtūs</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function() {
+    const status = document.getElementById('save-status');
+    const params = new URLSearchParams(window.location.search);
+    const materialId = params.get('mid');
+
+    if (!materialId) {
+        status.textContent = '⚠ Apri questo canvas dal corso (manca mid)';
+        status.className = 'status error';
+        return;
+    }
+
+    const fields = document.querySelectorAll('[data-field]');
+    let saveTimer = null;
+
+    // CSRF dal cookie
+    function getCsrf() {
+        const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    function setStatus(text, cls) {
+        status.textContent = text;
+        status.className = 'status ' + (cls || '');
+    }
+
+    function collectData() {
+        const data = {};
+        fields.forEach(el => {
+            const k = el.dataset.field;
+            if (el.type === 'checkbox') data[k] = el.checked;
+            else data[k] = el.value;
+        });
+        return data;
+    }
+
+    function applyData(data) {
+        fields.forEach(el => {
+            const k = el.dataset.field;
+            if (data[k] === undefined) return;
+            if (el.type === 'checkbox') el.checked = !!data[k];
+            else el.value = data[k] ?? '';
+        });
+    }
+
+    async function load() {
+        setStatus('Caricamento…');
+        try {
+            const res = await fetch(`/learn/canvas/${materialId}/data`, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) {
+                if (res.status === 403 || res.status === 401) setStatus('⚠ Devi essere loggato', 'error');
+                else setStatus('⚠ Errore caricamento (' + res.status + ')', 'error');
+                return;
+            }
+            const json = await res.json();
+            applyData(json.data || {});
+            setStatus(json.updated_at ? 'Salvato ✓' : 'Pronto', 'saved');
+        } catch (e) {
+            setStatus('⚠ Errore rete: ' + e.message, 'error');
+        }
+    }
+
+    async function save() {
+        setStatus('Salvataggio…', 'saving');
+        try {
+            const res = await fetch(`/learn/canvas/${materialId}/data`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-XSRF-TOKEN': getCsrf() || '',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ data: collectData() }),
+            });
+            if (!res.ok) {
+                setStatus('⚠ Errore salvataggio (' + res.status + ')', 'error');
+                return;
+            }
+            const json = await res.json();
+            if (json.demo) {
+                setStatus('Demo — non salvato', 'saving');
+            } else {
+                setStatus('Salvato ✓', 'saved');
+            }
+        } catch (e) {
+            setStatus('⚠ Errore rete: ' + e.message, 'error');
+        }
+    }
+
+    function debouncedSave() {
+        clearTimeout(saveTimer);
+        setStatus('Modifica…', 'saving');
+        saveTimer = setTimeout(save, 700);
+    }
+
+    fields.forEach(el => {
+        el.addEventListener('input', debouncedSave);
+        el.addEventListener('change', debouncedSave);
+    });
+
+    // Init
+    load();
+})();
+</script>
+
+</body>
+</html>

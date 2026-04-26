@@ -337,7 +337,7 @@
                         🔒 Solo versione completa
                     </span>
                 @elseif($material->file_type === 'canvas' && $material->file_path)
-                    <a href="/storage/{{ $material->file_path }}" target="_blank"
+                    <a href="/storage/{{ $material->file_path }}?mid={{ $material->id }}" target="_blank"
                        style="padding:6px 14px; background:linear-gradient(135deg,#55B1AE,#3A8C89); color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                         Apri canvas →
                     </a>
