@@ -7,6 +7,25 @@
     <link rel="apple-touch-icon" href="/favicon.png">
     <title>@yield('title', 'Atheneum Noscite') — Atheneum Noscite</title>
     <meta name="description" content="@yield('description', 'Atheneum Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: CONSILIUM, INITIUM, STRUCTURA, AI AGENTS & MCP.')">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Atheneum Noscite">
+    <meta property="og:locale" content="it_IT">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="@yield('og_title', View::getSection('title') ?? 'Atheneum Noscite — Formazione AI per PMI')">
+    <meta property="og:description" content="@yield('og_description', View::getSection('description') ?? 'Atheneum Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: CONSILIUM, INITIUM, STRUCTURA, AI AGENTS & MCP.')">
+    <meta property="og:image" content="@yield('og_image', url('/images/atheneum_new.png'))">
+    <meta property="og:image:width" content="1536">
+    <meta property="og:image:height" content="1024">
+    <meta property="og:image:alt" content="Atheneum Noscite — Formazione AI per PMI">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('og_title', View::getSection('title') ?? 'Atheneum Noscite — Formazione AI per PMI')">
+    <meta name="twitter:description" content="@yield('og_description', View::getSection('description') ?? 'Atheneum Noscite: formazione AI certificata per PMI italiane.')">
+    <meta name="twitter:image" content="@yield('og_image', url('/images/atheneum_new.png'))">
+
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preload" as="image" href="/images/logo.png">
 
