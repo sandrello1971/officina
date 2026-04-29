@@ -12,7 +12,7 @@
     <div style="background:linear-gradient(135deg,#E8F5F5,#ffffff); border-radius:12px; padding:20px; margin-bottom:20px; border-left:4px solid #55B1AE;">
         <div style="font-size:0.85rem; color:#3A8C89; font-weight:700; margin-bottom:6px;">Come funziona</div>
         <div style="font-size:0.8rem; color:#4A5252; line-height:1.6;">
-            1. Carichi il manuale discente (PDF o DOCX) → Claude identifica i moduli (PARTE PRIMA/SECONDA…) e i loro contenuti.<br>
+            1. Carichi il manuale discente (DOCX Word) → identificazione moduli (PARTE PRIMA/SECONDA…) automatica via pandoc, contenuti puliti.<br>
             2. Opzionalmente carichi il documento d'esame → Claude estrae le domande con opzioni e risposte corrette.<br>
             3. Vedi una preview e decidi cosa includere. Alla conferma vengono creati corso, moduli e quiz.
         </div>
@@ -29,20 +29,20 @@
 
         <div style="margin-bottom:20px;">
             <label style="font-size:0.85rem; font-weight:700; color:#1A1F1F; display:block; margin-bottom:8px;">📖 Manuale discente *</label>
-            <input type="file" name="manual_file" accept=".pdf,.docx,.doc,.txt" required
+            <input type="file" name="manual_file" accept=".docx,.doc" required
                    style="width:100%; padding:12px; border:2px dashed #55B1AE; border-radius:8px; font-size:0.85rem; background:#F5F7F7;">
             <p style="font-size:0.75rem; color:#8A9696; margin-top:6px;">
-                PDF o DOCX con struttura "PARTE PRIMA — Titolo", "Capitolo N", "X.Y". Max 50MB.
+                DOCX (Word) con struttura "PARTE PRIMA — Titolo", "Capitolo N", "X.Y". Max 50MB.
             </p>
             @error('manual_file')<p style="color:#E28A53; font-size:0.75rem; margin-top:4px;">{{ $message }}</p>@enderror
         </div>
 
         <div style="margin-bottom:20px;">
             <label style="font-size:0.85rem; font-weight:700; color:#1A1F1F; display:block; margin-bottom:8px;">📝 Documento esame (opzionale)</label>
-            <input type="file" name="exam_file" accept=".pdf,.docx,.doc,.txt"
+            <input type="file" name="exam_file" accept=".docx,.doc"
                    style="width:100%; padding:12px; border:2px dashed #C8D0D0; border-radius:8px; font-size:0.85rem; background:#F5F7F7;">
             <p style="font-size:0.75rem; color:#8A9696; margin-top:6px;">
-                PDF o DOCX con domande a risposta multipla. Max 20MB.
+                DOCX (Word) con domande a risposta multipla. Max 20MB.
             </p>
             @error('exam_file')<p style="color:#E28A53; font-size:0.75rem; margin-top:4px;">{{ $message }}</p>@enderror
         </div>

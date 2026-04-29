@@ -110,6 +110,8 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::get('courses/ingest/preview', [App\Http\Controllers\Admin\CourseIngestController::class, 'preview'])->name('courses.ingest.preview');
     Route::post('courses/ingest/confirm', [App\Http\Controllers\Admin\CourseIngestController::class, 'confirm'])->name('courses.ingest.confirm');
     Route::post('courses/ingest/cancel', [App\Http\Controllers\Admin\CourseIngestController::class, 'cancel'])->name('courses.ingest.cancel');
+    Route::get('courses/ingest/processing', [App\Http\Controllers\Admin\CourseIngestController::class, 'processing'])->name('courses.ingest.processing');
+    Route::get('courses/ingest/status', [App\Http\Controllers\Admin\CourseIngestController::class, 'status'])->name('courses.ingest.status');
 
     Route::resource('courses', App\Http\Controllers\Admin\CourseController::class);
     Route::resource('courses.modules', App\Http\Controllers\Admin\ModuleController::class);
