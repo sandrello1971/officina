@@ -3,10 +3,9 @@
 @section('content')
 
 @php
-    $manual = $data['manual'] ?? [];
+    $course = $data['course'] ?? [];
+    $modules = $data['modules'] ?? [];
     $exam = $data['exam'] ?? null;
-    $course = $manual['course'] ?? [];
-    $modules = $manual['modules'] ?? [];
     $questions = $exam['questions'] ?? [];
     $quizTitle = $exam['quiz_title'] ?? '';
     $passingScore = $exam['passing_score'] ?? 70;
@@ -27,6 +26,7 @@
 
     <form method="POST" action="{{ route('admin.courses.ingest.confirm') }}">
         @csrf
+        <input type="hidden" name="job_id" value="{{ $jobId }}">
 
         <div style="background:white; border-radius:12px; padding:20px; margin-bottom:16px;">
             <div style="font-weight:700; color:#1A1F1F; margin-bottom:12px; font-size:0.95rem;">📘 Corso</div>
