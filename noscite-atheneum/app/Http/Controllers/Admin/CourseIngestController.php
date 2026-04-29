@@ -3,20 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ParseCourseDocumentsJob;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
-use App\Services\CourseIngestionService;
+use App\Support\CourseIngestProgress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CourseIngestController extends Controller
 {
-    public function __construct(private CourseIngestionService $ingest) {}
-
     public function form()
     {
         return view('admin.courses.ingest.form');
@@ -25,68 +25,88 @@ class CourseIngestController extends Controller
     public function parse(Request $request)
     {
         $request->validate([
-            'manual_file' => 'required|file|mimes:pdf,docx,doc,txt|max:51200',
-            'exam_file' => 'nullable|file|mimes:pdf,docx,doc,txt|max:20480',
+            'manual_file' => 'required|file|mimes:docx,doc|max:51200',
+            'exam_file' => 'nullable|file|mimes:docx,doc|max:20480',
             'color' => 'nullable|string|max:20',
             'icon' => 'nullable|string|max:20',
             'certification_name' => 'nullable|string|max:255',
             'duration_hours' => 'nullable|integer',
         ]);
 
-        set_time_limit(0);
-        ini_set('memory_limit', '512M');
+        $jobId = (string) Str::uuid();
+        $stagingDir = "ingest-staging/{$jobId}";
 
-        try {
-            $manualText = $this->ingest->extractText($request->file('manual_file'));
-            if (empty(trim($manualText))) {
-                return back()->withInput()->with('error', 'Impossibile estrarre testo dal manuale. Verifica il file.');
-            }
+        $manualExt = $request->file('manual_file')->getClientOriginalExtension();
+        $manualPath = $request->file('manual_file')->storeAs($stagingDir, "manual.{$manualExt}", 'local');
 
-            $manualData = $this->ingest->parseManualToModules($manualText);
-
-            $examData = null;
-            if ($request->hasFile('exam_file')) {
-                $examText = $this->ingest->extractText($request->file('exam_file'));
-                if (!empty(trim($examText))) {
-                    $examData = $this->ingest->parseExamToQuestions($examText);
-                }
-            }
-
-            $session = [
-                'manual' => $manualData,
-                'exam' => $examData,
-                'settings' => [
-                    'color' => $request->input('color', '#55B1AE'),
-                    'icon' => $request->input('icon', '✦'),
-                    'certification_name' => $request->input('certification_name'),
-                    'duration_hours' => $request->input('duration_hours'),
-                ],
-            ];
-            session(['course_ingest' => $session]);
-
-            return redirect()->route('admin.courses.ingest.preview');
-        } catch (\Exception $e) {
-            Log::error('Course ingest parse failed: ' . $e->getMessage());
-            return back()->withInput()->with('error', 'Parsing fallito: ' . $e->getMessage());
+        $examPath = null;
+        if ($request->hasFile('exam_file')) {
+            $examExt = $request->file('exam_file')->getClientOriginalExtension();
+            $examPath = $request->file('exam_file')->storeAs($stagingDir, "exam.{$examExt}", 'local');
         }
+
+        CourseIngestProgress::init($jobId);
+
+        ParseCourseDocumentsJob::dispatch(
+            $jobId,
+            $manualPath,
+            $examPath,
+            [
+                'color' => $request->input('color', '#55B1AE'),
+                'icon' => $request->input('icon', '✦'),
+                'certification_name' => $request->input('certification_name'),
+                'duration_hours' => $request->input('duration_hours'),
+            ]
+        )->onQueue('ingest');
+
+        session(['course_ingest_job_id' => $jobId]);
+
+        return redirect()->route('admin.courses.ingest.processing', ['job' => $jobId]);
     }
 
-    public function preview()
+    public function processing(Request $request)
     {
-        $data = session('course_ingest');
-        if (!$data) {
-            return redirect()->route('admin.courses.ingest.form')->with('error', 'Nessun dato in sessione. Ricarica i documenti.');
+        $jobId = $request->query('job');
+        abort_unless($jobId && CourseIngestProgress::get($jobId), 404);
+        return view('admin.courses.ingest.processing', ['jobId' => $jobId]);
+    }
+
+    public function status(Request $request)
+    {
+        $jobId = $request->query('job');
+        $data = $jobId ? CourseIngestProgress::get($jobId) : null;
+        abort_unless($data, 404);
+        return response()->json($data);
+    }
+
+    public function preview(Request $request)
+    {
+        $jobId = $request->query('job') ?? session('course_ingest_job_id');
+        $data = $jobId ? CourseIngestProgress::get($jobId) : null;
+
+        if (!$data || empty($data['done']) || !empty($data['error']) || !isset($data['result'])) {
+            return redirect()->route('admin.courses.ingest.form')
+                ->with('error', 'Risultato non disponibile o scaduto. Ricarica i documenti.');
         }
 
-        return view('admin.courses.ingest.preview', ['data' => $data]);
+        return view('admin.courses.ingest.preview', [
+            'data' => $data['result'],
+            'jobId' => $jobId,
+        ]);
     }
 
     public function confirm(Request $request)
     {
-        $data = session('course_ingest');
-        if (!$data) {
+        $jobId = $request->input('job_id') ?? session('course_ingest_job_id');
+        $cacheData = $jobId ? CourseIngestProgress::get($jobId) : null;
+
+        if (!$cacheData || empty($cacheData['done']) || !isset($cacheData['result'])) {
             return redirect()->route('admin.courses.ingest.form')->with('error', 'Sessione scaduta. Ricarica.');
         }
+
+        $data = $cacheData['result'];
+        $settings = $data['settings'] ?? [];
+        $examPrepHtml = $data['exam_prep_html'] ?? null;
 
         $input = $request->validate([
             'course_name' => 'required|string|max:255',
@@ -108,15 +128,14 @@ class CourseIngestController extends Controller
             'questions.*.include' => 'nullable|string',
         ]);
 
-        $settings = $data['settings'] ?? [];
-
         try {
-            $courseId = DB::transaction(function () use ($input, $settings) {
+            $courseId = DB::transaction(function () use ($input, $settings, $examPrepHtml) {
                 $course = Course::create([
                     'name' => $input['course_name'],
                     'slug' => $input['course_slug'] ?: Str::slug($input['course_name']),
                     'description' => $input['course_description'] ?? null,
                     'short_description' => $input['course_short_description'] ?? null,
+                    'exam_prep_html' => $examPrepHtml,
                     'color' => $settings['color'] ?? '#55B1AE',
                     'icon' => $settings['icon'] ?? '✦',
                     'certification_name' => $settings['certification_name'] ?? null,
@@ -175,7 +194,10 @@ class CourseIngestController extends Controller
                 return $course->id;
             });
 
-            session()->forget('course_ingest');
+            CourseIngestProgress::forget($jobId);
+            session()->forget('course_ingest_job_id');
+            Storage::disk('local')->deleteDirectory("ingest-staging/{$jobId}");
+
             return redirect("/admin/courses/{$courseId}/edit")->with('success', 'Corso creato dai documenti!');
         } catch (\Exception $e) {
             Log::error('Course ingest confirm failed: ' . $e->getMessage());
@@ -183,8 +205,14 @@ class CourseIngestController extends Controller
         }
     }
 
-    public function cancel()
+    public function cancel(Request $request)
     {
+        $jobId = $request->input('job_id') ?? session('course_ingest_job_id');
+        if ($jobId) {
+            CourseIngestProgress::forget($jobId);
+            Storage::disk('local')->deleteDirectory("ingest-staging/{$jobId}");
+        }
+        session()->forget('course_ingest_job_id');
         session()->forget('course_ingest');
         return redirect()->route('admin.courses.index')->with('success', 'Ingestione annullata.');
     }

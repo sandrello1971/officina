@@ -66,56 +66,6 @@ class CourseIngestionService
         return $out;
     }
 
-    public function parseManualToModules(string $text): array
-    {
-        $text = $this->normalizeText($text);
-        if (empty(trim($text))) {
-            throw new \RuntimeException('Testo manuale vuoto. Controlla che il file contenga testo estraibile.');
-        }
-
-        $systemPrompt = <<<'SYS'
-Sei un assistant specializzato nell'analisi di manuali didattici di Noscite.
-Ricevi il testo di un manuale strutturato con:
-- "PARTE PRIMA — Titolo", "PARTE SECONDA — Titolo", ecc → delimitatori di MODULO
-- "Capitolo N — Titolo" → sotto-sezione dentro un modulo
-- "X.Y Titoletto" → paragrafo dentro un capitolo
-
-Il tuo compito:
-1. Identificare il NOME del corso (se presente nelle prime righe) e una short_description
-2. Identificare i MODULI (ogni PARTE = un modulo)
-3. Per ciascun modulo, estrarre title, description breve (1 frase), e content_html
-   con il testo ricostruito in HTML semantico usando <h2> per Capitoli, <h3> per
-   sotto-paragrafi X.Y, <p> per testo, <ul>/<li> per liste
-4. Rispondi SOLO con JSON valido, nessun testo extra, nessun markdown
-
-Formato JSON richiesto:
-{
-  "course": {
-    "name": "nome del corso",
-    "short_description": "breve descrizione",
-    "description": "descrizione estesa"
-  },
-  "modules": [
-    {
-      "title": "Modulo 1 — Titolo",
-      "description": "descrizione breve del modulo",
-      "content_html": "<h2>Capitolo 1 — ...</h2><h3>1.1 ...</h3><p>...</p>..."
-    }
-  ]
-}
-
-Regole:
-- Mantieni il testo originale del manuale fedelmente, NON riassumere né parafrasare
-- Escape correttamente le entity HTML nei testi
-- Se una PARTE manca, non inventarla
-- Se il manuale non ha una struttura PARTE/Capitolo chiara, spezza su H1/H2 evidenti
-SYS;
-
-        $userPrompt = "Analizza questo manuale e restituisci il JSON strutturato. Testo:\n\n" . substr($text, 0, 120000);
-
-        return $this->callClaudeJson($systemPrompt, $userPrompt);
-    }
-
     public function parseExamToQuestions(string $text): array
     {
         $text = $this->normalizeText($text);
@@ -161,6 +111,11 @@ SYS;
         return $this->callClaudeJson($systemPrompt, $userPrompt);
     }
 
+    public function callClaudeJsonPublic(string $systemPrompt, string $userPrompt): array
+    {
+        return $this->callClaudeJson($systemPrompt, $userPrompt);
+    }
+
     private function callClaudeJson(string $systemPrompt, string $userPrompt): array
     {
         $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
@@ -178,7 +133,7 @@ SYS;
             ->timeout(600)
             ->post('https://api.anthropic.com/v1/messages', [
                 'model' => self::CLAUDE_MODEL,
-                'max_tokens' => 16000,
+                'max_tokens' => 64000,
                 'stream' => true,
                 'system' => $systemPrompt,
                 'messages' => [['role' => 'user', 'content' => $userPrompt]],
@@ -196,7 +151,11 @@ SYS;
         $decoded = json_decode($json, true);
 
         if (!is_array($decoded)) {
-            Log::error('Claude JSON decode failed', ['text' => substr($text, 0, 500)]);
+            Log::error('Claude JSON decode failed', [
+                'total_length' => strlen($text),
+                'first_200' => substr($text, 0, 200),
+                'last_200' => substr($text, -200),
+            ]);
             throw new \RuntimeException('Risposta Claude non è JSON valido.');
         }
 
@@ -246,6 +205,13 @@ SYS;
                 } elseif ($eventName === 'error') {
                     $msg = $decoded['error']['message'] ?? 'Unknown streaming error';
                     throw new \RuntimeException('Claude streaming error: ' . $msg);
+                } elseif ($eventName === 'message_delta') {
+                    $stopReason = $decoded['delta']['stop_reason'] ?? null;
+                    if ($stopReason === 'max_tokens') {
+                        throw new \RuntimeException(
+                            'Risposta Claude troncata: limite max_tokens raggiunto. Il documento potrebbe essere troppo lungo per essere processato in una singola chiamata.'
+                        );
+                    }
                 }
             }
         }
