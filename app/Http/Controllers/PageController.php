@@ -46,6 +46,16 @@ class PageController extends Controller
         return view('contatti');
     }
 
+    public function mappaPercorso(): View
+    {
+        return view('mappa-percorso');
+    }
+
+    public function mappaPercorsoGrazie(): View
+    {
+        return view('mappa-percorso-grazie');
+    }
+
     public function privacyPolicy(): View
     {
         return view('privacy-policy');
