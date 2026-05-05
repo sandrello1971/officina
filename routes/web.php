@@ -21,6 +21,12 @@ Route::get('/sitemap.xml', function () {
     return response()->file(public_path('sitemap.xml'), ['Content-Type' => 'application/xml']);
 });
 
+// Verifica pubblica del certificato — fuori da student.auth, accessibile a chiunque
+// abbia il codice. Rate-limit per-IP definito in AppServiceProvider.
+Route::get('/certificato/verifica/{code}', [App\Http\Controllers\CertificateVerifyController::class, 'show'])
+    ->middleware('throttle:certificate-verify')
+    ->name('certificate.verify');
+
 // ===== AREA STUDENTI =====
 Route::prefix('learn')->name('student.')->group(function () {
     Route::get('/demo', [App\Http\Controllers\Student\DemoController::class, 'start'])->name('demo.start');
