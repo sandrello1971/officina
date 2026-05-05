@@ -26,6 +26,9 @@
     <meta name="twitter:description" content="@yield('og_description', View::getSection('description') ?? 'Atheneum Noscite: formazione AI certificata per PMI italiane.')">
     <meta name="twitter:image" content="@yield('og_image', url('/images/atheneum_new.png'))">
 
+    {{-- Meta extra per pagine che ne hanno bisogno (es. noindex sulle thank you) --}}
+    @stack('meta')
+
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preload" as="image" href="/images/logo.png">
 

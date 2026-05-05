@@ -17,6 +17,9 @@ Route::post('/contatti', [PageController::class, 'contatti'])->name('contatti.po
 Route::get('/privacy-policy', [PageController::class, 'privacyPolicy'])->name('privacy');
 Route::get('/cookie-policy', [PageController::class, 'cookiePolicy'])->name('cookies');
 
+Route::get('/mappa-percorso', [PageController::class, 'mappaPercorso'])->name('lead-magnet.show');
+Route::get('/mappa-percorso/grazie', [PageController::class, 'mappaPercorsoGrazie'])->name('lead-magnet.thank-you');
+
 Route::get('/sitemap.xml', function () {
     return response()->file(public_path('sitemap.xml'), ['Content-Type' => 'application/xml']);
 });
