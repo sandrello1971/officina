@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course;
 use App\Models\Module;
 use App\Models\Student;
 use App\Models\StudentNote;
@@ -22,19 +23,22 @@ class NoteController extends Controller
             return response()->json(['success' => true, 'demo' => true]);
         }
 
+        abort_unless($student, 403);
+        $this->ensureEnrolledInModule($student, $module);
+
         $anchor = empty($data['anchor']) ? null : $data['anchor'];
         $content = $data['content'] ?? '';
 
         // Se content vuoto e anchor presente → cancella la nota ancorata (toggle off)
         if ($anchor !== null && trim($content) === '') {
-            StudentNote::where('student_id', session('student_id'))
+            StudentNote::where('student_id', $student->id)
                 ->where('module_id', $module->id)
                 ->where('anchor', $anchor)
                 ->delete();
             return response()->json(['success' => true, 'deleted' => true]);
         }
 
-        $query = StudentNote::where('student_id', session('student_id'))
+        $query = StudentNote::where('student_id', $student->id)
             ->where('module_id', $module->id);
         if ($anchor === null) {
             $query->whereNull('anchor');
@@ -47,7 +51,7 @@ class NoteController extends Controller
             $note->update(['content' => $content]);
         } else {
             $note = StudentNote::create([
-                'student_id' => session('student_id'),
+                'student_id' => $student->id,
                 'module_id'  => $module->id,
                 'anchor'     => $anchor,
                 'content'    => $content,
@@ -66,7 +70,13 @@ class NoteController extends Controller
 
     public function list(Module $module)
     {
-        $notes = StudentNote::where('student_id', session('student_id'))
+        $studentId = session('student_id');
+        abort_unless($studentId, 403);
+        $student = Student::findOrFail($studentId);
+
+        $this->ensureEnrolledInModule($student, $module);
+
+        $notes = StudentNote::where('student_id', $studentId)
             ->where('module_id', $module->id)
             ->orderByRaw('CASE WHEN anchor IS NULL THEN 0 ELSE 1 END')
             ->orderBy('anchor')
@@ -84,9 +94,38 @@ class NoteController extends Controller
 
     public function delete(StudentNote $note)
     {
-        abort_unless($note->student_id === session('student_id'), 403);
+        $studentId = session('student_id');
+        abort_unless($studentId && $note->student_id === $studentId, 403);
+
+        $student = Student::findOrFail($studentId);
+        $module = $note->module;
+        abort_unless($module, 404);
+
+        $this->ensureEnrolledInModule($student, $module);
 
         $note->delete();
         return response()->json(['success' => true]);
+    }
+
+    private function ensureEnrolledInModule(Student $student, Module $module): void
+    {
+        $courseId = $module->course_id;
+        abort_unless($courseId, 404);
+
+        if ($student->auto_enroll_all_courses) {
+            abort_unless(
+                Course::where('id', $courseId)->where('is_active', true)->exists(),
+                403
+            );
+            return;
+        }
+
+        abort_unless(
+            $student->courses()
+                ->wherePivot('is_active', true)
+                ->where('courses.id', $courseId)
+                ->exists(),
+            403
+        );
     }
 }
