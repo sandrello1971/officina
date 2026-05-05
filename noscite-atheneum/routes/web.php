@@ -39,7 +39,9 @@ Route::prefix('learn')->name('student.')->group(function () {
 
         Route::get('/quiz/{quiz}', [App\Http\Controllers\Student\QuizController::class, 'show'])->name('quiz.show');
         Route::post('/quiz/{quiz}/start', [App\Http\Controllers\Student\QuizController::class, 'start'])->name('quiz.start');
-        Route::post('/quiz/{quiz}/submit', [App\Http\Controllers\Student\QuizController::class, 'submit'])->name('quiz.submit');
+        Route::post('/quiz/{quiz}/submit', [App\Http\Controllers\Student\QuizController::class, 'submit'])
+            ->middleware('throttle:5,1')
+            ->name('quiz.submit');
         Route::get('/quiz/{quiz}/result/{attempt}', [App\Http\Controllers\Student\QuizController::class, 'result'])->name('quiz.result');
 
         Route::get('/chat/{course:slug}', [App\Http\Controllers\Student\ChatController::class, 'show'])->name('chat.show');
