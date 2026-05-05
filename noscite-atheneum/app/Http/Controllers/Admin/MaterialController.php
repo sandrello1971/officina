@@ -38,7 +38,9 @@ class MaterialController extends Controller
 
         if ($request->type === 'file' && $request->hasFile('file')) {
             $file = $request->file('file');
-            $path = $file->store("materials/{$course->slug}", 'public');
+            // Disk 'local' = storage/app/private. I materiali corso non sono pubblici:
+            // l'accesso passa esclusivamente per Student\MaterialController con verifica iscrizione.
+            $path = $file->store("materials/{$course->slug}", 'local');
             $material->file_path = $path;
             $material->file_type = $file->getClientOriginalExtension();
             $material->file_size = $file->getSize();
@@ -99,8 +101,8 @@ class MaterialController extends Controller
 
     public function destroy(Course $course, Module $module, Material $material)
     {
-        if ($material->file_path && Storage::disk('public')->exists($material->file_path)) {
-            Storage::disk('public')->delete($material->file_path);
+        if ($material->file_path && Storage::disk('local')->exists($material->file_path)) {
+            Storage::disk('local')->delete($material->file_path);
         }
 
         if ($material->video_ai_id) {

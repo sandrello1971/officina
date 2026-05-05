@@ -64,6 +64,9 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/canvas/{material}/data', [App\Http\Controllers\Student\CanvasController::class, 'getData'])->name('canvas.get');
         Route::patch('/canvas/{material}/data', [App\Http\Controllers\Student\CanvasController::class, 'saveData'])->name('canvas.save');
 
+        Route::get('/material/{material}/download', [App\Http\Controllers\Student\MaterialController::class, 'download'])->name('material.download');
+        Route::get('/material/{material}/canvas', [App\Http\Controllers\Student\MaterialController::class, 'canvas'])->name('material.canvas');
+
         Route::get('/course/{course:slug}/instructor/{material}', [App\Http\Controllers\Student\InstructorMaterialController::class, 'show'])->name('instructor.material.show');
         Route::get('/course/{course:slug}/instructor/{material}/download', [App\Http\Controllers\Student\InstructorMaterialController::class, 'download'])->name('instructor.material.download');
 
