@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course;
 use App\Models\Material;
 use App\Models\Student;
 use App\Models\StudentCanvasData;
@@ -14,6 +15,7 @@ class CanvasController extends Controller
     {
         $student = $this->authStudent();
         $this->ensureCanvasMaterial($material);
+        $this->ensureEnrolledInMaterial($student, $material);
 
         $row = StudentCanvasData::where('student_id', $student->id)
             ->where('material_id', $material->id)
@@ -33,6 +35,8 @@ class CanvasController extends Controller
         if ($student->is_demo) {
             return response()->json(['success' => true, 'demo' => true]);
         }
+
+        $this->ensureEnrolledInMaterial($student, $material);
 
         $validated = $request->validate([
             'data' => 'required|array',
@@ -60,5 +64,27 @@ class CanvasController extends Controller
     {
         abort_unless($material->file_type === 'canvas', 404, 'Non è un canvas');
         abort_if($material->is_instructor_only, 403);
+    }
+
+    private function ensureEnrolledInMaterial(Student $student, Material $material): void
+    {
+        $courseId = $material->course_id ?? $material->module?->course_id;
+        abort_unless($courseId, 404);
+
+        if ($student->auto_enroll_all_courses) {
+            abort_unless(
+                Course::where('id', $courseId)->where('is_active', true)->exists(),
+                403
+            );
+            return;
+        }
+
+        abort_unless(
+            $student->courses()
+                ->wherePivot('is_active', true)
+                ->where('courses.id', $courseId)
+                ->exists(),
+            403
+        );
     }
 }
