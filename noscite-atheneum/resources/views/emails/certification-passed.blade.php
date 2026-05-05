@@ -1,19 +1,23 @@
 @component('mail::message')
 # 🎓 Congratulazioni, {{ $student->name }}!
 
-Hai superato l'esame finale del corso **{{ $course->name }}** con un punteggio del **{{ $score }}%**.
+Hai superato l'esame finale del corso **{{ $course->name }}** e ottenuto la certificazione:
 
-Hai ottenuto la certificazione:
+> **{{ $certificate->certification_name }}**
 
-> **{{ $course->certification_name }}**
+**Codice del tuo certificato:**
 
-Il tuo certificato è allegato a questa email in formato PDF. Puoi anche scaricarlo in qualsiasi momento dalla piattaforma Atheneum.
+<div style="font-family:monospace; font-size:1.4rem; font-weight:700; padding:16px 20px; background:#F5F7F7; border:1px solid #C8D0D0; border-radius:8px; text-align:center; letter-spacing:2px; color:#1A1F1F; margin:16px 0;">{{ $certificate->code }}</div>
 
-@component('mail::button', ['url' => 'https://atheneum.noscite.it/learn/dashboard', 'color' => 'success'])
-Vai ad Atheneum
+Chiunque può verificare l'autenticità del tuo certificato a questo indirizzo:
+
+[{{ $verifyUrl }}]({{ $verifyUrl }})
+
+@component('mail::button', ['url' => $downloadUrl, 'color' => 'success'])
+Scarica il certificato PDF
 @endcomponent
 
-**Continua ad imparare.** Il tuo percorso Noscite prosegue con gli altri corsi del portfolio.
+Il PDF è disponibile dopo aver effettuato l'accesso ad Atheneum.
 
 *In digitālī nova virtūs*
 

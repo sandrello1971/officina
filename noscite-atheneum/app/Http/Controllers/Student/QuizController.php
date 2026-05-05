@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Mail\CertificationPassedMail;
+use App\Models\Certificate;
 use App\Models\Module;
 use App\Models\Quiz;
 use App\Models\QuizAnswer;
 use App\Models\QuizAttempt;
 use App\Models\Student;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -161,11 +163,15 @@ class QuizController extends Controller
         if ($passed && $quiz->course_id && !$quiz->module_id) {
             $course = $quiz->course;
             if ($course) {
-                try {
-                    Mail::to($student->email)
-                        ->queue(new CertificationPassedMail($student, $course, $score));
-                } catch (\Throwable $e) {
-                    Log::error('Email certificato fallita: ' . $e->getMessage());
+                $certificate = $this->issueCertificate($student, $course, $quiz, $attempt, $score);
+
+                if ($certificate) {
+                    try {
+                        Mail::to($student->email)
+                            ->queue(new CertificationPassedMail($student, $course, $certificate));
+                    } catch (\Throwable $e) {
+                        Log::error('Email certificato fallita: ' . $e->getMessage());
+                    }
                 }
             }
         }
@@ -224,5 +230,60 @@ class QuizController extends Controller
                 ],
             ]),
         ];
+    }
+
+    /**
+     * Emette un certificato in modo idempotente per (studente, corso). Se il
+     * certificato esiste già (ripassaggio del quiz), restituisce quello esistente
+     * senza modificarne score né code: comportamento "primo passaggio vince".
+     */
+    private function issueCertificate(
+        Student $student,
+        $course,
+        Quiz $quiz,
+        QuizAttempt $attempt,
+        int $score
+    ): ?Certificate {
+        try {
+            $cert = Certificate::firstOrCreate(
+                [
+                    'student_id' => $student->id,
+                    'course_id' => $course->id,
+                ],
+                [
+                    'quiz_attempt_id' => $attempt->id,
+                    'code' => Certificate::generateCode(),
+                    'score' => $score,
+                    'issued_at' => now(),
+                    'certification_name' => $course->certification_name
+                        ?: ($course->name ?: 'Certificato Atheneum'),
+                ]
+            );
+        } catch (UniqueConstraintViolationException $e) {
+            // Race: due submit paralleli hanno entrambi visto "non esiste" e tentato
+            // di inserire. La unique constraint DB ne ha bocciato uno; recuperiamo il vincente.
+            $cert = Certificate::where('student_id', $student->id)
+                ->where('course_id', $course->id)
+                ->firstOrFail();
+        } catch (\Throwable $e) {
+            Log::error('Emissione certificato fallita: ' . $e->getMessage(), [
+                'student_id' => $student->id,
+                'course_id' => $course->id,
+            ]);
+            return null;
+        }
+
+        if ($cert->wasRecentlyCreated) {
+            Log::info('Certificato emesso', [
+                'certificate_id' => $cert->id,
+                'code' => $cert->code,
+                'student_id' => $student->id,
+                'course_id' => $course->id,
+                'quiz_attempt_id' => $attempt->id,
+                'score' => $score,
+            ]);
+        }
+
+        return $cert;
     }
 }
