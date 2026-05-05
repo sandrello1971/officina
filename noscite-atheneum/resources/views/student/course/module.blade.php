@@ -337,12 +337,22 @@
                         🔒 Solo versione completa
                     </span>
                 @elseif($material->file_type === 'canvas' && $material->file_path)
-                    <a href="/storage/{{ $material->file_path }}?mid={{ $material->id }}" target="_blank"
+                    @php
+                        $progettoNumber = null;
+                        if (preg_match('/Scheda Progetto (\d+)$/u', $material->title, $matches)) {
+                            $progettoNumber = $matches[1];
+                        }
+                        $canvasUrl = route('student.material.canvas', $material);
+                        if ($progettoNumber) {
+                            $canvasUrl .= "?progetto={$progettoNumber}";
+                        }
+                    @endphp
+                    <a href="{{ $canvasUrl }}" target="_blank"
                        style="padding:6px 14px; background:linear-gradient(135deg,#55B1AE,#3A8C89); color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                         Apri canvas →
                     </a>
                 @elseif($material->is_downloadable && $material->file_path)
-                    <a href="/storage/{{ $material->file_path }}" download
+                    <a href="{{ route('student.material.download', $material) }}" download
                        style="padding:5px 12px; background:#E8F5F5; color:#3A8C89; border-radius:6px; font-size:0.75rem; font-weight:600; text-decoration:none;">
                         Scarica
                     </a>

@@ -21,6 +21,12 @@ Route::get('/sitemap.xml', function () {
     return response()->file(public_path('sitemap.xml'), ['Content-Type' => 'application/xml']);
 });
 
+// Verifica pubblica del certificato — fuori da student.auth, accessibile a chiunque
+// abbia il codice. Rate-limit per-IP definito in AppServiceProvider.
+Route::get('/certificato/verifica/{code}', [App\Http\Controllers\CertificateVerifyController::class, 'show'])
+    ->middleware('throttle:certificate-verify')
+    ->name('certificate.verify');
+
 // ===== AREA STUDENTI =====
 Route::prefix('learn')->name('student.')->group(function () {
     Route::get('/demo', [App\Http\Controllers\Student\DemoController::class, 'start'])->name('demo.start');
@@ -39,7 +45,9 @@ Route::prefix('learn')->name('student.')->group(function () {
 
         Route::get('/quiz/{quiz}', [App\Http\Controllers\Student\QuizController::class, 'show'])->name('quiz.show');
         Route::post('/quiz/{quiz}/start', [App\Http\Controllers\Student\QuizController::class, 'start'])->name('quiz.start');
-        Route::post('/quiz/{quiz}/submit', [App\Http\Controllers\Student\QuizController::class, 'submit'])->name('quiz.submit');
+        Route::post('/quiz/{quiz}/submit', [App\Http\Controllers\Student\QuizController::class, 'submit'])
+            ->middleware('throttle:5,1')
+            ->name('quiz.submit');
         Route::get('/quiz/{quiz}/result/{attempt}', [App\Http\Controllers\Student\QuizController::class, 'result'])->name('quiz.result');
 
         Route::get('/chat/{course:slug}', [App\Http\Controllers\Student\ChatController::class, 'show'])->name('chat.show');
@@ -55,6 +63,9 @@ Route::prefix('learn')->name('student.')->group(function () {
 
         Route::get('/canvas/{material}/data', [App\Http\Controllers\Student\CanvasController::class, 'getData'])->name('canvas.get');
         Route::patch('/canvas/{material}/data', [App\Http\Controllers\Student\CanvasController::class, 'saveData'])->name('canvas.save');
+
+        Route::get('/material/{material}/download', [App\Http\Controllers\Student\MaterialController::class, 'download'])->name('material.download');
+        Route::get('/material/{material}/canvas', [App\Http\Controllers\Student\MaterialController::class, 'canvas'])->name('material.canvas');
 
         Route::get('/course/{course:slug}/instructor/{material}', [App\Http\Controllers\Student\InstructorMaterialController::class, 'show'])->name('instructor.material.show');
         Route::get('/course/{course:slug}/instructor/{material}/download', [App\Http\Controllers\Student\InstructorMaterialController::class, 'download'])->name('instructor.material.download');

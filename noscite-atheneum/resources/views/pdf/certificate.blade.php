@@ -162,6 +162,33 @@
         color: #55B1AE;
         margin-bottom: 4mm;
     }
+    .verify-block {
+        position: absolute;
+        bottom: 18mm;
+        right: 18mm;
+        text-align: center;
+        z-index: 11;
+    }
+    .verify-qr {
+        width: 22mm;
+        height: 22mm;
+        display: block;
+        margin: 0 auto 1mm;
+    }
+    .verify-label {
+        font-size: 6pt;
+        color: #8A9696;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.5mm;
+    }
+    .verify-url {
+        font-size: 6pt;
+        color: #4A5252;
+        font-family: monospace;
+        word-break: break-all;
+        max-width: 40mm;
+    }
 </style>
 </head>
 <body>
@@ -186,11 +213,11 @@
         <div class="certifies">Certifica che</div>
         <div class="student-name">{{ $student->name }}</div>
         <div class="completion-text">ha completato con successo il corso</div>
-        <div class="course-name">{{ $course->name }}</div>
-        <div class="certification-name">{{ $course->certification_name }}</div>
+        <div class="course-name">{{ $course?->name ?? $cert->certification_name }}</div>
+        <div class="certification-name">{{ $cert->certification_name }}</div>
 
-        @if($score)
-        <div class="score-badge">Punteggio: {{ $score }}%</div>
+        @if($cert->score)
+        <div class="score-badge">Punteggio: {{ $cert->score }}%</div>
         @endif
 
         <div class="divider-bottom"></div>
@@ -204,7 +231,7 @@
             <div class="footer-item">
                 <div class="footer-label">Codice certificato</div>
                 <div class="footer-line"></div>
-                <div class="footer-value" style="font-size:8pt; font-family:monospace;">{{ $code }}</div>
+                <div class="footer-value" style="font-size:8pt; font-family:monospace;">{{ $cert->code }}</div>
             </div>
             <div class="footer-item">
                 <div class="footer-label">Rilasciato da</div>
@@ -212,6 +239,12 @@
                 <div class="footer-value">Noscite SRLS</div>
             </div>
         </div>
+    </div>
+
+    <div class="verify-block">
+        <img src="{{ $qrDataUri }}" class="verify-qr" alt="QR verifica">
+        <div class="verify-label">Verifica online</div>
+        <div class="verify-url">{{ $verifyUrl }}</div>
     </div>
 </div>
 </body>

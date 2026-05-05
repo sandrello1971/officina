@@ -74,7 +74,7 @@
         </div>
 
         {{-- DOMANDA --}}
-        <template x-for="(q, idx) in questions" :key="idx">
+        <template x-for="(q, idx) in questions" :key="q.id">
             <div x-show="current === idx" style="background:white; border-radius:16px; padding:32px; margin-bottom:16px;">
                 <div style="font-size:0.75rem; font-weight:700; color:#55B1AE; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:12px;">
                     Domanda <span x-text="idx + 1"></span>
@@ -85,24 +85,16 @@
                 <div style="display:flex; flex-direction:column; gap:10px;">
                     <template x-for="(opt, oidx) in q.options" :key="oidx">
                         <button type="button"
-                                @click="proposeAnswer(idx, opt)"
-                                :disabled="answered[idx] !== undefined"
-                                :style="getOptionStyle(idx, opt)"
+                                @click="proposeAnswer(q.id, opt)"
+                                :disabled="answered[q.id] !== undefined"
+                                :style="getOptionStyle(q.id, opt)"
                                 style="padding:14px 18px; border-radius:10px; text-align:left; cursor:pointer; font-size:0.9rem; transition:all 0.2s; display:flex; align-items:center; gap:12px;">
                             <span style="width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; flex-shrink:0;"
-                                  :style="getLetterStyle(idx, opt)"
+                                  :style="getLetterStyle(q.id, opt)"
                                   x-text="String.fromCharCode(65 + oidx)"></span>
                             <span x-text="opt"></span>
-                            <span style="margin-left:auto;" x-show="answered[idx] !== undefined"
-                                  x-text="opt === q.correct_answer ? '✓' : (answered[idx] === opt ? '✗' : '')"></span>
                         </button>
                     </template>
-                </div>
-
-                {{-- SPIEGAZIONE --}}
-                <div x-show="answered[idx] !== undefined && q.explanation"
-                     style="margin-top:16px; padding:14px 16px; background:#E8F5F5; border-left:4px solid #55B1AE; border-radius:0 8px 8px 0; font-size:0.875rem; color:#3A8C89; line-height:1.6;">
-                    💡 <span x-text="q.explanation"></span>
                 </div>
             </div>
         </template>
@@ -116,17 +108,18 @@
             <div x-show="current === 0"></div>
 
             <button @click="next()" x-show="current < questions.length - 1"
-                    :disabled="answered[current] === undefined"
-                    :style="answered[current] !== undefined ? 'opacity:1;cursor:pointer' : 'opacity:0.4;cursor:not-allowed'"
+                    :disabled="answered[questions[current]?.id] === undefined"
+                    :style="answered[questions[current]?.id] !== undefined ? 'opacity:1;cursor:pointer' : 'opacity:0.4;cursor:not-allowed'"
                     style="padding:10px 24px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:600;">
                 Prossima →
             </button>
 
             <button @click="submitQuiz()" x-show="current === questions.length - 1"
-                    :disabled="answered[current] === undefined"
-                    :style="answered[current] !== undefined ? 'opacity:1;cursor:pointer' : 'opacity:0.4;cursor:not-allowed'"
+                    :disabled="answered[questions[current]?.id] === undefined || submitting"
+                    :style="(answered[questions[current]?.id] !== undefined && !submitting) ? 'opacity:1;cursor:pointer' : 'opacity:0.4;cursor:not-allowed'"
                     style="padding:10px 24px; background:#E28A53; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700;">
-                Consegna quiz ✓
+                <span x-show="!submitting">Consegna quiz ✓</span>
+                <span x-show="submitting">Invio in corso…</span>
             </button>
         </div>
     </div>
@@ -200,16 +193,19 @@
         {{-- RIEPILOGO RISPOSTE --}}
         <div style="text-align:left; margin-bottom:32px; max-height:300px; overflow-y:auto;">
             <div style="font-size:0.8rem; font-weight:700; color:#4A5252; margin-bottom:10px;">Riepilogo risposte</div>
-            <template x-for="(q, idx) in questions" :key="idx">
+            <template x-for="q in questions" :key="q.id">
                 <div style="padding:10px 0; border-bottom:1px solid #F5F7F7; display:flex; gap:10px; align-items:flex-start;">
-                    <span style="font-size:0.9rem;" x-text="answered[idx] === q.correct_answer ? '✅' : '❌'"></span>
-                    <div>
+                    <span style="font-size:0.9rem;" x-text="answered[q.id] === corrections[q.id]?.correct_answer ? '✅' : '❌'"></span>
+                    <div style="flex:1;">
                         <div style="font-size:0.85rem; color:#1A1F1F; font-weight:500;" x-text="q.question"></div>
                         <div style="font-size:0.75rem; color:#8A9696; margin-top:2px;">
-                            La tua risposta: <span style="font-weight:600;" :style="answered[idx] === q.correct_answer ? 'color:#3A8C89' : 'color:#E28A53'" x-text="answered[idx] || 'Non risposta'"></span>
+                            La tua risposta: <span style="font-weight:600;" :style="answered[q.id] === corrections[q.id]?.correct_answer ? 'color:#3A8C89' : 'color:#E28A53'" x-text="answered[q.id] || 'Non risposta'"></span>
                         </div>
-                        <div x-show="answered[idx] !== q.correct_answer" style="font-size:0.75rem; color:#3A8C89; margin-top:2px;">
-                            Risposta corretta: <span style="font-weight:600;" x-text="q.correct_answer"></span>
+                        <div x-show="answered[q.id] !== corrections[q.id]?.correct_answer" style="font-size:0.75rem; color:#3A8C89; margin-top:2px;">
+                            Risposta corretta: <span style="font-weight:600;" x-text="corrections[q.id]?.correct_answer"></span>
+                        </div>
+                        <div x-show="corrections[q.id]?.explanation" style="font-size:0.75rem; color:#4A5252; margin-top:6px; padding:8px 10px; background:#E8F5F5; border-left:3px solid #55B1AE; border-radius:0 6px 6px 0; line-height:1.5;">
+                            💡 <span x-text="corrections[q.id]?.explanation"></span>
                         </div>
                     </div>
                 </div>
@@ -240,12 +236,12 @@
 </div>
 
 @php
+    // SECURITY: NON includere correct_answer né explanation. Lo studente vedrebbe
+    // le risposte nel DOM. Le correzioni arrivano solo dopo il submit, server-side.
     $quizQuestionsJson = $questions->map(fn($q) => [
         'id' => $q->id,
         'question' => $q->question,
         'options' => $q->options ?? [],
-        'correct_answer' => $q->correct_answer,
-        'explanation' => $q->explanation,
     ])->values();
 @endphp
 @push('scripts')
@@ -255,10 +251,12 @@ function quizApp() {
         phase: 'intro',
         questions: {!! $quizQuestionsJson->toJson() !!},
         current: 0,
-        answered: {},
+        answered: {},        // { qid: opzione_scelta }
+        corrections: {},     // { qid: { correct_answer, explanation } } popolato post-submit
         score: 0,
         correctCount: 0,
         passed: false,
+        submitting: false,
         timeLeft: {{ $quiz->time_limit_minutes ? $quiz->time_limit_minutes * 60 : 0 }},
         timer: null,
         attemptId: null,
@@ -291,9 +289,9 @@ function quizApp() {
 
         pendingAnswer: null,
 
-        proposeAnswer(idx, opt) {
-            if (this.answered[idx] !== undefined) return;
-            this.pendingAnswer = { idx, opt };
+        proposeAnswer(qid, opt) {
+            if (this.answered[qid] !== undefined) return;
+            this.pendingAnswer = { qid, opt };
         },
 
         cancelAnswer() {
@@ -302,34 +300,50 @@ function quizApp() {
 
         confirmAnswer() {
             if (!this.pendingAnswer) return;
-            const { idx, opt } = this.pendingAnswer;
-            this.answered[idx] = opt;
+            const { qid, opt } = this.pendingAnswer;
+            this.answered[qid] = opt;
             this.answered = { ...this.answered };
             this.pendingAnswer = null;
         },
 
-        getOptionStyle(idx, opt) {
-            if (this.answered[idx] === undefined) {
-                return 'background:#F5F7F7; border:2px solid transparent; color:#1A1F1F;';
+        // Pre-submit: tutte le opzioni neutre, solo quella selezionata evidenziata.
+        // Post-submit: lookup su corrections per mostrare verde/rosso.
+        getOptionStyle(qid, opt) {
+            const picked = this.answered[qid];
+            const correct = this.corrections[qid]?.correct_answer;
+
+            if (this.phase === 'result' && correct !== undefined) {
+                if (opt === correct) {
+                    return 'background:#E8F5F5; border:2px solid #55B1AE; color:#3A8C89;';
+                }
+                if (picked === opt) {
+                    return 'background:#fff3ec; border:2px solid #E28A53; color:#c97a45;';
+                }
+                return 'background:#F5F7F7; border:2px solid transparent; color:#8A9696;';
             }
-            if (opt === this.questions[idx].correct_answer) {
-                return 'background:#E8F5F5; border:2px solid #55B1AE; color:#3A8C89;';
+
+            if (picked === opt) {
+                return 'background:#E8F5F5; border:2px solid #55B1AE; color:#1A1F1F;';
             }
-            if (this.answered[idx] === opt) {
-                return 'background:#fff3ec; border:2px solid #E28A53; color:#c97a45;';
-            }
-            return 'background:#F5F7F7; border:2px solid transparent; color:#8A9696;';
+            return 'background:#F5F7F7; border:2px solid transparent; color:#1A1F1F;';
         },
 
-        getLetterStyle(idx, opt) {
-            if (this.answered[idx] === undefined) {
+        getLetterStyle(qid, opt) {
+            const picked = this.answered[qid];
+            const correct = this.corrections[qid]?.correct_answer;
+
+            if (this.phase === 'result' && correct !== undefined) {
+                if (opt === correct) {
+                    return 'background:#55B1AE; color:white;';
+                }
+                if (picked === opt) {
+                    return 'background:#E28A53; color:white;';
+                }
                 return 'background:#C8D0D0; color:white;';
             }
-            if (opt === this.questions[idx].correct_answer) {
+
+            if (picked === opt) {
                 return 'background:#55B1AE; color:white;';
-            }
-            if (this.answered[idx] === opt) {
-                return 'background:#E28A53; color:white;';
             }
             return 'background:#C8D0D0; color:white;';
         },
@@ -343,37 +357,54 @@ function quizApp() {
         },
 
         async submitQuiz() {
+            if (this.submitting) return;
             if (this.timer) clearInterval(this.timer);
-
-            this.correctCount = this.questions.filter(
-                (q, i) => this.answered[i] === q.correct_answer
-            ).length;
-
-            this.score = Math.round((this.correctCount / this.questions.length) * 100);
-            this.passed = this.score >= {{ $quiz->passing_score }};
+            this.submitting = true;
 
             try {
-                await fetch('/learn/quiz/{{ $quiz->id }}/submit', {
+                const res = await fetch('/learn/quiz/{{ $quiz->id }}/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                     body: JSON.stringify({
                         attempt_id: this.attemptId,
                         answers: this.answered,
-                        score: this.score,
-                        passed: this.passed,
                     })
                 });
-            } catch(e) {}
 
-            this.phase = 'result';
+                if (res.status === 409) {
+                    alert('Questo tentativo risulta già consegnato.');
+                    window.location.reload();
+                    return;
+                }
+
+                if (!res.ok) {
+                    alert('Errore durante il salvataggio del quiz. Riprova.');
+                    this.submitting = false;
+                    return;
+                }
+
+                const data = await res.json();
+                this.score = data.score ?? 0;
+                this.passed = !!data.passed;
+                this.corrections = data.corrections ?? {};
+                this.correctCount = this.questions.filter(
+                    q => this.answered[q.id] === this.corrections[q.id]?.correct_answer
+                ).length;
+                this.phase = 'result';
+            } catch(e) {
+                alert('Errore di rete. Riprova.');
+                this.submitting = false;
+            }
         },
 
         restartQuiz() {
             this.current = 0;
             this.answered = {};
+            this.corrections = {};
             this.score = 0;
             this.correctCount = 0;
             this.passed = false;
+            this.submitting = false;
             this.timeLeft = {{ $quiz->time_limit_minutes ? $quiz->time_limit_minutes * 60 : 0 }};
             this.phase = 'intro';
         },
