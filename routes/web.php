@@ -73,6 +73,19 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/course/{course:slug}/instructor/{material}', [App\Http\Controllers\Student\InstructorMaterialController::class, 'show'])->name('instructor.material.show');
         Route::get('/course/{course:slug}/instructor/{material}/download', [App\Http\Controllers\Student\InstructorMaterialController::class, 'download'])->name('instructor.material.download');
 
+        Route::prefix('documents')->name('documents.')->group(function () {
+            Route::get('/',                    [App\Http\Controllers\Student\DocumentController::class, 'index'])->name('index');
+            Route::post('/',                   [App\Http\Controllers\Student\DocumentController::class, 'store'])->name('store');
+            Route::get('/{document}/download', [App\Http\Controllers\Student\DocumentController::class, 'download'])->name('download');
+            Route::put('/{document}',          [App\Http\Controllers\Student\DocumentController::class, 'update'])->name('update');
+            Route::delete('/{document}',       [App\Http\Controllers\Student\DocumentController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('docenti/documenti')->name('instructor_documents.')->group(function () {
+            Route::get('/',                    [App\Http\Controllers\Student\InstructorSharedDocumentController::class, 'index'])->name('index');
+            Route::get('/{document}/download', [App\Http\Controllers\Student\InstructorSharedDocumentController::class, 'download'])->name('download');
+        });
+
         Route::prefix('knowledge-base')->name('knowledge_base.')->group(function () {
             Route::get('/', [App\Http\Controllers\Student\InstructorNoteController::class, 'index'])->name('index');
             Route::get('/create', [App\Http\Controllers\Student\InstructorNoteController::class, 'create'])->name('create');
@@ -148,8 +161,17 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::resource('students', App\Http\Controllers\Admin\StudentController::class);
     Route::post('students/{student}/courses', [App\Http\Controllers\Admin\StudentController::class, 'assignCourse'])->name('students.assign-course');
     Route::delete('students/{student}/courses/{course}', [App\Http\Controllers\Admin\StudentController::class, 'removeCourse'])->name('students.remove-course');
+    Route::patch('students/{student}/courses/{course}/instructor', [App\Http\Controllers\Admin\StudentController::class, 'updateCourseInstructor'])->name('students.update-course-instructor');
     Route::post('students/{student}/send-credentials', [App\Http\Controllers\Admin\StudentController::class, 'sendCredentials'])->name('students.send-credentials');
     Route::patch('students/{student}/system-role', [App\Http\Controllers\Admin\StudentController::class, 'updateSystemRole'])->name('students.update-system-role');
+
+    Route::get('instructors',                                  [App\Http\Controllers\Admin\InstructorController::class, 'index'])->name('instructors.index');
+    Route::get('instructors/{instructor}',                     [App\Http\Controllers\Admin\InstructorController::class, 'show'])->name('instructors.show');
+    Route::get('instructors/{instructor}/edit',                [App\Http\Controllers\Admin\InstructorController::class, 'edit'])->name('instructors.edit');
+    Route::put('instructors/{instructor}',                     [App\Http\Controllers\Admin\InstructorController::class, 'update'])->name('instructors.update');
+    Route::post('instructors/{instructor}/courses',            [App\Http\Controllers\Admin\InstructorController::class, 'attachCourse'])->name('instructors.attach-course');
+    Route::delete('instructors/{instructor}/courses/{course}', [App\Http\Controllers\Admin\InstructorController::class, 'detachCourse'])->name('instructors.detach-course');
+    Route::get('courses/{course}/instructors',                 [App\Http\Controllers\Admin\InstructorController::class, 'forCourse'])->name('courses.instructors');
 
     Route::resource('quizzes', App\Http\Controllers\Admin\QuizController::class);
     Route::resource('quizzes.questions', App\Http\Controllers\Admin\QuizQuestionController::class);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\StudentWelcomeMail;
 use App\Models\Course;
 use App\Models\Student;
+use App\Services\InstructorResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -14,9 +15,17 @@ use Illuminate\Support\Str;
 
 class StudentController extends Controller
 {
+    public function __construct(private InstructorResolver $instructorResolver)
+    {
+    }
+
     public function index(Request $request)
     {
-        $query = Student::with('courses')->orderByDesc('created_at');
+        $query = Student::with('courses')
+            ->where(function ($q) {
+                $q->whereNull('role')->orWhere('role', 'student');
+            })
+            ->orderByDesc('created_at');
 
         if ($request->course_id) {
             $query->whereHas('courses', fn($q) => $q->where('courses.id', $request->course_id));
@@ -31,6 +40,7 @@ class StudentController extends Controller
     public function create()
     {
         $courses = Course::active()->orderBy('sort_order')->get();
+        $courses->load('instructors:id,name,company');
         return view('admin.students.create', compact('courses'));
     }
 
@@ -44,6 +54,8 @@ class StudentController extends Controller
             'job_title' => 'nullable|string|max:100',
             'course_ids' => 'nullable|array',
             'course_ids.*' => 'uuid|exists:courses,id',
+            'instructor_ids' => 'nullable|array',
+            'instructor_ids.*' => 'nullable|uuid|exists:students,id',
         ]);
 
         $tempPassword = 'Nsc2024!' . Str::upper(Str::random(4));
@@ -63,14 +75,19 @@ class StudentController extends Controller
         if (!empty($data['course_ids'])) {
             $attach = [];
             foreach ($data['course_ids'] as $courseId) {
-                $attach[$courseId] = ['enrolled_at' => now(), 'is_active' => true];
+                $requested = $data['instructor_ids'][$courseId] ?? null;
+                $attach[$courseId] = [
+                    'enrolled_at'   => now(),
+                    'is_active'     => true,
+                    'instructor_id' => $this->instructorResolver->resolveForCourse($courseId, $requested),
+                ];
             }
             $student->courses()->attach($attach);
             $courseNames = Course::whereIn('id', $data['course_ids'])->pluck('name')->toArray();
         }
 
         try {
-            Mail::to($student->email)->send(new StudentWelcomeMail($student, $tempPassword, $courseNames));
+            Mail::to($student->email)->send(new StudentWelcomeMail($student, $tempPassword, $courseNames, request()->getSchemeAndHttpHost()));
         } catch (\Throwable $e) {
             session()->flash('warning', 'Studente creato, ma invio email fallito: ' . $e->getMessage());
         }
@@ -81,13 +98,24 @@ class StudentController extends Controller
 
     public function show(Student $student)
     {
-        $student->load(['courses', 'moduleProgress.module.course', 'quizAttempts.quiz']);
-        return view('admin.students.show', compact('student'));
+        $student->load([
+            'courses.instructors:id,name,company',
+            'moduleProgress.module.course',
+            'quizAttempts.quiz',
+        ]);
+
+        $assignedInstructors = \App\Models\Student::whereIn(
+            'id',
+            $student->courses->pluck('pivot.instructor_id')->filter()->unique()
+        )->get(['id', 'name'])->keyBy('id');
+
+        return view('admin.students.show', compact('student', 'assignedInstructors'));
     }
 
     public function edit(Student $student)
     {
         $courses = Course::orderBy('sort_order')->get();
+        $courses->load('instructors:id,name,company');
         return view('admin.students.edit', compact('student', 'courses'));
     }
 
@@ -120,17 +148,24 @@ class StudentController extends Controller
     public function assignCourse(Request $request, Student $student)
     {
         $data = $request->validate([
-            'course_id' => 'required|uuid|exists:courses,id',
-            'expires_at' => 'nullable|date',
-            'notes' => 'nullable|string',
+            'course_id'     => 'required|uuid|exists:courses,id',
+            'instructor_id' => 'nullable|uuid|exists:students,id',
+            'expires_at'    => 'nullable|date',
+            'notes'         => 'nullable|string',
         ]);
+
+        $instructorId = $this->instructorResolver->resolveForCourse(
+            $data['course_id'],
+            $data['instructor_id'] ?? null
+        );
 
         $student->courses()->syncWithoutDetaching([
             $data['course_id'] => [
-                'enrolled_at' => now(),
-                'expires_at' => $data['expires_at'] ?? null,
-                'is_active' => true,
-                'notes' => $data['notes'] ?? null,
+                'enrolled_at'   => now(),
+                'expires_at'    => $data['expires_at'] ?? null,
+                'is_active'     => true,
+                'notes'         => $data['notes'] ?? null,
+                'instructor_id' => $instructorId,
             ],
         ]);
 
@@ -141,6 +176,27 @@ class StudentController extends Controller
     {
         $student->courses()->detach($course->id);
         return back()->with('success', 'Corso rimosso.');
+    }
+
+    public function updateCourseInstructor(Request $request, Student $student, Course $course)
+    {
+        $data = $request->validate([
+            'instructor_id' => 'nullable|uuid|exists:students,id',
+        ]);
+
+        $enrolled = $student->courses()->where('courses.id', $course->id)->exists();
+        abort_unless($enrolled, 404, 'Discente non iscritto a questo corso');
+
+        $instructorId = $this->instructorResolver->resolveForCourse(
+            $course->id,
+            $data['instructor_id'] ?? null
+        );
+
+        $student->courses()->updateExistingPivot($course->id, [
+            'instructor_id' => $instructorId,
+        ]);
+
+        return back()->with('success', 'Formatore aggiornato per il corso.');
     }
 
     public function sendCredentials(Student $student)
@@ -154,7 +210,7 @@ class StudentController extends Controller
         $courseNames = $student->courses()->pluck('courses.name')->toArray();
 
         try {
-            Mail::to($student->email)->send(new StudentWelcomeMail($student, $tempPassword, $courseNames));
+            Mail::to($student->email)->send(new StudentWelcomeMail($student, $tempPassword, $courseNames, request()->getSchemeAndHttpHost()));
             return back()->with('success', 'Nuove credenziali inviate.');
         } catch (\Throwable $e) {
             return back()->withErrors(['email' => 'Invio fallito: ' . $e->getMessage()]);

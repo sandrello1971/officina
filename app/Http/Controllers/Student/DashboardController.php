@@ -3,42 +3,46 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
-use App\Models\Course;
 use App\Models\QuizAttempt;
 use App\Models\Student;
 use App\Models\StudentModuleProgress;
+use App\Support\StudentCourseAccess;
 
 class DashboardController extends Controller
 {
+    public function __construct(private StudentCourseAccess $courseAccess)
+    {
+    }
+
     public function index()
     {
         $student = Student::findOrFail(session('student_id'));
 
-        if ($student->auto_enroll_all_courses) {
-            $coursesQ = Course::where('is_active', true)
-                ->with('modules')
-                ->orderBy('sort_order');
-        } else {
-            $coursesQ = $student->courses()
-                ->wherePivot('is_active', true)
-                ->with('modules')
-                ->orderBy('sort_order');
-        }
-        if ($student->is_demo) {
-            $coursesQ->where('courses.slug', 'primus');
-        }
-        $courses = $coursesQ->get()
+        $courses = $this->courseAccess->navigableCourses($student)
+            ->loadMissing('modules')
             ->map(function ($course) use ($student) {
                 $totalModules = $course->modules->count();
+                $course->modules_total = $totalModules;
+                $course->is_teaching = ($course->access_kind ?? 'enrolled') === 'teaching';
+
+                if ($course->is_teaching) {
+                    $course->progress_pct = null;
+                    $course->modules_done = null;
+                    return $course;
+                }
+
                 $completedModules = StudentModuleProgress::where('student_id', $student->id)
                     ->whereIn('module_id', $course->modules->pluck('id'))
                     ->where('status', 'completed')
                     ->count();
                 $course->progress_pct = $totalModules > 0 ? round(($completedModules / $totalModules) * 100) : 0;
                 $course->modules_done = $completedModules;
-                $course->modules_total = $totalModules;
                 return $course;
             });
+
+        // Statistiche aggregate calcolate SOLO sulle iscrizioni (un formatore non
+        // "completa" i corsi che insegna).
+        $enrolledCourses = $courses->where('is_teaching', false);
 
         $modulesCompleted = StudentModuleProgress::where('student_id', $student->id)
             ->where('status', 'completed')
@@ -46,7 +50,7 @@ class DashboardController extends Controller
         $quizzesPassed = QuizAttempt::where('student_id', $student->id)
             ->where('passed', true)
             ->count();
-        $overallProgress = $courses->avg('progress_pct') ?? 0;
+        $overallProgress = $enrolledCourses->avg('progress_pct') ?? 0;
 
         $stats = [
             'courses' => $courses->count(),

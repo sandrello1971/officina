@@ -51,8 +51,19 @@ class Course extends Model
     public function students()
     {
         return $this->belongsToMany(Student::class, 'student_course')
-            ->withPivot('enrolled_at', 'expires_at', 'completed_at', 'is_active', 'notes')
+            ->withPivot('enrolled_at', 'expires_at', 'completed_at', 'is_active', 'notes', 'instructor_id')
             ->withTimestamps();
+    }
+
+    public function instructors()
+    {
+        return $this->belongsToMany(Student::class, 'course_instructor', 'course_id', 'instructor_id')
+            ->withTimestamps();
+    }
+
+    public function hasMultipleInstructors(): bool
+    {
+        return $this->instructors()->count() > 1;
     }
 
     public function scopeActive($query)

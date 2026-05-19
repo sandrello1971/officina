@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\Concerns\DeterminesTeachingMode;
 use App\Mail\CertificationPassedMail;
 use App\Models\Certificate;
+use App\Models\Course;
 use App\Models\Module;
 use App\Models\Quiz;
 use App\Models\QuizAnswer;
@@ -19,6 +21,8 @@ use Illuminate\Support\Facades\Validator;
 
 class QuizController extends Controller
 {
+    use DeterminesTeachingMode;
+
     public function show(Quiz $quiz)
     {
         $student = Student::findOrFail(session('student_id'));
@@ -62,6 +66,14 @@ class QuizController extends Controller
             return response()->json(['attempt_id' => 'demo-' . uniqid()]);
         }
 
+        $course = $this->courseForQuiz($quiz);
+        if ($course && $this->isTeachingMode($student, $course)) {
+            return response()->json([
+                'error' => 'Modalità docenza: i quiz non vengono valutati né registrati.',
+                'teaching' => true,
+            ], 403);
+        }
+
         $attempt = QuizAttempt::create([
             'quiz_id' => $quiz->id,
             'student_id' => $student->id,
@@ -95,6 +107,14 @@ class QuizController extends Controller
                 ['success' => true, 'demo' => true],
                 $this->scorePayload($quiz, $data['answers'])
             ));
+        }
+
+        $course = $this->courseForQuiz($quiz);
+        if ($course && $this->isTeachingMode($student, $course)) {
+            return response()->json([
+                'error' => 'Modalità docenza: il quiz non viene valutato né registrato.',
+                'teaching' => true,
+            ], 403);
         }
 
         $data = Validator::make($request->all(), [
@@ -285,5 +305,14 @@ class QuizController extends Controller
         }
 
         return $cert;
+    }
+
+    private function courseForQuiz(Quiz $quiz): ?Course
+    {
+        if ($quiz->course_id) {
+            return $quiz->course;
+        }
+
+        return $quiz->module?->course;
     }
 }

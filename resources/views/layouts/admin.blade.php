@@ -8,7 +8,9 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <style>
+        [x-cloak] { display: none !important; }
         body { font-family: 'Calibri', system-ui, sans-serif; }
         .sidebar { width:240px; min-height:100vh; background:#1A1F1F; position:fixed; left:0; top:0; bottom:0; overflow-y:auto; z-index:40; }
         .main-content { margin-left:240px; min-height:100vh; background:#F5F7F7; }
@@ -25,7 +27,8 @@
     </div>
     <nav style="padding:12px 0;">
         <a href="/admin" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">&#128202; Dashboard</a>
-        <a href="/admin/students" class="nav-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">&#128101; Studenti</a>
+        <a href="/admin/students" class="nav-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">&#128101; Discenti</a>
+        <a href="{{ route('admin.instructors.index') }}" class="nav-item {{ request()->routeIs('admin.instructors.*') ? 'active' : '' }}">&#127979; Formatori</a>
         <a href="/admin/courses" class="nav-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">&#128218; Corsi</a>
         <a href="/admin/quizzes" class="nav-item {{ request()->routeIs('admin.quizzes.*') ? 'active' : '' }}">&#128221; Quiz</a>
         <a href="/admin/rag" class="nav-item {{ request()->routeIs('admin.rag.*') ? 'active' : '' }}">&#129504; Documenti AI</a>
