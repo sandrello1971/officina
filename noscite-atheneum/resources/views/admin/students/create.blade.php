@@ -37,19 +37,48 @@
                     </div>
                 </div>
 
-                <div>
+                <div x-data="{ selected: @js(old('course_ids', [])) }">
                     <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:10px;">Corsi da assegnare</label>
+                    @error('instructor_id')<p style="color:#E28A53; font-size:0.75rem; margin-bottom:6px;">{{ $message }}</p>@enderror
                     <div style="display:flex; flex-direction:column; gap:8px;">
                         @foreach($courses as $course)
-                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border:1px solid #C8D0D0; border-radius:8px;">
-                            <input type="checkbox" name="course_ids[]" value="{{ $course->id }}"
-                                   {{ in_array($course->id, old('course_ids', [])) ? 'checked' : '' }}>
-                            <span>{{ $course->icon }}</span>
-                            <div>
-                                <div style="font-size:0.875rem; font-weight:600; color:#1A1F1F;">{{ $course->name }}</div>
-                                <div style="font-size:0.75rem; color:#8A9696;">{{ $course->short_description }}</div>
+                        @php $instructors = $course->instructors; @endphp
+                        <div style="border:1px solid #C8D0D0; border-radius:8px; padding:10px;">
+                            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                                <input type="checkbox" name="course_ids[]" value="{{ $course->id }}"
+                                       x-model="selected">
+                                <span>{{ $course->icon }}</span>
+                                <div style="flex:1;">
+                                    <div style="font-size:0.875rem; font-weight:600; color:#1A1F1F;">{{ $course->name }}</div>
+                                    <div style="font-size:0.75rem; color:#8A9696;">{{ $course->short_description }}</div>
+                                </div>
+                            </label>
+
+                            <div x-show="selected.includes('{{ $course->id }}')" x-cloak
+                                 style="margin-top:10px; padding-top:10px; border-top:1px dashed #E8F5F5;">
+                                @if($instructors->count() === 0)
+                                    <div style="font-size:0.75rem; color:#8A9696; font-style:italic;">
+                                        ⚠ Nessun formatore associato a questo corso. L'iscrizione resterà senza formatore assegnato.
+                                    </div>
+                                @elseif($instructors->count() === 1)
+                                    @php $only = $instructors->first(); @endphp
+                                    <div style="font-size:0.75rem; color:#3A8C89;">
+                                        Formatore: <strong>{{ $only->name }}</strong>{{ $only->company ? ' ('.$only->company.')' : '' }}
+                                    </div>
+                                @else
+                                    <label style="font-size:0.7rem; color:#8A9696; display:block; margin-bottom:4px;">Formatore *</label>
+                                    <select name="instructor_ids[{{ $course->id }}]"
+                                            style="width:100%; padding:7px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem;">
+                                        <option value="">— Seleziona formatore —</option>
+                                        @foreach($instructors as $ins)
+                                        <option value="{{ $ins->id }}" {{ old('instructor_ids.'.$course->id) === $ins->id ? 'selected' : '' }}>
+                                            {{ $ins->name }}{{ $ins->company ? ' ('.$ins->company.')' : '' }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                @endif
                             </div>
-                        </label>
+                        </div>
                         @endforeach
                     </div>
                 </div>

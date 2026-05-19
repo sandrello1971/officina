@@ -59,6 +59,10 @@
             $totalModules = $c->modules()->where('is_active', true)->count();
             $completed = $student->moduleProgress()->whereHas('module', fn($q)=>$q->where('course_id',$c->id))->where('status','completed')->count();
             $pct = $totalModules > 0 ? round(($completed / $totalModules) * 100) : 0;
+            $assignedInstructorId = $c->pivot->instructor_id;
+            $assignedInstructor = $assignedInstructorId
+                ? ($assignedInstructors[$assignedInstructorId] ?? null)
+                : null;
         @endphp
         <div class="p-3 rounded-lg" style="background:#F5F7F7">
             <div class="flex items-center justify-between mb-2">
@@ -68,8 +72,20 @@
             <div class="h-2 rounded-full overflow-hidden" style="background:#C8D0D0">
                 <div class="h-full rounded-full" style="width:{{ $pct }}%;background:{{ $c->color }}"></div>
             </div>
-            <div class="flex justify-between text-xs mt-1" style="color:#8A9696">
-                <span>{{ $pct }}%</span>
+            <div class="flex items-center justify-between text-xs mt-2" style="color:#5A6464;">
+                <span>
+                    @if($assignedInstructor)
+                        Formatore: <strong style="color:#3A8C89;">{{ $assignedInstructor->name }}</strong>
+                    @else
+                        <span style="color:#8A9696;">Formatore: —</span>
+                    @endif
+                    @if($c->instructors->count() > 1)
+                        <a href="{{ route('admin.students.edit', $student) }}" style="color:#55B1AE; margin-left:6px;">Cambia</a>
+                    @endif
+                </span>
+                <span style="color:#8A9696;">{{ $pct }}%</span>
+            </div>
+            <div class="flex justify-end text-xs mt-1">
                 <form method="POST" action="{{ route('admin.students.remove-course', [$student, $c]) }}" onsubmit="return confirm('Rimuovere questo corso?')">
                     @csrf @method('DELETE')
                     <button type="submit" style="color:#E28A53">Rimuovi</button>

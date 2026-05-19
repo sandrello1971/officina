@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\Concerns\DeterminesTeachingMode;
 use App\Models\Course;
 use App\Models\Material;
 use App\Models\Student;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 
 class InstructorMaterialController extends Controller
 {
+    use DeterminesTeachingMode;
+
     public function show(Course $course, Material $material, InstructorManualSplitterService $splitter)
     {
         $this->authorizeAccess($course, $material);
@@ -59,6 +62,17 @@ class InstructorMaterialController extends Controller
 
         if ($student->role !== 'instructor') {
             abort(403, 'Accesso riservato ai docenti.');
+        }
+
+        $enrolled = $student->courses()
+            ->where('courses.id', $course->id)
+            ->wherePivot('is_active', true)
+            ->exists();
+
+        if (!$enrolled
+            && !$student->auto_enroll_all_courses
+            && !$this->teaches($student, $course)) {
+            abort(403, 'Non insegni questo corso.');
         }
 
         if (!$material->is_instructor_only) {

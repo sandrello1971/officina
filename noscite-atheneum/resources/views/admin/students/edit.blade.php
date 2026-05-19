@@ -146,26 +146,73 @@
     <div style="background:white; border-radius:10px; padding:24px; margin-bottom:16px;">
         <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:16px;">Corsi assegnati</h3>
 
-        @php $assignedIds = $student->courses->pluck('id')->toArray(); @endphp
+        @php
+            $assignedIds = $student->courses->pluck('id')->toArray();
+            $instructorsByCourse = $courses->mapWithKeys(fn($c) => [$c->id => $c->instructors->map(fn($i) => [
+                'id'    => $i->id,
+                'label' => $i->company ? "{$i->name} ({$i->company})" : $i->name,
+            ])->values()->all()]);
+        @endphp
 
         @if(count($assignedIds) > 0)
         <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
             @foreach($student->courses as $c)
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#F5F7F7; border-radius:8px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span>{{ $c->icon }}</span>
-                    <div>
-                        <div style="font-size:0.875rem; font-weight:600; color:#1A1F1F;">{{ $c->name }}</div>
-                        <div style="font-size:0.75rem; color:#8A9696;">Iscritto il {{ $c->pivot->enrolled_at ? \Carbon\Carbon::parse($c->pivot->enrolled_at)->format('d/m/Y') : '—' }}</div>
+            @php
+                $courseInstructors = $instructorsByCourse[$c->id] ?? [];
+                $assignedInstructorId = $c->pivot->instructor_id;
+                $assignedInstructor = $assignedInstructorId
+                    ? \App\Models\Student::find($assignedInstructorId)
+                    : null;
+            @endphp
+            <div style="padding:10px 14px; background:#F5F7F7; border-radius:8px;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span>{{ $c->icon }}</span>
+                        <div>
+                            <div style="font-size:0.875rem; font-weight:600; color:#1A1F1F;">{{ $c->name }}</div>
+                            <div style="font-size:0.75rem; color:#8A9696;">
+                                Iscritto il {{ $c->pivot->enrolled_at ? \Carbon\Carbon::parse($c->pivot->enrolled_at)->format('d/m/Y') : '—' }}
+                            </div>
+                        </div>
                     </div>
+                    <form method="POST" action="{{ route('admin.students.remove-course', [$student, $c]) }}">
+                        @csrf @method('DELETE')
+                        <button type="submit" onclick="return confirm('Rimuovere {{ $c->name }}?')"
+                                style="padding:6px 12px; background:#fff3ec; color:#E28A53; border:1px solid #E28A53; border-radius:6px; font-size:0.75rem; cursor:pointer;">
+                            Rimuovi
+                        </button>
+                    </form>
                 </div>
-                <form method="POST" action="/admin/students/{{ $student->id }}/courses/{{ $c->id }}">
-                    @csrf @method('DELETE')
-                    <button type="submit" onclick="return confirm('Rimuovere {{ $c->name }}?')"
-                            style="padding:6px 12px; background:#fff3ec; color:#E28A53; border:1px solid #E28A53; border-radius:6px; font-size:0.75rem; cursor:pointer;">
-                        Rimuovi
-                    </button>
-                </form>
+
+                <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #E8F5F5;">
+                    @if(count($courseInstructors) === 0)
+                        <div style="font-size:0.75rem; color:#8A9696; font-style:italic;">
+                            ⚠ Nessun formatore associato al corso.
+                        </div>
+                    @elseif(count($courseInstructors) === 1)
+                        <div style="font-size:0.75rem; color:#3A8C89;">
+                            Formatore: <strong>{{ $courseInstructors[0]['label'] }}</strong>
+                        </div>
+                    @else
+                        <form method="POST" action="{{ route('admin.students.update-course-instructor', [$student, $c]) }}"
+                              style="display:flex; gap:8px; align-items:center;">
+                            @csrf @method('PATCH')
+                            <label style="font-size:0.7rem; color:#8A9696;">Formatore *</label>
+                            <select name="instructor_id" required
+                                    style="flex:1; padding:6px; border:1px solid #C8D0D0; border-radius:5px; font-size:0.78rem;">
+                                @foreach($courseInstructors as $opt)
+                                <option value="{{ $opt['id'] }}" {{ $assignedInstructorId === $opt['id'] ? 'selected' : '' }}>
+                                    {{ $opt['label'] }}
+                                </option>
+                                @endforeach
+                            </select>
+                            <button type="submit"
+                                    style="padding:6px 12px; background:#55B1AE; color:white; border:none; border-radius:5px; font-size:0.75rem; cursor:pointer;">
+                                Salva
+                            </button>
+                        </form>
+                    @endif
+                </div>
             </div>
             @endforeach
         </div>
@@ -173,19 +220,51 @@
         <p style="color:#8A9696; font-size:0.875rem; margin-bottom:16px;">Nessun corso assegnato.</p>
         @endif
 
-        <form method="POST" action="/admin/students/{{ $student->id }}/courses">
+        <form method="POST" action="{{ route('admin.students.assign-course', $student) }}"
+              x-data="{ courseId: '', instructorsByCourse: @js($instructorsByCourse) }">
             @csrf
-            <div style="display:grid; grid-template-columns:1fr auto; gap:10px;">
-                <select name="course_id" required
-                        style="padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
-                    <option value="">— Seleziona corso da assegnare —</option>
-                    @foreach($courses as $course)
-                        @if(!in_array($course->id, $assignedIds))
-                        <option value="{{ $course->id }}">{{ $course->icon }} {{ $course->name }}</option>
-                        @endif
-                    @endforeach
-                </select>
-                <button type="submit" style="padding:10px 20px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer;">
+            @error('instructor_id')<p style="color:#E28A53; font-size:0.75rem; margin-bottom:6px;">{{ $message }}</p>@enderror
+            <div style="display:grid; grid-template-columns:1fr auto; gap:10px; align-items:start;">
+                <div>
+                    <select name="course_id" required x-model="courseId"
+                            style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem;">
+                        <option value="">— Seleziona corso da assegnare —</option>
+                        @foreach($courses as $course)
+                            @if(!in_array($course->id, $assignedIds))
+                            <option value="{{ $course->id }}">{{ $course->icon }} {{ $course->name }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+
+                    <template x-if="courseId">
+                        <div style="margin-top:8px;">
+                            <template x-if="(instructorsByCourse[courseId] || []).length === 0">
+                                <div style="font-size:0.75rem; color:#8A9696; font-style:italic;">
+                                    ⚠ Nessun formatore associato — il discente resterà senza formatore.
+                                </div>
+                            </template>
+                            <template x-if="(instructorsByCourse[courseId] || []).length === 1">
+                                <div style="font-size:0.75rem; color:#3A8C89;">
+                                    Formatore: <strong x-text="instructorsByCourse[courseId][0].label"></strong>
+                                </div>
+                            </template>
+                            <template x-if="(instructorsByCourse[courseId] || []).length > 1">
+                                <div>
+                                    <label style="font-size:0.7rem; color:#8A9696;">Formatore *</label>
+                                    <select name="instructor_id"
+                                            style="width:100%; padding:8px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.8rem;">
+                                        <option value="">— Seleziona formatore —</option>
+                                        <template x-for="ins in instructorsByCourse[courseId]" :key="ins.id">
+                                            <option :value="ins.id" x-text="ins.label"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+                <button type="submit"
+                        style="padding:10px 20px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer; align-self:start;">
                     Assegna
                 </button>
             </div>

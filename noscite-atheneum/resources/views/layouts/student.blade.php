@@ -44,8 +44,7 @@
         </div>
         <div style="color:#E8EDED; font-size:0.8rem; font-weight:600;">{{ session('student_name') }}</div>
         <div style="color:#8A9696; font-size:0.7rem;">{{ session('student_email') }}</div>
-        @php $currentStudent = \App\Models\Student::find(session('student_id')); @endphp
-        @if($currentStudent && $currentStudent->is_demo)
+        @if($sidebarStudent && $sidebarStudent->is_demo)
         <div style="margin-top:6px; padding:3px 8px; background:rgba(226,138,83,0.2); border:1px solid #E28A53; border-radius:4px; display:inline-block;">
             <span style="color:#E28A53; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Versione Demo</span>
         </div>
@@ -57,17 +56,18 @@
             <span>&#9632;</span> Dashboard
         </a>
 
-        @php
-            $sidebarStudent = \App\Models\Student::with(['courses' => fn($q) => $q->wherePivot('is_active', true)->orderBy('sort_order')])->find(session('student_id'));
-            $firstCourse = $sidebarStudent?->courses->first();
-        @endphp
-
-        @if($sidebarStudent)
-            @foreach($sidebarStudent->courses as $sidebarCourse)
+        @if($sidebarCourses->isNotEmpty())
+            @foreach($sidebarCourses as $sidebarCourse)
             <a href="/learn/course/{{ $sidebarCourse->slug }}"
                class="nav-item {{ request()->is('learn/course/'.$sidebarCourse->slug.'*') ? 'active' : '' }}">
                 <span>{{ $sidebarCourse->icon }}</span>
                 <span>{{ $sidebarCourse->name }}</span>
+                @if(($sidebarCourse->access_kind ?? 'enrolled') === 'teaching')
+                <span style="margin-left:auto; font-size:0.6rem; font-weight:700;
+                             color:#E28A53; text-transform:uppercase; letter-spacing:0.05em;">
+                    insegni
+                </span>
+                @endif
             </a>
             @endforeach
         @endif
@@ -79,10 +79,19 @@
             <span>&#10022;</span> Assistente AI
         </a>
 
+        <a href="{{ route('student.documents.index') }}"
+           class="nav-item {{ request()->routeIs('student.documents.*') ? 'active' : '' }}">
+            <span>📎</span> I miei documenti
+        </a>
+
         @if($sidebarStudent && $sidebarStudent->role === 'instructor')
         <a href="{{ route('student.knowledge_base.index') }}"
            class="nav-item {{ request()->routeIs('student.knowledge_base.*') ? 'active' : '' }}">
             <span>📓</span> Knowledge Base
+        </a>
+        <a href="{{ route('student.instructor_documents.index') }}"
+           class="nav-item {{ request()->routeIs('student.instructor_documents.*') ? 'active' : '' }}">
+            <span>📂</span> Documenti discenti
         </a>
         @endif
     </nav>

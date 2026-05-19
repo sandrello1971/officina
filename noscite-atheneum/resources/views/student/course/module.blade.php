@@ -15,6 +15,12 @@
             ← Torna al corso
         </a>
 
+        @if(!empty($teaching))
+        <div style="background:#E8F5F5; border:1px solid #C8D0D0; border-left:4px solid #E28A53; border-radius:8px; padding:10px 14px; margin-bottom:14px; color:#5A6464; font-size:0.82rem; line-height:1.5;">
+            👁 <strong style="color:#1A1F1F;">Modalità docenza</strong> — Anteprima del modulo come lo vede il discente. Nessun avanzamento registrato.
+        </div>
+        @endif
+
         <div style="background:white; border-radius:12px; padding:24px; margin-bottom:20px;">
             <div style="color:#8A9696; font-size:0.75rem; margin-bottom:8px;">
                 <a href="/learn/course/{{ $course->slug }}" style="color:#55B1AE;">{{ $course->name }}</a>

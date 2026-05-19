@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\Concerns\DeterminesTeachingMode;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Quiz;
@@ -13,6 +14,8 @@ use Illuminate\Http\Request;
 
 class CourseController extends Controller
 {
+    use DeterminesTeachingMode;
+
     public function show(Course $course)
     {
         $student = $this->checkAccess($course);
@@ -53,10 +56,12 @@ class CourseController extends Controller
             ? $course->instructorMaterials
             : collect();
 
+        $teaching = $this->isTeachingMode($student, $course);
+
         return view('student.course.show', compact(
             'course', 'modules', 'progressPercent',
             'completedModules', 'totalModules', 'finalQuiz', 'certificationPassed', 'progressByModule',
-            'hasAnyVideo', 'instructorMaterials'
+            'hasAnyVideo', 'instructorMaterials', 'teaching'
         ));
     }
 
@@ -65,8 +70,12 @@ class CourseController extends Controller
         $student = $this->checkAccess($course);
         abort_unless($module->course_id === $course->id, 404);
 
+        $teaching = $this->isTeachingMode($student, $course);
+
         if ($student->is_demo) {
             $progress = new StudentModuleProgress(['status' => 'in_progress', 'student_id' => $student->id, 'module_id' => $module->id]);
+        } elseif ($teaching) {
+            $progress = new StudentModuleProgress(['status' => 'not_started', 'student_id' => $student->id, 'module_id' => $module->id]);
         } else {
             $progress = StudentModuleProgress::firstOrCreate(
                 ['student_id' => $student->id, 'module_id' => $module->id],
@@ -147,7 +156,7 @@ class CourseController extends Controller
                     Visualizzi solo un\'anteprima del contenuto.<br>
                     Acquista il corso per accedere a tutti i materiali.
                 </p>
-                <a href="https://atheneum.noscite.it/contatti"
+                <a href="/contatti"
                    style="padding:10px 24px; background:#E28A53; color:white; border-radius:8px; font-size:0.875rem; font-weight:700; text-decoration:none;">
                     Acquista il corso completo →
                 </a>
@@ -171,7 +180,7 @@ class CourseController extends Controller
             'course', 'module', 'materials', 'quiz', 'finalQuiz',
             'certificationPassed', 'progress', 'prevModule', 'nextModule',
             'canvases', 'isDemo', 'note', 'studentNotes',
-            'instructorManualSections', 'instructorNotes'
+            'instructorManualSections', 'instructorNotes', 'teaching'
         ));
     }
 
@@ -182,6 +191,10 @@ class CourseController extends Controller
 
         if ($student->is_demo) {
             return back()->with('success', 'Demo: completamento non salvato.');
+        }
+
+        if ($this->isTeachingMode($student, $course)) {
+            return back()->with('info', 'Modalità docenza: il completamento non viene registrato.');
         }
 
         StudentModuleProgress::updateOrCreate(
@@ -213,8 +226,14 @@ class CourseController extends Controller
             ->wherePivot('is_active', true)
             ->exists();
 
-        abort_unless($enrolled, 403, 'Non sei iscritto a questo corso.');
+        if ($enrolled) {
+            return $student;
+        }
 
-        return $student;
+        if ($this->teaches($student, $course) && $course->is_active) {
+            return $student;
+        }
+
+        abort(403, 'Non sei iscritto a questo corso.');
     }
 }

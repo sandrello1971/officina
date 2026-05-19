@@ -40,8 +40,24 @@ class Student extends Authenticatable
     public function courses()
     {
         return $this->belongsToMany(Course::class, 'student_course')
-            ->withPivot('enrolled_at', 'expires_at', 'completed_at', 'is_active', 'notes')
+            ->withPivot('enrolled_at', 'expires_at', 'completed_at', 'is_active', 'notes', 'instructor_id')
             ->withTimestamps();
+    }
+
+    public function taughtCourses()
+    {
+        return $this->belongsToMany(Course::class, 'course_instructor', 'instructor_id', 'course_id')
+            ->withTimestamps();
+    }
+
+    public function mentoredStudents()
+    {
+        return $this->hasMany(StudentCourse::class, 'instructor_id');
+    }
+
+    public function isInstructor(): bool
+    {
+        return $this->role === 'instructor';
     }
 
     public function moduleProgress()
@@ -62,5 +78,10 @@ class Student extends Authenticatable
     public function instructorNotes()
     {
         return $this->hasMany(InstructorNote::class, 'instructor_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(StudentDocument::class);
     }
 }

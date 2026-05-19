@@ -38,9 +38,13 @@
                         @endunless
                     </div>
                 </div>
-                @unless($student->is_demo)
+                @if(!$student->is_demo && empty($course->is_teaching))
                 <div style="color:white; font-size:1.25rem; font-weight:700;">{{ $course->progress_pct }}%</div>
-                @endunless
+                @elseif(!empty($course->is_teaching))
+                <span style="padding:4px 10px; background:rgba(226,138,83,0.95); color:white; border-radius:12px; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">
+                    &#127979; Insegni questo corso
+                </span>
+                @endif
             </div>
 
             <div style="padding:16px 20px;">
@@ -49,6 +53,16 @@
                     <a href="/learn/course/{{ $course->slug }}"
                        style="padding:6px 16px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                         Entra nel corso &rarr;
+                    </a>
+                </div>
+                @elseif(!empty($course->is_teaching))
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div style="color:#8A9696; font-size:0.8rem;">
+                        {{ $course->modules_total }} {{ $course->modules_total === 1 ? 'modulo' : 'moduli' }} &middot; modalit&agrave; docenza
+                    </div>
+                    <a href="/learn/course/{{ $course->slug }}"
+                       style="padding:6px 16px; background:#E28A53; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
+                        Apri in docenza &rarr;
                     </a>
                 </div>
                 @else

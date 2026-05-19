@@ -33,6 +33,12 @@
         @endunless
     </div>
 
+    @if(!empty($teaching))
+    <div style="background:#E8F5F5; border:1px solid #C8D0D0; border-left:4px solid #E28A53; border-radius:8px; padding:12px 16px; margin-bottom:16px; color:#5A6464; font-size:0.85rem; line-height:1.5;">
+        👁 <strong style="color:#1A1F1F;">Modalità docenza</strong> — Stai vedendo il corso come lo vede il discente. Avanzamento, quiz e certificato non vengono registrati. Usa "Aggiungi nota" per preparare la lezione.
+    </div>
+    @endif
+
     <div style="background:linear-gradient(135deg,#1A1F1F,#3A8C89); border-radius:12px; padding:16px 20px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between;" x-data>
         <div>
             <div style="color:#55B1AE; font-weight:700; font-size:0.875rem;">&#10022; Assistente AI — Minerva</div>

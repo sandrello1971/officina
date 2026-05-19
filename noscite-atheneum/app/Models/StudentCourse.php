@@ -15,7 +15,7 @@ class StudentCourse extends Pivot
     public $incrementing = false;
 
     protected $fillable = [
-        'student_id', 'course_id', 'enrolled_at', 'expires_at',
+        'student_id', 'course_id', 'instructor_id', 'enrolled_at', 'expires_at',
         'completed_at', 'is_active', 'notes',
     ];
 
@@ -25,4 +25,19 @@ class StudentCourse extends Pivot
         'completed_at' => 'datetime',
         'is_active' => 'boolean',
     ];
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class, 'student_id');
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class, 'course_id');
+    }
+
+    public function instructor()
+    {
+        return $this->belongsTo(Student::class, 'instructor_id');
+    }
 }

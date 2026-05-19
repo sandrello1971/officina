@@ -2,10 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Student;
+use App\Support\StudentCourseAccess;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +28,20 @@ class AppServiceProvider extends ServiceProvider
         // così il budget non è condiviso tra utenti diversi dietro la stessa rotta.
         RateLimiter::for('certificate-verify', function (Request $request) {
             return Limit::perMinute(30)->by($request->ip());
+        });
+
+        View::composer('layouts.student', function ($view) {
+            $studentId = session('student_id');
+            $student = $studentId ? Student::find($studentId) : null;
+
+            $sidebarCourses = $student
+                ? app(StudentCourseAccess::class)->navigableCourses($student)
+                : collect();
+
+            $view->with([
+                'sidebarStudent' => $student,
+                'sidebarCourses' => $sidebarCourses,
+            ]);
         });
     }
 }
