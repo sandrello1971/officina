@@ -34,6 +34,7 @@
         <a href="/admin/rag" class="nav-item {{ request()->routeIs('admin.rag.*') ? 'active' : '' }}">&#129504; Documenti AI</a>
         <a href="/admin/knowledge-base" class="nav-item {{ request()->routeIs('admin.knowledge-base.*') ? 'active' : '' }}">📓 Knowledge Base</a>
         <a href="/admin/analytics" class="nav-item {{ request()->routeIs('admin.analytics') ? 'active' : '' }}">&#128200; Analytics</a>
+        <a href="{{ route('admin.admins.index') }}" class="nav-item {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}">&#128737; Amministratori</a>
     </nav>
     <div style="position:absolute; bottom:0; left:0; right:0; padding:16px 20px; border-top:1px solid rgba(85,177,174,0.1);">
         <div style="color:#8A9696; font-size:0.75rem; margin-bottom:8px;">{{ session('admin_email') }}</div>
