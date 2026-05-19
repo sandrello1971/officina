@@ -194,6 +194,10 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::patch('admins/{admin}/password',    [App\Http\Controllers\Admin\AdminAccountController::class, 'password'])->name('admins.password');
     Route::patch('admins/{admin}/toggle',      [App\Http\Controllers\Admin\AdminAccountController::class, 'toggle'])->name('admins.toggle');
 
+    Route::get('settings',                     [App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
+    Route::put('settings',                     [App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+    Route::post('settings/test-mail',          [App\Http\Controllers\Admin\SettingsController::class, 'testMail'])->name('settings.test-mail');
+
     Route::get('/login', [App\Http\Controllers\Admin\AdminAuthController::class, 'showLogin'])->name('login')->withoutMiddleware(['admin.auth']);
     Route::post('/login', [App\Http\Controllers\Admin\AdminAuthController::class, 'login'])->name('login.post')->withoutMiddleware(['admin.auth']);
     Route::post('/logout', [App\Http\Controllers\Admin\AdminAuthController::class, 'logout'])->name('logout');
