@@ -1,0 +1,20 @@
+# Defense in depth: i sotto-progetti (noscite-atheneum/, noscite-site/, ...)
+# hanno già i loro .gitignore che escludono .env, ma aggiungiamo qui un
+# pattern globale al repo root per coprire eventuali .env messi per errore
+# al di fuori delle sub-app.
+
+.env
+.env.*
+!.env.example
+!.env.testing
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Backup
+*.backup
+*.bak
+*~
