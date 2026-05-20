@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\Concerns\EvaluatesExamState;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Student;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Http;
 
 class VideoController extends Controller
 {
+    use EvaluatesExamState;
+
     public function __construct(private VideoAIService $videoAI) {}
 
     private function checkVideoAccess(string $videoId): bool
@@ -106,6 +109,14 @@ class VideoController extends Controller
     public function chat(Request $request, string $videoId)
     {
         if (!$this->checkVideoAccess($videoId)) abort(403);
+
+        $studentId = session('student_id');
+        if ($studentId && $this->hasActiveExam($studentId)) {
+            return response()->json([
+                'error' => 'Minerva non è disponibile durante un esame in corso.',
+                'exam_lock' => true,
+            ], 423);
+        }
 
         $request->validate([
             'question' => 'required|string|max:1000',

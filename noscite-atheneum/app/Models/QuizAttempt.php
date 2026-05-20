@@ -12,11 +12,12 @@ class QuizAttempt extends Model
 
     protected $fillable = [
         'quiz_id', 'student_id', 'started_at', 'completed_at',
-        'score', 'passed', 'time_spent_seconds', 'attempt_number',
+        'score', 'passed', 'abandoned', 'time_spent_seconds', 'attempt_number',
     ];
 
     protected $casts = [
         'passed' => 'boolean',
+        'abandoned' => 'boolean',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
