@@ -1,13 +1,19 @@
+@php($isEdit = $question->exists)
 @extends('layouts.admin')
-@section('title', 'Modifica Domanda')
+@section('title', $isEdit ? 'Modifica Domanda' : 'Nuova Domanda')
 @section('content')
 <div style="max-width:700px;">
     <a href="/admin/quizzes/{{ $quiz->id }}/questions" style="color:#8A9696; font-size:0.8rem;">&larr; Domande</a>
-    <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin:8px 0 20px;">Modifica domanda</h2>
+    <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin:8px 0 20px;">
+        {{ $isEdit ? 'Modifica domanda' : 'Nuova domanda' }}
+    </h2>
 
     <div style="background:white; border-radius:10px; padding:24px;">
-        <form method="POST" action="/admin/quizzes/{{ $quiz->id }}/questions/{{ $question->id }}">
-            @csrf @method('PUT')
+        <form method="POST" action="{{ $isEdit
+            ? route('admin.quizzes.questions.update', [$quiz, $question])
+            : route('admin.quizzes.questions.store', $quiz) }}">
+            @csrf
+            @if($isEdit) @method('PUT') @endif
             <div style="display:flex; flex-direction:column; gap:16px;">
                 <div>
                     <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Domanda *</label>
@@ -52,7 +58,7 @@
                        style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>
                     <button type="submit"
                             style="padding:10px 24px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer;">
-                        Salva domanda
+                        {{ $isEdit ? 'Salva modifiche' : 'Crea domanda' }}
                     </button>
                 </div>
             </div>
