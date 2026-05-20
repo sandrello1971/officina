@@ -163,6 +163,12 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
 
     Route::get('knowledge-base', [App\Http\Controllers\Admin\KnowledgeBaseController::class, 'index'])->name('knowledge-base.index');
 
+    // Soft delete management — DEVONO stare prima del Route::resource('students')
+    // perché students/trashed matcha altrimenti students/{student} parametrico.
+    Route::get('students/trashed', [App\Http\Controllers\Admin\StudentController::class, 'trashed'])->name('students.trashed');
+    Route::patch('students/{id}/restore', [App\Http\Controllers\Admin\StudentController::class, 'restore'])->name('students.restore');
+    Route::delete('students/{id}/force-delete', [App\Http\Controllers\Admin\StudentController::class, 'forceDestroy'])->name('students.force-delete');
+
     Route::resource('students', App\Http\Controllers\Admin\StudentController::class);
     Route::post('students/{student}/courses', [App\Http\Controllers\Admin\StudentController::class, 'assignCourse'])->name('students.assign-course');
     Route::delete('students/{student}/courses/{course}', [App\Http\Controllers\Admin\StudentController::class, 'removeCourse'])->name('students.remove-course');
