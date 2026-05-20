@@ -204,8 +204,8 @@
 
     <div class="content">
         <div class="logo-area">
-            <div class="logo-text">NOSCITE</div>
-            <div class="logo-sub">In digitālī nova virtūs</div>
+            <div class="logo-text">{{ strtoupper(atheneum_setting('platform_owner', 'NOSCITE')) }}</div>
+            <div class="logo-sub">{{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}</div>
         </div>
 
         <div class="divider"></div>
@@ -236,7 +236,7 @@
             <div class="footer-item">
                 <div class="footer-label">Rilasciato da</div>
                 <div class="footer-line"></div>
-                <div class="footer-value">Noscite SRLS</div>
+                <div class="footer-value">{{ atheneum_setting('platform_owner', 'Noscite SRLS') }}</div>
             </div>
         </div>
     </div>

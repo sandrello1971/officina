@@ -8,7 +8,7 @@
     <div style="background:linear-gradient(135deg,#1A1F1F,#3A8C89); border-radius:12px 12px 0 0; padding:16px 20px; display:flex; align-items:center; gap:12px;">
         <div style="width:40px; height:40px; border-radius:50%; background:#55B1AE; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">&#10022;</div>
         <div>
-            <div style="color:white; font-weight:700;">Minerva</div>
+            <div style="color:white; font-weight:700;">{{ atheneum_setting('assistant_name', 'Minerva') }}</div>
             <div style="color:rgba(255,255,255,0.7); font-size:0.75rem;">Assistente AI · {{ $course->name }}</div>
         </div>
     </div>
@@ -18,8 +18,13 @@
         <div style="display:flex; gap:10px; align-items:flex-start;">
             <div style="width:32px; height:32px; border-radius:50%; background:#55B1AE; display:flex; align-items:center; justify-content:center; color:white; font-size:0.8rem; flex-shrink:0;">&#10022;</div>
             <div style="max-width:70%; padding:12px 16px; background:#F5F7F7; border-radius:0 12px 12px 12px; font-size:0.875rem; color:#1A1F1F; line-height:1.6;">
-                Ciao! Sono <strong>Minerva</strong>, il tuo assistente AI per il corso <strong>{{ $course->name }}</strong>.
-                Sono qui per aiutarti a capire i contenuti del corso. Cosa vorresti sapere?
+                @php $assistantName = atheneum_setting('assistant_name', 'Minerva'); $intro = atheneum_setting('assistant_intro_message', ''); @endphp
+                @if($intro)
+                    {{ $intro }}
+                @else
+                    Ciao! Sono <strong>{{ $assistantName }}</strong>, il tuo assistente AI per il corso <strong>{{ $course->name }}</strong>.
+                    Sono qui per aiutarti a capire i contenuti del corso. Cosa vorresti sapere?
+                @endif
             </div>
         </div>
 
@@ -104,7 +109,7 @@ function addTyping() {
     div.style.cssText = 'display:flex;gap:10px;align-items:flex-start;';
     div.innerHTML = `
         <div style="width:32px;height:32px;border-radius:50%;background:#55B1AE;display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;">&#10022;</div>
-        <div style="padding:12px 16px;background:#F5F7F7;border-radius:0 12px 12px 12px;font-size:0.875rem;color:#8A9696;">Minerva sta scrivendo...</div>`;
+        <div style="padding:12px 16px;background:#F5F7F7;border-radius:0 12px 12px 12px;font-size:0.875rem;color:#8A9696;">{{ atheneum_setting('assistant_name', 'Minerva') }} sta scrivendo...</div>`;
     container.insertBefore(div, document.getElementById('messages-end'));
     scrollBottom();
 }

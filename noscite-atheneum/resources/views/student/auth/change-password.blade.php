@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Imposta password — Atheneum Noscite</title>
+    <title>Imposta password — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -14,7 +14,7 @@
     <div style="position:relative;z-index:1" class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-sm">
             <div class="text-center mb-8">
-                <img src="/images/logo.png" alt="Noscite" class="h-12 w-auto mx-auto mb-4 brightness-0 invert">
+                <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" class="h-12 w-auto mx-auto mb-4 brightness-0 invert">
                 <h1 class="text-2xl font-bold" style="color:#55B1AE">Imposta la tua password</h1>
                 <p class="text-sm mt-2" style="color:#8A9696">Primo accesso: scegli una password sicura di almeno 8 caratteri.</p>
             </div>
