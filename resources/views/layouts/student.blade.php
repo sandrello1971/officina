@@ -13,7 +13,13 @@
     <style>
         [x-cloak] { display: none !important; }
         body { font-family: 'Calibri', system-ui, sans-serif; }
-        .sidebar { width: 260px; min-height: 100vh; background: #1A1F1F; position: fixed; left: 0; top: 0; bottom: 0; overflow-y: auto; z-index: 40; }
+        /* Sidebar: flexbox column. Header + user-card + nav scrollabili
+           (overflow-y:auto sul .sidebar-scroll), footer logout fisso in
+           basso (flex-shrink:0). Senza questo, con molte voci nav la
+           nav esce dal viewport e il bottone "Esci" (in absolute) le copre. */
+        .sidebar { width: 260px; height: 100vh; background: #1A1F1F; position: fixed; left: 0; top: 0; bottom: 0; z-index: 40; display: flex; flex-direction: column; }
+        .sidebar-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+        .sidebar-footer { flex-shrink: 0; padding: 16px 20px; border-top: 1px solid rgba(85,177,174,0.1); background: #1A1F1F; }
         .main-content { margin-left: 260px; min-height: 100vh; background: #F5F7F7; }
         .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #8A9696; font-size: 0.875rem; transition: all 0.2s; border-radius: 6px; margin: 2px 8px; text-decoration:none; }
         .nav-item:hover { background: rgba(85,177,174,0.1); color: #55B1AE; }
@@ -32,6 +38,10 @@
 <body>
 
 <aside class="sidebar">
+    {{-- Scrollabile: prende tutta l'altezza disponibile meno il footer.
+         Senza questo wrapper, con molte voci nav (es. instructor: KB +
+         Documenti discenti) le ultime finiscono coperte dal bottone Esci. --}}
+    <div class="sidebar-scroll">
     <div style="padding: 24px 20px; border-bottom: 1px solid rgba(85,177,174,0.2);">
         <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" style="height:36px; filter:brightness(0) invert(1); margin-bottom:8px;">
         <div style="color:#55B1AE; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;">{{ atheneum_setting('instance_name', 'Atheneum') }}</div>
@@ -95,8 +105,9 @@
         </a>
         @endif
     </nav>
+    </div>{{-- /.sidebar-scroll --}}
 
-    <div style="position:absolute; bottom:0; left:0; right:0; padding:16px 20px; border-top:1px solid rgba(85,177,174,0.1);">
+    <div class="sidebar-footer">
         <form method="POST" action="/learn/logout">
             @csrf
             <button type="submit" style="width:100%; padding:8px; background:rgba(226,138,83,0.1); color:#E28A53; border:1px solid rgba(226,138,83,0.3); border-radius:6px; font-size:0.8rem; cursor:pointer;">
@@ -244,6 +255,20 @@ function minervaBubble() {
 
         init() {
             try {
+                // Scoping per utente: localStorage è globale per origin,
+                // se A esce e B entra sullo stesso browser, B erediterebbe
+                // la chat di A. Confronto user-id corrente vs cached:
+                // diverso → wipe + ri-set; uguale → restore come prima.
+                const currentUserId = @json(session('student_id') ?? '');
+                const cachedUserId = localStorage.getItem('minerva-user-id');
+                if (cachedUserId !== currentUserId) {
+                    localStorage.removeItem('minerva-chat');
+                    localStorage.removeItem('minerva-open');
+                    localStorage.setItem('minerva-user-id', currentUserId);
+                    this.messages = [];
+                    this.open = false;
+                    return;
+                }
                 const saved = localStorage.getItem('minerva-chat');
                 if (saved) this.messages = JSON.parse(saved);
                 this.open = localStorage.getItem('minerva-open') === '1';
