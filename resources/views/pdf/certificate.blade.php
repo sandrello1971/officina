@@ -5,7 +5,11 @@
 <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
-        font-family: Georgia, serif;
+        /* DejaVu Serif: bundlato di default in dompdf, copre tutto il
+           range Latin Extended (macron ā ī ū) che Georgia non ha →
+           senza questo cambio "In digitālī nova virtūs" rende come
+           "In digit?l? nova virt?s" nel PDF. */
+        font-family: 'DejaVu Serif', serif;
         background: white;
         color: #1A1F1F;
     }
@@ -163,9 +167,13 @@
         margin-bottom: 4mm;
     }
     .verify-block {
+        /* width esplicita: senza, dompdf risolve la position absolute
+           a partire dalla width naturale del contenuto e il blocco
+           esce dal bordo destro pagina (URL + label troncati). */
         position: absolute;
-        bottom: 18mm;
-        right: 18mm;
+        bottom: 16mm;
+        right: 16mm;
+        width: 45mm;
         text-align: center;
         z-index: 11;
     }
@@ -183,11 +191,15 @@
         margin-bottom: 0.5mm;
     }
     .verify-url {
-        font-size: 6pt;
+        /* DejaVu Sans Mono: bundlato in dompdf. font-size ridotta a
+           5.5pt + line-height 1.3 per fare entrare l'URL completo
+           su 2-3 righe dentro i 45mm del parent. max-width rimosso:
+           il parent ora ha width esplicita. */
+        font-size: 5.5pt;
         color: #4A5252;
-        font-family: monospace;
+        font-family: 'DejaVu Sans Mono', monospace;
         word-break: break-all;
-        max-width: 40mm;
+        line-height: 1.3;
     }
 </style>
 </head>
@@ -195,7 +207,7 @@
 <div class="page">
     <div class="border-outer"></div>
     <div class="border-inner"></div>
-    <div class="watermark">NOSCITE</div>
+    <div class="watermark">{{ strtoupper(atheneum_setting('platform_owner', 'NOSCITE')) }}</div>
 
     <span class="corner-ornament corner-tl">✦</span>
     <span class="corner-ornament corner-tr">✦</span>
@@ -231,7 +243,7 @@
             <div class="footer-item">
                 <div class="footer-label">Codice certificato</div>
                 <div class="footer-line"></div>
-                <div class="footer-value" style="font-size:8pt; font-family:monospace;">{{ $cert->code }}</div>
+                <div class="footer-value" style="font-size:8pt; font-family:'DejaVu Sans Mono', monospace;">{{ $cert->code }}</div>
             </div>
             <div class="footer-item">
                 <div class="footer-label">Rilasciato da</div>
