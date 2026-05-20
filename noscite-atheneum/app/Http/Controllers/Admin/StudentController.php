@@ -140,9 +140,60 @@ class StudentController extends Controller
 
     public function destroy(Student $student)
     {
-        $student->update(['is_active' => false]);
-        return redirect()->route('admin.students.index')
-            ->with('success', 'Studente disattivato.');
+        // Soft delete: mette deleted_at, mantiene il record nel DB.
+        // Recuperabile dal cestino in admin.students.trashed.
+        $name = $student->name;
+        $email = $student->email;
+        $student->delete();
+        \Log::info("Admin soft-delete studente: {$name} ({$email})", [
+            'student_id' => $student->id,
+            'by_admin_id' => auth()->id(),
+        ]);
+        return redirect()
+            ->route('admin.students.index')
+            ->with('success', "Studente {$name} spostato nel cestino. Puoi ripristinarlo o eliminarlo definitivamente da 'Studenti eliminati'.");
+    }
+
+    public function trashed()
+    {
+        $students = Student::onlyTrashed()
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(50);
+        return view('admin.students.trashed', compact('students'));
+    }
+
+    public function restore(string $id)
+    {
+        $student = Student::onlyTrashed()->findOrFail($id);
+        $student->restore();
+        \Log::info("Admin restore studente: {$student->name} ({$student->email})", [
+            'student_id' => $student->id,
+            'by_admin_id' => auth()->id(),
+        ]);
+        return redirect()
+            ->route('admin.students.trashed')
+            ->with('success', "Studente {$student->name} ripristinato.");
+    }
+
+    public function forceDestroy(string $id)
+    {
+        $student = Student::onlyTrashed()->findOrFail($id);
+        $name = $student->name;
+        $email = $student->email;
+        $studentId = $student->id;
+        // Cascade: tutte le FK figlie hanno cascadeOnDelete (vedi migrations
+        // student_course, student_module_progress, student_notes, student_documents,
+        // student_canvas_data, exam_attempt_grants, certificates, leads).
+        // Quindi forceDelete trigger automatico della cancellazione a cascata.
+        $student->forceDelete();
+        \Log::warning("Admin HARD DELETE studente: {$name} ({$email})", [
+            'student_id' => $studentId,
+            'by_admin_id' => auth()->id(),
+            'cascade' => 'enrollments, quiz_attempts, certificates, chat_conversations, student_notes, student_documents tutti cancellati per FK cascadeOnDelete',
+        ]);
+        return redirect()
+            ->route('admin.students.trashed')
+            ->with('success', "Studente {$name} eliminato definitivamente. Tutti i suoi dati associati sono stati cancellati dal database.");
     }
 
     public function assignCourse(Request $request, Student $student)
