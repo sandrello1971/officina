@@ -33,15 +33,14 @@
         border-radius: 3px;
     }
     .content {
+        /* dompdf non supporta flex. height:100% causa overflow → page
+           break. Sostituiamo con layout block normale, padding-top
+           calcolato per pseudo-vertical-center, e text-align center per
+           l'orizzontale. */
         position: relative;
         z-index: 10;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        padding: 18mm 8mm 8mm;
         text-align: center;
-        padding: 8mm;
     }
     .logo-area {
         margin-bottom: 6mm;
