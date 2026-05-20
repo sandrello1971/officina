@@ -109,4 +109,4 @@ jobs:
         working-directory: noscite-atheneum
         run: >-
           php artisan test
-        --filter='StudentDocument|InstructorCourse|InstructorTeachingMode|SidebarCourseAccess|AutoEnrollRestriction|ExamInterruption|MinervaExamLock|MinervaScoping|ExamAttemptCap|AdminAuthAndSettings'
+          --filter='StudentDocument|InstructorCourse|InstructorTeachingMode|SidebarCourseAccess|AutoEnrollRestriction|ExamInterruption|MinervaExamLock|MinervaScoping|ExamAttemptCap|AdminAuthAndSettings'
