@@ -89,11 +89,17 @@ class CertificateController extends Controller
 
         // Fallback on-the-fly per certificati legacy (pre refactor)
         // o edge case observer fallito.
-        $pdf = $this->pdfBuilder->build($cert);
+        // build() ora ritorna bytes (string) — non più oggetto DomPDF —
+        // dopo lo switch a FPDI+TCPDF.
+        $bytes = $this->pdfBuilder->build($cert);
+        $headers = [
+            'Content-Type' => 'application/pdf',
+            'Content-Length' => (string) strlen($bytes),
+            'Content-Disposition' => ($asDownload ? 'attachment' : 'inline')
+                . '; filename="' . ($asDownload ? $filename : 'certificato.pdf') . '"',
+        ];
 
-        return $asDownload
-            ? $pdf->download($filename)
-            : $pdf->stream('certificato.pdf');
+        return response()->make($bytes, 200, $headers);
     }
 
     private function filename(Certificate $cert, Course $course): string

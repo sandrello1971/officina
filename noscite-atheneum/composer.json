@@ -17,6 +17,7 @@
         "livewire/livewire": "^4.2",
         "php-open-source-saver/jwt-auth": "^2.9",
         "phpoffice/phpword": "^1.4",
+        "setasign/fpdi-tcpdf": "^2.3",
         "smalot/pdfparser": "^2.12",
         "socialiteproviders/microsoft-azure": "^5.2"
     },

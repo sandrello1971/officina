@@ -3,43 +3,136 @@
 namespace App\Services;
 
 use App\Models\Certificate;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use setasign\Fpdi\Tcpdf\Fpdi;
 
 class CertificatePdfBuilder
 {
     /**
-     * Costruisce l'oggetto PDF (DomPDF) per un Certificate, senza salvarlo.
-     * Logica estratta dal vecchio Student\CertificateController per renderla
-     * riusabile da Observer (persistenza alla creazione) e da Controller
-     * (fallback on-the-fly per certificati legacy).
+     * Path relativo al base_path() del template PDF vettoriale.
+     * Il template è caricato come "pagina importata" da FPDI e gli
+     * elementi dinamici sono scritti sopra con TCPDF a coordinate in mm.
+     * Vantaggio vs dompdf: niente CSS quirks, niente cache di view,
+     * niente drift di metriche font — il PDF è size-agnostic.
      */
-    public function build(Certificate $cert): \Barryvdh\DomPDF\PDF
+    private const TEMPLATE_PATH = 'resources/pdf/templates/certificate-default.pdf';
+
+    /**
+     * Coordinate Y (in mm) dei campi dinamici sul template attuale
+     * (516×362mm). Calibrate empiricamente; aggiustabili senza toccare
+     * altro codice. Font names devono matchare quelli stampati da
+     * `php artisan pdf:register-tcpdf-fonts`:
+     *   cormorantgaramondvariable   = roman (regular/bold equivalenti, variable font)
+     *   cormorantgaramondivariable  = italic (regular/bold equivalenti)
+     *   intervariable               = sans (regular/bold equivalenti)
+     */
+    private const COORDS = [
+        'student_name'   => ['y' => 133.0, 'font' => 'cormorantgaramondivariable', 'size' => 28, 'color' => [26, 31, 31]],
+        'course_name'    => ['y' => 181.0, 'font' => 'cormorantgaramondvariable',  'size' => 20, 'color' => [85, 177, 174], 'uppercase' => true, 'spacing' => 3.0],
+        'cert_subtitle'  => ['y' => 198.0, 'font' => 'cormorantgaramondivariable', 'size' => 12, 'color' => [226, 138, 83]],
+        'score'          => ['y' => 215.0, 'font' => 'cormorantgaramondivariable', 'size' => 13, 'color' => [85, 177, 174]],
+        'date_value'     => ['y' => 264.0, 'font' => 'cormorantgaramondvariable',  'size' => 11, 'color' => [26, 31, 31]],
+        'code_value'     => ['y' => 291.0, 'font' => 'intervariable',              'size' => 10, 'color' => [26, 31, 31], 'spacing' => 0.5],
+        'owner_value'    => ['y' => 322.0, 'font' => 'cormorantgaramondvariable',  'size' => 11, 'color' => [26, 31, 31]],
+    ];
+
+    /**
+     * Genera i bytes del PDF certificato. Cambiato signature da
+     * \Barryvdh\DomPDF\PDF a string (bytes) per disaccoppiare dal
+     * vecchio backend dompdf — più semplice e sufficiente per i 2
+     * caller (saveUnsigned + Student\CertificateController::download/show).
+     */
+    public function build(Certificate $cert): string
     {
         $student = $cert->student;
-        $course = $cert->course; // può essere null se corso eliminato (Certificate ha snapshot completo)
-
+        $course = $cert->course; // null safe: lo snapshot del Certificate ha tutti i dati
         $verifyUrl = route('certificate.verify', ['code' => $cert->code]);
-        $qrDataUri = Builder::create()
-            ->writer(new PngWriter())
-            ->data($verifyUrl)
-            ->size(220)
-            ->margin(8)
-            ->build()
-            ->getDataUri();
+        $date = Carbon::parse($cert->issued_at)->locale('it')->isoFormat('D MMMM YYYY');
 
-        $date = $cert->issued_at->locale('it')->isoFormat('D MMMM YYYY');
+        $templateAbsPath = base_path(self::TEMPLATE_PATH);
+        if (!file_exists($templateAbsPath)) {
+            throw new \RuntimeException("Template PDF mancante: {$templateAbsPath}");
+        }
 
-        return Pdf::loadView('pdf.certificate', [
-            'cert' => $cert,
-            'student' => $student,
-            'course' => $course,
-            'date' => $date,
-            'verifyUrl' => $verifyUrl,
-            'qrDataUri' => $qrDataUri,
-        ])->setPaper('a4', 'landscape');
+        $pdf = new Fpdi();
+        $pdf->setSourceFile($templateAbsPath);
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+
+        $pdf->SetCreator('Atheneum');
+        $pdf->SetAuthor(atheneum_setting('platform_owner', 'Noscite SRLS'));
+        $pdf->SetTitle("Certificato {$cert->code}");
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetAutoPageBreak(false, 0);
+        $pdf->SetMargins(0, 0, 0);
+
+        $orientation = $size['width'] >= $size['height'] ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        $pdf->useTemplate($tplId);
+
+        $pageW = $size['width'];
+
+        // Helper inline per scrivere testo centrato orizzontalmente a y dato
+        $writeCentered = function (string $text, array $cfg) use ($pdf, $pageW): void {
+            $renderText = !empty($cfg['uppercase']) ? mb_strtoupper($text) : $text;
+            $pdf->SetFont($cfg['font'], '', $cfg['size']);
+            [$r, $g, $b] = $cfg['color'];
+            $pdf->SetTextColor($r, $g, $b);
+            $pdf->setFontSpacing($cfg['spacing'] ?? 0);
+            $pdf->SetXY(0, $cfg['y']);
+            $pdf->Cell($pageW, 8, $renderText, 0, 0, 'C');
+            $pdf->setFontSpacing(0); // reset
+        };
+
+        // === Campi dinamici ===
+        $writeCentered($student->name, self::COORDS['student_name']);
+
+        $courseName = $course?->name ?? $cert->certification_name;
+        $writeCentered($courseName, self::COORDS['course_name']);
+
+        if ($cert->certification_name && $cert->certification_name !== $courseName) {
+            $writeCentered($cert->certification_name, self::COORDS['cert_subtitle']);
+        }
+
+        if ($cert->score) {
+            $writeCentered("Punteggio: {$cert->score}%", self::COORDS['score']);
+        }
+
+        $writeCentered($date, self::COORDS['date_value']);
+        $writeCentered($cert->code, self::COORDS['code_value']);
+        $writeCentered(atheneum_setting('platform_owner', 'Noscite SRLS'), self::COORDS['owner_value']);
+
+        // === QR + verify URL (basso a sinistra) ===
+        // Coordinate calibrate per il template ~516x362mm. Aggiustabili.
+        $qrX = 48.0;
+        $qrY = 296.0;
+        $qrSize = 42.0;
+        $pdf->write2DBarcode($verifyUrl, 'QRCODE,M', $qrX, $qrY, $qrSize, $qrSize, [
+            'border'  => 0,
+            'padding' => 0,
+            'fgcolor' => [26, 31, 31],
+            'bgcolor' => false,
+        ], 'N');
+
+        // Label sotto QR
+        $pdf->SetFont('intervariable', '', 7);
+        $pdf->SetTextColor(138, 150, 150);
+        $pdf->setFontSpacing(0.4);
+        $pdf->SetXY($qrX - 10, $qrY + $qrSize + 2);
+        $pdf->Cell($qrSize + 20, 4, mb_strtoupper('Verifica online'), 0, 0, 'C');
+
+        // URL sotto label (wrappato)
+        $pdf->SetFont('intervariable', '', 6);
+        $pdf->SetTextColor(74, 82, 82);
+        $pdf->setFontSpacing(0);
+        $pdf->SetXY($qrX - 12, $qrY + $qrSize + 7);
+        $pdf->MultiCell($qrSize + 24, 3, $verifyUrl, 0, 'C');
+
+        // === Output bytes ===
+        // 'S' = ritorna come stringa (i bytes del PDF)
+        return $pdf->Output('', 'S');
     }
 
     /**
@@ -53,7 +146,7 @@ class CertificatePdfBuilder
     public function saveUnsigned(Certificate $cert): string
     {
         $path = $this->unsignedPathFor($cert);
-        Storage::disk('local')->put($path, $this->build($cert)->output());
+        Storage::disk('local')->put($path, $this->build($cert));
         return $path;
     }
 
@@ -68,7 +161,7 @@ class CertificatePdfBuilder
     }
 
     /**
-     * Convenzione path per PDF firmato. Usata dall'admin UI (Step 2)
+     * Convenzione path per PDF firmato. Usata dall'admin UI
      * quando il legale rappresentante carica la versione firmata.
      */
     public function signedPathFor(Certificate $cert): string
