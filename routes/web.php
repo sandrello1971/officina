@@ -30,6 +30,10 @@ Route::get('/certificato/verifica/{code}', [App\Http\Controllers\CertificateVeri
     ->middleware('throttle:certificate-verify')
     ->name('certificate.verify');
 
+Route::get('/certificato/verifica/{code}/pdf', [App\Http\Controllers\CertificateVerifyController::class, 'downloadSigned'])
+    ->middleware('throttle:certificate-verify')
+    ->name('certificate.verify.pdf');
+
 // ===== AREA STUDENTI =====
 Route::prefix('learn')->name('student.')->group(function () {
     Route::get('/demo', [App\Http\Controllers\Student\DemoController::class, 'start'])->name('demo.start');
@@ -51,6 +55,7 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::post('/quiz/{quiz}/submit', [App\Http\Controllers\Student\QuizController::class, 'submit'])
             ->middleware('throttle:5,1')
             ->name('quiz.submit');
+        Route::post('/quiz/{quiz}/abandon', [App\Http\Controllers\Student\QuizController::class, 'abandon'])->name('quiz.abandon');
         Route::get('/quiz/{quiz}/result/{attempt}', [App\Http\Controllers\Student\QuizController::class, 'result'])->name('quiz.result');
 
         Route::get('/chat/{course:slug}', [App\Http\Controllers\Student\ChatController::class, 'show'])->name('chat.show');
@@ -176,6 +181,7 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::resource('quizzes', App\Http\Controllers\Admin\QuizController::class);
     Route::resource('quizzes.questions', App\Http\Controllers\Admin\QuizQuestionController::class);
     Route::get('quizzes/{quiz}/results', [App\Http\Controllers\Admin\QuizController::class, 'results'])->name('quizzes.results');
+    Route::post('quizzes/{quiz}/grant-attempt', [App\Http\Controllers\Admin\QuizController::class, 'grantAttempt'])->name('quizzes.grant-attempt');
 
     Route::get('rag', [App\Http\Controllers\Admin\RagController::class, 'index'])->name('rag.index');
     Route::post('rag/upload', [App\Http\Controllers\Admin\RagController::class, 'upload'])->name('rag.upload');
@@ -187,6 +193,29 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
 
     Route::post('upload-image', [App\Http\Controllers\Admin\AdminDashboardController::class, 'uploadImage'])->name('upload-image');
     Route::post('courses/{course}/generate-quiz', [App\Http\Controllers\Admin\CourseController::class, 'generateQuiz'])->name('courses.generate-quiz');
+
+    // Firma digitale certificati — solo legale rappresentante.
+    // Le route batch/* sono dichiarate PRIMA di {certificate}/... per
+    // evitare che Laravel interpreti "batch" come model binding di Certificate.
+    Route::middleware(['legal_representative'])
+        ->prefix('certificates/signatures')
+        ->name('certificates.signatures.')
+        ->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\CertificateSignatureController::class, 'index'])
+                ->name('index');
+
+            Route::get('/batch/download', [App\Http\Controllers\Admin\CertificateSignatureController::class, 'downloadBatch'])
+                ->name('batch.download');
+
+            Route::post('/batch/upload', [App\Http\Controllers\Admin\CertificateSignatureController::class, 'uploadBatch'])
+                ->name('batch.upload');
+
+            Route::get('/{certificate}/download', [App\Http\Controllers\Admin\CertificateSignatureController::class, 'download'])
+                ->name('download');
+
+            Route::post('/{certificate}/upload', [App\Http\Controllers\Admin\CertificateSignatureController::class, 'upload'])
+                ->name('upload');
+        });
 
     Route::get('admins',                       [App\Http\Controllers\Admin\AdminAccountController::class, 'index'])->name('admins.index');
     Route::post('admins',                      [App\Http\Controllers\Admin\AdminAccountController::class, 'store'])->name('admins.store');
