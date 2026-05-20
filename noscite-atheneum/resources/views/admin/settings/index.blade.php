@@ -20,12 +20,55 @@
         @csrf @method('PUT')
 
         <div style="background:white; border-radius:10px; padding:20px; margin-bottom:20px;">
-            <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:14px;">Identità istanza</h3>
-            <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Nome istanza</label>
-            <input type="text" name="instance_name" value="{{ old('instance_name', $settings['instance_name']) }}" maxlength="120"
-                   style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
-            <p style="font-size:0.7rem; color:#8A9696; margin-top:4px;">
-                Es. "Atheneum Acme S.r.l.". Usato in dashboard e prossimamente nel branding.
+            <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:14px;">Branding e identità</h3>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div>
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Nome della piattaforma</label>
+                    <input type="text" name="instance_name" value="{{ old('instance_name', $settings['instance_name']) }}" maxlength="120" placeholder="Atheneum"
+                           style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
+                    <p style="font-size:0.7rem; color:#8A9696; margin-top:4px;">
+                        Es. "Atheneum Acme S.r.l.". Usato in header, title, email.
+                    </p>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Sottotitolo / motto</label>
+                    <input type="text" name="platform_tagline" value="{{ old('platform_tagline', $settings['platform_tagline']) }}" maxlength="200" placeholder="In digitālī nova virtūs"
+                           style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Organizzazione proprietaria</label>
+                    <input type="text" name="platform_owner" value="{{ old('platform_owner', $settings['platform_owner']) }}" maxlength="120" placeholder="Noscite Srl"
+                           style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">URL organizzazione (opzionale)</label>
+                    <input type="url" name="platform_owner_url" value="{{ old('platform_owner_url', $settings['platform_owner_url']) }}" maxlength="255" placeholder="https://esempio.it"
+                           style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Nome dell'assistente AI</label>
+                    <input type="text" name="assistant_name" value="{{ old('assistant_name', $settings['assistant_name']) }}" maxlength="60" placeholder="Minerva"
+                           style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Ruolo dell'assistente (frase)</label>
+                    <input type="text" name="assistant_role_label" value="{{ old('assistant_role_label', $settings['assistant_role_label']) }}" maxlength="200" placeholder="l'assistente AI di formazione"
+                           style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
+                </div>
+                <div style="grid-column:1/3;">
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Messaggio di benvenuto in chat (opzionale)</label>
+                    <textarea name="assistant_intro_message" maxlength="500" rows="2" placeholder="Ciao! Sono qui per aiutarti con i contenuti del corso."
+                              style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">{{ old('assistant_intro_message', $settings['assistant_intro_message']) }}</textarea>
+                </div>
+            </div>
+
+            <p style="font-size:0.75rem; color:#8A9696; margin-top:12px; font-style:italic;">
+                Lasciare un campo vuoto ripristina il valore di default.
+                Il nome dell'assistente compare anche nel suo system prompt
+                (la sua identità). Il comportamento (scope sui corsi, citazione
+                fonti, rifiuto fuori-tema) resta in codice e non è
+                personalizzabile, per garantire affidabilità.
             </p>
         </div>
 
