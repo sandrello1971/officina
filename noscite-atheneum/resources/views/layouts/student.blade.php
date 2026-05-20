@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Atheneum') — Atheneum Noscite</title>
+    <title>@yield('title', atheneum_setting('instance_name', 'Atheneum')) — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -33,9 +33,9 @@
 
 <aside class="sidebar">
     <div style="padding: 24px 20px; border-bottom: 1px solid rgba(85,177,174,0.2);">
-        <img src="/images/logo.png" alt="Noscite" style="height:36px; filter:brightness(0) invert(1); margin-bottom:8px;">
-        <div style="color:#55B1AE; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;">Atheneum</div>
-        <div style="color:#8A9696; font-size:0.7rem; font-style:italic;">In digit&#x101;l&#x12B; nova virt&#x16B;s</div>
+        <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" style="height:36px; filter:brightness(0) invert(1); margin-bottom:8px;">
+        <div style="color:#55B1AE; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;">{{ atheneum_setting('instance_name', 'Atheneum') }}</div>
+        <div style="color:#8A9696; font-size:0.7rem; font-style:italic;">{{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}</div>
     </div>
 
     <div style="padding: 16px 20px; border-bottom: 1px solid rgba(85,177,174,0.1);">
@@ -132,7 +132,7 @@
 
     <button x-show="!open" @click="toggle()"
             style="width:58px; height:58px; border-radius:50%; background:linear-gradient(135deg,#55B1AE,#3A8C89); color:white; border:none; cursor:pointer; box-shadow:0 4px 14px rgba(85,177,174,0.45); font-size:1.4rem; display:flex; align-items:center; justify-content:center;"
-            title="Chiedi a Minerva">
+            title="Chiedi a {{ atheneum_setting('assistant_name', 'Minerva') }}">
         ✦
     </button>
 
@@ -141,8 +141,8 @@
         <div style="background:linear-gradient(135deg,#1A1F1F,#3A8C89); padding:14px 18px; display:flex; align-items:center; gap:10px;">
             <div style="width:34px; height:34px; border-radius:50%; background:#55B1AE; display:flex; align-items:center; justify-content:center; color:white; font-size:1rem;">✦</div>
             <div style="flex:1;">
-                <div style="color:white; font-weight:700; font-size:0.9rem;">Minerva</div>
-                <div style="color:rgba(255,255,255,0.7); font-size:0.7rem;">Assistente AI — Atheneum</div>
+                <div style="color:white; font-weight:700; font-size:0.9rem;">{{ atheneum_setting('assistant_name', 'Minerva') }}</div>
+                <div style="color:rgba(255,255,255,0.7); font-size:0.7rem;">Assistente AI — {{ atheneum_setting('instance_name', 'Atheneum') }}</div>
             </div>
             <button @click="reset()" title="Nuova conversazione"
                     style="background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer; font-size:0.9rem;">↺</button>
@@ -153,7 +153,12 @@
         <div x-ref="msgs" class="minerva-msgs">
             <template x-if="messages.length === 0">
                 <div style="padding:18px; background:white; border-radius:10px; color:#4A5252; font-size:0.85rem; line-height:1.6;">
-                    Ciao! Sono <strong>Minerva</strong>. Fammi una domanda sui contenuti dei tuoi corsi.
+                    @php $assistantName = atheneum_setting('assistant_name', 'Minerva'); $intro = atheneum_setting('assistant_intro_message', ''); @endphp
+                    @if($intro)
+                        {{ $intro }}
+                    @else
+                        Ciao! Sono <strong>{{ $assistantName }}</strong>. Fammi una domanda sui contenuti dei tuoi corsi.
+                    @endif
                 </div>
             </template>
             <template x-for="(msg, idx) in messages" :key="idx">
@@ -177,7 +182,7 @@
                     </div>
                 </div>
             </template>
-            <div x-show="typing" style="color:#8A9696; font-size:0.8rem; font-style:italic; padding:6px 10px;">Minerva sta pensando...</div>
+            <div x-show="typing" style="color:#8A9696; font-size:0.8rem; font-style:italic; padding:6px 10px;">{{ atheneum_setting('assistant_name', 'Minerva') }} sta pensando...</div>
         </div>
 
         <div style="background:white; border-top:1px solid #E8F5F5; padding:10px; display:flex; gap:8px;">
