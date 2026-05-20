@@ -39,11 +39,11 @@
            l'orizzontale. */
         position: relative;
         z-index: 10;
-        padding: 18mm 8mm 8mm;
+        padding: 10mm 8mm 8mm;
         text-align: center;
     }
     .logo-area {
-        margin-bottom: 6mm;
+        margin-bottom: 4mm;
     }
     .logo-text {
         font-size: 28pt;
@@ -63,7 +63,7 @@
         width: 60mm;
         height: 1px;
         background: linear-gradient(to right, transparent, #E28A53, transparent);
-        margin: 5mm auto;
+        margin: 3mm auto;
     }
     .certifies {
         font-size: 10pt;
@@ -82,8 +82,8 @@
     .completion-text {
         font-size: 10pt;
         color: #4A5252;
-        margin-bottom: 3mm;
-        line-height: 1.6;
+        margin-bottom: 2mm;
+        line-height: 1.3;
     }
     .course-name {
         font-size: 20pt;
@@ -97,13 +97,13 @@
         font-size: 12pt;
         color: #E28A53;
         font-style: italic;
-        margin-bottom: 6mm;
+        margin-bottom: 4mm;
     }
     .divider-bottom {
         width: 80mm;
         height: 1px;
         background: #C8D0D0;
-        margin: 0 auto 6mm;
+        margin: 0 auto 4mm;
     }
     .footer-grid {
         display: flex;
