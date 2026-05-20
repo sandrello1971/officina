@@ -1,5 +1,5 @@
 <x-mail::message>
-# Benvenuto in Atheneum Noscite, {{ $student->name }}!
+# Benvenuto in {{ atheneum_setting('instance_name', 'Atheneum') }}, {{ $student->name }}!
 
 Il tuo account studente e stato attivato. Puoi accedere all'area riservata e iniziare il tuo percorso formativo.
 
@@ -17,15 +17,16 @@ Il tuo account studente e stato attivato. Puoi accedere all'area riservata e ini
 **Password temporanea:** `{{ $tempPassword }}`
 
 <x-mail::button :url="$loginUrl">
-Accedi ad Atheneum
+Accedi ad {{ atheneum_setting('instance_name', 'Atheneum') }}
 </x-mail::button>
 
 > Al primo accesso ti verra chiesto di impostare una password personale.
 > Conserva questa email in un luogo sicuro fino a quando non avrai completato il primo accesso.
 
-Se hai domande, scrivi a [info@noscite.it](mailto:info@noscite.it).
+@php $supportEmail = atheneum_setting('mail_from_address', 'info@noscite.it'); @endphp
+Se hai domande, scrivi a [{{ $supportEmail }}](mailto:{{ $supportEmail }}).
 
 Buon lavoro,<br>
-**Il team Noscite**<br>
-<small>Atheneum Noscite — Umanesimo Digitale per le PMI</small>
+**Il team {{ atheneum_setting('platform_owner', 'Noscite') }}**<br>
+<small>{{ atheneum_setting('instance_name', 'Atheneum') }} — {{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}</small>
 </x-mail::message>
