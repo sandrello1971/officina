@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Accedi — Atheneum Noscite</title>
+    <title>Accedi — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -14,8 +14,8 @@
     <div style="position:relative;z-index:1" class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-sm">
             <div class="text-center mb-8">
-                <img src="/images/logo.png" alt="Noscite" class="h-12 w-auto mx-auto mb-4 brightness-0 invert">
-                <h1 class="text-2xl font-bold" style="color:#55B1AE">Atheneum Noscite</h1>
+                <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" class="h-12 w-auto mx-auto mb-4 brightness-0 invert">
+                <h1 class="text-2xl font-bold" style="color:#55B1AE">{{ atheneum_setting('instance_name', 'Atheneum') }}</h1>
                 <p class="text-sm mt-1" style="color:#8A9696">Area studenti — accesso riservato</p>
             </div>
 
@@ -102,15 +102,22 @@
                 </button>
             </form>
 
+            @php
+                $supportEmail = atheneum_setting('mail_from_address', 'info@noscite.it');
+                $ownerUrl = atheneum_setting('platform_owner_url', 'https://atheneum.noscite.it');
+                $ownerName = atheneum_setting('platform_owner', 'Atheneum');
+            @endphp
             <p class="text-center mt-6 text-xs" style="color:#8A9696">
-                Problemi? Scrivi a <a href="mailto:info@noscite.it" style="color:#55B1AE">info@noscite.it</a>
+                Problemi? Scrivi a <a href="mailto:{{ $supportEmail }}" style="color:#55B1AE">{{ $supportEmail }}</a>
             </p>
+            @if($ownerUrl)
             <div style="text-align:center; margin-top:16px; padding-top:16px; border-top:1px solid rgba(85,177,174,0.15);">
-                <a href="https://atheneum.noscite.it"
+                <a href="{{ $ownerUrl }}"
                    style="color:#8A9696; font-size:0.8rem; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                    ← Torna al sito Atheneum
+                    ← Torna al sito {{ $ownerName }}
                 </a>
             </div>
+            @endif
         </div>
     </div>
 </body>

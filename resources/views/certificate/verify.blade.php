@@ -17,7 +17,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>Verifica certificato — Atheneum Noscite</title>
+    <title>Verifica certificato — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet">
     <style>
@@ -145,8 +145,8 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">Noscite</div>
-        <div class="tagline">In digitālī nova virtūs</div>
+        <div class="logo">{{ atheneum_setting('platform_owner', 'Noscite') }}</div>
+        <div class="tagline">{{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}</div>
     </div>
 
     <div class="card">
@@ -158,7 +158,7 @@
 
             <h1>{{ $cert->student?->name ?? 'Studente' }}</h1>
             <p class="subtitle">
-                Ha completato con successo il corso e ottenuto la certificazione Noscite.
+                Ha completato con successo il corso e ottenuto la certificazione di {{ atheneum_setting('platform_owner', 'Noscite') }}.
             </p>
 
             <div class="code-block">{{ $cert->code }}</div>
@@ -195,7 +195,7 @@
             <h1>Certificato non trovato</h1>
             <p class="subtitle">
                 Il codice <strong>{{ $code }}</strong> non corrisponde ad alcun certificato
-                emesso da Atheneum Noscite. Verifica di averlo digitato correttamente.
+                emesso da {{ atheneum_setting('instance_name', 'Atheneum') }}. Verifica di averlo digitato correttamente.
             </p>
         @endif
     </div>

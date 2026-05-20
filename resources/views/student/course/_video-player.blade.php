@@ -95,7 +95,7 @@
                     </template>
                 </div>
             </template>
-            <div x-show="videoTyping" style="color:#8A9696; font-size:0.8rem; font-style:italic;">Minerva sta analizzando il video...</div>
+            <div x-show="videoTyping" style="color:#8A9696; font-size:0.8rem; font-style:italic;">{{ atheneum_setting('assistant_name', 'Minerva') }} sta analizzando il video...</div>
         </div>
 
         <div style="display:flex; gap:8px;">
