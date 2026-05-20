@@ -22,7 +22,7 @@
 <body>
 <aside class="sidebar">
     <div style="padding:20px; border-bottom:1px solid rgba(85,177,174,0.2);">
-        <img src="/images/logo.png" alt="Noscite" style="height:32px; filter:brightness(0) invert(1); margin-bottom:6px;">
+        <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite') }}" style="height:32px; filter:brightness(0) invert(1); margin-bottom:6px;">
         <div style="color:#55B1AE; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Admin Panel</div>
     </div>
     <nav style="padding:12px 0;">
