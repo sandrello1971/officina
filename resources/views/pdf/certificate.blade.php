@@ -34,7 +34,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        top: 60mm;
+        top: 67mm;
         text-align: center;
         font-family: 'cormorant garamond', serif;
         font-weight: bold;
@@ -47,7 +47,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        top: 84mm;
+        top: 92mm;
         text-align: center;
         font-family: 'cormorant garamond', serif;
         font-weight: bold;
@@ -61,7 +61,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        top: 94mm;
+        top: 102mm;
         text-align: center;
         font-family: 'cormorant garamond', serif;
         font-style: italic;
@@ -75,7 +75,7 @@
     .field-score {
         position: absolute;
         left: 108mm;
-        top: 107mm;
+        top: 124mm;
         width: 81mm;
         height: 8mm;
         text-align: center;
@@ -92,7 +92,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        top: 131mm;
+        top: 155mm;
         text-align: center;
         font-family: 'cormorant garamond', serif;
         font-weight: bold;
@@ -104,7 +104,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        top: 149mm;
+        top: 172mm;
         text-align: center;
         font-family: 'inter', sans-serif;
         font-weight: bold;
@@ -117,7 +117,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        top: 167mm;
+        top: 190mm;
         text-align: center;
         font-family: 'cormorant garamond', serif;
         font-weight: bold;
@@ -128,7 +128,7 @@
     .verify-block {
         position: absolute;
         left: 25mm;
-        top: 158mm;
+        top: 162mm;
         width: 45mm;
         text-align: center;
     }
