@@ -19,22 +19,23 @@ class CertificatePdfBuilder
     private const TEMPLATE_PATH = 'resources/pdf/templates/certificate-default.pdf';
 
     /**
-     * Coordinate Y (in mm) dei campi dinamici sul template attuale
-     * (516×362mm). Calibrate empiricamente; aggiustabili senza toccare
-     * altro codice. Font names devono matchare quelli stampati da
+     * Coordinate Y (in mm) dei campi dinamici sul template A4 landscape
+     * (297×210mm). Calibrate dallo spec CSS originale (resources/views/pdf/
+     * certificate.blade.php). Aggiustabili senza toccare altro codice.
+     * Font names devono matchare quelli stampati da
      * `php artisan pdf:register-tcpdf-fonts`:
      *   cormorantgaramondvariable   = roman (regular/bold equivalenti, variable font)
      *   cormorantgaramondivariable  = italic (regular/bold equivalenti)
      *   intervariable               = sans (regular/bold equivalenti)
      */
     private const COORDS = [
-        'student_name'   => ['y' => 133.0, 'font' => 'cormorantgaramondivariable', 'size' => 28, 'color' => [26, 31, 31]],
-        'course_name'    => ['y' => 181.0, 'font' => 'cormorantgaramondvariable',  'size' => 20, 'color' => [85, 177, 174], 'uppercase' => true, 'spacing' => 3.0],
-        'cert_subtitle'  => ['y' => 198.0, 'font' => 'cormorantgaramondivariable', 'size' => 12, 'color' => [226, 138, 83]],
-        'score'          => ['y' => 215.0, 'font' => 'cormorantgaramondivariable', 'size' => 13, 'color' => [85, 177, 174]],
-        'date_value'     => ['y' => 264.0, 'font' => 'cormorantgaramondvariable',  'size' => 11, 'color' => [26, 31, 31]],
-        'code_value'     => ['y' => 291.0, 'font' => 'intervariable',              'size' => 10, 'color' => [26, 31, 31], 'spacing' => 0.5],
-        'owner_value'    => ['y' => 322.0, 'font' => 'cormorantgaramondvariable',  'size' => 11, 'color' => [26, 31, 31]],
+        'student_name'   => ['y' => 72.0,  'font' => 'cormorantgaramondivariable', 'size' => 36, 'color' => [26, 31, 31]],
+        'course_name'    => ['y' => 96.0,  'font' => 'cormorantgaramondvariable',  'size' => 22, 'color' => [85, 177, 174], 'uppercase' => true, 'spacing' => 0.8],
+        'cert_subtitle'  => ['y' => 110.0, 'font' => 'cormorantgaramondivariable', 'size' => 13, 'color' => [226, 138, 83]],
+        'score'          => ['y' => 124.0, 'font' => 'cormorantgaramondivariable', 'size' => 13, 'color' => [85, 177, 174]],
+        'date_value'     => ['y' => 150.0, 'font' => 'cormorantgaramondvariable',  'size' => 12, 'color' => [26, 31, 31]],
+        'code_value'     => ['y' => 166.0, 'font' => 'intervariable',              'size' => 11, 'color' => [26, 31, 31], 'spacing' => 0.3],
+        'owner_value'    => ['y' => 183.0, 'font' => 'cormorantgaramondvariable',  'size' => 12, 'color' => [26, 31, 31]],
     ];
 
     /**
@@ -68,11 +69,17 @@ class CertificatePdfBuilder
         $pdf->SetAutoPageBreak(false, 0);
         $pdf->SetMargins(0, 0, 0);
 
-        $orientation = $size['width'] >= $size['height'] ? 'L' : 'P';
-        $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+        // Per AddPage: TCPDF si aspetta format in ordine PORTRAIT [smaller,
+        // larger]; per orientation 'L' swappa. Passare già un format in
+        // ordine landscape porta a una pagina con dimensioni invertite.
+        $isLandscape = $size['width'] >= $size['height'];
+        $portraitW = min($size['width'], $size['height']);
+        $portraitH = max($size['width'], $size['height']);
+        $orientation = $isLandscape ? 'L' : 'P';
+        $pdf->AddPage($orientation, [$portraitW, $portraitH]);
         $pdf->useTemplate($tplId);
 
-        $pageW = $size['width'];
+        $pageW = $isLandscape ? $portraitH : $portraitW;
 
         // Helper inline per scrivere testo centrato orizzontalmente a y dato
         $writeCentered = function (string $text, array $cfg) use ($pdf, $pageW): void {
@@ -96,8 +103,35 @@ class CertificatePdfBuilder
             $writeCentered($cert->certification_name, self::COORDS['cert_subtitle']);
         }
 
+        // Score: il template ha un oval grande con placeholder "Punteggio".
+        // Strategia in 3 step:
+        //   1. eraser bianco rettangolare per coprire l'oval del template
+        //      (e cancellare il watermark in quella zona, accettabile);
+        //   2. nuovo pill più piccolo disegnato via codice (stroke teal,
+        //      fill bianco) — più compatto per scelta UI dell'utente;
+        //   3. testo "Punteggio: NN%" centrato nel nuovo pill, stesso font.
         if ($cert->score) {
-            $writeCentered("Punteggio: {$cert->score}%", self::COORDS['score']);
+            // 1. Eraser sopra l'oval del template
+            $pdf->SetFillColor(255, 255, 255);
+            $pdf->Rect(95.0, 120.0, 110.0, 18.0, 'F');
+
+            // 2. Nuovo pill compatto, centrato sulla pagina
+            $pillW = 55.0;
+            $pillH = 10.0;
+            $pillX = (297.0 - $pillW) / 2.0;
+            $pillY = 124.0;
+            $pdf->SetFillColor(255, 255, 255);
+            $pdf->SetDrawColor(85, 177, 174);
+            $pdf->SetLineWidth(0.4);
+            $pdf->RoundedRect($pillX, $pillY, $pillW, $pillH, $pillH / 2.0, '1111', 'DF');
+
+            // 3. Testo
+            $cfg = self::COORDS['score'];
+            $pdf->SetFont($cfg['font'], '', $cfg['size']);
+            [$r, $g, $b] = $cfg['color'];
+            $pdf->SetTextColor($r, $g, $b);
+            $pdf->SetXY($pillX, $pillY);
+            $pdf->Cell($pillW, $pillH, "Punteggio: {$cert->score}%", 0, 0, 'C');
         }
 
         $writeCentered($date, self::COORDS['date_value']);
@@ -105,10 +139,11 @@ class CertificatePdfBuilder
         $writeCentered(atheneum_setting('platform_owner', 'Noscite SRLS'), self::COORDS['owner_value']);
 
         // === QR + verify URL (basso a sinistra) ===
-        // Coordinate calibrate per il template ~516x362mm. Aggiustabili.
-        $qrX = 48.0;
-        $qrY = 296.0;
-        $qrSize = 42.0;
+        // CSS spec: verify-block left:25mm, top:162mm, width:45mm;
+        // QR interno 22mm × 22mm centrato → x=36.5, y=162.
+        $qrX = 36.5;
+        $qrY = 162.0;
+        $qrSize = 22.0;
         $pdf->write2DBarcode($verifyUrl, 'QRCODE,M', $qrX, $qrY, $qrSize, $qrSize, [
             'border'  => 0,
             'padding' => 0,
@@ -116,19 +151,21 @@ class CertificatePdfBuilder
             'bgcolor' => false,
         ], 'N');
 
-        // Label sotto QR
-        $pdf->SetFont('intervariable', '', 7);
-        $pdf->SetTextColor(138, 150, 150);
-        $pdf->setFontSpacing(0.4);
-        $pdf->SetXY($qrX - 10, $qrY + $qrSize + 2);
-        $pdf->Cell($qrSize + 20, 4, mb_strtoupper('Verifica online'), 0, 0, 'C');
-
-        // URL sotto label (wrappato)
+        // Label "VERIFICA ONLINE" sotto QR (centrata nel verify-block 45mm)
+        $blockX = 25.0;
+        $blockW = 45.0;
         $pdf->SetFont('intervariable', '', 6);
+        $pdf->SetTextColor(138, 150, 150);
+        $pdf->setFontSpacing(0.5);
+        $pdf->SetXY($blockX, $qrY + $qrSize + 1.5);
+        $pdf->Cell($blockW, 3, mb_strtoupper('Verifica online'), 0, 0, 'C');
+
+        // URL sotto label (wrappato, font più piccolo)
+        $pdf->SetFont('intervariable', '', 5.5);
         $pdf->SetTextColor(74, 82, 82);
         $pdf->setFontSpacing(0);
-        $pdf->SetXY($qrX - 12, $qrY + $qrSize + 7);
-        $pdf->MultiCell($qrSize + 24, 3, $verifyUrl, 0, 'C');
+        $pdf->SetXY($blockX, $qrY + $qrSize + 5.0);
+        $pdf->MultiCell($blockW, 2.5, $verifyUrl, 0, 'C');
 
         // === Output bytes ===
         // 'S' = ritorna come stringa (i bytes del PDF)
