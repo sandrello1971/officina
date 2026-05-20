@@ -13,15 +13,12 @@ class CertificatePdfBuilder
      * Path relativo al base_path() del template PDF vettoriale.
      * Il template è caricato come "pagina importata" da FPDI e gli
      * elementi dinamici sono scritti sopra con TCPDF a coordinate in mm.
-     * Vantaggio vs dompdf: niente CSS quirks, niente cache di view,
-     * niente drift di metriche font — il PDF è size-agnostic.
      */
     private const TEMPLATE_PATH = 'resources/pdf/templates/certificate-default.pdf';
 
     /**
      * Coordinate Y (in mm) dei campi dinamici sul template A4 landscape
-     * (297×210mm). Calibrate dallo spec CSS originale (resources/views/pdf/
-     * certificate.blade.php). Aggiustabili senza toccare altro codice.
+     * (297×210mm). Aggiustabili senza toccare altro codice.
      * Font names devono matchare quelli stampati da
      * `php artisan pdf:register-tcpdf-fonts`:
      *   cormorantgaramondvariable   = roman (regular/bold equivalenti, variable font)
@@ -39,10 +36,7 @@ class CertificatePdfBuilder
     ];
 
     /**
-     * Genera i bytes del PDF certificato. Cambiato signature da
-     * \Barryvdh\DomPDF\PDF a string (bytes) per disaccoppiare dal
-     * vecchio backend dompdf — più semplice e sufficiente per i 2
-     * caller (saveUnsigned + Student\CertificateController::download/show).
+     * Genera i bytes del PDF certificato.
      */
     public function build(Certificate $cert): string
     {
