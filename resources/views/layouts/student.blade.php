@@ -85,9 +85,19 @@
         <div style="margin: 16px 8px 4px; padding: 0 12px;">
             <div style="color:#4A5252; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Supporto</div>
         </div>
-        <a href="#" @click.prevent="$dispatch('minerva-toggle')" class="nav-item">
+        @if(!empty($examLock))
+        <a href="#"
+           title="{{ atheneum_setting('assistant_name', 'Minerva') }} non è disponibile durante un esame"
+           class="nav-item"
+           style="opacity:0.4; cursor:not-allowed; pointer-events:none;">
+            <span>&#10022;</span> Assistente AI
+            <span style="margin-left:auto; font-size:0.6rem; color:#E28A53; text-transform:uppercase;">esame</span>
+        </a>
+        @else
+        <a href="#" x-data @click.prevent="$dispatch('minerva-toggle')" class="nav-item">
             <span>&#10022;</span> Assistente AI
         </a>
+        @endif
 
         <a href="{{ route('student.documents.index') }}"
            class="nav-item {{ request()->routeIs('student.documents.*') ? 'active' : '' }}">
@@ -136,7 +146,8 @@
     </div>
 </div>
 
-{{-- MINERVA BUBBLE --}}
+{{-- MINERVA BUBBLE — inibito server-side durante l'esame --}}
+@if(empty($examLock))
 <div x-data="minervaBubble()" x-init="init()"
      @minerva-toggle.window="toggle()"
      style="position:fixed; bottom:20px; right:20px; z-index:100;">
@@ -209,6 +220,7 @@
         </div>
     </div>
 </div>
+@endif
 
 <style>
 .minerva-md h1, .minerva-md h2, .minerva-md h3 { font-weight:700; color:#1A1F1F; margin:8px 0 4px; }
