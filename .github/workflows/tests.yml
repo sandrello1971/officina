@@ -1,0 +1,112 @@
+name: tests
+
+# Esegue la suite PHPUnit di noscite-atheneum su PostgreSQL reale.
+#
+# IMPORTANTE: phpunit.xml di questo progetto è configurato per SQLite
+# :memory: (default Laravel), ma il codebase usa funzionalità
+# PostgreSQL-specifiche che SQLite NON supporta:
+#   - DB::raw('gen_random_uuid()') come default colonna (migrations)
+#   - CHECK constraint via DB::statement (students_role_check, ecc.)
+#   - operatore ILIKE (RagService)
+#   - lower(email) (migration di remediation auto_enroll)
+# Su SQLite le migration falliscono in partenza. Per questo il job
+# forza una connessione Postgres tramite VARIABILI D'AMBIENTE REALI:
+# PHPUnit non sovrascrive una env var già presente (manca force="true"
+# nel blocco <env> di phpunit.xml), quindi le env del runner vincono
+# sui default sqlite SENZA dover modificare phpunit.xml.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: atheneum_testing
+          POSTGRES_USER: atheneum
+          POSTGRES_PASSWORD: atheneum
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U atheneum -d atheneum_testing"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      # Env REALI del runner: hanno precedenza sui default sqlite di
+      # phpunit.xml e sul file .env (Laravel non sovrascrive env reali).
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: atheneum_testing
+      DB_USERNAME: atheneum
+      DB_PASSWORD: atheneum
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+      BCRYPT_ROUNDS: 4
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # pdo_pgsql/pgsql: Postgres; gd: dompdf + endroid/qr-code;
+          # dom/xml/zip/mbstring/bcmath/intl: dipendenze framework e phpword
+          extensions: pdo, pdo_pgsql, pgsql, mbstring, bcmath, intl, gd, dom, xml, zip, fileinfo
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-php84-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php84-
+
+      - name: Install dependencies (con dev)
+        working-directory: noscite-atheneum
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepara .env
+        working-directory: noscite-atheneum
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Attendi Postgres
+        run: |
+          until pg_isready -h 127.0.0.1 -p 5432 -U atheneum; do
+            echo "in attesa di postgres..."; sleep 2;
+          done
+
+      - name: Migrazioni (verifica schema su Postgres reale)
+        working-directory: noscite-atheneum
+        run: php artisan migrate --force
+
+      - name: Test suite completa
+        working-directory: noscite-atheneum
+        run: php artisan test
+
+      # Secondo run mirato: rende immediatamente leggibile in CI se a
+      # cedere è proprio la logica sensibile costruita nella serie
+      # (accesso, esame, scoping AI). Ridondante ma diagnostico.
+      - name: Test critici (accesso / esame / Minerva)
+        if: always()
+        working-directory: noscite-atheneum
+        run: >-
+          php artisan test
+          --filter='StudentDocument|InstructorCourse|InstructorTeachingMode|SidebarCourseAccess|AutoEnrollRestriction|ExamInterruption|MinervaExamLock|MinervaScoping|ExamAttemptCap'
