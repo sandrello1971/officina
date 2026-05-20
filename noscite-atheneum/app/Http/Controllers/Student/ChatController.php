@@ -3,17 +3,24 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\Concerns\EvaluatesExamState;
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
 use App\Models\Course;
 use App\Models\Student;
 use App\Services\RagService;
+use App\Support\StudentCourseAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 class ChatController extends Controller
 {
-    public function __construct(private RagService $rag) {}
+    use EvaluatesExamState;
+
+    public function __construct(
+        private RagService $rag,
+        private StudentCourseAccess $courseAccess,
+    ) {}
 
     public function show(Course $course)
     {
@@ -41,6 +48,13 @@ class ChatController extends Controller
         $studentId = session('student_id');
         abort_unless($studentId, 403);
 
+        if ($this->hasActiveExam($studentId)) {
+            return response()->json([
+                'error' => 'Minerva non è disponibile durante un esame in corso.',
+                'exam_lock' => true,
+            ], 423);
+        }
+
         $data = $request->validate([
             'question' => 'required|string|max:4000',
             'history' => 'nullable|array',
@@ -49,26 +63,29 @@ class ChatController extends Controller
             'mode' => 'nullable|in:summary,expand',
         ]);
 
-        $student = Student::with(['courses' => fn($q) => $q->wherePivot('is_active', true)])
-            ->findOrFail($studentId);
-
+        $student = Student::findOrFail($studentId);
         $isInstructor = ($student->role === 'instructor');
 
-        if ($isInstructor) {
-            $allCourses = Course::where('is_active', true)->get();
-            $courseIds = $allCourses->pluck('id')->all();
-            $courseNames = $allCourses->pluck('name')->all();
-        } else {
-            $courseIds = $student->courses->pluck('id')->all();
-            $courseNames = $student->courses->pluck('name')->all();
-        }
+        // Scoping unico via StudentCourseAccess: i corsi navigabili sono
+        // quelli a cui l'utente è iscritto + (per i formatori) quelli che
+        // insegna. Il flag $isInstructor influenza solo il tono del prompt,
+        // mai lo scope dei dati.
+        $navigable = $this->courseAccess->navigableCourses($student);
+        $courseIds = $navigable->pluck('id')->all();
+        $courseNames = $navigable->pluck('name')->all();
+
+        // Documenti instructor-only ammessi SOLO per i corsi insegnati,
+        // mai globalmente.
+        $instructorScopedCourseIds = $navigable
+            ->where('access_kind', 'teaching')
+            ->pluck('id')->all();
 
         $mode = $data['mode'] ?? 'summary';
 
-        $docs = $this->rag->searchForUser(
+        $docs = $this->rag->searchScoped(
             $data['question'],
             $courseIds,
-            $isInstructor,
+            $instructorScopedCourseIds,
             $isInstructor ? 6 : 4
         );
 
@@ -110,41 +127,51 @@ class ChatController extends Controller
         ]);
     }
 
-    private function callClaudeForMinerva(
-        string $question,
-        array $history,
-        string $context,
+    /**
+     * Compone il system prompt globale di Minerva (bubble). Pubblico per
+     * testabilità (no chiamate API, solo string composition).
+     * Identità configurabile via settings (Fase 1), comportamento cablato.
+     */
+    public function buildMinervaSystemPrompt(
         array $courseNames,
         string $mode,
-        bool $isInstructor = false
-    ): array {
+        bool $isInstructor,
+        string $context = ''
+    ): string {
         $coursesList = empty($courseNames) ? 'nessun corso attivo' : implode(', ', $courseNames);
         $isSingleCourse = count($courseNames) === 1;
+
+        // Identità: l'UNICA parte del prompt che cambia con i settings.
+        // Comportamento cablato → non sovrascrivibile dal cliente:
+        // garanzia di affidabilità (scope RAG, citazione fonti, rifiuto
+        // off-topic). Vedi Fase 1 §5.
+        $assistantName = atheneum_setting('assistant_name', 'Minerva');
+        $assistantRole = atheneum_setting('assistant_role_label', "l'assistente AI di formazione");
+        $platformName  = atheneum_setting('instance_name', 'Atheneum');
+        $identity = "Sei {$assistantName}, {$assistantRole} di {$platformName}.";
 
         $lengthRule = $mode === 'expand'
             ? "Rispondi in modo approfondito e dettagliato, con esempi e sezioni. Usa markdown: ## per titoli di sezione, **grassetto**, liste, citazioni >."
             : "Rispondi in 2-3 frasi brevi, massimo 60 parole complessive. Una risposta diretta, senza liste, senza titoli, senza esempi multipli. Lo studente potrà chiedere l'approfondimento con un tasto dedicato. Usa al massimo un **grassetto** sul concetto centrale. NON usare bullet, numerazioni, markdown di struttura. Vai dritto al punto.";
 
         $scopeRule = $isInstructor
-            ? "Stai rispondendo a un formatore. Il formatore ha accesso a tutti i corsi di Atheneum: {$coursesList}."
+            ? "Stai rispondendo a un formatore. Il formatore ha accesso ai corsi che insegna e a quelli a cui è iscritto: {$coursesList}. Non ha accesso ad altri corsi."
             : ($isSingleCourse
-                ? "Lo studente ha accesso SOLO al corso: {$coursesList}. Rispondi basandoti sui contenuti di quel corso. Se la domanda tocca argomenti che vengono approfonditi in ALTRI corsi di Atheneum (non iscritti), accenna brevemente al fatto che 'altri corsi di Atheneum approfondiscono questo tema' — senza nominarli esplicitamente — e offri la risposta più utile possibile sul suo corso."
-                : "Lo studente ha accesso ai corsi: {$coursesList}. Rispondi sui contenuti di tutti questi corsi, e anche sul contesto della piattaforma Atheneum Noscite.");
+                ? "Lo studente ha accesso SOLO al corso: {$coursesList}. Rispondi basandoti sui contenuti di quel corso. Se la domanda tocca argomenti che vengono approfonditi in ALTRI corsi della piattaforma (non iscritti), accenna brevemente al fatto che 'altri corsi della piattaforma approfondiscono questo tema' — senza nominarli esplicitamente — e offri la risposta più utile possibile sul suo corso."
+                : "Lo studente ha accesso ai corsi: {$coursesList}. Rispondi sui contenuti di tutti questi corsi, e anche sul contesto della piattaforma.");
 
         $rolePrompt = $isInstructor
-            ? "IMPORTANTE: stai rispondendo a un FORMATORE di Atheneum Noscite, non a uno studente. Il formatore usa queste risposte per preparare lezioni e gestire l'aula. Quando rispondi:\n"
+            ? "IMPORTANTE: stai rispondendo a un FORMATORE, non a uno studente. Il formatore usa queste risposte per preparare lezioni e gestire l'aula. Quando rispondi:\n"
               . "- Fornisci la risposta come la daresti a uno studente, MA poi aggiungi una sezione finale intitolata '## 🎓 Note per il formatore' con:\n"
               . "  • suggerimenti didattici su come spiegare il concetto in aula\n"
               . "  • errori comuni degli studenti da anticipare\n"
               . "  • analogie o esempi aggiuntivi utili per chiarire\n"
               . "  • eventuali collegamenti con altri moduli/corsi\n"
               . "- Se nei documenti forniti ci sono chunks marcati come 'Manuale Formatore' o simile, USALI soprattutto per la sezione Note formatore.\n"
-              . "- Il formatore ha accesso a tutti i corsi di Atheneum, non limitare lo scope al singolo corso."
+              . "- Lo scope dei contenuti è già limitato dal sistema ai corsi che insegna o a cui è iscritto: limita la risposta a quei contenuti, non spaziare su corsi non disponibili."
             : "";
 
-        $systemPrompt = <<<SYSTEM
-Sei Minerva, l'assistente AI di Atheneum Noscite.
-
+        $behavior = <<<TXT
 {$scopeRule}
 
 {$rolePrompt}
@@ -159,7 +186,22 @@ Regole:
 - Sii diretto, chiaro, incoraggiante
 
 {$context}
-SYSTEM;
+TXT;
+
+        return $identity . "\n\n" . $behavior;
+    }
+
+    private function callClaudeForMinerva(
+        string $question,
+        array $history,
+        string $context,
+        array $courseNames,
+        string $mode,
+        bool $isInstructor = false
+    ): array {
+        $systemPrompt = $this->buildMinervaSystemPrompt(
+            $courseNames, $mode, $isInstructor, $context
+        );
 
         $messages = array_values($history);
         $messages[] = ['role' => 'user', 'content' => $question];
@@ -199,6 +241,13 @@ SYSTEM;
         $studentId = session('student_id');
         abort_unless($studentId, 403);
 
+        if ($this->hasActiveExam($studentId)) {
+            return response()->json([
+                'error' => 'Minerva non è disponibile durante un esame in corso.',
+                'exam_lock' => true,
+            ], 423);
+        }
+
         $data = $request->validate([
             'conversation_id' => 'required|uuid',
             'message' => 'required|string|max:4000',
@@ -208,6 +257,18 @@ SYSTEM;
             ->where('id', $data['conversation_id'])
             ->where('student_id', $studentId)
             ->firstOrFail();
+
+        // Riverifica iscrizione a ogni messaggio: una conversazione
+        // resta utilizzabile solo finché il corso è effettivamente
+        // accessibile (iscrizione attiva o corso insegnato).
+        $student = Student::findOrFail($studentId);
+        $navigableIds = $this->courseAccess->navigableCourses($student)
+            ->pluck('id')->all();
+        abort_unless(
+            in_array($conversation->course_id, $navigableIds, true),
+            403,
+            'Non hai più accesso a questo corso.'
+        );
 
         ChatMessage::create([
             'conversation_id' => $conversation->id,
@@ -264,21 +325,19 @@ SYSTEM;
         ]);
     }
 
-    private function callClaude(ChatConversation $conversation, string $userMessage, string $context = ''): array
+    /**
+     * Compone il system prompt della chat di corso (chat persistente).
+     * Pubblico per testabilità. Identità dai settings, comportamento
+     * cablato (Fase 1 §5).
+     */
+    public function buildCourseChatSystemPrompt(string $courseName, string $context = ''): string
     {
-        $history = $conversation->messages()
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn($m) => ['role' => $m->role, 'content' => $m->content])
-            ->toArray();
+        $assistantName = atheneum_setting('assistant_name', 'Minerva');
+        $assistantRole = atheneum_setting('assistant_role_label', "l'assistente AI di formazione");
+        $platformName  = atheneum_setting('instance_name', 'Atheneum');
+        $identity = "Sei {$assistantName}, {$assistantRole} per il corso {$courseName} di {$platformName}.";
 
-        $history[] = ['role' => 'user', 'content' => $userMessage];
-
-        $courseName = $conversation->course?->name ?? 'Atheneum';
-
-        $systemPrompt = <<<SYSTEM
-Sei Minerva, l'assistente AI del corso {$courseName} di Atheneum Noscite.
-
+        $behavior = <<<TXT
 Il tuo ruolo:
 - Aiutare gli studenti a comprendere i contenuti del corso
 - Rispondere basandoti sui DOCUMENTI e sui VIDEO del corso
@@ -294,7 +353,25 @@ Regole:
 - Sii chiaro, diretto, incoraggiante
 
 {$context}
-SYSTEM;
+TXT;
+
+        return $identity . "\n\n" . $behavior;
+    }
+
+    private function callClaude(ChatConversation $conversation, string $userMessage, string $context = ''): array
+    {
+        $history = $conversation->messages()
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn($m) => ['role' => $m->role, 'content' => $m->content])
+            ->toArray();
+
+        $history[] = ['role' => 'user', 'content' => $userMessage];
+
+        $platformName = atheneum_setting('instance_name', 'Atheneum');
+        $courseName = $conversation->course?->name ?? $platformName;
+
+        $systemPrompt = $this->buildCourseChatSystemPrompt($courseName, $context);
 
         try {
             $response = Http::withHeaders([

@@ -21,6 +21,12 @@ class Setting extends Model
      * Lettura difensiva: se la tabella non esiste (es. durante migrazioni
      * iniziali) o la chiave manca, ritorna il default senza eccezioni.
      * Il caller — incluso il boot dell'app — non deve mai rompersi.
+     *
+     * Semantica "vuoto = default cablato": una riga con value='' viene
+     * trattata come assente. Conseguenza: svuotare un campo dalla UI
+     * settings ripristina il comportamento di default scritto in
+     * atheneum_setting('key', 'default') in vista/prompt. Nessuna
+     * regressione possibile per stringhe vuote salvate accidentalmente.
      */
     public static function resolve(string $key, $default = null)
     {
@@ -36,7 +42,11 @@ class Setting extends Model
                     if (!$row) {
                         return $default;
                     }
-                    return $row->value ?? $default;
+                    $value = $row->value;
+                    if ($value === null || $value === '') {
+                        return $default;
+                    }
+                    return $value;
                 } catch (\Throwable $e) {
                     return $default;
                 }

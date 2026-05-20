@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Atheneum') — Atheneum Noscite</title>
+    <title>@yield('title', atheneum_setting('instance_name', 'Atheneum')) — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -13,7 +13,13 @@
     <style>
         [x-cloak] { display: none !important; }
         body { font-family: 'Calibri', system-ui, sans-serif; }
-        .sidebar { width: 260px; min-height: 100vh; background: #1A1F1F; position: fixed; left: 0; top: 0; bottom: 0; overflow-y: auto; z-index: 40; }
+        /* Sidebar: flexbox column. Header + user-card + nav scrollabili
+           (overflow-y:auto sul .sidebar-scroll), footer logout fisso in
+           basso (flex-shrink:0). Senza questo, con molte voci nav la
+           nav esce dal viewport e il bottone "Esci" (in absolute) le copre. */
+        .sidebar { width: 260px; height: 100vh; background: #1A1F1F; position: fixed; left: 0; top: 0; bottom: 0; z-index: 40; display: flex; flex-direction: column; }
+        .sidebar-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+        .sidebar-footer { flex-shrink: 0; padding: 16px 20px; border-top: 1px solid rgba(85,177,174,0.1); background: #1A1F1F; }
         .main-content { margin-left: 260px; min-height: 100vh; background: #F5F7F7; }
         .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #8A9696; font-size: 0.875rem; transition: all 0.2s; border-radius: 6px; margin: 2px 8px; text-decoration:none; }
         .nav-item:hover { background: rgba(85,177,174,0.1); color: #55B1AE; }
@@ -32,10 +38,14 @@
 <body>
 
 <aside class="sidebar">
+    {{-- Scrollabile: prende tutta l'altezza disponibile meno il footer.
+         Senza questo wrapper, con molte voci nav (es. instructor: KB +
+         Documenti discenti) le ultime finiscono coperte dal bottone Esci. --}}
+    <div class="sidebar-scroll">
     <div style="padding: 24px 20px; border-bottom: 1px solid rgba(85,177,174,0.2);">
-        <img src="/images/logo.png" alt="Noscite" style="height:36px; filter:brightness(0) invert(1); margin-bottom:8px;">
-        <div style="color:#55B1AE; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;">Atheneum</div>
-        <div style="color:#8A9696; font-size:0.7rem; font-style:italic;">In digit&#x101;l&#x12B; nova virt&#x16B;s</div>
+        <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" style="height:36px; filter:brightness(0) invert(1); margin-bottom:8px;">
+        <div style="color:#55B1AE; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;">{{ atheneum_setting('instance_name', 'Atheneum') }}</div>
+        <div style="color:#8A9696; font-size:0.7rem; font-style:italic;">{{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}</div>
     </div>
 
     <div style="padding: 16px 20px; border-bottom: 1px solid rgba(85,177,174,0.1);">
@@ -75,9 +85,19 @@
         <div style="margin: 16px 8px 4px; padding: 0 12px;">
             <div style="color:#4A5252; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Supporto</div>
         </div>
-        <a href="#" @click.prevent="$dispatch('minerva-toggle')" class="nav-item">
+        @if(!empty($examLock))
+        <a href="#"
+           title="{{ atheneum_setting('assistant_name', 'Minerva') }} non è disponibile durante un esame"
+           class="nav-item"
+           style="opacity:0.4; cursor:not-allowed; pointer-events:none;">
+            <span>&#10022;</span> Assistente AI
+            <span style="margin-left:auto; font-size:0.6rem; color:#E28A53; text-transform:uppercase;">esame</span>
+        </a>
+        @else
+        <a href="#" x-data @click.prevent="$dispatch('minerva-toggle')" class="nav-item">
             <span>&#10022;</span> Assistente AI
         </a>
+        @endif
 
         <a href="{{ route('student.documents.index') }}"
            class="nav-item {{ request()->routeIs('student.documents.*') ? 'active' : '' }}">
@@ -95,8 +115,9 @@
         </a>
         @endif
     </nav>
+    </div>{{-- /.sidebar-scroll --}}
 
-    <div style="position:absolute; bottom:0; left:0; right:0; padding:16px 20px; border-top:1px solid rgba(85,177,174,0.1);">
+    <div class="sidebar-footer">
         <form method="POST" action="/learn/logout">
             @csrf
             <button type="submit" style="width:100%; padding:8px; background:rgba(226,138,83,0.1); color:#E28A53; border:1px solid rgba(226,138,83,0.3); border-radius:6px; font-size:0.8rem; cursor:pointer;">
@@ -125,14 +146,15 @@
     </div>
 </div>
 
-{{-- MINERVA BUBBLE --}}
+{{-- MINERVA BUBBLE — inibito server-side durante l'esame --}}
+@if(empty($examLock))
 <div x-data="minervaBubble()" x-init="init()"
      @minerva-toggle.window="toggle()"
      style="position:fixed; bottom:20px; right:20px; z-index:100;">
 
     <button x-show="!open" @click="toggle()"
             style="width:58px; height:58px; border-radius:50%; background:linear-gradient(135deg,#55B1AE,#3A8C89); color:white; border:none; cursor:pointer; box-shadow:0 4px 14px rgba(85,177,174,0.45); font-size:1.4rem; display:flex; align-items:center; justify-content:center;"
-            title="Chiedi a Minerva">
+            title="Chiedi a {{ atheneum_setting('assistant_name', 'Minerva') }}">
         ✦
     </button>
 
@@ -141,8 +163,8 @@
         <div style="background:linear-gradient(135deg,#1A1F1F,#3A8C89); padding:14px 18px; display:flex; align-items:center; gap:10px;">
             <div style="width:34px; height:34px; border-radius:50%; background:#55B1AE; display:flex; align-items:center; justify-content:center; color:white; font-size:1rem;">✦</div>
             <div style="flex:1;">
-                <div style="color:white; font-weight:700; font-size:0.9rem;">Minerva</div>
-                <div style="color:rgba(255,255,255,0.7); font-size:0.7rem;">Assistente AI — Atheneum</div>
+                <div style="color:white; font-weight:700; font-size:0.9rem;">{{ atheneum_setting('assistant_name', 'Minerva') }}</div>
+                <div style="color:rgba(255,255,255,0.7); font-size:0.7rem;">Assistente AI — {{ atheneum_setting('instance_name', 'Atheneum') }}</div>
             </div>
             <button @click="reset()" title="Nuova conversazione"
                     style="background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer; font-size:0.9rem;">↺</button>
@@ -153,7 +175,12 @@
         <div x-ref="msgs" class="minerva-msgs">
             <template x-if="messages.length === 0">
                 <div style="padding:18px; background:white; border-radius:10px; color:#4A5252; font-size:0.85rem; line-height:1.6;">
-                    Ciao! Sono <strong>Minerva</strong>. Fammi una domanda sui contenuti dei tuoi corsi.
+                    @php $assistantName = atheneum_setting('assistant_name', 'Minerva'); $intro = atheneum_setting('assistant_intro_message', ''); @endphp
+                    @if($intro)
+                        {{ $intro }}
+                    @else
+                        Ciao! Sono <strong>{{ $assistantName }}</strong>. Fammi una domanda sui contenuti dei tuoi corsi.
+                    @endif
                 </div>
             </template>
             <template x-for="(msg, idx) in messages" :key="idx">
@@ -177,7 +204,7 @@
                     </div>
                 </div>
             </template>
-            <div x-show="typing" style="color:#8A9696; font-size:0.8rem; font-style:italic; padding:6px 10px;">Minerva sta pensando...</div>
+            <div x-show="typing" style="color:#8A9696; font-size:0.8rem; font-style:italic; padding:6px 10px;">{{ atheneum_setting('assistant_name', 'Minerva') }} sta pensando...</div>
         </div>
 
         <div style="background:white; border-top:1px solid #E8F5F5; padding:10px; display:flex; gap:8px;">
@@ -193,6 +220,7 @@
         </div>
     </div>
 </div>
+@endif
 
 <style>
 .minerva-md h1, .minerva-md h2, .minerva-md h3 { font-weight:700; color:#1A1F1F; margin:8px 0 4px; }
@@ -239,6 +267,20 @@ function minervaBubble() {
 
         init() {
             try {
+                // Scoping per utente: localStorage è globale per origin,
+                // se A esce e B entra sullo stesso browser, B erediterebbe
+                // la chat di A. Confronto user-id corrente vs cached:
+                // diverso → wipe + ri-set; uguale → restore come prima.
+                const currentUserId = @json(session('student_id') ?? '');
+                const cachedUserId = localStorage.getItem('minerva-user-id');
+                if (cachedUserId !== currentUserId) {
+                    localStorage.removeItem('minerva-chat');
+                    localStorage.removeItem('minerva-open');
+                    localStorage.setItem('minerva-user-id', currentUserId);
+                    this.messages = [];
+                    this.open = false;
+                    return;
+                }
                 const saved = localStorage.getItem('minerva-chat');
                 if (saved) this.messages = JSON.parse(saved);
                 this.open = localStorage.getItem('minerva-open') === '1';

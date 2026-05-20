@@ -41,13 +41,13 @@
 
     <div style="background:linear-gradient(135deg,#1A1F1F,#3A8C89); border-radius:12px; padding:16px 20px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between;" x-data>
         <div>
-            <div style="color:#55B1AE; font-weight:700; font-size:0.875rem;">&#10022; Assistente AI — Minerva</div>
+            <div style="color:#55B1AE; font-weight:700; font-size:0.875rem;">&#10022; Assistente AI — {{ atheneum_setting('assistant_name', 'Minerva') }}</div>
             <div style="color:#8A9696; font-size:0.75rem;">Hai dubbi sui contenuti? Chiedimi!</div>
         </div>
-        <button type="button" @click="$dispatch('minerva-toggle')"
-                style="padding:8px 16px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+        <a href="{{ route('student.chat.show', $course) }}"
+           style="padding:8px 16px; background:#E28A53; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block;">
             Apri chat &rarr;
-        </button>
+        </a>
     </div>
 
     @if($course->video_ai_id)

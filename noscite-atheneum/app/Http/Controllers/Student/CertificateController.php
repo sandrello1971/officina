@@ -6,28 +6,33 @@ use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Student;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\PngWriter;
+use App\Services\CertificatePdfBuilder;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 
 class CertificateController extends Controller
 {
-    public function download(Course $course)
-    {
-        $cert = $this->resolveCertificate($course);
-        return $this->buildPdf($cert, $course)->download($this->filename($cert, $course));
+    public function __construct(
+        private CertificatePdfBuilder $pdfBuilder,
+    ) {
     }
 
-    public function show(Course $course)
+    public function download(Course $course): Response
     {
         $cert = $this->resolveCertificate($course);
-        return $this->buildPdf($cert, $course)->stream('certificato.pdf');
+        return $this->serve($cert, $course, asDownload: true);
+    }
+
+    public function show(Course $course): Response
+    {
+        $cert = $this->resolveCertificate($course);
+        return $this->serve($cert, $course, asDownload: false);
     }
 
     /**
      * Carica il certificato per (studente loggato, corso). Verifica l'iscrizione
-     * attiva al corso e l'esistenza del certificato (gating: solo se ha superato il
-     * final quiz). Senza certificato emesso → 403.
+     * attiva al corso e l'esistenza del certificato (gating: solo se ha superato
+     * il final quiz). Senza certificato emesso → 403.
      */
     private function resolveCertificate(Course $course): Certificate
     {
@@ -54,34 +59,47 @@ class CertificateController extends Controller
     }
 
     /**
-     * Costruisce il PDF dal Certificate. Tutti i campi anagrafici (codice, score,
-     * data, nome certificazione) sono letti dallo snapshot del Certificate per
-     * sopravvivere a eventuali modifiche/cancellazioni successive del corso.
-     * $course resta come arricchimento opzionale per UI (slug nel filename).
+     * Strategia di consegna del PDF, in ordine di preferenza:
+     *
+     *  1. effectivePdfPath() != null → servire dal disco. Veloce e
+     *     include la firma digitale se il PDF è quello signed.
+     *
+     *  2. effectivePdfPath() == null → certificato legacy creato prima
+     *     del refactor (oppure observer fallito). Rigenerazione on-the-fly
+     *     via CertificatePdfBuilder, comportamento identico al pre-refactor.
      */
-    private function buildPdf(Certificate $cert, Course $course)
+    private function serve(Certificate $cert, Course $course, bool $asDownload): Response
     {
-        $student = $cert->student;
+        $effectivePath = $cert->effectivePdfPath();
+        $filename = $this->filename($cert, $course);
 
-        $verifyUrl = route('certificate.verify', ['code' => $cert->code]);
-        $qrDataUri = Builder::create()
-            ->writer(new PngWriter())
-            ->data($verifyUrl)
-            ->size(220)
-            ->margin(8)
-            ->build()
-            ->getDataUri();
+        if ($effectivePath !== null) {
+            $absolutePath = Storage::disk('local')->path($effectivePath);
 
-        $date = $cert->issued_at->locale('it')->isoFormat('D MMMM YYYY');
+            if ($asDownload) {
+                return response()->download($absolutePath, $filename, [
+                    'Content-Type' => 'application/pdf',
+                ]);
+            }
 
-        return Pdf::loadView('pdf.certificate', [
-            'cert' => $cert,
-            'student' => $student,
-            'course' => $course,
-            'date' => $date,
-            'verifyUrl' => $verifyUrl,
-            'qrDataUri' => $qrDataUri,
-        ])->setPaper('a4', 'landscape');
+            return response()->file($absolutePath, [
+                'Content-Type' => 'application/pdf',
+            ]);
+        }
+
+        // Fallback on-the-fly per certificati legacy (pre refactor)
+        // o edge case observer fallito.
+        // build() ora ritorna bytes (string) — non più oggetto DomPDF —
+        // dopo lo switch a FPDI+TCPDF.
+        $bytes = $this->pdfBuilder->build($cert);
+        $headers = [
+            'Content-Type' => 'application/pdf',
+            'Content-Length' => (string) strlen($bytes),
+            'Content-Disposition' => ($asDownload ? 'attachment' : 'inline')
+                . '; filename="' . ($asDownload ? $filename : 'certificato.pdf') . '"',
+        ];
+
+        return response()->make($bytes, 200, $headers);
     }
 
     private function filename(Certificate $cert, Course $course): string

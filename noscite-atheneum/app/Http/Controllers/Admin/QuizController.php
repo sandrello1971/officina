@@ -6,7 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Quiz;
+use App\Models\Student;
+use App\Support\ExamState;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class QuizController extends Controller
 {
@@ -101,7 +105,98 @@ class QuizController extends Controller
 
     public function results(string $id)
     {
-        $quiz = Quiz::with(['attempts.student', 'questions'])->findOrFail($id);
-        return view('admin.quizzes.results', compact('quiz'));
+        $quiz = Quiz::with(['attempts.student', 'questions', 'course'])->findOrFail($id);
+
+        // Aggregato per studente per la UI override: per ogni studente che
+        // ha tentato, mostra used/max e se è esaurito.
+        $examState = app(ExamState::class);
+        $perStudent = $quiz->attempts
+            ->filter(fn ($a) => $a->student !== null)
+            ->groupBy('student_id')
+            ->map(function ($attempts, $studentId) use ($quiz, $examState) {
+                $completed = $attempts->whereNotNull('completed_at');
+                $max = $examState->effectiveMaxAttempts($quiz, $studentId);
+                $used = $completed->count();
+                $passed = $attempts->where('passed', true)->isNotEmpty();
+                $grant = DB::table('exam_attempt_grants')
+                    ->where('quiz_id', $quiz->id)
+                    ->where('student_id', $studentId)
+                    ->value('extra_attempts') ?? 0;
+                return (object) [
+                    'student' => $attempts->first()->student,
+                    'used'    => $used,
+                    'max'     => $max,
+                    'passed'  => $passed,
+                    'extra_granted' => (int) $grant,
+                    'exhausted' => $max !== null && $used >= $max && !$passed,
+                ];
+            })
+            ->sortByDesc('exhausted')
+            ->values();
+
+        return view('admin.quizzes.results', compact('quiz', 'perStudent'));
+    }
+
+    public function grantAttempt(Request $request, string $id)
+    {
+        $quiz = Quiz::findOrFail($id);
+
+        // Override sensato solo per i quiz d'esame.
+        abort_unless(app(ExamState::class)->isExamQuiz($quiz), 422,
+            'L\'override tentativi si applica solo ai quiz d\'esame (a livello corso).');
+
+        $data = $request->validate([
+            'student_id'     => 'required|uuid|exists:students,id',
+            'extra_attempts' => 'nullable|integer|min:1|max:10',
+            'reason'         => 'nullable|string|max:500',
+        ]);
+
+        $n = $data['extra_attempts'] ?? 1;
+        $adminEmail = session('admin_email') ?? 'unknown';
+        $reason = $data['reason'] ?? null;
+
+        DB::transaction(function () use ($quiz, $data, $n, $adminEmail, $reason) {
+            $existing = DB::table('exam_attempt_grants')
+                ->where('quiz_id', $quiz->id)
+                ->where('student_id', $data['student_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing) {
+                DB::table('exam_attempt_grants')
+                    ->where('id', $existing->id)
+                    ->update([
+                        'extra_attempts' => $existing->extra_attempts + $n,
+                        'granted_by'     => $adminEmail,
+                        'reason'         => $reason ?? $existing->reason,
+                        'updated_at'     => now(),
+                    ]);
+                $newTotal = $existing->extra_attempts + $n;
+            } else {
+                DB::table('exam_attempt_grants')->insert([
+                    'id'             => (string) \Illuminate\Support\Str::uuid(),
+                    'quiz_id'        => $quiz->id,
+                    'student_id'     => $data['student_id'],
+                    'extra_attempts' => $n,
+                    'granted_by'     => $adminEmail,
+                    'reason'         => $reason,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ]);
+                $newTotal = $n;
+            }
+
+            $studentEmail = Student::where('id', $data['student_id'])->value('email');
+            Log::warning('[exam] tentativo extra concesso', [
+                'admin'          => $adminEmail,
+                'student_email'  => $studentEmail,
+                'quiz_id'        => $quiz->id,
+                'added'          => $n,
+                'new_total_extra' => $newTotal,
+                'reason'         => $reason,
+            ]);
+        });
+
+        return back()->with('success', "Concessi +{$n} tentativi.");
     }
 }

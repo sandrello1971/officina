@@ -7,7 +7,6 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "barryvdh/laravel-dompdf": "^3.1",
         "doctrine/dbal": "^4.4",
         "endroid/qr-code": "^5.0",
         "laravel/framework": "^13.0",
@@ -17,6 +16,7 @@
         "livewire/livewire": "^4.2",
         "php-open-source-saver/jwt-auth": "^2.9",
         "phpoffice/phpword": "^1.4",
+        "setasign/fpdi-tcpdf": "^2.3",
         "smalot/pdfparser": "^2.12",
         "socialiteproviders/microsoft-azure": "^5.2"
     },
@@ -34,7 +34,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "app/Support/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

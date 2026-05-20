@@ -473,7 +473,7 @@
 
             <button type="button" x-data @click="$dispatch('minerva-toggle')"
                     style="width:100%; padding:10px; background:#1A1F1F; color:#55B1AE; border:none; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer; text-align:center;">
-                &#10022; Chiedi a Minerva
+                &#10022; Chiedi a {{ atheneum_setting('assistant_name', 'Minerva') }}
             </button>
         </div>
 

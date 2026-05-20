@@ -16,10 +16,34 @@ class SettingsController extends Controller
         'mail_encryption', 'mail_from_address', 'mail_from_name',
     ];
 
+    /**
+     * Chiavi branding+identità gestite da questa pagina (Fase 1).
+     * Vuoto / null = default cablato in codice nelle view e nel system
+     * prompt di Minerva. È la rete di sicurezza: l'istanza Noscite
+     * attuale non regredisce finché tu non riempi questi campi.
+     */
+    private const BRANDING_KEYS = [
+        'platform_tagline',
+        'platform_owner',
+        'platform_owner_url',
+        'assistant_name',
+        'assistant_role_label',
+        'assistant_intro_message',
+    ];
+
     public function index()
     {
         $settings = [
-            'instance_name'     => Setting::resolve('instance_name', 'Atheneum'),
+            // identità istanza
+            'instance_name'           => Setting::resolve('instance_name', ''),
+            // branding (Fase 1)
+            'platform_tagline'        => Setting::resolve('platform_tagline', ''),
+            'platform_owner'          => Setting::resolve('platform_owner', ''),
+            'platform_owner_url'      => Setting::resolve('platform_owner_url', ''),
+            'assistant_name'          => Setting::resolve('assistant_name', ''),
+            'assistant_role_label'    => Setting::resolve('assistant_role_label', ''),
+            'assistant_intro_message' => Setting::resolve('assistant_intro_message', ''),
+            // mail
             'mail_host'         => Setting::resolve('mail_host', ''),
             'mail_port'         => Setting::resolve('mail_port', ''),
             'mail_username'     => Setting::resolve('mail_username', ''),
@@ -36,7 +60,13 @@ class SettingsController extends Controller
     public function update(Request $request)
     {
         $data = $request->validate([
-            'instance_name'      => 'nullable|string|max:120',
+            'instance_name'           => 'nullable|string|max:120',
+            'platform_tagline'        => 'nullable|string|max:200',
+            'platform_owner'          => 'nullable|string|max:120',
+            'platform_owner_url'      => 'nullable|url|max:255',
+            'assistant_name'          => 'nullable|string|max:60',
+            'assistant_role_label'    => 'nullable|string|max:200',
+            'assistant_intro_message' => 'nullable|string|max:500',
             'mail_host'          => 'nullable|string|max:255',
             'mail_port'          => 'nullable|integer|min:1|max:65535',
             'mail_username'      => 'nullable|string|max:255',
@@ -47,7 +77,13 @@ class SettingsController extends Controller
             'clear_mail_password' => 'nullable|boolean',
         ]);
 
-        Setting::put('instance_name', $data['instance_name'] ?? 'Atheneum');
+        // instance_name + branding: salva sempre il valore inviato (anche
+        // se vuoto). Stringa vuota → atheneum_setting() ritorna il default
+        // cablato → nessuna regressione visiva.
+        Setting::put('instance_name', $data['instance_name'] ?? '');
+        foreach (self::BRANDING_KEYS as $key) {
+            Setting::put($key, $data[$key] ?? '');
+        }
 
         foreach (self::MAIL_KEYS as $key) {
             $value = $data[$key] ?? null;

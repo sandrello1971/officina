@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Student\Concerns\DeterminesTeachingMode;
+use App\Http\Controllers\Student\Concerns\EvaluatesExamState;
 use App\Mail\CertificationPassedMail;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Validator;
 class QuizController extends Controller
 {
     use DeterminesTeachingMode;
+    use EvaluatesExamState;
 
     public function show(Quiz $quiz)
     {
@@ -55,7 +57,31 @@ class QuizController extends Controller
                 ->first();
         }
 
-        return view('student.quiz.show', compact('quiz', 'questions', 'pastAttempts', 'course', 'nextModule'));
+        // Advisory cap info — solo per gli esami. Il controllo autoritativo
+        // resta server-side in start(). Qui serve a disabilitare il bottone
+        // e mostrare il contatore.
+        $effectiveMax = null;
+        $usedAttempts = 0;
+        $alreadyPassed = false;
+        if ($this->isExamQuiz($quiz) && !$student->is_demo) {
+            $effectiveMax = $this->examState()->effectiveMaxAttempts($quiz, $student->id);
+            $usedAttempts = QuizAttempt::where('quiz_id', $quiz->id)
+                ->where('student_id', $student->id)
+                ->whereNotNull('completed_at')
+                ->count();
+            $alreadyPassed = Certificate::where('student_id', $student->id)
+                    ->where('course_id', $quiz->course_id)
+                    ->exists()
+                || QuizAttempt::where('quiz_id', $quiz->id)
+                    ->where('student_id', $student->id)
+                    ->where('passed', true)
+                    ->exists();
+        }
+
+        return view('student.quiz.show', compact(
+            'quiz', 'questions', 'pastAttempts', 'course', 'nextModule',
+            'effectiveMax', 'usedAttempts', 'alreadyPassed'
+        ));
     }
 
     public function start(Request $request, Quiz $quiz)
@@ -74,6 +100,76 @@ class QuizController extends Controller
             ], 403);
         }
 
+        // Se esiste un tentativo incompleto su QUESTO quiz, va chiuso
+        // come fallito-abbandonato prima di aprirne uno nuovo.
+        // L'autoritativo è qui: il beacon e il reaper sono best-effort.
+        $incomplete = QuizAttempt::where('quiz_id', $quiz->id)
+            ->where('student_id', $student->id)
+            ->whereNull('completed_at')
+            ->get();
+
+        foreach ($incomplete as $old) {
+            $old->update([
+                'completed_at' => now(),
+                'score'        => 0,
+                'passed'       => false,
+                'abandoned'    => true,
+                'time_spent_seconds' => (int) max(0,
+                    $old->started_at->diffInSeconds(now())),
+            ]);
+            Log::info('Quiz attempt auto-failed (abandoned, restart)', [
+                'attempt_id' => $old->id,
+                'student_id' => $student->id,
+                'quiz_id'    => $quiz->id,
+            ]);
+        }
+
+        // Tetto tentativi: solo per gli esami (quiz a livello corso).
+        // Ordine non negoziabile: demo/teaching → force-fail abbandono →
+        // già-superato → tetto → creazione attempt.
+        if ($this->isExamQuiz($quiz)) {
+            // Già superato: non bloccare con messaggio "esauriti",
+            // segnale gentile dedicato.
+            $alreadyPassed = Certificate::where('student_id', $student->id)
+                    ->where('course_id', $quiz->course_id)
+                    ->exists()
+                || QuizAttempt::where('quiz_id', $quiz->id)
+                    ->where('student_id', $student->id)
+                    ->where('passed', true)
+                    ->exists();
+
+            if ($alreadyPassed) {
+                return response()->json([
+                    'error' => 'Hai già superato questo esame.',
+                    'already_passed' => true,
+                ], 409);
+            }
+
+            $max = $this->examState()->effectiveMaxAttempts($quiz, $student->id);
+
+            if ($max !== null) {
+                $used = QuizAttempt::where('quiz_id', $quiz->id)
+                    ->where('student_id', $student->id)
+                    ->whereNotNull('completed_at') // include gli abbandonati
+                    ->count();
+
+                if ($used >= $max) {
+                    Log::info('Quiz start bloccato: tentativi esauriti', [
+                        'student_id' => $student->id,
+                        'quiz_id'    => $quiz->id,
+                        'used'       => $used,
+                        'max'        => $max,
+                    ]);
+                    return response()->json([
+                        'error' => "Hai esaurito i tentativi disponibili per questo esame ({$used}/{$max}).",
+                        'attempts_exhausted' => true,
+                        'used' => $used,
+                        'max'  => $max,
+                    ], 403);
+                }
+            }
+        }
+
         $attempt = QuizAttempt::create([
             'quiz_id' => $quiz->id,
             'student_id' => $student->id,
@@ -84,6 +180,58 @@ class QuizController extends Controller
         ]);
 
         return response()->json(['attempt_id' => $attempt->id]);
+    }
+
+    public function abandon(Request $request, Quiz $quiz)
+    {
+        $student = Student::findOrFail(session('student_id'));
+
+        // Demo: no-op
+        if ($student->is_demo) {
+            return response()->noContent();
+        }
+
+        // Solo per quiz d'esame: i quiz formativi di modulo restano
+        // liberamente ripetibili (decisione §8.1).
+        if (!$this->isExamQuiz($quiz)) {
+            return response()->noContent();
+        }
+
+        // CSRF: la rotta è web ma il beacon usa sendBeacon → no header CSRF.
+        // Validiamo il token manualmente dal body per non indebolire la
+        // protezione CSRF globale via $except.
+        $tokenFromBody = $request->input('_token');
+        if (!$tokenFromBody || !hash_equals((string) csrf_token(), (string) $tokenFromBody)) {
+            abort(419, 'CSRF token mismatch');
+        }
+
+        $incomplete = QuizAttempt::where('quiz_id', $quiz->id)
+            ->where('student_id', $student->id)
+            ->whereNull('completed_at')
+            ->get();
+
+        // Idempotente: nessun tentativo aperto → 204
+        if ($incomplete->isEmpty()) {
+            return response()->noContent();
+        }
+
+        foreach ($incomplete as $att) {
+            $att->update([
+                'completed_at' => now(),
+                'score'        => 0,
+                'passed'       => false,
+                'abandoned'    => true,
+                'time_spent_seconds' => (int) max(0,
+                    $att->started_at->diffInSeconds(now())),
+            ]);
+            Log::info('Quiz attempt abandoned (beacon)', [
+                'attempt_id' => $att->id,
+                'student_id' => $student->id,
+                'quiz_id'    => $quiz->id,
+            ]);
+        }
+
+        return response()->noContent();
     }
 
     public function submit(Request $request, Quiz $quiz)

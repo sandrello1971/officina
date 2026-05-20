@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin') — Atheneum Admin</title>
+    <title>@yield('title', 'Admin') — {{ atheneum_setting('instance_name', 'Atheneum') }} Admin</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
@@ -22,13 +22,14 @@
 <body>
 <aside class="sidebar">
     <div style="padding:20px; border-bottom:1px solid rgba(85,177,174,0.2);">
-        <img src="/images/logo.png" alt="Noscite" style="height:32px; filter:brightness(0) invert(1); margin-bottom:6px;">
+        <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite') }}" style="height:32px; filter:brightness(0) invert(1); margin-bottom:6px;">
         <div style="color:#55B1AE; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Admin Panel</div>
     </div>
     <nav style="padding:12px 0;">
         <a href="/admin" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">&#128202; Dashboard</a>
         <a href="/admin/students" class="nav-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">&#128101; Discenti</a>
         <a href="{{ route('admin.instructors.index') }}" class="nav-item {{ request()->routeIs('admin.instructors.*') ? 'active' : '' }}">&#127979; Formatori</a>
+        <a href="/admin/certificates/signatures" class="nav-item {{ request()->routeIs('admin.certificates.signatures.*') ? 'active' : '' }}">&#9997; Firma Certificati</a>
         <a href="/admin/courses" class="nav-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">&#128218; Corsi</a>
         <a href="/admin/quizzes" class="nav-item {{ request()->routeIs('admin.quizzes.*') ? 'active' : '' }}">&#128221; Quiz</a>
         <a href="/admin/rag" class="nav-item {{ request()->routeIs('admin.rag.*') ? 'active' : '' }}">&#129504; Documenti AI</a>
@@ -51,7 +52,7 @@
 <div class="main-content">
     <div style="background:white; padding:12px 24px; border-bottom:1px solid #C8D0D0; display:flex; align-items:center; justify-content:space-between;">
         <div style="font-size:0.9rem; font-weight:600; color:#1A1F1F;">@yield('title', 'Dashboard')</div>
-        <div style="font-size:0.8rem; color:#8A9696;">Atheneum Noscite — Area Admin</div>
+        <div style="font-size:0.8rem; color:#8A9696;">{{ atheneum_setting('instance_name', 'Atheneum') }} — Area Admin</div>
     </div>
 
     @if(session('success'))

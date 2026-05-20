@@ -80,6 +80,58 @@ class RagService
         return $q->limit($limit)->get();
     }
 
+    /**
+     * Ricerca scoping-aware: i documenti instructor-only sono ammessi
+     * SOLO per i corsi insegnati ($instructorScopedCourseIds), mai
+     * globalmente. I documenti studente (non instructor-only) sono
+     * limitati ai $courseIds navigabili, più i doc di piattaforma
+     * (course_id IS NULL) — decisione §8.3: inclusi sempre.
+     */
+    public function searchScoped(
+        string $query,
+        array $courseIds,
+        array $instructorScopedCourseIds = [],
+        int $limit = 5
+    ) {
+        $terms = array_filter(
+            array_map('trim', preg_split('/\s+/', $query)),
+            fn($t) => mb_strlen($t) >= 3
+        );
+        if (empty($terms)) $terms = [$query];
+
+        $q = DocumentRag::query();
+
+        $q->where(function ($w) use ($courseIds, $instructorScopedCourseIds) {
+            // Documenti studente: non instructor-only, scoped ai corsi
+            // navigabili. Inclusi i doc di piattaforma (course_id NULL).
+            $w->where(function ($s) use ($courseIds) {
+                $s->where('is_instructor_only', false)
+                  ->where(function ($c) use ($courseIds) {
+                      if (!empty($courseIds)) {
+                          $c->whereIn('course_id', $courseIds);
+                      }
+                      $c->orWhereNull('course_id');
+                  });
+            });
+            // Documenti instructor-only: SOLO per i corsi insegnati.
+            if (!empty($instructorScopedCourseIds)) {
+                $w->orWhere(function ($i) use ($instructorScopedCourseIds) {
+                    $i->where('is_instructor_only', true)
+                      ->whereIn('course_id', $instructorScopedCourseIds);
+                });
+            }
+        });
+
+        $q->where(function ($w) use ($terms) {
+            foreach ($terms as $term) {
+                $w->orWhere('content', 'ILIKE', '%' . $term . '%')
+                  ->orWhere('title', 'ILIKE', '%' . $term . '%');
+            }
+        });
+
+        return $q->limit($limit)->get();
+    }
+
     public function searchForUser(
         string $query,
         array $courseIds,
