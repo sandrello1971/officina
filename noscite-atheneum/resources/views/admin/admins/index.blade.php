@@ -17,6 +17,13 @@
         ⚠ {{ session('error') }}
     </div>
     @endif
+    @if($errors->any())
+    <div style="background:#fff3ec; border-left:4px solid #E28A53; padding:12px 16px; border-radius:8px; margin-bottom:16px; color:#c97a45; font-size:0.875rem;">
+        @foreach($errors->all() as $e)
+            <div>⚠ {{ $e }}</div>
+        @endforeach
+    </div>
+    @endif
 
     {{-- LISTA --}}
     <div style="background:white; border-radius:10px; overflow:hidden; margin-bottom:20px;">
@@ -27,13 +34,18 @@
                     <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Email</th>
                     <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Stato</th>
                     <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Creato</th>
-                    <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Azioni</th>
+                    <th style="padding:12px 16px; text-align:right; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Azioni</th>
                 </tr>
             </thead>
-            <tbody>
-                @forelse($admins as $admin)
-                @php $isSelf = strtolower($admin->email) === strtolower((string) session('admin_email')); @endphp
-                <tr style="border-top:1px solid #F5F7F7;">
+
+            {{-- Un <tbody> per ogni admin con il proprio x-data: lo stato
+                 `panel` è strettamente per-riga. Il pannello expand sotto
+                 la riga vede solo questo scope, mai quello di altre righe.
+                 Più <tbody> dentro una <table> sono HTML valido. --}}
+            @forelse($admins as $admin)
+            @php $isSelf = strtolower($admin->email) === strtolower((string) session('admin_email')); @endphp
+            <tbody x-data="{ panel: null }" style="border-top:1px solid #F5F7F7;">
+                <tr>
                     <td style="padding:12px 16px; font-weight:600; color:#1A1F1F; font-size:0.875rem;">
                         {{ $admin->name }}
                         @if($isSelf)
@@ -51,61 +63,127 @@
                     <td style="padding:12px 16px; color:#8A9696; font-size:0.8rem;">
                         {{ $admin->created_at?->format('d/m/Y') }}
                     </td>
-                    <td style="padding:12px 16px;">
-                        <details style="position:relative;">
-                            <summary style="cursor:pointer; color:#55B1AE; font-size:0.8rem; list-style:none;">Modifica ▾</summary>
-                            <div style="position:absolute; right:0; top:100%; margin-top:4px; background:white; border:1px solid #E8F5F5; border-radius:8px; padding:14px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:10; width:320px; display:flex; flex-direction:column; gap:10px;">
-
-                                {{-- Dati anagrafici --}}
-                                <form method="POST" action="{{ route('admin.admins.update', $admin->id) }}">
-                                    @csrf @method('PATCH')
-                                    <label style="font-size:0.7rem; color:#8A9696;">Nome</label>
-                                    <input type="text" name="name" value="{{ $admin->name }}" required maxlength="255"
-                                           style="width:100%; padding:6px; border:1px solid #E8F5F5; border-radius:4px; font-size:0.8rem; margin-bottom:8px;">
-                                    <label style="font-size:0.7rem; color:#8A9696;">Email</label>
-                                    <input type="email" name="email" value="{{ $admin->email }}" required
-                                           style="width:100%; padding:6px; border:1px solid #E8F5F5; border-radius:4px; font-size:0.8rem; margin-bottom:8px;">
-                                    <button type="submit" style="width:100%; padding:6px; background:#55B1AE; color:white; border:none; border-radius:4px; font-size:0.8rem; cursor:pointer;">
-                                        Salva
-                                    </button>
-                                </form>
-
-                                {{-- Cambio password --}}
-                                <form method="POST" action="{{ route('admin.admins.password', $admin->id) }}" style="border-top:1px solid #E8F5F5; padding-top:8px;">
-                                    @csrf @method('PATCH')
-                                    <label style="font-size:0.7rem; color:#8A9696;">Nuova password (min 12)</label>
-                                    <input type="password" name="password" required minlength="12"
-                                           style="width:100%; padding:6px; border:1px solid #E8F5F5; border-radius:4px; font-size:0.8rem; margin-bottom:6px;">
-                                    <label style="font-size:0.7rem; color:#8A9696;">Conferma</label>
-                                    <input type="password" name="password_confirmation" required minlength="12"
-                                           style="width:100%; padding:6px; border:1px solid #E8F5F5; border-radius:4px; font-size:0.8rem; margin-bottom:8px;">
-                                    <button type="submit" style="width:100%; padding:6px; background:#E28A53; color:white; border:none; border-radius:4px; font-size:0.8rem; cursor:pointer;">
-                                        Cambia password
-                                    </button>
-                                </form>
-
-                                {{-- Toggle attivo --}}
-                                <form method="POST" action="{{ route('admin.admins.toggle', $admin->id) }}" style="border-top:1px solid #E8F5F5; padding-top:8px;"
-                                      onsubmit="return confirm('{{ $admin->is_active ? 'Disattivare' : 'Riattivare' }} {{ $admin->email }}?');">
-                                    @csrf @method('PATCH')
-                                    <button type="submit"
-                                            style="width:100%; padding:6px; background:{{ $admin->is_active ? '#fff3ec' : '#E8F5F5' }}; color:{{ $admin->is_active ? '#c97a45' : '#3A8C89' }}; border:1px solid {{ $admin->is_active ? '#E28A53' : '#55B1AE' }}; border-radius:4px; font-size:0.8rem; cursor:pointer;">
-                                        {{ $admin->is_active ? 'Disattiva' : 'Riattiva' }}
-                                    </button>
-                                </form>
-                            </div>
-                        </details>
+                    <td style="padding:12px 16px; text-align:right; white-space:nowrap;">
+                        <button type="button"
+                                @click="panel = panel === 'profile' ? null : 'profile'"
+                                :style="panel === 'profile' ? 'background:#E8F5F5; color:#3A8C89;' : 'background:transparent; color:#55B1AE;'"
+                                style="padding:5px 10px; border:1px solid #55B1AE; border-radius:4px; font-size:0.75rem; cursor:pointer; margin-right:4px;">
+                            Modifica
+                        </button>
+                        <button type="button"
+                                @click="panel = panel === 'password' ? null : 'password'"
+                                :style="panel === 'password' ? 'background:#fff3ec; color:#c97a45;' : 'background:transparent; color:#E28A53;'"
+                                style="padding:5px 10px; border:1px solid #E28A53; border-radius:4px; font-size:0.75rem; cursor:pointer; margin-right:4px;">
+                            Password
+                        </button>
+                        <button type="button"
+                                @click="panel = panel === 'toggle' ? null : 'toggle'"
+                                style="padding:5px 10px; border:1px solid {{ $admin->is_active ? '#E28A53' : '#55B1AE' }}; background:transparent; color:{{ $admin->is_active ? '#E28A53' : '#3A8C89' }}; border-radius:4px; font-size:0.75rem; cursor:pointer;">
+                            {{ $admin->is_active ? 'Disattiva' : 'Riattiva' }}
+                        </button>
                     </td>
                 </tr>
-                @empty
+
+                {{-- Pannello expand sotto la riga, scoped allo stesso tbody.
+                     I form sono renderizzati server-side con i valori di
+                     QUESTO $admin: niente JS che ripopola i campi al click. --}}
+                <tr x-show="panel !== null" x-cloak>
+                    <td colspan="5" style="background:#FAFBFB; padding:16px 20px; border-top:1px dashed #E8F5F5;">
+
+                        {{-- Profilo --}}
+                        <div x-show="panel === 'profile'" x-cloak>
+                            <div style="font-size:0.8rem; font-weight:700; color:#4A5252; margin-bottom:10px;">Modifica profilo</div>
+                            <form method="POST" action="{{ route('admin.admins.update', $admin) }}"
+                                  style="display:grid; grid-template-columns:1fr 1fr auto auto; gap:10px; align-items:end;">
+                                @csrf @method('PATCH')
+                                <div>
+                                    <label style="font-size:0.7rem; color:#8A9696;">Nome</label>
+                                    <input type="text" name="name" value="{{ $admin->name }}" required maxlength="255"
+                                           style="width:100%; padding:7px; border:1px solid #C8D0D0; border-radius:5px; font-size:0.85rem;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem; color:#8A9696;">Email</label>
+                                    <input type="email" name="email" value="{{ $admin->email }}" required
+                                           style="width:100%; padding:7px; border:1px solid #C8D0D0; border-radius:5px; font-size:0.85rem;">
+                                </div>
+                                <button type="button" @click="panel = null"
+                                        style="padding:7px 12px; background:transparent; color:#8A9696; border:1px solid #C8D0D0; border-radius:5px; font-size:0.8rem; cursor:pointer;">
+                                    Annulla
+                                </button>
+                                <button type="submit"
+                                        style="padding:7px 14px; background:#55B1AE; color:white; border:none; border-radius:5px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                                    Salva
+                                </button>
+                            </form>
+                        </div>
+
+                        {{-- Password --}}
+                        <div x-show="panel === 'password'" x-cloak>
+                            <div style="font-size:0.8rem; font-weight:700; color:#4A5252; margin-bottom:10px;">
+                                Cambia password — <span style="color:#1A1F1F;">{{ $admin->email }}</span>
+                            </div>
+                            <form method="POST" action="{{ route('admin.admins.password', $admin) }}"
+                                  style="display:grid; grid-template-columns:1fr 1fr auto auto; gap:10px; align-items:end;">
+                                @csrf @method('PATCH')
+                                <div>
+                                    <label style="font-size:0.7rem; color:#8A9696;">Nuova password (min 12)</label>
+                                    <input type="password" name="password" required minlength="12" autocomplete="new-password"
+                                           style="width:100%; padding:7px; border:1px solid #C8D0D0; border-radius:5px; font-size:0.85rem;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem; color:#8A9696;">Conferma</label>
+                                    <input type="password" name="password_confirmation" required minlength="12" autocomplete="new-password"
+                                           style="width:100%; padding:7px; border:1px solid #C8D0D0; border-radius:5px; font-size:0.85rem;">
+                                </div>
+                                <button type="button" @click="panel = null"
+                                        style="padding:7px 12px; background:transparent; color:#8A9696; border:1px solid #C8D0D0; border-radius:5px; font-size:0.8rem; cursor:pointer;">
+                                    Annulla
+                                </button>
+                                <button type="submit"
+                                        style="padding:7px 14px; background:#E28A53; color:white; border:none; border-radius:5px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                                    Cambia password
+                                </button>
+                            </form>
+                        </div>
+
+                        {{-- Toggle attivo/disattivo --}}
+                        <div x-show="panel === 'toggle'" x-cloak>
+                            <div style="font-size:0.8rem; color:#4A5252; margin-bottom:10px;">
+                                @if($admin->is_active)
+                                    Disattivare <strong>{{ $admin->email }}</strong>? Non potrà più accedere.
+                                    @if($isSelf)
+                                        <br><span style="color:#c97a45; font-size:0.75rem;">⚠ Stai disattivando il tuo account. Se sei l'unico admin attivo, l'operazione viene bloccata server-side (anti-lockout).</span>
+                                    @endif
+                                @else
+                                    Riattivare <strong>{{ $admin->email }}</strong>? Potrà tornare ad accedere.
+                                @endif
+                            </div>
+                            <form method="POST" action="{{ route('admin.admins.toggle', $admin) }}"
+                                  style="display:flex; gap:10px;">
+                                @csrf @method('PATCH')
+                                <button type="button" @click="panel = null"
+                                        style="padding:7px 14px; background:transparent; color:#8A9696; border:1px solid #C8D0D0; border-radius:5px; font-size:0.8rem; cursor:pointer;">
+                                    Annulla
+                                </button>
+                                <button type="submit"
+                                        style="padding:7px 14px; background:{{ $admin->is_active ? '#E28A53' : '#55B1AE' }}; color:white; border:none; border-radius:5px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                                    Conferma {{ $admin->is_active ? 'disattivazione' : 'riattivazione' }}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+            @empty
+            <tbody>
                 <tr>
                     <td colspan="5" style="padding:40px; text-align:center; color:#8A9696;">
                         Nessun amministratore. Crea il primo con:
                         <code style="background:#F5F7F7; padding:2px 6px; border-radius:4px;">php artisan atheneum:admin-create</code>
                     </td>
                 </tr>
-                @endforelse
             </tbody>
+            @endforelse
         </table>
     </div>
 
@@ -116,21 +194,18 @@
             @csrf
             <div>
                 <label style="font-size:0.7rem; color:#8A9696;">Nome *</label>
-                <input type="text" name="name" required maxlength="255"
+                <input type="text" name="name" required maxlength="255" value="{{ old('name') }}"
                        style="width:100%; padding:8px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.85rem;">
-                @error('name')<p style="color:#E28A53; font-size:0.7rem; margin-top:2px;">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label style="font-size:0.7rem; color:#8A9696;">Email *</label>
-                <input type="email" name="email" required
+                <input type="email" name="email" required value="{{ old('email') }}"
                        style="width:100%; padding:8px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.85rem;">
-                @error('email')<p style="color:#E28A53; font-size:0.7rem; margin-top:2px;">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label style="font-size:0.7rem; color:#8A9696;">Password * (min 12)</label>
-                <input type="password" name="password" required minlength="12"
+                <input type="password" name="password" required minlength="12" autocomplete="new-password"
                        style="width:100%; padding:8px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.85rem;">
-                @error('password')<p style="color:#E28A53; font-size:0.7rem; margin-top:2px;">{{ $message }}</p>@enderror
             </div>
             <button type="submit" style="padding:8px 18px; background:#55B1AE; color:white; border:none; border-radius:6px; font-size:0.85rem; font-weight:700; cursor:pointer;">
                 Crea admin
