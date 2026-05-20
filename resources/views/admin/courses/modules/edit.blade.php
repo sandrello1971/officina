@@ -160,7 +160,7 @@
                 <input type="file" name="video_file" accept="video/*"
                        style="width:100%; padding:10px; border:1px dashed rgba(85,177,174,0.4); border-radius:8px; color:#8A9696; font-size:0.8rem; background:rgba(255,255,255,0.05);">
                 <p style="color:#4A5252; font-size:0.75rem; margin-top:6px;">
-                    Il video verrà trascritto automaticamente con AI e indicizzato per il chatbot Minerva.
+                    Il video verrà trascritto automaticamente con AI e indicizzato per il chatbot {{ atheneum_setting('assistant_name', 'Minerva') }}.
                 </p>
             </div>
         </div>
