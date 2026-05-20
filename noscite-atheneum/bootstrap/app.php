@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'student.password' => \App\Http\Middleware\StudentMustChangePassword::class,
             'admin.auth' => \App\Http\Middleware\AdminAuth::class,
             'demo.restrictions' => \App\Http\Middleware\DemoRestrictions::class,
+            'legal_representative' => \App\Http\Middleware\EnsureLegalRepresentative::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

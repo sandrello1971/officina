@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Certificate;
 use App\Models\Setting;
 use App\Models\Student;
+use App\Observers\CertificateObserver;
+use App\Support\ExamState;
 use App\Support\StudentCourseAccess;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -29,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
             $event->extendSocialite('azure', \SocialiteProviders\Azure\Provider::class);
         });
 
+        Certificate::observe(CertificateObserver::class);
+
         // Rate limiter per la verifica pubblica del certificato. Per-IP esplicito,
         // così il budget non è condiviso tra utenti diversi dietro la stessa rotta.
         RateLimiter::for('certificate-verify', function (Request $request) {
@@ -45,9 +50,14 @@ class AppServiceProvider extends ServiceProvider
                 ? app(StudentCourseAccess::class)->navigableCourses($student)
                 : collect();
 
+            $examLock = $studentId
+                ? app(ExamState::class)->hasActiveExam($studentId)
+                : false;
+
             $view->with([
                 'sidebarStudent' => $student,
                 'sidebarCourses' => $sidebarCourses,
+                'examLock'       => $examLock,
             ]);
         });
     }
