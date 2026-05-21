@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\Certificate;
+use App\Models\Conversation;
 use App\Models\Setting;
 use App\Models\Student;
 use App\Observers\CertificateObserver;
+use App\Policies\ConversationPolicy;
 use App\Support\ExamState;
 use App\Support\StudentCourseAccess;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -13,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -33,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Certificate::observe(CertificateObserver::class);
+
+        Gate::policy(Conversation::class, ConversationPolicy::class);
 
         // Rate limiter per la verifica pubblica del certificato. Per-IP esplicito,
         // così il budget non è condiviso tra utenti diversi dietro la stessa rotta.

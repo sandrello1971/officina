@@ -61,9 +61,34 @@ class Student extends Authenticatable
         return $this->role === 'instructor';
     }
 
+    public function isStudent(): bool
+    {
+        return $this->role === 'student';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
     public function moduleProgress()
     {
         return $this->hasMany(StudentModuleProgress::class);
+    }
+
+    public function conversationsAsStudent()
+    {
+        return $this->hasMany(Conversation::class, 'student_id');
+    }
+
+    public function conversationsAsInstructor()
+    {
+        return $this->hasMany(Conversation::class, 'instructor_id');
+    }
+
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
     }
 
     public function quizAttempts()

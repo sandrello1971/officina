@@ -114,6 +114,16 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/video/{videoId}/status', [App\Http\Controllers\Student\VideoController::class, 'status'])->name('video.status');
         Route::get('/course/{course:slug}/video-search', [App\Http\Controllers\Student\VideoController::class, 'searchInCourse'])->name('video.search.course');
         Route::get('/course/{course:slug}/module/{module}/video-search', [App\Http\Controllers\Student\VideoController::class, 'searchInModule'])->name('video.search.module');
+
+        // Messaggi (DM) — backend Fase A (UI Fase B, Reverb Fase C)
+        Route::prefix('messaggi')->name('messages.')->group(function () {
+            Route::get('/',                          [App\Http\Controllers\Student\ConversationController::class, 'index'])->name('index');
+            Route::get('/nuovo',                     [App\Http\Controllers\Student\ConversationController::class, 'create'])->name('create');
+            Route::post('/',                         [App\Http\Controllers\Student\ConversationController::class, 'store'])->name('store');
+            Route::get('/{conversation}',            [App\Http\Controllers\Student\ConversationController::class, 'show'])->name('show');
+            Route::patch('/{conversation}/letto',    [App\Http\Controllers\Student\ConversationController::class, 'markRead'])->name('markRead');
+            Route::post('/{conversation}/messaggi',  [App\Http\Controllers\Student\MessageController::class, 'store'])->name('messages.store');
+        });
     });
 });
 
