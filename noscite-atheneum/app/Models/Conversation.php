@@ -43,10 +43,10 @@ class Conversation extends Model
         return $this->hasMany(Message::class)->orderBy('created_at');
     }
 
-    public function latestMessage()
-    {
-        return $this->hasOne(Message::class)->latestOfMany();
-    }
+    // Nota: niente relation latestMessage() perché Eloquent ofMany() aggiunge
+    // sempre MAX(id) come tiebreaker, e PostgreSQL non ha MAX(uuid). Per la
+    // preview "ultimo messaggio" l'inbox usa addSelect con subquery diretta
+    // (vedi ConversationController::index).
 
     public function unreadCountFor(Student $user): int
     {
