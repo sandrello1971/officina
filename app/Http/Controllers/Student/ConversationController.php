@@ -29,12 +29,24 @@ class ConversationController extends Controller
     {
         $user = $this->currentUser();
 
+        // Preview ultimo messaggio via addSelect subquery (vedi Conversation
+        // model per il perché: PostgreSQL non ha MAX(uuid)).
         $conversations = Conversation::query()
             ->where(function ($q) use ($user) {
                 $q->where('student_id', $user->id)
                   ->orWhere('instructor_id', $user->id);
             })
-            ->with(['student', 'instructor', 'course', 'latestMessage'])
+            ->with(['student', 'instructor', 'course'])
+            ->addSelect([
+                'latest_body' => Message::select('body')
+                    ->whereColumn('conversation_id', 'conversations.id')
+                    ->orderByDesc('created_at')
+                    ->limit(1),
+                'latest_sender_id' => Message::select('sender_id')
+                    ->whereColumn('conversation_id', 'conversations.id')
+                    ->orderByDesc('created_at')
+                    ->limit(1),
+            ])
             ->orderByDesc('last_message_at')
             ->paginate(20);
 

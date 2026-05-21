@@ -36,7 +36,6 @@
                 @php
                     $other = $conv->otherParticipant($currentUser);
                     $unread = $conv->unreadCountFor($currentUser);
-                    $last = $conv->latestMessage;
                 @endphp
                 <a href="{{ route('student.messages.show', $conv) }}"
                    style="display:block; padding:16px 20px; border-bottom:1px solid #F5F7F7; text-decoration:none; color:inherit; transition:background 0.15s;"
@@ -54,9 +53,9 @@
                                 @endif
                             </div>
                             <div style="font-weight:{{ $unread > 0 ? '600' : '500' }}; color:#4A5252; font-size:0.85rem; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $conv->subject }}</div>
-                            @if($last)
+                            @if($conv->latest_body)
                             <div style="color:#8A9696; font-size:0.78rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                                {{ $last->sender_id === $currentUser->id ? 'Tu: ' : '' }}{{ \Illuminate\Support\Str::limit($last->body, 100) }}
+                                {{ $conv->latest_sender_id === $currentUser->id ? 'Tu: ' : '' }}{{ \Illuminate\Support\Str::limit($conv->latest_body, 100) }}
                             </div>
                             @endif
                         </div>
