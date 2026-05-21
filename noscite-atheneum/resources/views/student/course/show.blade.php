@@ -50,6 +50,32 @@
         </a>
     </div>
 
+    @if(empty($teaching))
+        @php
+            $messageUser = \App\Models\Student::find(session('student_id'));
+            $courseInstructorId = \DB::table('student_course')
+                ->where('student_id', $messageUser->id)
+                ->where('course_id', $course->id)
+                ->where('is_active', true)
+                ->value('instructor_id');
+            $courseInstructor = $courseInstructorId ? \App\Models\Student::find($courseInstructorId) : null;
+            $canMessageInstructor = $courseInstructor
+                && $messageUser->can('startConversationWith', [\App\Models\Conversation::class, $courseInstructor, $course]);
+        @endphp
+        @if($canMessageInstructor)
+        <div style="background:white; border:1px solid #E5E7E7; border-radius:12px; padding:14px 18px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <div style="color:#1A1F1F; font-weight:600; font-size:0.875rem;">✉️ Hai una domanda per {{ $courseInstructor->name }}?</div>
+                <div style="color:#8A9696; font-size:0.75rem;">Apri una conversazione privata col formatore del corso.</div>
+            </div>
+            <a href="{{ route('student.messages.create', ['instructor' => $courseInstructor->id, 'course' => $course->id]) }}"
+               style="padding:8px 16px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none; display:inline-block;">
+                Scrivi al formatore &rarr;
+            </a>
+        </div>
+        @endif
+    @endif
+
     @if($course->video_ai_id)
         @include('student.course._video-player', [
             'videoId' => $course->video_ai_id,
