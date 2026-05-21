@@ -29,6 +29,7 @@ class SettingsController extends Controller
         'assistant_name',
         'assistant_role_label',
         'assistant_intro_message',
+        'assistant_domain_context',
     ];
 
     public function index()
@@ -43,6 +44,7 @@ class SettingsController extends Controller
             'assistant_name'          => Setting::resolve('assistant_name', ''),
             'assistant_role_label'    => Setting::resolve('assistant_role_label', ''),
             'assistant_intro_message' => Setting::resolve('assistant_intro_message', ''),
+            'assistant_domain_context' => Setting::resolve('assistant_domain_context', ''),
             // mail
             'mail_host'         => Setting::resolve('mail_host', ''),
             'mail_port'         => Setting::resolve('mail_port', ''),
@@ -67,6 +69,7 @@ class SettingsController extends Controller
             'assistant_name'          => 'nullable|string|max:60',
             'assistant_role_label'    => 'nullable|string|max:200',
             'assistant_intro_message' => 'nullable|string|max:500',
+            'assistant_domain_context' => 'nullable|string|max:1000',
             'mail_host'          => 'nullable|string|max:255',
             'mail_port'          => 'nullable|integer|min:1|max:65535',
             'mail_username'      => 'nullable|string|max:255',
