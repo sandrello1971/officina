@@ -104,6 +104,14 @@
             <span>📎</span> I miei documenti
         </a>
 
+        <a href="{{ route('student.messages.index') }}"
+           class="nav-item {{ request()->routeIs('student.messages.*') ? 'active' : '' }}">
+            <span>✉️</span> Messaggi
+            @if(!empty($unreadMessages))
+            <span style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center;">{{ $unreadMessages }}</span>
+            @endif
+        </a>
+
         @if($sidebarStudent && $sidebarStudent->role === 'instructor')
         <a href="{{ route('student.knowledge_base.index') }}"
            class="nav-item {{ request()->routeIs('student.knowledge_base.*') ? 'active' : '' }}">

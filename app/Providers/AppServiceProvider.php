@@ -59,10 +59,27 @@ class AppServiceProvider extends ServiceProvider
                 ? app(ExamState::class)->hasActiveExam($studentId)
                 : false;
 
+            // Unread DM messages count: messaggi non letti nelle conversation dove
+            // l'utente è partecipante (sia come studente sia come formatore),
+            // escludendo quelli inviati da lui stesso.
+            $unreadMessages = $student
+                ? \App\Models\Message::query()
+                    ->whereNull('read_at')
+                    ->where('sender_id', '!=', $student->id)
+                    ->whereIn('conversation_id', \App\Models\Conversation::query()
+                        ->where(function ($q) use ($student) {
+                            $q->where('student_id', $student->id)
+                              ->orWhere('instructor_id', $student->id);
+                        })
+                        ->pluck('id'))
+                    ->count()
+                : 0;
+
             $view->with([
-                'sidebarStudent' => $student,
-                'sidebarCourses' => $sidebarCourses,
-                'examLock'       => $examLock,
+                'sidebarStudent'  => $student,
+                'sidebarCourses'  => $sidebarCourses,
+                'examLock'        => $examLock,
+                'unreadMessages'  => $unreadMessages,
             ]);
         });
     }
