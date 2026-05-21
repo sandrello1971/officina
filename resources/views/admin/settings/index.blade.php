@@ -61,6 +61,18 @@
                     <textarea name="assistant_intro_message" maxlength="500" rows="2" placeholder="Ciao! Sono qui per aiutarti con i contenuti del corso."
                               style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">{{ old('assistant_intro_message', $settings['assistant_intro_message']) }}</textarea>
                 </div>
+
+                <div style="grid-column:1/3;">
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Contesto di dominio della piattaforma (opzionale)</label>
+                    <textarea name="assistant_domain_context" maxlength="1000" rows="3"
+                              placeholder="Esempio: professionisti e PMI italiane che vogliono adottare strumenti di AI generativa in azienda"
+                              style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">{{ old('assistant_domain_context', $settings['assistant_domain_context'] ?? '') }}</textarea>
+                    <p style="font-size:0.7rem; color:#8A9696; margin-top:4px; font-style:italic;">
+                        Descrivi in linguaggio naturale il pubblico/dominio della piattaforma. Viene iniettato
+                        nel system prompt dell'assistente per generare esempi pratici pertinenti al settore.
+                        Lasciare vuoto per esempi generici. Max 1000 caratteri.
+                    </p>
+                </div>
             </div>
 
             <p style="font-size:0.75rem; color:#8A9696; margin-top:12px; font-style:italic;">

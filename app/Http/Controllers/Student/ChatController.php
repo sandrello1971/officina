@@ -148,7 +148,11 @@ class ChatController extends Controller
         $assistantName = atheneum_setting('assistant_name', 'Minerva');
         $assistantRole = atheneum_setting('assistant_role_label', "l'assistente AI di formazione");
         $platformName  = atheneum_setting('instance_name', 'Atheneum');
+        $domainContext = atheneum_setting('assistant_domain_context', '');
         $identity = "Sei {$assistantName}, {$assistantRole} di {$platformName}.";
+        if ($domainContext !== '') {
+            $identity .= " La piattaforma si rivolge a: {$domainContext}.";
+        }
 
         $lengthRule = $mode === 'expand'
             ? "Rispondi in modo approfondito e dettagliato, con esempi e sezioni. Usa markdown: ## per titoli di sezione, **grassetto**, liste, citazioni >."
@@ -335,7 +339,12 @@ TXT;
         $assistantName = atheneum_setting('assistant_name', 'Minerva');
         $assistantRole = atheneum_setting('assistant_role_label', "l'assistente AI di formazione");
         $platformName  = atheneum_setting('instance_name', 'Atheneum');
+        $domainContext = atheneum_setting('assistant_domain_context', '');
         $identity = "Sei {$assistantName}, {$assistantRole} per il corso {$courseName} di {$platformName}.";
+
+        $domainBullet = $domainContext !== ''
+            ? "- Chiarire concetti difficili con esempi pratici legati a: {$domainContext}"
+            : "- Chiarire concetti difficili con esempi pratici concreti";
 
         $behavior = <<<TXT
 Il tuo ruolo:
@@ -343,7 +352,7 @@ Il tuo ruolo:
 - Rispondere basandoti sui DOCUMENTI e sui VIDEO del corso
 - Quando citi informazioni da un video, indica SEMPRE il timestamp [MM:SS]
 - Quando citi informazioni da un documento, cita il titolo del documento
-- Chiarire concetti difficili con esempi pratici legati alle PMI italiane
+{$domainBullet}
 
 Regole:
 - Rispondi SEMPRE in italiano
