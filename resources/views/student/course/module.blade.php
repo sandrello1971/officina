@@ -335,8 +335,11 @@
                 ⚠ Il contenuto del modulo è stato aggiornato dopo la generazione di questa mappa. Alcuni concetti potrebbero non essere riflessi.
             </div>
             @endif
-            <div class="markmap" style="width:100%; height:520px; border:1px solid #F5F7F7; border-radius:8px; overflow:hidden;">
-                <script type="text/template">{!! $module->mindmap_markdown !!}</script>
+            <div style="position:relative; width:100%; height:700px; border:1px solid #F5F7F7; border-radius:8px; overflow:hidden; background:#FDFEFE;">
+                <svg id="student-mindmap-svg" style="width:100%; height:100%;"></svg>
+                <div style="position:absolute; bottom:8px; right:12px; font-size:0.65rem; color:#8A9696; pointer-events:none; background:rgba(255,255,255,0.85); padding:2px 8px; border-radius:8px;">
+                    Trascina per spostare · Scroll per zoom · Click sui nodi per espandere/collassare
+                </div>
             </div>
         </div>
         @endif
@@ -526,9 +529,28 @@
 
 @if($module->hasMindmap())
 @push('scripts')
-{{-- Markmap autoloader: scopre i div.markmap nella pagina e li renderizza
-     leggendo lo <script type="text/template"> contenuto. Zero JS custom. --}}
-<script src="https://cdn.jsdelivr.net/npm/markmap-autoloader@0.18"></script>
+{{-- Render markmap esplicito (no autoloader): controllo fit() su un container alto,
+     evita il bug "renderizzato minuscolo in alto-sx" dell'autoloader. --}}
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.18"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const svg = document.getElementById('student-mindmap-svg');
+    if (!svg) return;
+    const markdown = @json($module->mindmap_markdown);
+    try {
+        const { Transformer, Markmap } = window.markmap;
+        const { root } = new Transformer().transform(markdown);
+        const mm = Markmap.create(svg, { fitRatio: 0.92, autoFit: true }, root);
+        // Secondo fit dopo un tick per assicurare layout calcolato col container reale
+        setTimeout(() => mm.fit(), 100);
+    } catch (e) {
+        console.error('Markmap student render error:', e);
+        svg.parentElement.innerHTML = '<div style="padding:24px; color:#C52A2A; font-size:0.85rem;">Errore rendering mappa mentale: ' + e.message + '</div>';
+    }
+});
+</script>
 @endpush
 @endif
 
