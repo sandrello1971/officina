@@ -20,7 +20,7 @@ class AdminAccountController extends Controller
         $data = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:admins,email',
-            'password' => 'required|string|min:12',
+            'password' => ['required', \Illuminate\Validation\Rules\Password::defaults()],
         ]);
 
         $admin = Admin::create([
@@ -54,7 +54,7 @@ class AdminAccountController extends Controller
     public function password(Request $request, Admin $admin)
     {
         $data = $request->validate([
-            'password'              => 'required|string|min:12|confirmed',
+            'password'              => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
         ]);
 
         $admin->update(['password' => $data['password']]);

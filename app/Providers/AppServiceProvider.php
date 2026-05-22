@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,6 +42,16 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Conversation::class, ConversationPolicy::class);
 
+        // Password policy unificata per studenti + admin + reset.
+        // Prod: 12 char min + mixed case + numeri + simboli + check uncompromised
+        //       (haveibeenpwned API, gratis, no API key).
+        // Dev:  8 char min (test-friendly, no network call).
+        Password::defaults(function () {
+            return app()->isProduction()
+                ? Password::min(12)->letters()->mixedCase()->numbers()->symbols()->uncompromised()
+                : Password::min(8);
+        });
+
         // Broadcasting: registra /broadcasting/auth con il nostro middleware
         // session-based (Atheneum non usa guard Laravel), poi carica channels.php.
         Broadcast::routes(['middleware' => ['web', StudentBroadcastAuth::class]]);
@@ -50,6 +61,36 @@ class AppServiceProvider extends ServiceProvider
         // così il budget non è condiviso tra utenti diversi dietro la stessa rotta.
         RateLimiter::for('certificate-verify', function (Request $request) {
             return Limit::perMinute(30)->by($request->ip());
+        });
+
+        // Login: 5/min per email|IP (anti brute-force standard).
+        RateLimiter::for('login', function (Request $request) {
+            return Limit::perMinute(5)
+                ->by(strtolower($request->input('email') ?? '') . '|' . $request->ip())
+                ->response(function () {
+                    return response('Troppi tentativi di login. Riprova tra un minuto.', 429);
+                });
+        });
+
+        // Password reset: 3/min per IP (anti email enumeration).
+        RateLimiter::for('password-reset', function (Request $request) {
+            return Limit::perMinute(3)->by($request->ip());
+        });
+
+        // Minerva chat: 20/min per studente (Claude API cost-control).
+        RateLimiter::for('minerva-chat', function (Request $request) {
+            return Limit::perMinute(20)
+                ->by(session('student_id') ?? $request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'error' => 'Stai inviando troppi messaggi. Attendi un minuto e riprova.',
+                    ], 429);
+                });
+        });
+
+        // API default: 60/min per utente (protezione generica).
+        RateLimiter::for('api-default', function (Request $request) {
+            return Limit::perMinute(60)->by(session('student_id') ?? session('admin_email') ?? $request->ip());
         });
 
         $this->shareInstanceName();
