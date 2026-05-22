@@ -24,7 +24,7 @@ class StudentWelcomeMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Le tue credenziali per Atheneum Noscite',
+            subject: 'Le tue credenziali per ' . atheneum_setting('instance_name', 'Atheneum'),
         );
     }
 

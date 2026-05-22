@@ -69,7 +69,8 @@ class ContactForm extends Component
             'ip_address' => request()->ip(),
         ]);
 
-        Mail::to('info@noscite.it')->send(new ContactFormMessage($contact));
+        $contactEmail = atheneum_setting('contact_email', config('mail.from.address'));
+        Mail::to($contactEmail)->send(new ContactFormMessage($contact));
 
         $this->reset(['name', 'email', 'phone', 'company', 'message', 'privacy_accepted']);
         $this->sent = true;
