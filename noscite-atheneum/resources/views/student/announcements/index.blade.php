@@ -44,11 +44,16 @@
     @else
     <div style="background:white; border-radius:10px; overflow:hidden;">
         @foreach($announcements as $ann)
-            @php $isMine = $ann->instructor_id === $currentUser->id; @endphp
+            @php
+                $isMine = $ann->instructor_id === $currentUser->id;
+                // is_read viene dalla addSelect del controller; null = non letto.
+                // Per i propri annunci pubblicati la nozione di "unread" non si applica.
+                $isUnread = !$isMine && empty($ann->is_read);
+            @endphp
             <a href="{{ route('student.announcements.show', $ann) }}"
-               style="display:block; padding:16px 20px; border-bottom:1px solid #F5F7F7; text-decoration:none; color:inherit; transition:background 0.15s;"
+               style="display:block; padding:16px 20px; border-bottom:1px solid #F5F7F7; text-decoration:none; color:inherit; transition:background 0.15s; {{ $isUnread ? 'background:#FFF8F1;' : '' }}"
                onmouseover="this.style.background='#FAFBFB'"
-               onmouseout="this.style.background='white'">
+               onmouseout="this.style.background='{{ $isUnread ? '#FFF8F1' : 'white' }}'">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
                     <div style="flex:1; min-width:0;">
                         <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
@@ -57,8 +62,11 @@
                             @if($isMine)
                             <span style="font-size:0.65rem; color:#8A9696; text-transform:uppercase; letter-spacing:0.05em;">tu</span>
                             @endif
+                            @if($isUnread)
+                            <span style="margin-left:auto; background:#E28A53; color:white; font-size:0.65rem; font-weight:700; padding:2px 8px; border-radius:10px;">NUOVO</span>
+                            @endif
                         </div>
-                        <div style="font-weight:600; color:#1A1F1F; font-size:0.95rem; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $ann->subject }}</div>
+                        <div style="font-weight:{{ $isUnread ? '700' : '600' }}; color:#1A1F1F; font-size:0.95rem; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $ann->subject }}</div>
                         <div style="color:#8A9696; font-size:0.78rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                             di <strong>{{ $ann->instructor->name }}</strong> — {{ \Illuminate\Support\Str::limit($ann->body, 100) }}
                         </div>

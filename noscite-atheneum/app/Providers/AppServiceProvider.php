@@ -82,11 +82,36 @@ class AppServiceProvider extends ServiceProvider
                     ->count()
                 : 0;
 
+            // Unread announcements: annunci dei corsi a cui l'utente e' iscritto
+            // attivo, MENO quelli che ha gia' letto (announcement_reads pivot).
+            // Esclude gli annunci che l'utente stesso ha pubblicato.
+            $unreadAnnouncements = 0;
+            if ($student) {
+                $enrolledCourseIds = \DB::table('student_course')
+                    ->where('student_id', $student->id)
+                    ->where('is_active', true)
+                    ->pluck('course_id');
+
+                if ($enrolledCourseIds->isNotEmpty()) {
+                    $unreadAnnouncements = \App\Models\Announcement::query()
+                        ->whereIn('course_id', $enrolledCourseIds)
+                        ->where('instructor_id', '!=', $student->id)
+                        ->whereNotExists(function ($q) use ($student) {
+                            $q->select(\DB::raw(1))
+                              ->from('announcement_reads')
+                              ->whereColumn('announcement_id', 'announcements.id')
+                              ->where('student_id', $student->id);
+                        })
+                        ->count();
+                }
+            }
+
             $view->with([
-                'sidebarStudent'  => $student,
-                'sidebarCourses'  => $sidebarCourses,
-                'examLock'        => $examLock,
-                'unreadMessages'  => $unreadMessages,
+                'sidebarStudent'        => $student,
+                'sidebarCourses'        => $sidebarCourses,
+                'examLock'              => $examLock,
+                'unreadMessages'        => $unreadMessages,
+                'unreadAnnouncements'   => $unreadAnnouncements,
             ]);
         });
     }

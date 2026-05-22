@@ -141,7 +141,7 @@
            class="nav-item {{ request()->routeIs('student.announcements.*') ? 'active' : '' }}">
             <span>📢</span> Annunci
             <span id="sidebar-announcements-badge"
-                  style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center; display:none;">0</span>
+                  style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center; display:{{ !empty($unreadAnnouncements) ? 'inline-block' : 'none' }};">{{ $unreadAnnouncements ?? 0 }}</span>
         </a>
 
         @php

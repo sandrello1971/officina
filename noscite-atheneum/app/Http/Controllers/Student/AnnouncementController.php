@@ -41,9 +41,18 @@ class AnnouncementController extends Controller
 
         $visibleCourseIds = $enrolledCourseIds->merge($teachingCourseIds)->unique()->all();
 
+        // addSelect subquery: is_read = true se esiste una row in announcement_reads
+        // per (annuncio corrente, utente loggato). Single query, niente N+1.
         $announcements = Announcement::query()
             ->whereIn('course_id', $visibleCourseIds)
             ->with(['course', 'instructor'])
+            ->addSelect([
+                'is_read' => DB::table('announcement_reads')
+                    ->selectRaw('1')
+                    ->whereColumn('announcement_id', 'announcements.id')
+                    ->where('student_id', $user->id)
+                    ->limit(1),
+            ])
             ->orderByDesc('created_at')
             ->paginate(20);
 
@@ -150,6 +159,13 @@ class AnnouncementController extends Controller
         }
 
         $announcement->load(['course', 'instructor']);
+
+        // Mark-as-read SOLO se l'utente e' uno studente destinatario, non se
+        // e' il formatore che ha pubblicato (le sue letture non hanno senso
+        // nelle statistiche "letto da X discenti").
+        if ($enrolled && $user->id !== $announcement->instructor_id) {
+            $announcement->markReadBy($user);
+        }
 
         return view('student.announcements.show', compact('announcement'));
     }
