@@ -178,6 +178,139 @@
     </form>
 </div>
 
+{{-- ==================== MAPPA MENTALE (sezione separata, indipendente dal form principale) ==================== --}}
+<div style="max-width:900px; margin:20px auto 40px;">
+    <div style="background:white; border-radius:12px; padding:24px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <div>
+                <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F;">🧠 Mappa mentale</h3>
+                <p style="font-size:0.78rem; color:#8A9696; margin-top:2px;">
+                    Generata da Claude dal contenuto del modulo. Editabile manualmente.
+                </p>
+            </div>
+            <div>
+                @if($module->hasMindmap())
+                    @if($module->isMindmapStale())
+                    <span style="display:inline-block; background:rgba(226,138,83,0.15); color:#D87840; padding:4px 10px; border-radius:10px; font-size:0.7rem; font-weight:700;">⚠ OBSOLETA</span>
+                    @else
+                    <span style="display:inline-block; background:rgba(85,177,174,0.15); color:#3A8C89; padding:4px 10px; border-radius:10px; font-size:0.7rem; font-weight:700;">✓ AGGIORNATA</span>
+                    @endif
+                @endif
+            </div>
+        </div>
+
+        @if($module->hasMindmap())
+            <div style="font-size:0.75rem; color:#8A9696; margin-bottom:12px;">
+                Generata: <strong>{{ $module->mindmap_generated_at?->format('d/m/Y H:i') ?? '—' }}</strong>
+                @if($module->isMindmapStale())
+                    <span style="color:#D87840; margin-left:8px;">— il contenuto del modulo è cambiato dopo la generazione, rigenera per allineare.</span>
+                @endif
+            </div>
+        @endif
+
+        @if(empty($module->content))
+            <div style="background:#FBE9E7; border-left:4px solid #E28A53; padding:12px 14px; border-radius:6px; color:#7A4A20; font-size:0.85rem;">
+                Il modulo non ha contenuto. Salva prima il contenuto qui sopra, poi torna qui per generare la mappa.
+            </div>
+        @else
+            <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+                {{-- Genera / Rigenera --}}
+                <form method="POST" action="{{ route('admin.courses.modules.mindmap.generate', [$course, $module]) }}" style="display:inline;"
+                      onsubmit="this.querySelector('button').innerHTML='⏳ Generazione in corso (~20s)...'; this.querySelector('button').disabled=true;">
+                    @csrf
+                    <button type="submit" style="padding:9px 18px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">
+                        @if($module->hasMindmap()) 🔄 Rigenera @else ✨ Genera mappa mentale @endif
+                    </button>
+                </form>
+
+                {{-- Preview toggle --}}
+                @if($module->hasMindmap())
+                <button type="button" id="mindmap-preview-toggle" style="padding:9px 18px; background:white; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">
+                    👁 Anteprima
+                </button>
+
+                {{-- Elimina (svuota campo via update con string vuota) --}}
+                <form method="POST" action="{{ route('admin.courses.modules.mindmap.update', [$course, $module]) }}" style="display:inline; margin-left:auto;"
+                      onsubmit="return confirm('Eliminare la mappa mentale? Potrai rigenerarla in seguito.');">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="mindmap_markdown" value="">
+                    <button type="submit" style="padding:9px 14px; background:white; border:1px solid #E28A53; color:#D87840; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                        🗑 Elimina mappa
+                    </button>
+                </form>
+                @endif
+            </div>
+
+            {{-- Anteprima markmap (hidden di default, toggle col bottone) --}}
+            @if($module->hasMindmap())
+            <div id="mindmap-preview" style="display:none; background:#FAFBFB; border:1px solid #E5E7E7; border-radius:8px; padding:8px; margin-bottom:16px; height:500px; overflow:hidden;">
+                <svg id="mindmap-svg" style="width:100%; height:100%;"></svg>
+            </div>
+
+            {{-- Editor textarea: edit manuale del markdown --}}
+            <form method="POST" action="{{ route('admin.courses.modules.mindmap.update', [$course, $module]) }}">
+                @csrf
+                @method('PATCH')
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:#4A5252; margin-bottom:6px;">
+                    Markdown (modifica manuale)
+                </label>
+                <textarea name="mindmap_markdown" rows="16" maxlength="20000"
+                          style="width:100%; padding:12px 14px; border:1px solid #C8D0D0; border-radius:8px; font-family:Menlo, Monaco, monospace; font-size:0.85rem; line-height:1.5; resize:vertical; min-height:300px;">{{ old('mindmap_markdown', $module->mindmap_markdown) }}</textarea>
+                <div style="font-size:0.7rem; color:#8A9696; margin-top:6px; font-style:italic;">
+                    Pattern: <code># Titolo</code> → <code>## Sezione</code> → <code>- voce</code> con indent di 2 spazi per i sotto-livelli. Max 20.000 caratteri.
+                </div>
+                <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+                    <button type="submit" style="padding:9px 20px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">
+                        Salva modifiche
+                    </button>
+                </div>
+            </form>
+            @endif
+        @endif
+    </div>
+</div>
+
+{{-- Markmap renderer per anteprima admin --}}
+@if($module->hasMindmap())
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.18"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('mindmap-preview-toggle');
+    const preview = document.getElementById('mindmap-preview');
+    const svg = document.getElementById('mindmap-svg');
+    if (!toggle || !preview || !svg) return;
+
+    let rendered = false;
+
+    toggle.addEventListener('click', function() {
+        const isVisible = preview.style.display !== 'none';
+        preview.style.display = isVisible ? 'none' : 'block';
+
+        if (!isVisible && !rendered) {
+            // Lazy render alla prima apertura
+            const markdown = @json($module->mindmap_markdown);
+            try {
+                const { Transformer } = window.markmap;
+                const transformer = new Transformer();
+                const { root } = transformer.transform(markdown);
+                const { Markmap } = window.markmap;
+                Markmap.create(svg, null, root);
+                rendered = true;
+            } catch (e) {
+                console.error('Markmap render error:', e);
+                preview.innerHTML = '<div style="padding:20px; color:#C52A2A;">Errore rendering markmap: ' + e.message + '</div>';
+            }
+        }
+    });
+});
+</script>
+@endpush
+@endif
+
 @push('scripts')
 <script type="module">
 import { Editor } from 'https://esm.sh/@tiptap/core@2.1.13'
