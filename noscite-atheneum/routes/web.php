@@ -38,7 +38,7 @@ Route::get('/certificato/verifica/{code}/pdf', [App\Http\Controllers\Certificate
 Route::prefix('learn')->name('student.')->group(function () {
     Route::get('/demo', [App\Http\Controllers\Student\DemoController::class, 'start'])->name('demo.start');
     Route::get('/login', [App\Http\Controllers\Student\AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [App\Http\Controllers\Student\AuthController::class, 'login'])->name('login.post');
+    Route::post('/login', [App\Http\Controllers\Student\AuthController::class, 'login'])->middleware('throttle:login')->name('login.post');
     Route::post('/logout', [App\Http\Controllers\Student\AuthController::class, 'logout'])->name('logout');
     Route::get('/change-password', [App\Http\Controllers\Student\AuthController::class, 'showChangePassword'])->name('change-password');
     Route::post('/change-password', [App\Http\Controllers\Student\AuthController::class, 'changePassword'])->name('change-password.post');
@@ -59,8 +59,8 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/quiz/{quiz}/result/{attempt}', [App\Http\Controllers\Student\QuizController::class, 'result'])->name('quiz.result');
 
         Route::get('/chat/{course:slug}', [App\Http\Controllers\Student\ChatController::class, 'show'])->name('chat.show');
-        Route::post('/chat/message', [App\Http\Controllers\Student\ChatController::class, 'sendMessage'])->name('chat.message');
-        Route::post('/minerva/ask', [App\Http\Controllers\Student\ChatController::class, 'minervaAsk'])->name('minerva.ask');
+        Route::post('/chat/message', [App\Http\Controllers\Student\ChatController::class, 'sendMessage'])->middleware('throttle:minerva-chat')->name('chat.message');
+        Route::post('/minerva/ask', [App\Http\Controllers\Student\ChatController::class, 'minervaAsk'])->middleware('throttle:minerva-chat')->name('minerva.ask');
 
         Route::get('/certificate/{course:slug}', [App\Http\Controllers\Student\CertificateController::class, 'download'])->name('certificate.download');
         Route::get('/certificate/{course:slug}/view', [App\Http\Controllers\Student\CertificateController::class, 'show'])->name('certificate.show');
@@ -258,6 +258,6 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::post('settings/test-mail',          [App\Http\Controllers\Admin\SettingsController::class, 'testMail'])->name('settings.test-mail');
 
     Route::get('/login', [App\Http\Controllers\Admin\AdminAuthController::class, 'showLogin'])->name('login')->withoutMiddleware(['admin.auth']);
-    Route::post('/login', [App\Http\Controllers\Admin\AdminAuthController::class, 'login'])->name('login.post')->withoutMiddleware(['admin.auth']);
+    Route::post('/login', [App\Http\Controllers\Admin\AdminAuthController::class, 'login'])->middleware('throttle:login')->name('login.post')->withoutMiddleware(['admin.auth']);
     Route::post('/logout', [App\Http\Controllers\Admin\AdminAuthController::class, 'logout'])->name('logout');
 });
