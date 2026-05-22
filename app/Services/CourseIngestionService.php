@@ -73,8 +73,9 @@ class CourseIngestionService
             throw new \RuntimeException('Testo esame vuoto.');
         }
 
-        $systemPrompt = <<<'SYS'
-Sei un assistant specializzato nell'estrarre quiz a risposta multipla da documenti d'esame Noscite.
+        $brand = atheneum_setting('instance_name', 'di formazione professionale');
+        $systemPrompt = <<<SYS
+Sei un assistant specializzato nell'estrarre quiz a risposta multipla da documenti d'esame {$brand}.
 Ricevi il testo di un documento esame che contiene domande con opzioni multiple e risposta corretta indicata.
 
 Il tuo compito:

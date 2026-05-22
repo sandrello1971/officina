@@ -118,8 +118,9 @@ class CourseDocumentParser
             ];
         }
 
-        $systemPrompt = <<<'SYS'
-Ricevi il testo introduttivo di un manuale didattico Noscite. Devi estrarre tre campi:
+        $brand = atheneum_setting('instance_name', 'di formazione');
+        $systemPrompt = <<<SYS
+Ricevi il testo introduttivo di un manuale didattico {$brand}. Devi estrarre tre campi:
 1. name: il nome del corso (cerca pattern tipo "INITIUM — Fondamenta AI Operativa", o titoli simili)
 2. short_description: una frase di 1-2 righe che riassume di cosa tratta il corso
 3. description: una descrizione più estesa (2-4 frasi) che riprende i temi principali

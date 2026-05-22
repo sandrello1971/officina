@@ -12,8 +12,9 @@ class QuizGeneratorService
 {
     public function generateFromContent(Course $course, string $content, int $numQuestions = 10): ?Quiz
     {
-        $systemPrompt = <<<'SYSTEM'
-Sei un esperto di formazione aziendale per Noscite.
+        $brand = atheneum_setting('instance_name', 'aziende e PMI');
+        $systemPrompt = <<<SYSTEM
+Sei un esperto di formazione aziendale per {$brand}.
 Devi generare domande a risposta multipla per verificare la comprensione del materiale del corso.
 
 Regole:
