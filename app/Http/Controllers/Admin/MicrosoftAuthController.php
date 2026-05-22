@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
@@ -30,9 +31,13 @@ class MicrosoftAuthController extends Controller
         }
 
         $email = strtolower($azureUser->getEmail());
-        $whitelist = array_map('strtolower', config('atheneum.admins', []));
 
-        if (!in_array($email, $whitelist)) {
+        // Whitelist via DB: deve esistere un Admin attivo con questa email.
+        // Refactor P1.2: prima si usava config('atheneum.admins'), ora gestione
+        // 100% via UI /admin/admins (AdminAccountController + tabella admins).
+        $admin = Admin::where('email', $email)->where('is_active', true)->first();
+
+        if (!$admin) {
             Log::warning('Atheneum Admin SSO: email non autorizzata', [
                 'email' => $email,
                 'microsoft_id' => $azureUser->getId(),
@@ -44,13 +49,14 @@ class MicrosoftAuthController extends Controller
 
         Log::info('Atheneum Admin SSO: login autorizzato', [
             'email' => $email,
+            'admin_id' => $admin->id,
             'microsoft_id' => $azureUser->getId(),
             'ip' => $request->ip(),
         ]);
 
         session([
             'admin_logged_in' => true,
-            'admin_email'     => $email,
+            'admin_email'     => $admin->email,
         ]);
 
         return redirect()->route('admin.dashboard');
