@@ -32,6 +32,11 @@ class AuthController extends Controller
             ->first();
 
         if (!$student || !Hash::check($request->password, $student->password)) {
+            \Illuminate\Support\Facades\Log::warning('[student] login failed', [
+                'email_attempted' => $request->input('email'),
+                'ip' => $request->ip(),
+                'user_agent' => substr($request->userAgent() ?? '', 0, 200),
+            ]);
             return back()->withErrors(['email' => 'Credenziali non valide.'])->withInput();
         }
 
@@ -43,6 +48,13 @@ class AuthController extends Controller
 
         $student->update(['last_login_at' => now()]);
 
+        \Illuminate\Support\Facades\Log::info('[student] login success', [
+            'student_id' => $student->id,
+            'email' => $student->email,
+            'ip' => $request->ip(),
+            'user_agent' => substr($request->userAgent() ?? '', 0, 200),
+        ]);
+
         if ($student->must_change_password) {
             return redirect()->route('student.change-password');
         }
@@ -52,7 +64,16 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $studentId = session('student_id');
+        $studentEmail = session('student_email');
         session()->forget(['student_id', 'student_name', 'student_email']);
+        if ($studentId) {
+            \Illuminate\Support\Facades\Log::info('[student] logout', [
+                'student_id' => $studentId,
+                'email' => $studentEmail,
+                'ip' => $request->ip(),
+            ]);
+        }
         return redirect()->route('student.login');
     }
 
@@ -64,10 +85,9 @@ class AuthController extends Controller
     public function changePassword(Request $request)
     {
         $request->validate([
-            'password' => 'required|min:8|confirmed',
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
         ], [
             'password.required' => 'Inserisci la nuova password.',
-            'password.min' => 'La password deve avere almeno 8 caratteri.',
             'password.confirmed' => 'Le password non coincidono.',
         ]);
 
@@ -75,6 +95,12 @@ class AuthController extends Controller
         $student->update([
             'password' => Hash::make($request->password),
             'must_change_password' => false,
+        ]);
+
+        \Illuminate\Support\Facades\Log::info('[student] password changed', [
+            'student_id' => $student->id,
+            'email' => $student->email,
+            'ip' => $request->ip(),
         ]);
 
         return redirect()->route('student.dashboard')
