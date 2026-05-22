@@ -54,6 +54,16 @@ class MicrosoftAuthController extends Controller
             'ip' => $request->ip(),
         ]);
 
+        // Se 2FA attivo: intercetta prima del session login.
+        if ($admin->hasTwoFactorEnabled()) {
+            $request->session()->put('admin_2fa_pending_id', $admin->id);
+            Log::info('[admin] SSO OK, 2FA challenge required', [
+                'admin_id' => $admin->id,
+                'email' => $admin->email,
+            ]);
+            return redirect()->route('admin.2fa.challenge');
+        }
+
         session([
             'admin_logged_in' => true,
             'admin_email'     => $admin->email,

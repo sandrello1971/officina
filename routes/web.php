@@ -260,4 +260,21 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::get('/login', [App\Http\Controllers\Admin\AdminAuthController::class, 'showLogin'])->name('login')->withoutMiddleware(['admin.auth']);
     Route::post('/login', [App\Http\Controllers\Admin\AdminAuthController::class, 'login'])->middleware('throttle:login')->name('login.post')->withoutMiddleware(['admin.auth']);
     Route::post('/logout', [App\Http\Controllers\Admin\AdminAuthController::class, 'logout'])->name('logout');
+
+    // 2FA management (admin loggato richiesto, group ereditario)
+    Route::prefix('security/2fa')->name('security.2fa.')->group(function () {
+        Route::get('/',         [App\Http\Controllers\Admin\TwoFactorController::class, 'show'])->name('show');
+        Route::post('/enable',  [App\Http\Controllers\Admin\TwoFactorController::class, 'enable'])->name('enable');
+        Route::post('/confirm', [App\Http\Controllers\Admin\TwoFactorController::class, 'confirm'])->name('confirm');
+        Route::post('/disable', [App\Http\Controllers\Admin\TwoFactorController::class, 'disable'])->name('disable');
+        Route::post('/recovery-codes', [App\Http\Controllers\Admin\TwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery.regenerate');
+    });
 });
+
+// 2FA challenge: l'admin ha password OK ma non e' ancora "logged_in".
+// Fuori dal middleware admin.auth (sennò redirect a login infinito).
+// Throttle 5/min anti brute-force sul verify.
+Route::get('/admin/2fa/challenge', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'show'])->name('admin.2fa.challenge');
+Route::post('/admin/2fa/verify', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'verify'])
+    ->middleware('throttle:5,1')
+    ->name('admin.2fa.verify');
