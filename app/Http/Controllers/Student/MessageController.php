@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\StoreMessageRequest;
 use App\Models\Conversation;
@@ -21,8 +22,9 @@ class MessageController extends Controller
 
         $data = $request->validated();
 
-        DB::transaction(function () use ($conversation, $user, $data) {
-            Message::create([
+        $message = null;
+        DB::transaction(function () use ($conversation, $user, $data, &$message) {
+            $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id'       => $user->id,
                 'body'            => $data['body'],
@@ -32,7 +34,10 @@ class MessageController extends Controller
         });
 
         // Nessuna email su messaggi follow-up (decisione 7a).
-        // Fase C: qui broadcast Reverb MessageSent event.
+        // Broadcast real-time via Reverb (Fase C): MessageSent va a
+        // conversation.{id} (thread aperto live) + user.{recipient} (badge).
+        $message->load('sender');
+        broadcast(new MessageSent($conversation, $message))->toOthers();
 
         return redirect()->route('student.messages.show', $conversation);
     }

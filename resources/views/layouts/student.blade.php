@@ -10,6 +10,32 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+    {{-- Reverb real-time (Fase C messaggistica). Echo wrapper + Pusher protocol client.
+         Init parametri da config.broadcasting.connections.reverb.options + key.
+         CSRF token preso dal meta tag in head per il /broadcasting/auth POST. --}}
+    @if(session('student_id'))
+    <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.js"></script>
+    <script>
+        window.Pusher = Pusher;
+        window.Echo = new Echo({
+            broadcaster: 'reverb',
+            key: '{{ config('broadcasting.connections.reverb.key') }}',
+            wsHost: '{{ config('broadcasting.connections.reverb.options.client.host', request()->getHost()) }}',
+            wsPort: {{ (int) config('broadcasting.connections.reverb.options.client.port', 443) }},
+            wssPort: {{ (int) config('broadcasting.connections.reverb.options.client.port', 443) }},
+            forceTLS: ('{{ config('broadcasting.connections.reverb.options.client.scheme', 'https') }}' === 'https'),
+            enabledTransports: ['ws', 'wss'],
+            auth: {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+            },
+        });
+        window.currentUserId = '{{ session('student_id') }}';
+    </script>
+    @endif
     <style>
         [x-cloak] { display: none !important; }
         body { font-family: 'Calibri', system-ui, sans-serif; }
@@ -107,9 +133,8 @@
         <a href="{{ route('student.messages.index') }}"
            class="nav-item {{ request()->routeIs('student.messages.*') ? 'active' : '' }}">
             <span>✉️</span> Messaggi
-            @if(!empty($unreadMessages))
-            <span style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center;">{{ $unreadMessages }}</span>
-            @endif
+            <span id="sidebar-unread-badge"
+                  style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center; display:{{ !empty($unreadMessages) ? 'inline-block' : 'none' }};">{{ $unreadMessages ?? 0 }}</span>
         </a>
 
         @if($sidebarStudent && $sidebarStudent->role === 'instructor')
@@ -400,5 +425,40 @@ function minervaBubble() {
 
 @livewireScripts
 @stack('scripts')
+
+{{-- Sidebar live: badge unread + apparizione thread nuovi via Reverb.
+     Subscriber al private channel user.{id}. Indipendente dal channel
+     conversation.{id} che e' attivo solo nella vista show del thread. --}}
+@if(session('student_id'))
+<script>
+(function() {
+    if (!window.Echo) return;
+    const userId = window.currentUserId;
+    const badge = document.getElementById('sidebar-unread-badge');
+
+    function bumpBadge(delta) {
+        if (!badge) return;
+        const current = parseInt(badge.textContent || '0', 10);
+        const next = Math.max(0, current + delta);
+        badge.textContent = next;
+        badge.style.display = next > 0 ? 'inline-block' : 'none';
+    }
+
+    window.Echo.private(`user.${userId}`)
+        .listen('.MessageSent', (payload) => {
+            // Se siamo sulla pagina del thread relativo, lo show.blade gia gestisce.
+            // Altrimenti bump badge sidebar.
+            const onThisThread = window.location.pathname.endsWith('/messaggi/' + payload.conversation_id);
+            if (!onThisThread) {
+                bumpBadge(+1);
+            }
+        })
+        .listen('.ConversationCreated', (payload) => {
+            // Nuovo thread aperto verso questo utente: bump badge anche se inbox non aperta
+            bumpBadge(+1);
+        });
+})();
+</script>
+@endif
 </body>
 </html>

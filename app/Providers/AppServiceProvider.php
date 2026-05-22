@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\StudentBroadcastAuth;
 use App\Models\Certificate;
 use App\Models\Conversation;
 use App\Models\Setting;
@@ -12,6 +13,7 @@ use App\Support\ExamState;
 use App\Support\StudentCourseAccess;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Event;
@@ -38,6 +40,11 @@ class AppServiceProvider extends ServiceProvider
         Certificate::observe(CertificateObserver::class);
 
         Gate::policy(Conversation::class, ConversationPolicy::class);
+
+        // Broadcasting: registra /broadcasting/auth con il nostro middleware
+        // session-based (Atheneum non usa guard Laravel), poi carica channels.php.
+        Broadcast::routes(['middleware' => ['web', StudentBroadcastAuth::class]]);
+        require base_path('routes/channels.php');
 
         // Rate limiter per la verifica pubblica del certificato. Per-IP esplicito,
         // così il budget non è condiviso tra utenti diversi dietro la stessa rotta.
