@@ -43,7 +43,17 @@ class MicrosoftAuthController extends Controller
         }
 
         $email = strtolower($rawEmail);
-        $isNoscite = str_ends_with($email, '@noscite.it');
+
+        // Setting CSV 'sso_email_domain': domini autorizzati per auto-link/auto-create
+        // via Microsoft SSO. Parsing tollera spazi e case mixed, scarta token vuoti.
+        // Empty setting → $allowedDomains=[] → $isOwnDomain=false → SSO auto-link
+        // disabilitato (utenti devono essere creati manualmente prima del primo login).
+        $allowedDomains = array_filter(array_map(
+            fn ($d) => strtolower(trim($d)),
+            explode(',', (string) atheneum_setting('sso_email_domain', ''))
+        ));
+        $emailDomain = strtolower(substr(strrchr($email, '@'), 1));
+        $isOwnDomain = !empty($allowedDomains) && in_array($emailDomain, $allowedDomains, true);
 
         // Tutti i fallimenti di authorization restituiscono lo stesso messaggio utente:
         // l'attaccante non deve poter distinguere account inesistenti, non abilitati,
@@ -70,8 +80,8 @@ class MicrosoftAuthController extends Controller
                 }
 
                 // 4) Primo SSO su Student preesistente con microsoft_id null:
-                //    bind ammesso solo per email whitelist @noscite.it.
-                if ($student->microsoft_id === null && !$isNoscite) {
+                //    bind ammesso solo per email di dominio interno (sso_email_domain).
+                if ($student->microsoft_id === null && !$isOwnDomain) {
                     Log::warning('SSO: bind blocked, account not whitelisted', [
                         'email' => $email,
                         'student_id' => $student->id,
@@ -80,8 +90,8 @@ class MicrosoftAuthController extends Controller
                     return redirect()->route('student.login')->with('error', $denyMessage);
                 }
             } else {
-                // 5) Email mai vista: signup automatico solo per @noscite.it (instructor).
-                if (!$isNoscite) {
+                // 5) Email mai vista: signup automatico solo per dominio interno (instructor).
+                if (!$isOwnDomain) {
                     Log::warning('SSO: signup blocked, email not registered', [
                         'email' => $email,
                         'attempted_microsoft_id' => $azureId,
@@ -102,7 +112,7 @@ class MicrosoftAuthController extends Controller
         // Da qui: $student è valido e autorizzato a procedere.
         $student->microsoft_id = $azureId;
 
-        if ($isNoscite) {
+        if ($isOwnDomain) {
             $student->role = 'instructor';
             // auto_enroll_all_courses NON viene più impostato qui:
             // è un privilegio riservato all'amministratore, gestito
