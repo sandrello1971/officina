@@ -36,6 +36,7 @@
         <a href="/admin/knowledge-base" class="nav-item {{ request()->routeIs('admin.knowledge-base.*') ? 'active' : '' }}">📓 Knowledge Base</a>
         <a href="/admin/analytics" class="nav-item {{ request()->routeIs('admin.analytics') ? 'active' : '' }}">&#128200; Analytics</a>
         <a href="{{ route('admin.admins.index') }}" class="nav-item {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}">&#128737; Amministratori</a>
+        <a href="{{ route('admin.security.2fa.show') }}" class="nav-item {{ request()->routeIs('admin.security.2fa.*') ? 'active' : '' }}">&#128274; Sicurezza 2FA</a>
         <a href="{{ route('admin.settings.index') }}" class="nav-item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">&#9881; Impostazioni</a>
     </nav>
     <div style="position:absolute; bottom:0; left:0; right:0; padding:16px 20px; border-top:1px solid rgba(85,177,174,0.1);">

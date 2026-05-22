@@ -31,6 +31,16 @@ class AdminAuthController extends Controller
         // 1) Sorgente primaria: tabella admins
         $admin = Admin::where('email', $email)->first();
         if ($admin && $admin->is_active && Hash::check($request->password, $admin->password)) {
+            // Se 2FA attivo: intercetta prima del login session.
+            // Salva l'admin ID nella session "pending" e redirect al challenge.
+            if ($admin->hasTwoFactorEnabled()) {
+                $request->session()->put('admin_2fa_pending_id', $admin->id);
+                Log::info('[admin] login password OK, 2FA challenge required', [
+                    'admin_id' => $admin->id,
+                    'email' => $admin->email,
+                ]);
+                return redirect()->route('admin.2fa.challenge');
+            }
             session(['admin_logged_in' => true, 'admin_email' => $admin->email]);
             Log::info('[admin] login via account DB', ['email' => $admin->email]);
             return redirect()->route('admin.dashboard');
