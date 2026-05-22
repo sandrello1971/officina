@@ -137,6 +137,19 @@
                   style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center; display:{{ !empty($unreadMessages) ? 'inline-block' : 'none' }};">{{ $unreadMessages ?? 0 }}</span>
         </a>
 
+        @php
+            // Mostra "Impostazioni" a chiunque insegni almeno un corso (DB-based,
+            // non role-based: copre il caso admin che insegna senza role=instructor)
+            $isAnyCourseInstructor = $sidebarStudent
+                && \DB::table('course_instructor')->where('instructor_id', $sidebarStudent->id)->exists();
+        @endphp
+        @if($isAnyCourseInstructor)
+        <a href="{{ route('student.instructor_settings.index') }}"
+           class="nav-item {{ request()->routeIs('student.instructor_settings.*') ? 'active' : '' }}">
+            <span>⚙️</span> Impostazioni formatore
+        </a>
+        @endif
+
         @if($sidebarStudent && $sidebarStudent->role === 'instructor')
         <a href="{{ route('student.knowledge_base.index') }}"
            class="nav-item {{ request()->routeIs('student.knowledge_base.*') ? 'active' : '' }}">

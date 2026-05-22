@@ -115,6 +115,10 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/course/{course:slug}/video-search', [App\Http\Controllers\Student\VideoController::class, 'searchInCourse'])->name('video.search.course');
         Route::get('/course/{course:slug}/module/{module}/video-search', [App\Http\Controllers\Student\VideoController::class, 'searchInModule'])->name('video.search.module');
 
+        // Impostazioni formatore (Fase D) — toggle accepts_dm per corso
+        Route::get('/formatore/impostazioni', [App\Http\Controllers\Student\InstructorSettingsController::class, 'index'])->name('instructor_settings.index');
+        Route::patch('/formatore/impostazioni/dm', [App\Http\Controllers\Student\InstructorSettingsController::class, 'updateDm'])->name('instructor_settings.updateDm');
+
         // Messaggi (DM) — backend Fase A (UI Fase B, Reverb Fase C)
         Route::prefix('messaggi')->name('messages.')->group(function () {
             Route::get('/',                          [App\Http\Controllers\Student\ConversationController::class, 'index'])->name('index');
