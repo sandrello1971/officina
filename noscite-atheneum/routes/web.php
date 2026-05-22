@@ -169,6 +169,10 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::resource('courses.modules', App\Http\Controllers\Admin\ModuleController::class);
     Route::resource('courses.modules.materials', App\Http\Controllers\Admin\MaterialController::class);
 
+    // Mappe mentali moduli (Claude API generated, markmap-compatible)
+    Route::post('courses/{course}/modules/{module}/mindmap/generate', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'generate'])->name('courses.modules.mindmap.generate');
+    Route::patch('courses/{course}/modules/{module}/mindmap', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'update'])->name('courses.modules.mindmap.update');
+
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')
         ->group(function () {
