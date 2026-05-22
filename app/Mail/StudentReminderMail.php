@@ -17,7 +17,7 @@ class StudentReminderMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: '📚 Ti aspettiamo su Atheneum Noscite');
+        return new Envelope(subject: '📚 Ti aspettiamo su ' . atheneum_setting('instance_name', 'Atheneum'));
     }
 
     public function content(): Content
