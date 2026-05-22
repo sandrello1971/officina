@@ -3,17 +3,15 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Atheneum Admin Whitelist
+    | Atheneum Admin Whitelist — DEPRECATO (P1.2)
     |--------------------------------------------------------------------------
-    | Email autorizzate ad accedere ad /admin via SSO Microsoft.
-    | Per aggiungere nuovi admin: aggiungi l'email a questo array,
-    | l'utente deve comunque avere account Microsoft nel tenant Noscite.
-    | Nessun record DB: l'accesso avviene solo via session keys
-    | (admin_logged_in, admin_email) identiche al login email+password.
+    | La whitelist e' ora gestita via DB nella tabella admins, modificabile
+    | dalla UI /admin/admins (AdminAccountController). Questo array vuoto
+    | resta come rete di sicurezza: se qualche codice legacy lo consulta
+    | ancora, ritorna [] invece di esplodere. Da rimuovere completamente
+    | quando saremo certi che nessun altro legge questa chiave.
     */
-    'admins' => [
-        'sandrello@noscite.it',
-    ],
+    'admins' => [],
 
     /*
     |--------------------------------------------------------------------------

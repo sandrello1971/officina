@@ -106,7 +106,8 @@ class MicrosoftAuthController extends Controller
             $student->role = 'instructor';
             // auto_enroll_all_courses NON viene più impostato qui:
             // è un privilegio riservato all'amministratore, gestito
-            // manualmente e persistito a DB. Vedi config('atheneum.admins').
+            // manualmente e persistito a DB. Gli admin sono ora nella
+            // tabella admins (vedi /admin/admins UI), non più in config.
         } elseif (empty($student->role)) {
             $student->role = 'student';
         }
