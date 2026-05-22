@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Events\ConversationCreated;
+use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\StoreConversationRequest;
 use App\Models\Conversation;
@@ -124,6 +126,14 @@ class ConversationController extends Controller
                 ]);
             }
         }
+
+        // Broadcast real-time (Fase C):
+        // - ConversationCreated → user.{recipient}: inbox + sidebar live
+        // - MessageSent → conversation.{id} + user.{recipient}: thread + badge
+        $message->load('sender');
+        $conversation->load(['student', 'instructor', 'course']);
+        broadcast(new ConversationCreated($conversation, $user->id))->toOthers();
+        broadcast(new MessageSent($conversation, $message))->toOthers();
 
         Log::info('Nuova conversation creata', [
             'conversation_id' => $conversation->id,
