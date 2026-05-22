@@ -4,7 +4,7 @@
 
             {{-- Logo --}}
             <a href="{{ route('home') }}" class="flex-shrink-0 flex items-center gap-2">
-                <img src="/images/logo.png" alt="Atheneum Noscite" class="h-10 w-auto">
+                <img src="/images/logo.png" alt="{{ atheneum_setting('instance_name', 'Atheneum') }}" class="h-10 w-auto">
                 <span class="hidden sm:block text-sm font-semibold text-gray-900">Atheneum</span>
             </a>
 

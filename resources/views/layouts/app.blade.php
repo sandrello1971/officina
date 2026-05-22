@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
-    <title>@yield('title', 'Atheneum Noscite') — Atheneum Noscite</title>
+    <title>@yield('title', atheneum_setting('instance_name', 'Atheneum')) — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
     <meta name="description" content="@yield('description', 'Atheneum Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: CONSILIUM, INITIUM, STRUCTURA, AI AGENTS & MCP.')">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Atheneum Noscite">
+    <meta property="og:site_name" content="{{ atheneum_setting('instance_name', 'Atheneum') }}">
     <meta property="og:locale" content="it_IT">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:title" content="@yield('og_title', View::getSection('title') ?? 'Atheneum Noscite — Formazione AI per PMI')">
