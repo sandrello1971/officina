@@ -137,6 +137,13 @@
                   style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center; display:{{ !empty($unreadMessages) ? 'inline-block' : 'none' }};">{{ $unreadMessages ?? 0 }}</span>
         </a>
 
+        <a href="{{ route('student.announcements.index') }}"
+           class="nav-item {{ request()->routeIs('student.announcements.*') ? 'active' : '' }}">
+            <span>📢</span> Annunci
+            <span id="sidebar-announcements-badge"
+                  style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center; display:none;">0</span>
+        </a>
+
         @php
             // Mostra "Impostazioni" a chiunque insegni almeno un corso (DB-based,
             // non role-based: copre il caso admin che insegna senza role=instructor)
@@ -457,6 +464,15 @@ function minervaBubble() {
         badge.style.display = next > 0 ? 'inline-block' : 'none';
     }
 
+    const annBadge = document.getElementById('sidebar-announcements-badge');
+    function bumpAnnBadge(delta) {
+        if (!annBadge) return;
+        const current = parseInt(annBadge.textContent || '0', 10);
+        const next = Math.max(0, current + delta);
+        annBadge.textContent = next;
+        annBadge.style.display = next > 0 ? 'inline-block' : 'none';
+    }
+
     window.Echo.private(`user.${userId}`)
         .listen('.MessageSent', (payload) => {
             // Se siamo sulla pagina del thread relativo, lo show.blade gia gestisce.
@@ -469,6 +485,13 @@ function minervaBubble() {
         .listen('.ConversationCreated', (payload) => {
             // Nuovo thread aperto verso questo utente: bump badge anche se inbox non aperta
             bumpBadge(+1);
+        })
+        .listen('.AnnouncementSent', (payload) => {
+            // Nuovo annuncio: bump badge "Annunci" (skip se siamo gia' sulla pagina annunci)
+            const onAnnouncements = window.location.pathname.startsWith('/learn/annunci');
+            if (!onAnnouncements) {
+                bumpAnnBadge(+1);
+            }
         });
 })();
 </script>

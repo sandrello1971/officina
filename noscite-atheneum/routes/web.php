@@ -119,6 +119,12 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/formatore/impostazioni', [App\Http\Controllers\Student\InstructorSettingsController::class, 'index'])->name('instructor_settings.index');
         Route::patch('/formatore/impostazioni/dm', [App\Http\Controllers\Student\InstructorSettingsController::class, 'updateDm'])->name('instructor_settings.updateDm');
 
+        // Annunci (broadcast 1-to-many formatore → studenti corso)
+        Route::get('/annunci',              [App\Http\Controllers\Student\AnnouncementController::class, 'index'])->name('announcements.index');
+        Route::get('/annunci/nuovo',        [App\Http\Controllers\Student\AnnouncementController::class, 'create'])->name('announcements.create');
+        Route::post('/annunci',             [App\Http\Controllers\Student\AnnouncementController::class, 'store'])->name('announcements.store');
+        Route::get('/annunci/{announcement}', [App\Http\Controllers\Student\AnnouncementController::class, 'show'])->name('announcements.show');
+
         // Messaggi (DM) — backend Fase A (UI Fase B, Reverb Fase C)
         Route::prefix('messaggi')->name('messages.')->group(function () {
             Route::get('/',                          [App\Http\Controllers\Student\ConversationController::class, 'index'])->name('index');
