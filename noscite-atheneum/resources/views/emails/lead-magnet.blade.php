@@ -15,6 +15,6 @@ A presto,
 **Il team Noscite**
 
 <x-mail::subcopy>
-Hai ricevuto questa email perché hai compilato il modulo su atheneum.noscite.it/mappa-percorso. Se non riconosci la richiesta, ignora pure questa email — non sei iscritto a nessuna mailing list. Trattiamo i tuoi dati secondo la nostra [privacy policy]({{ route('privacy') }}).
+Hai ricevuto questa email perché hai compilato il modulo su {{ url('/mappa-percorso') }}. Se non riconosci la richiesta, ignora pure questa email — non sei iscritto a nessuna mailing list. Trattiamo i tuoi dati secondo la nostra [privacy policy]({{ route('privacy') }}).
 </x-mail::subcopy>
 </x-mail::message>

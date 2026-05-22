@@ -71,14 +71,14 @@
                 <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:10px 14px;
                      font-family:monospace; font-size:0.85rem;">
                     <div style="color:#E8EDED; margin-bottom:4px;">
-                        📧 <span style="color:#55B1AE;">demo@atheneum.noscite.it</span>
+                        📧 <span style="color:#55B1AE;">{{ atheneum_setting('demo_user_email', 'demo@atheneum.noscite.it') }}</span>
                     </div>
                     <div style="color:#E8EDED;">
                         🔑 <span style="color:#55B1AE;">Demo2024</span>
                     </div>
                 </div>
                 <button onclick="
-                    document.querySelector('input[name=email]').value='demo@atheneum.noscite.it';
+                    document.querySelector('input[name=email]').value='{{ atheneum_setting('demo_user_email', 'demo@atheneum.noscite.it') }}';
                     document.querySelector('input[name=password]').value='Demo2024';
                 " style="margin-top:10px; width:100%; padding:8px; background:#E28A53; color:white;
                          border:none; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">
