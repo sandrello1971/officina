@@ -322,6 +322,25 @@
         @endif
         @endif
 
+        @if($module->hasMindmap())
+        <div style="background:white; border-radius:12px; padding:20px; margin-bottom:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                <h3 style="font-weight:700; color:#1A1F1F; font-size:0.9rem;">🧠 Mappa mentale del modulo</h3>
+                <span style="font-size:0.7rem; color:#8A9696;">
+                    Aggiornata {{ $module->mindmap_generated_at?->diffForHumans() ?? '—' }}
+                </span>
+            </div>
+            @if($module->isMindmapStale())
+            <div style="background:rgba(226,138,83,0.08); border-left:3px solid #E28A53; padding:8px 12px; border-radius:4px; margin-bottom:12px; color:#7A5230; font-size:0.78rem;">
+                ⚠ Il contenuto del modulo è stato aggiornato dopo la generazione di questa mappa. Alcuni concetti potrebbero non essere riflessi.
+            </div>
+            @endif
+            <div class="markmap" style="width:100%; height:520px; border:1px solid #F5F7F7; border-radius:8px; overflow:hidden;">
+                <script type="text/template">{!! $module->mindmap_markdown !!}</script>
+            </div>
+        </div>
+        @endif
+
         @if($materials->isNotEmpty())
         <div style="background:white; border-radius:12px; padding:20px; margin-bottom:20px;">
             <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:12px; font-size:0.9rem;">📎 Materiali del modulo</h3>
@@ -504,6 +523,14 @@
     </div>
 
 </div>
+
+@if($module->hasMindmap())
+@push('scripts')
+{{-- Markmap autoloader: scopre i div.markmap nella pagina e li renderizza
+     leggendo lo <script type="text/template"> contenuto. Zero JS custom. --}}
+<script src="https://cdn.jsdelivr.net/npm/markmap-autoloader@0.18"></script>
+@endpush
+@endif
 
 @push('scripts')
 <script>
