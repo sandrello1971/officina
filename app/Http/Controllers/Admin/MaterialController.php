@@ -23,10 +23,11 @@ class MaterialController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'type' => 'required|in:file,video,url',
+            'type' => 'required|in:file,video,url,canvas',
             'file' => 'required_if:type,file|file|max:204800|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt',
             'video_file' => 'required_if:type,video|file|max:2048000|mimes:mp4,mov,avi,webm',
             'url' => 'required_if:type,url|nullable|url|max:500',
+            'canvas_file' => 'required_if:type,canvas|file|max:5120|extensions:html,htm',
         ]);
 
         $material = new Material();
@@ -68,6 +69,15 @@ class MaterialController extends Controller
         } elseif ($request->type === 'url') {
             $material->external_url = $request->url;
             $material->file_type = 'url';
+        } elseif ($request->type === 'canvas' && $request->hasFile('canvas_file')) {
+            $file = $request->file('canvas_file');
+            // Stessa policy dei PDF: disk 'local' (= storage/app/private), accesso solo
+            // tramite Student\MaterialController::canvas() con verifica iscrizione.
+            $path = $file->store("materials/{$course->slug}", 'local');
+            $material->file_path = $path;
+            $material->file_type = 'canvas';
+            $material->file_size = $file->getSize();
+            $material->is_downloadable = false;
         }
 
         $material->save();

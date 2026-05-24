@@ -42,6 +42,12 @@
                         <span style="font-size:1.2rem;">🔗</span>
                         <span style="font-size:0.875rem; font-weight:600; color:#1A1F1F;">Link esterno</span>
                     </label>
+                    <label style="display:flex; align-items:center; gap:8px; padding:10px 16px; border:2px solid #C8D0D0; border-radius:8px; cursor:pointer; flex:1;"
+                           onclick="showType('canvas')" id="tab-canvas" class="type-tab">
+                        <input type="radio" name="type" value="canvas" style="display:none;">
+                        <span style="font-size:1.2rem;">🎯</span>
+                        <span style="font-size:0.875rem; font-weight:600; color:#1A1F1F;">Canvas interattivo</span>
+                    </label>
                 </div>
             </div>
 
@@ -85,6 +91,24 @@
                        style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
             </div>
 
+            <div id="section-canvas" style="display:none; margin-bottom:16px;">
+                <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">File HTML del canvas *</label>
+                <input type="file" name="canvas_file" accept=".html,.htm"
+                       style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none; background:white;">
+
+                <div style="margin-top:14px; padding:12px 14px; background:#F0FAFA; border-left:4px solid #55B1AE; border-radius:6px; font-size:0.78rem; color:#1A1F1F; line-height:1.55;">
+                    <div style="font-weight:700; margin-bottom:6px;">📋 Contratto canvas persistente</div>
+                    Per salvare automaticamente le risposte dello studente in <code style="background:white; padding:1px 4px; border-radius:3px;">student_canvas_data</code>, l'HTML deve contenere uno script che:
+                    <ol style="margin:6px 0 0 18px; padding:0;">
+                        <li>Ricavi il <code>material_id</code> dall'URL (path <code>/learn/material/&lt;uuid&gt;/canvas</code>).</li>
+                        <li>Faccia <code>GET /learn/canvas/{material_id}/data</code> al caricamento per ripopolare i campi.</li>
+                        <li>Faccia <code>PATCH /learn/canvas/{material_id}/data</code> con header <code>X-XSRF-TOKEN</code> (dal cookie <code>XSRF-TOKEN</code>) e body <code>{"data": {...}}</code> a ogni modifica (con debounce).</li>
+                    </ol>
+                    Esempio funzionante: <code>storage/app/private/materials/consilium/canvas-1-mappa-processi.html</code>.<br>
+                    I canvas statici (senza persistenza, come quelli di Primus) sono comunque accettati: vengono mostrati ma le risposte non vengono salvate.
+                </div>
+            </div>
+
             <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
                 <a href="{{ route('admin.courses.modules.edit', [$course, $module]) }}"
                    style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">
@@ -101,7 +125,7 @@
 
 <script>
 function showType(type) {
-    ['file','video','url'].forEach(t => {
+    ['file','video','url','canvas'].forEach(t => {
         document.getElementById('section-' + t).style.display = t === type ? 'block' : 'none';
         document.getElementById('tab-' + t).style.borderColor = t === type ? '#55B1AE' : '#C8D0D0';
     });
