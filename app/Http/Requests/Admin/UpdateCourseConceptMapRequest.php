@@ -9,7 +9,8 @@ class UpdateCourseConceptMapRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return session()->has('admin_id');
+        // La rotta è già protetta dal middleware admin.auth: nessun check aggiuntivo qui.
+        return true;
     }
 
     public function rules(): array
