@@ -20,6 +20,24 @@
           style="background:white; border-radius:10px; padding:24px;">
         @csrf
         <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:0.8rem; font-weight:600; color:#1A1F1F; margin-bottom:4px;">Ambito</label>
+            <select name="module_id" style="width:100%; padding:9px 12px; border:1px solid #D1D5DB; border-radius:6px; font-size:0.9rem;">
+                <option value="" {{ $hasCourseMap ? 'disabled' : '' }}>
+                    🌐 Intero corso {{ $hasCourseMap ? '(esiste già)' : '' }}
+                </option>
+                @foreach($modules as $mod)
+                    @php $used = in_array($mod->id, $usedModuleIds); @endphp
+                    <option value="{{ $mod->id }}" {{ $used ? 'disabled' : '' }} {{ old('module_id')===$mod->id ? 'selected' : '' }}>
+                        📚 Modulo {{ $mod->sort_order }} — {{ $mod->title }} {{ $used ? '(esiste già)' : '' }}
+                    </option>
+                @endforeach
+            </select>
+            <p style="font-size:0.72rem; color:#8A9696; margin-top:4px;">
+                Una mappa per modulo + una opzionale per l'intero corso.
+            </p>
+        </div>
+
+        <div style="margin-bottom:14px;">
             <label style="display:block; font-size:0.8rem; font-weight:600; color:#1A1F1F; margin-bottom:4px;">Titolo</label>
             <input type="text" name="title" required maxlength="255" value="{{ old('title') }}"
                    placeholder="Es. Mappa concettuale del corso"

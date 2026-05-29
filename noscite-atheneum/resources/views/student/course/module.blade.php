@@ -344,6 +344,40 @@
         </div>
         @endif
 
+        @if(isset($moduleConceptMap) && $moduleConceptMap)
+        <div style="background:white; border:1px solid #E8F5F5; border-left:4px solid #55B1AE;
+                    border-radius:12px; padding:14px 20px; margin-bottom:20px;
+                    display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <div style="font-size:1.2rem;">🧭</div>
+            <div style="flex:1; min-width:180px;">
+                <div style="font-weight:700; color:#1A1F1F; font-size:0.9rem;">
+                    {{ $moduleConceptMap->title }}
+                    @if($moduleConceptMapForked)
+                        <span style="margin-left:6px; padding:2px 8px; background:#FEF3C7; color:#92400E; border-radius:4px; font-size:0.65rem; font-weight:700;">PERSONALIZZATA</span>
+                    @endif
+                </div>
+                <div style="color:#8A9696; font-size:0.72rem; margin-top:2px;">
+                    Mappa concettuale di questo modulo: i concetti e le loro relazioni.
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <a href="{{ route('student.course.concept-map.show', [$course->slug, $moduleConceptMap->id]) }}"
+                   style="padding:6px 12px; background:#55B1AE; color:white;
+                          border-radius:6px; text-decoration:none; font-size:0.78rem; font-weight:600;">
+                    Apri mappa
+                </a>
+                @if($moduleConceptMapForked)
+                <a href="{{ route('student.course.concept-map.my', [$course->slug, $moduleConceptMap->id]) }}"
+                   style="padding:6px 12px; background:white; color:#55B1AE;
+                          border:1px solid #55B1AE; border-radius:6px;
+                          text-decoration:none; font-size:0.78rem; font-weight:600;">
+                    La mia versione
+                </a>
+                @endif
+            </div>
+        </div>
+        @endif
+
         @if($materials->isNotEmpty())
         <div style="background:white; border-radius:12px; padding:20px; margin-bottom:20px;">
             <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:12px; font-size:0.9rem;">📎 Materiali del modulo</h3>

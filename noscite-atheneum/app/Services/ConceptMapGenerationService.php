@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Course;
+use App\Models\Module;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -28,9 +29,13 @@ class ConceptMapGenerationService
     private const MAX_EDGES = 40;
 
     /**
+     * Genera una mappa concettuale.
+     *  - $module = null → mappa "intero corso" (aggregata di tutti i moduli)
+     *  - $module valorizzato → mappa del singolo modulo
+     *
      * @return array{nodes: array<int,array>, edges: array<int,array>}
      */
-    public function generate(Course $course): array
+    public function generate(Course $course, ?Module $module = null): array
     {
         $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
 
@@ -38,27 +43,39 @@ class ConceptMapGenerationService
             throw new RuntimeException('Anthropic API key non configurata (config/services.php o env ANTHROPIC_API_KEY)');
         }
 
-        $modules = $course->modules()->orderBy('sort_order')->get();
-        if ($modules->isEmpty()) {
-            throw new RuntimeException('Il corso non ha moduli su cui costruire la mappa concettuale');
+        if ($module !== null) {
+            if (empty(trim(strip_tags($module->content ?? '')))) {
+                throw new RuntimeException('Il modulo non ha contenuto su cui costruire la mappa concettuale');
+            }
+            $aggregated = trim(strip_tags($module->content));
+            $scopeLabel = 'Modulo: ' . $module->title;
+            $modulesCount = 1;
+        } else {
+            $modules = $course->modules()->orderBy('sort_order')->get();
+            if ($modules->isEmpty()) {
+                throw new RuntimeException('Il corso non ha moduli su cui costruire la mappa concettuale');
+            }
+            $aggregated = $modules
+                ->map(fn ($m) => '## ' . $m->title . "\n" . trim(strip_tags($m->content ?? '')))
+                ->implode("\n\n---\n\n");
+            $scopeLabel = 'Corso: ' . $course->name;
+            $modulesCount = $modules->count();
         }
-
-        $aggregated = $modules
-            ->map(fn ($m) => '## ' . $m->title . "\n" . trim(strip_tags($m->content ?? '')))
-            ->implode("\n\n---\n\n");
 
         if (mb_strlen($aggregated) > self::MAX_CONTENT_CHARS) {
             $aggregated = mb_substr($aggregated, 0, self::MAX_CONTENT_CHARS)
                 . "\n[...contenuto troncato per limiti di token]";
         }
 
-        $systemPrompt = $this->buildSystemPrompt();
-        $userMessage = $this->buildUserMessage($course->name, $aggregated);
+        $systemPrompt = $this->buildSystemPrompt($module !== null);
+        $userMessage = $this->buildUserMessage($scopeLabel, $aggregated, $module !== null);
 
         Log::info('ConceptMap generation request', [
             'course_id' => $course->id,
             'course_name' => $course->name,
-            'modules_count' => $modules->count(),
+            'module_id' => $module?->id,
+            'module_title' => $module?->title,
+            'modules_count' => $modulesCount,
             'content_chars' => mb_strlen($aggregated),
         ]);
 
@@ -114,7 +131,7 @@ class ConceptMapGenerationService
         return $validated;
     }
 
-    private function buildSystemPrompt(): string
+    private function buildSystemPrompt(bool $isModuleLevel = false): string
     {
         $domainContext = function_exists('atheneum_setting')
             ? atheneum_setting('assistant_domain_context', '')
@@ -123,11 +140,16 @@ class ConceptMapGenerationService
             ? "Il pubblico target è: {$domainContext}."
             : '';
 
-        $maxNodes = self::MAX_NODES;
-        $maxEdges = self::MAX_EDGES;
+        $maxNodes = $isModuleLevel ? 15 : self::MAX_NODES;
+        $maxEdges = $isModuleLevel ? 25 : self::MAX_EDGES;
+        $scopeHint = $isModuleLevel
+            ? 'Stai costruendo la mappa concettuale di UN SINGOLO MODULO (non dell\'intero corso). Mantieni focus stretto su questo modulo.'
+            : 'Stai costruendo la mappa concettuale dell\'INTERO CORSO. Privilegia archi che attraversano più moduli.';
 
         return <<<TXT
 Sei un esperto pedagogo specializzato nella costruzione di MAPPE CONCETTUALI (modello Novak/Cmap), NON mappe mentali.
+
+{$scopeHint}
 
 Una mappa concettuale è un GRAFO DIRETTO in cui:
 - I NODI sono concetti chiave (brevi, sostantivi/locuzioni nominali)
@@ -143,9 +165,8 @@ REGOLE OBBLIGATORIE:
 3. Ogni nodo: {"id":"n1", "label":"...", "description":"..."} — id univoco (n1,n2,...), label MAX 6 parole, description MAX 25 parole.
 4. Ogni arco: {"id":"e1", "from":"n1", "to":"n2", "label":"..."} — label OBBLIGATORIA (verbo/locuzione), MAX 4 parole.
 5. Massimo {$maxNodes} nodi e {$maxEdges} archi.
-6. Estrai SOLO concetti effettivamente presenti nel contenuto del corso. NON inventare.
-7. Privilegia archi che attraversano più moduli del corso (la mappa è di CORSO, non di singolo modulo).
-8. Da 1 a 3 nodi possono essere identificati come "ancore" (concetti centrali del corso) e linkati a più di 3 archi.
+6. Estrai SOLO concetti effettivamente presenti nel contenuto. NON inventare.
+7. Da 1 a 3 nodi possono essere identificati come "ancore" (concetti centrali) e linkati a più di 3 archi.
 9. NON aggiungere posizioni x/y: layout calcolato dal frontend.
 
 ESEMPIO di output corretto:
@@ -153,17 +174,19 @@ ESEMPIO di output corretto:
 TXT;
     }
 
-    private function buildUserMessage(string $courseName, string $aggregatedContent): string
+    private function buildUserMessage(string $scopeLabel, string $content, bool $isModuleLevel = false): string
     {
+        $verb = $isModuleLevel ? 'del modulo' : 'del corso';
+
         return <<<TXT
-Corso: **{$courseName}**
+{$scopeLabel}
 
-Contenuti aggregati dei moduli:
+Contenuti:
 ---
-{$aggregatedContent}
+{$content}
 ---
 
-Costruisci la mappa concettuale del corso. Rispondi con solo l'oggetto JSON.
+Costruisci la mappa concettuale {$verb}. Rispondi con solo l'oggetto JSON.
 TXT;
     }
 

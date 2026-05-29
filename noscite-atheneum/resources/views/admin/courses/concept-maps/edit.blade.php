@@ -34,9 +34,15 @@
             <a href="/admin/courses/{{ $course->id }}/concept-maps" style="color:#8A9696; font-size:0.8rem;">&larr; Mappe concettuali</a>
             <h2 style="font-size:1.15rem; font-weight:700; color:#1A1F1F; margin-top:4px;">
                 {{ $map->title }}
+                @if($map->isCourseLevel())
+                    <span style="margin-left:6px; padding:2px 8px; background:rgba(226,138,83,0.13); color:#E28A53; border-radius:4px; font-size:0.65rem; font-weight:700;">🌐 INTERO CORSO</span>
+                @else
+                    <span style="margin-left:6px; padding:2px 8px; background:#E8F5F5; color:#3D8B88; border-radius:4px; font-size:0.65rem; font-weight:700;">📚 MODULO</span>
+                @endif
             </h2>
             <div style="font-size:0.75rem; color:#8A9696; margin-top:2px;">
                 Corso: <strong>{{ $course->name }}</strong>
+                @if($map->isModuleLevel() && $map->module) &middot; Modulo: <strong>{{ $map->module->title }}</strong> @endif
                 @if($map->ai_generated_at) &middot; AI generato {{ $map->ai_generated_at->diffForHumans() }} @endif
             </div>
         </div>
