@@ -281,7 +281,15 @@
                         },
                         body: JSON.stringify(payload),
                     });
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    if (!res.ok) {
+                        const body = await res.json().catch(() => null);
+                        const flatErrors = body?.errors
+                            ? Object.entries(body.errors).map(([k,v]) => `• ${k}: ${Array.isArray(v)?v.join(', '):v}`).join('\n')
+                            : (body?.message || ('HTTP ' + res.status));
+                        console.error('Save failed', res.status, body);
+                        window.alert('Salvataggio fallito (HTTP ' + res.status + ')\n\n' + flatErrors);
+                        throw new Error('HTTP ' + res.status);
+                    }
                     this.status = 'saved';
                 } catch (e) {
                     console.error(e);
