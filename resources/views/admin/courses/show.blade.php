@@ -32,6 +32,37 @@
     </div>
     @endif
 
+    {{-- Mappe concettuali (quick access) --}}
+    <div style="background:white; border-radius:10px; padding:16px 20px; margin-bottom:20px;
+                display:flex; align-items:center; justify-content:space-between; gap:14px;
+                border-left:4px solid #55B1AE;">
+        <div style="flex:1;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="font-size:1.2rem;">🧭</div>
+                <h3 style="font-weight:700; color:#1A1F1F;">Mappe concettuali del corso</h3>
+                <span style="padding:2px 8px; background:#E8F5F5; color:#3D8B88; border-radius:4px; font-size:0.7rem; font-weight:700;">
+                    {{ $course->conceptMaps()->count() }} {{ $course->conceptMaps()->count() === 1 ? 'mappa' : 'mappe' }}
+                </span>
+            </div>
+            <div style="font-size:0.78rem; color:#8A9696; margin-top:4px;">
+                Grafi di concetti con relazioni esplicite (à la Novak/Cmap). Generabili con AI o create manualmente.
+                Gli studenti possono forkare la versione personale.
+            </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <a href="/admin/courses/{{ $course->id }}/concept-maps"
+               style="padding:8px 16px; background:#55B1AE; color:white;
+                      border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
+                Gestisci mappe
+            </a>
+            <a href="/admin/courses/{{ $course->id }}/concept-maps/create"
+               style="padding:8px 16px; background:white; color:#55B1AE;
+                      border:1px solid #55B1AE; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
+                + Nuova
+            </a>
+        </div>
+    </div>
+
     {{-- Moduli --}}
     <div style="background:white; border-radius:10px; overflow:hidden;">
         <div style="padding:16px 20px; border-bottom:1px solid #F5F7F7; display:flex; align-items:center; justify-content:space-between;">

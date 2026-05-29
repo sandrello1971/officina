@@ -3,10 +3,22 @@
 @section('content')
 
 <div style="max-width:700px;">
-    <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
         <a href="/admin/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
         <span style="color:#C8D0D0;">|</span>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Modifica {{ $course->name }}</h2>
+        <div style="margin-left:auto; display:flex; gap:6px;">
+            <a href="/admin/courses/{{ $course->id }}"
+               style="padding:6px 12px; background:white; color:#1A1F1F; border:1px solid #D1D5DB;
+                      border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
+                &#128462; Dettaglio
+            </a>
+            <a href="/admin/courses/{{ $course->id }}/concept-maps"
+               style="padding:6px 12px; background:#E8F5F5; color:#3D8B88; border:1px solid #55B1AE;
+                      border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
+                🧭 Mappe concettuali
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -97,7 +109,7 @@
                 <div style="background:linear-gradient(135deg,#1A1F1F,#252B2B); border-radius:10px; padding:20px; margin-top:8px;">
                     <h3 style="color:#55B1AE; font-weight:700; margin-bottom:12px; font-size:0.9rem;">🎬 Video del corso</h3>
                     <p style="color:#8A9696; font-size:0.75rem; margin-bottom:12px; line-height:1.5;">
-                        Il video del corso vale come video introduttivo/generale: sarà disponibile sulla pagina del corso e la trascrizione sarà indicizzata da {{ atheneum_setting('assistant_name', 'Minerva') }} per l'intero corso.
+                        Il video del corso vale come video introduttivo/generale: sarà disponibile sulla pagina del corso e la trascrizione sarà indicizzata da Minerva per l'intero corso.
                     </p>
 
                     @if($course->video_ai_id)
@@ -117,7 +129,7 @@
                         <input type="file" name="video_file" accept="video/*"
                                style="width:100%; padding:10px; border:1px dashed rgba(85,177,174,0.4); border-radius:8px; color:#8A9696; font-size:0.8rem; background:rgba(255,255,255,0.05);">
                         <p style="color:#4A5252; font-size:0.75rem; margin-top:6px;">
-                            Il video verrà trascritto automaticamente con AI e indicizzato per il chatbot {{ atheneum_setting('assistant_name', 'Minerva') }}.
+                            Il video verrà trascritto automaticamente con AI e indicizzato per il chatbot Minerva.
                         </p>
                     </div>
                 </div>
