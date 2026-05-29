@@ -154,6 +154,56 @@
     @endPushOnce
     @endif
 
+    @if(isset($conceptMaps) && $conceptMaps->isNotEmpty())
+    <div style="background:white; border:1px solid #E8F5F5; border-left:4px solid #55B1AE;
+                border-radius:12px; padding:18px 20px; margin-bottom:20px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+            <div style="font-size:1.2rem;">🧭</div>
+            <div style="font-weight:700; color:#1A1F1F; font-size:1rem;">
+                Mappe concettuali del corso
+            </div>
+            <div style="margin-left:auto; font-size:0.75rem; color:#8A9696;">
+                {{ $conceptMaps->count() }} {{ $conceptMaps->count() === 1 ? 'mappa' : 'mappe' }}
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            @foreach($conceptMaps as $cm)
+            <div style="display:flex; align-items:center; gap:12px;
+                        padding:10px 14px; background:#F5F7F7; border-radius:8px;">
+                <div style="flex:1;">
+                    <div style="font-weight:600; color:#1A1F1F; font-size:0.9rem;">
+                        {{ $cm->title }}
+                        @if(in_array($cm->id, $forkedConceptMapIds))
+                            <span style="margin-left:6px; padding:2px 8px; background:#FEF3C7; color:#92400E; border-radius:4px; font-size:0.65rem; font-weight:700;">PERSONALIZZATA</span>
+                        @endif
+                    </div>
+                    @if($cm->description)
+                    <div style="color:#8A9696; font-size:0.75rem; margin-top:2px;">
+                        {{ \Illuminate\Support\Str::limit($cm->description, 140) }}
+                    </div>
+                    @endif
+                </div>
+                <a href="{{ route('student.course.concept-map.show', [$course->slug, $cm->id]) }}"
+                   style="padding:6px 12px; background:#55B1AE; color:white;
+                          border-radius:6px; text-decoration:none;
+                          font-size:0.8rem; font-weight:600;">
+                    Apri mappa
+                </a>
+                @if(in_array($cm->id, $forkedConceptMapIds))
+                <a href="{{ route('student.course.concept-map.my', [$course->slug, $cm->id]) }}"
+                   style="padding:6px 12px; background:white; color:#55B1AE;
+                          border:1px solid #55B1AE; border-radius:6px;
+                          text-decoration:none; font-size:0.8rem; font-weight:600;">
+                    La mia versione
+                </a>
+                @endif
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     @if($instructorMaterials->isNotEmpty())
     <div style="background:linear-gradient(135deg, rgba(226,138,83,0.08), rgba(226,138,83,0.12));
                 border:1px solid rgba(226,138,83,0.3);

@@ -51,6 +51,13 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::post('/course/{course:slug}/module/{module}/complete', [App\Http\Controllers\Student\CourseController::class, 'completeModule'])->name('module.complete');
         Route::get('/course/{course:slug}/module/{module}/canvas/{canvas}', [App\Http\Controllers\Student\CourseController::class, 'canvas'])->name('module.canvas');
 
+        // Mappe concettuali a livello corso (lato studente)
+        Route::get('/course/{course:slug}/concept-maps', [App\Http\Controllers\Student\ConceptMapController::class, 'index'])->name('course.concept-maps.index');
+        Route::get('/course/{course:slug}/concept-map/{concept_map}', [App\Http\Controllers\Student\ConceptMapController::class, 'show'])->name('course.concept-map.show');
+        Route::post('/course/{course:slug}/concept-map/{concept_map}/fork', [App\Http\Controllers\Student\ConceptMapController::class, 'fork'])->name('course.concept-map.fork');
+        Route::get('/course/{course:slug}/concept-map/{concept_map}/my', [App\Http\Controllers\Student\ConceptMapController::class, 'editFork'])->name('course.concept-map.my');
+        Route::patch('/course/{course:slug}/concept-map/{concept_map}/my', [App\Http\Controllers\Student\ConceptMapController::class, 'saveFork'])->name('course.concept-map.my.save');
+
         Route::get('/quiz/{quiz}', [App\Http\Controllers\Student\QuizController::class, 'show'])->name('quiz.show');
         Route::post('/quiz/{quiz}/start', [App\Http\Controllers\Student\QuizController::class, 'start'])->name('quiz.start');
         Route::post('/quiz/{quiz}/submit', [App\Http\Controllers\Student\QuizController::class, 'submit'])
@@ -173,6 +180,10 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     // Mappe mentali moduli (Claude API generated, markmap-compatible)
     Route::post('courses/{course}/modules/{module}/mindmap/generate', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'generate'])->name('courses.modules.mindmap.generate');
     Route::patch('courses/{course}/modules/{module}/mindmap', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'update'])->name('courses.modules.mindmap.update');
+
+    // Mappe concettuali a livello corso (admin)
+    Route::resource('courses.concept-maps', App\Http\Controllers\Admin\CourseConceptMapController::class);
+    Route::post('courses/{course}/concept-maps/{concept_map}/generate', [App\Http\Controllers\Admin\CourseConceptMapController::class, 'generate'])->name('courses.concept-maps.generate');
 
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')

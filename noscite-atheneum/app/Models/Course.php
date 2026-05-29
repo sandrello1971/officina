@@ -66,6 +66,11 @@ class Course extends Model
         return $this->instructors()->count() > 1;
     }
 
+    public function conceptMaps()
+    {
+        return $this->hasMany(CourseConceptMap::class)->orderBy('sort_order')->orderBy('created_at');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

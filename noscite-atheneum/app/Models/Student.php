@@ -110,4 +110,9 @@ class Student extends Authenticatable
     {
         return $this->hasMany(StudentDocument::class);
     }
+
+    public function conceptMapForks()
+    {
+        return $this->hasMany(StudentConceptMap::class);
+    }
 }
