@@ -4,7 +4,9 @@
 
 @push('styles')
 <style>
-    .cm-viewer { background:#FFFFFF; border:1px solid #D1D5DB; border-radius:8px; height: 600px; }
+    .cm-viewer { background:#FFFFFF; border:1px solid #D1D5DB; border-radius:8px;
+                 width: 100%; height: 74vh; min-height: 560px; max-height: 820px; }
+    .vis-manipulation, .vis-edit-mode { display: none !important; }
 </style>
 @endpush
 

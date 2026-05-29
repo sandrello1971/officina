@@ -3,7 +3,11 @@
 
 @push('styles')
 <style>
-    .cm-canvas { background:#FFFFFF; border:1px solid #D1D5DB; border-radius:8px; height: 640px; }
+    .cm-canvas { background:#FFFFFF; border:1px solid #D1D5DB; border-radius:8px;
+                 width: 100%; height: 76vh; min-height: 560px; max-height: 880px; }
+    /* Nasconde il toolbar built-in di vis-network (Edit/Add/Delete galleggiante in basso a sinistra):
+       usiamo solo i nostri bottoni esterni in toolbar */
+    .vis-manipulation, .vis-edit-mode { display: none !important; }
     .cm-side label { display:block; font-size:0.75rem; font-weight:600; color:#1A1F1F; margin-bottom:4px; }
     .cm-side input, .cm-side textarea, .cm-side select {
         width:100%; padding:7px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:0.85rem;
