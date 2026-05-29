@@ -18,6 +18,7 @@
         .nav-item:hover, .nav-item.active { background:rgba(85,177,174,0.15); color:#55B1AE; }
     </style>
     @livewireStyles
+    @stack('styles')
 </head>
 <body>
 <aside class="sidebar">
