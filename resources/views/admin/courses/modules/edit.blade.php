@@ -51,9 +51,18 @@
             <div style="background:white; border-radius:10px; padding:20px;">
                 <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:16px; font-size:0.9rem;">Materiali ({{ $module->materials->count() }})</h3>
                 @foreach($module->materials as $mat)
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #F5F7F7; font-size:0.8rem;">
-                    <span style="color:#4A5252;">{{ \Illuminate\Support\Str::limit($mat->title, 35) }}</span>
-                    <span style="color:#8A9696;">{{ strtoupper($mat->file_type) }}</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #F5F7F7; font-size:0.8rem;">
+                    <span style="color:#4A5252; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ \Illuminate\Support\Str::limit($mat->title, 35) }}</span>
+                    <span style="color:#8A9696; font-size:0.7rem;">{{ strtoupper($mat->file_type) }}</span>
+                    <button type="button"
+                            data-material-delete
+                            data-material-id="{{ $mat->id }}"
+                            data-material-title="{{ $mat->title }}"
+                            data-delete-url="{{ route('admin.courses.modules.materials.destroy', [$course, $module, $mat]) }}"
+                            title="Elimina materiale"
+                            style="padding:2px 6px; background:transparent; border:none; color:#c97a45; cursor:pointer; font-size:0.9rem; line-height:1;">
+                        🗑
+                    </button>
                 </div>
                 @endforeach
                 <a href="/admin/courses/{{ $course->id }}/modules/{{ $module->id }}/materials/create"
@@ -177,6 +186,95 @@
         </div>
     </form>
 </div>
+
+{{-- ==================== MODAL CONFERMA ELIMINAZIONE MATERIALE (fuori dal form modulo, no nested forms) ==================== --}}
+<div id="material-delete-modal"
+     style="display:none; position:fixed; inset:0; background:rgba(26,31,31,0.55); align-items:center; justify-content:center; z-index:1000;">
+    <div style="background:white; border-radius:12px; padding:24px; max-width:420px; width:90%; box-shadow:0 20px 50px rgba(0,0,0,0.25);">
+        <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:8px;">Eliminare il materiale?</h3>
+        <p style="font-size:0.85rem; color:#4A5252; line-height:1.5; margin-bottom:6px;">
+            Stai per eliminare <strong id="material-delete-title"></strong>.
+        </p>
+        <p style="font-size:0.78rem; color:#8A9696; line-height:1.5; margin-bottom:20px;">
+            Il file verrà rimosso dallo storage e il record cancellato dal database. L'operazione non è reversibile.
+        </p>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button type="button" id="material-delete-cancel"
+                    style="padding:8px 18px; border:1px solid #C8D0D0; background:white; color:#4A5252; border-radius:8px; font-size:0.85rem; cursor:pointer;">
+                Annulla
+            </button>
+            <button type="button" id="material-delete-confirm"
+                    style="padding:8px 18px; background:#c97a45; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">
+                Elimina
+            </button>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+(function() {
+    const modal = document.getElementById('material-delete-modal');
+    if (!modal) return;
+    const titleEl = document.getElementById('material-delete-title');
+    const cancelBtn = document.getElementById('material-delete-cancel');
+    const confirmBtn = document.getElementById('material-delete-confirm');
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrf = csrfMeta ? csrfMeta.content : '';
+    let currentUrl = null;
+
+    function openModal(url, title) {
+        currentUrl = url;
+        titleEl.textContent = title;
+        modal.style.display = 'flex';
+    }
+    function closeModal() {
+        modal.style.display = 'none';
+        currentUrl = null;
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Elimina';
+    }
+
+    document.querySelectorAll('[data-material-delete]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            openModal(btn.dataset.deleteUrl, btn.dataset.materialTitle);
+        });
+    });
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && modal.style.display !== 'none') closeModal();
+    });
+
+    confirmBtn.addEventListener('click', async () => {
+        if (!currentUrl) return;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Eliminazione…';
+        try {
+            const res = await fetch(currentUrl, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'text/html,application/xhtml+xml,application/json',
+                },
+                credentials: 'same-origin',
+            });
+            if (res.ok || res.redirected) {
+                window.location.reload();
+            } else {
+                alert('Errore eliminazione: HTTP ' + res.status);
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Elimina';
+            }
+        } catch (err) {
+            alert('Errore eliminazione: ' + err.message);
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Elimina';
+        }
+    });
+})();
+</script>
+@endpush
 
 {{-- ==================== MAPPA MENTALE (sezione separata, indipendente dal form principale) ==================== --}}
 <div style="max-width:900px; margin:20px auto 40px;">

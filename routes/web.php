@@ -11,6 +11,7 @@ Route::get('/consilium', [PageController::class, 'consilium'])->name('consilium'
 Route::get('/initium', [PageController::class, 'initium'])->name('initium');
 Route::get('/structura', [PageController::class, 'structura'])->name('structura');
 Route::get('/ai-agents-mcp', [PageController::class, 'aiAgentsMcp'])->name('ai-agents-mcp');
+Route::get('/conformita-ai-act', [PageController::class, 'conformitaAiAct'])->name('conformita-ai-act');
 Route::get('/risorse', [PageController::class, 'risorse'])->name('risorse');
 Route::get('/contatti', [PageController::class, 'contatti'])->name('contatti');
 Route::post('/contatti', [PageController::class, 'contatti'])->name('contatti.post');
