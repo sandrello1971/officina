@@ -23,7 +23,7 @@
             @php
                 $risorse = [
                     ['type' => 'Guida', 'title' => 'Introduzione all\'AI per le PMI', 'desc' => 'Una guida pratica per comprendere cos\'e l\'intelligenza artificiale e come puo essere applicata nella tua impresa.', 'color' => 'primary'],
-                    ['type' => 'Template', 'title' => 'Canvas di Maturita Digitale', 'desc' => 'Uno strumento di autovalutazione per misurare il livello di digitalizzazione della tua organizzazione.', 'color' => 'secondary'],
+                    ['type' => 'Template', 'title' => 'Canvas di Maturità AI', 'desc' => 'Uno strumento di autovalutazione per misurare il livello di digitalizzazione della tua organizzazione.', 'color' => 'secondary'],
                     ['type' => 'Guida', 'title' => 'GDPR e Dati: cosa sapere', 'desc' => 'Le basi della protezione dei dati per le PMI: obblighi, best practice e strumenti per la compliance.', 'color' => 'primary'],
                     ['type' => 'Checklist', 'title' => 'Digital Readiness Checklist', 'desc' => 'Una checklist completa per valutare se la tua azienda e pronta per la trasformazione digitale.', 'color' => 'secondary'],
                     ['type' => 'Template', 'title' => 'Piano di Formazione Digitale', 'desc' => 'Un template per progettare il percorso formativo del tuo team sulle competenze digitali.', 'color' => 'primary'],

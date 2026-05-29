@@ -46,4 +46,10 @@ return [
         'tenant' => env('MICROSOFT_TENANT_ID'),
     ],
 
+    'crm' => [
+        'lead_inbound_url' => env('CRM_LEAD_INBOUND_URL', 'https://crm.noscite.it/api/v1/public/leads'),
+        'lead_inbound_secret' => env('CRM_LEAD_INBOUND_SECRET', ''),
+        'fallback_email' => env('CRM_FALLBACK_SALES_EMAIL', 'sales@noscite.it'),
+    ],
+
 ];

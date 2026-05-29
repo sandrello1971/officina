@@ -36,6 +36,11 @@ class PageController extends Controller
         return view('ai-agents-mcp');
     }
 
+    public function conformitaAiAct(): View
+    {
+        return view('conformita-ai-act');
+    }
+
     public function risorse(): View
     {
         return view('risorse');

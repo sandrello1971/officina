@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lead magnet submission payload — POST /assessment-ai-act/submit",
+  "description": "Payload inviato dal frontend canvas pubblico Mappa Maturità AI al backend Laravel. Validato server-side da SubmitAssessmentAiActRequest.",
+  "type": "object",
+  "required": [
+    "_token",
+    "first_name",
+    "last_name",
+    "email",
+    "company_name",
+    "gdpr_consent",
+    "scores",
+    "website"
+  ],
+  "properties": {
+    "_token": {
+      "type": "string",
+      "description": "CSRF token Laravel (input nascosto generato da @csrf)"
+    },
+    "first_name": {
+      "type": "string",
+      "maxLength": 100,
+      "example": "Mario"
+    },
+    "last_name": {
+      "type": "string",
+      "maxLength": 100,
+      "example": "Rossi"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "maxLength": 255,
+      "example": "mario.rossi@example.it"
+    },
+    "phone": {
+      "type": ["string", "null"],
+      "maxLength": 50,
+      "example": "+39 333 1234567"
+    },
+    "company_name": {
+      "type": "string",
+      "maxLength": 255,
+      "example": "Rossi Metalli Srl"
+    },
+    "role": {
+      "type": ["string", "null"],
+      "maxLength": 150,
+      "example": "Direttore Operations"
+    },
+    "gdpr_consent": {
+      "description": "Consenso esplicito GDPR (accepted: 1/true/on/yes)",
+      "oneOf": [
+        {"type": "boolean", "enum": [true]},
+        {"type": "string", "enum": ["1", "on", "true", "yes"]},
+        {"type": "integer", "enum": [1]}
+      ]
+    },
+    "scores": {
+      "type": "object",
+      "required": ["tools", "governance", "skills", "processes", "compliance"],
+      "additionalProperties": false,
+      "properties": {
+        "tools": {"type": "integer", "minimum": 1, "maximum": 4},
+        "governance": {"type": "integer", "minimum": 1, "maximum": 4},
+        "skills": {"type": "integer", "minimum": 1, "maximum": 4},
+        "processes": {"type": "integer", "minimum": 1, "maximum": 4},
+        "compliance": {"type": "integer", "minimum": 1, "maximum": 4}
+      }
+    },
+    "notes": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "tools": {"type": ["string", "null"], "maxLength": 5000},
+        "governance": {"type": ["string", "null"], "maxLength": 5000},
+        "skills": {"type": ["string", "null"], "maxLength": 5000},
+        "processes": {"type": ["string", "null"], "maxLength": 5000},
+        "compliance": {"type": ["string", "null"], "maxLength": 5000}
+      }
+    },
+    "website": {
+      "type": "string",
+      "maxLength": 0,
+      "description": "Honeypot anti-bot — input nascosto via CSS, deve restare VUOTO. Se valorizzato la submit fallisce con 422 (regola 'prohibited')."
+    }
+  },
+  "example": {
+    "_token": "<csrf-token-laravel>",
+    "first_name": "Mario",
+    "last_name": "Rossi",
+    "email": "mario.rossi@example.it",
+    "phone": "+39 333 1234567",
+    "company_name": "Rossi Metalli Srl",
+    "role": "Direttore Operations",
+    "gdpr_consent": "1",
+    "scores": {
+      "tools": 2,
+      "governance": 1,
+      "skills": 2,
+      "processes": 2,
+      "compliance": 1
+    },
+    "notes": {
+      "tools": "Usiamo ChatGPT in modo personale, senza standard condivisi.",
+      "governance": "Nessuna policy scritta sui dati.",
+      "skills": null,
+      "processes": null,
+      "compliance": null
+    },
+    "website": ""
+  }
+}

@@ -133,7 +133,7 @@
         <div class="space-y-6">
             @php
                 $fasi = [
-                    ['num' => '01', 'title' => 'Diagnosi', 'desc' => 'Analizziamo lo stato attuale dell\'organizzazione, i processi e la maturita digitale per identificare punti di forza e aree di intervento.', 'output' => 'Mappa processi + priorita AI'],
+                    ['num' => '01', 'title' => 'Diagnosi', 'desc' => 'Analizziamo lo stato attuale dell\'organizzazione, i processi e la Maturità AI per identificare punti di forza e aree di intervento.', 'output' => 'Mappa processi + priorita AI'],
                     ['num' => '02', 'title' => 'Strategia', 'desc' => 'Definiamo obiettivi chiari, priorita e una roadmap personalizzata in linea con le risorse e la visione dell\'impresa.', 'output' => 'Roadmap 90 giorni'],
                     ['num' => '03', 'title' => 'Formazione', 'desc' => 'Prepariamo le persone al cambiamento con percorsi formativi mirati, costruendo competenze digitali solide e consapevoli.', 'output' => 'Team formato e certificato'],
                     ['num' => '04', 'title' => 'Implementazione', 'desc' => 'Accompagniamo l\'adozione degli strumenti e dei processi, garantendo un\'integrazione fluida nell\'operativita quotidiana.', 'output' => 'Automazioni attive e misurate'],

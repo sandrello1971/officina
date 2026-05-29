@@ -23,8 +23,8 @@
             $fasi = [
                 [
                     'num' => '01', 'title' => 'Diagnosi', 'color' => 'primary',
-                    'desc' => 'Ogni percorso inizia con la comprensione. Analizziamo lo stato attuale dell\'organizzazione attraverso interviste, audit dei processi e valutazione della maturita digitale.',
-                    'details' => ['Mappatura dei processi aziendali', 'Assessment della maturita digitale', 'Analisi delle competenze del team', 'Identificazione delle criticita e opportunita'],
+                    'desc' => 'Ogni percorso inizia con la comprensione. Analizziamo lo stato attuale dell\'organizzazione attraverso interviste, audit dei processi e valutazione della Maturità AI.',
+                    'details' => ['Mappatura dei processi aziendali', 'Assessment della Maturità AI', 'Analisi delle competenze del team', 'Identificazione delle criticita e opportunita'],
                 ],
                 [
                     'num' => '02', 'title' => 'Strategia', 'color' => 'secondary',

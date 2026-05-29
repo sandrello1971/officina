@@ -5,6 +5,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BusinessCardController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicAssessmentController;
 use Illuminate\Support\Facades\Route;
 
 // Pagine pubbliche
@@ -97,6 +98,18 @@ Route::prefix('intranet')->name('intranet.')->group(function () {
         Route::patch('/servers/{server}', [App\Http\Controllers\IntranetController::class, 'updateServer'])->name('servers.update');
     });
 });
+
+// Lead Magnet - Mappa Maturità AI (Marketing-01)
+// GET liberi (pagine pubbliche), POST rate-limited per anti-spam
+Route::get('assessment-ai-act', [PublicAssessmentController::class, 'show'])
+    ->name('assessment.show');
+
+Route::post('assessment-ai-act/submit', [PublicAssessmentController::class, 'submit'])
+    ->middleware('throttle:assessment-submit')
+    ->name('assessment.submit');
+
+Route::get('assessment-ai-act/grazie', [PublicAssessmentController::class, 'thanks'])
+    ->name('assessment.thanks');
 
 // Auth (Breeze)
 require __DIR__.'/auth.php';
