@@ -67,7 +67,7 @@
                         </button>
                     </form>
                 @else
-                    <form action="/admin/courses/{{ $course->id }}/concept-maps/auto-create" method="POST" style="display:inline-block;">
+                    <form action="/admin/courses/{{ $course->id }}/concept-maps/auto-create" method="POST" class="cm-auto-create" style="display:inline-block;">
                         @csrf
                         <button type="submit" style="padding:7px 14px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer;">
                             ✨ Crea con AI
@@ -140,7 +140,7 @@
                                     </button>
                                 </form>
                             @else
-                                <form action="/admin/courses/{{ $course->id }}/concept-maps/auto-create" method="POST" style="display:inline-block;">
+                                <form action="/admin/courses/{{ $course->id }}/concept-maps/auto-create" method="POST" class="cm-auto-create" style="display:inline-block;">
                                     @csrf
                                     <input type="hidden" name="module_id" value="{{ $module->id }}">
                                     <button type="submit" style="padding:6px 12px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer;">
@@ -162,4 +162,61 @@
         </div>
     </div>
 </div>
+
+{{-- Overlay generazione AI: full-page loader durante il submit dei form auto-create --}}
+<div id="cm-ai-overlay" style="display:none; position:fixed; inset:0; z-index:9999;
+                                background:rgba(245,247,247,0.94); backdrop-filter:blur(2px);
+                                align-items:center; justify-content:center; flex-direction:column; gap:18px; padding:24px;">
+    <div style="width:54px; height:54px; border:5px solid #E8F5F5; border-top-color:#E28A53;
+                border-radius:50%; animation: cm-ai-spin 0.9s linear infinite;"></div>
+    <div style="font-size:1.05rem; font-weight:700; color:#1A1F1F; text-align:center;">
+        ✨ Generazione mappa concettuale in corso…
+    </div>
+    <div style="font-size:0.85rem; color:#4A5252; max-width:480px; text-align:center; line-height:1.55;">
+        Claude sta analizzando i contenuti e costruendo il grafo di concetti.<br>
+        L'operazione può richiedere fino a <strong>60 secondi</strong>. Non chiudere questa pagina.
+    </div>
+    <div id="cm-ai-elapsed" style="font-size:0.75rem; color:#8A9696; font-variant-numeric:tabular-nums;">0s</div>
+</div>
+
+<style>
+    @keyframes cm-ai-spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+    (function () {
+        const overlay = document.getElementById('cm-ai-overlay');
+        const elapsedEl = document.getElementById('cm-ai-elapsed');
+        let ticker = null;
+
+        function showOverlay() {
+            overlay.style.display = 'flex';
+            const t0 = Date.now();
+            ticker = setInterval(() => {
+                const s = Math.round((Date.now() - t0) / 1000);
+                elapsedEl.textContent = s + 's';
+            }, 1000);
+        }
+
+        document.querySelectorAll('form.cm-auto-create').forEach(function (f) {
+            f.addEventListener('submit', function () {
+                // Disabilita tutti i bottoni della pagina per evitare doppi click + cambia label del bottone clickato
+                document.querySelectorAll('form.cm-auto-create button').forEach(function (b) {
+                    b.disabled = true;
+                    b.style.opacity = '0.6';
+                    b.style.cursor = 'wait';
+                });
+                showOverlay();
+            });
+        });
+
+        // Sicurezza: se l'utente torna a questa pagina tramite back-button, nasconde l'overlay
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) {
+                overlay.style.display = 'none';
+                if (ticker) clearInterval(ticker);
+            }
+        });
+    })();
+</script>
 @endsection
