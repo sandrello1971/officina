@@ -58,10 +58,18 @@ class CourseController extends Controller
 
         $teaching = $this->isTeachingMode($student, $course);
 
+        $conceptMaps = $course->conceptMaps()->published()->ordered()->get();
+        $forkedConceptMapIds = $conceptMaps->isEmpty()
+            ? []
+            : \App\Models\StudentConceptMap::where('student_id', $student->id)
+                ->whereIn('course_concept_map_id', $conceptMaps->pluck('id'))
+                ->pluck('course_concept_map_id')->all();
+
         return view('student.course.show', compact(
             'course', 'modules', 'progressPercent',
             'completedModules', 'totalModules', 'finalQuiz', 'certificationPassed', 'progressByModule',
-            'hasAnyVideo', 'instructorMaterials', 'teaching'
+            'hasAnyVideo', 'instructorMaterials', 'teaching',
+            'conceptMaps', 'forkedConceptMapIds'
         ));
     }
 
