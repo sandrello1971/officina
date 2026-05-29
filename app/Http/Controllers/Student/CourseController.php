@@ -58,18 +58,20 @@ class CourseController extends Controller
 
         $teaching = $this->isTeachingMode($student, $course);
 
-        $conceptMaps = $course->conceptMaps()->published()->ordered()->get();
-        $forkedConceptMapIds = $conceptMaps->isEmpty()
-            ? []
-            : \App\Models\StudentConceptMap::where('student_id', $student->id)
-                ->whereIn('course_concept_map_id', $conceptMaps->pluck('id'))
-                ->pluck('course_concept_map_id')->all();
+        // Mappa concettuale a livello CORSO (module_id NULL) — al massimo 1
+        $courseConceptMap = $course->conceptMaps()->published()->whereNull('module_id')->first();
+        $courseConceptMapForked = false;
+        if ($courseConceptMap) {
+            $courseConceptMapForked = \App\Models\StudentConceptMap::where('student_id', $student->id)
+                ->where('course_concept_map_id', $courseConceptMap->id)
+                ->exists();
+        }
 
         return view('student.course.show', compact(
             'course', 'modules', 'progressPercent',
             'completedModules', 'totalModules', 'finalQuiz', 'certificationPassed', 'progressByModule',
             'hasAnyVideo', 'instructorMaterials', 'teaching',
-            'conceptMaps', 'forkedConceptMapIds'
+            'courseConceptMap', 'courseConceptMapForked'
         ));
     }
 
@@ -184,11 +186,24 @@ class CourseController extends Controller
                 ->latest()->get();
         }
 
+        // Mappa concettuale del modulo (al massimo 1, publica)
+        $moduleConceptMap = $course->conceptMaps()
+            ->published()
+            ->where('module_id', $module->id)
+            ->first();
+        $moduleConceptMapForked = false;
+        if ($moduleConceptMap) {
+            $moduleConceptMapForked = \App\Models\StudentConceptMap::where('student_id', $student->id)
+                ->where('course_concept_map_id', $moduleConceptMap->id)
+                ->exists();
+        }
+
         return view('student.course.module', compact(
             'course', 'module', 'materials', 'quiz', 'finalQuiz',
             'certificationPassed', 'progress', 'prevModule', 'nextModule',
             'canvases', 'isDemo', 'note', 'studentNotes',
-            'instructorManualSections', 'instructorNotes', 'teaching'
+            'instructorManualSections', 'instructorNotes', 'teaching',
+            'moduleConceptMap', 'moduleConceptMapForked'
         ));
     }
 

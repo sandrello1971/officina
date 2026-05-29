@@ -181,9 +181,10 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::post('courses/{course}/modules/{module}/mindmap/generate', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'generate'])->name('courses.modules.mindmap.generate');
     Route::patch('courses/{course}/modules/{module}/mindmap', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'update'])->name('courses.modules.mindmap.update');
 
-    // Mappe concettuali a livello corso (admin)
+    // Mappe concettuali (admin) — livello modulo (1 per modulo) + livello corso (1 globale opzionale)
     Route::resource('courses.concept-maps', App\Http\Controllers\Admin\CourseConceptMapController::class);
     Route::post('courses/{course}/concept-maps/{concept_map}/generate', [App\Http\Controllers\Admin\CourseConceptMapController::class, 'generate'])->name('courses.concept-maps.generate');
+    Route::post('courses/{course}/concept-maps/auto-create', [App\Http\Controllers\Admin\CourseConceptMapController::class, 'autoCreate'])->name('courses.concept-maps.auto-create');
 
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')

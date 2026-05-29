@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreCourseConceptMapRequest;
 use App\Http\Requests\Admin\UpdateCourseConceptMapRequest;
 use App\Models\Course;
 use App\Models\CourseConceptMap;
+use App\Models\Module;
 use App\Services\ConceptMapGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,18 +21,30 @@ class CourseConceptMapController extends Controller
 
     public function index(Course $course)
     {
-        $maps = $course->conceptMaps;
-        return view('admin.courses.concept-maps.index', compact('course', 'maps'));
+        $maps = $course->conceptMaps()->with('module')->orderBy('module_id')->orderBy('created_at')->get();
+        $courseMap = $maps->firstWhere('module_id', null);
+        $mapsByModule = $maps->whereNotNull('module_id')->keyBy('module_id');
+        $modules = $course->modules()->orderBy('sort_order')->get();
+
+        return view('admin.courses.concept-maps.index', compact('course', 'maps', 'courseMap', 'mapsByModule', 'modules'));
     }
 
     public function create(Course $course)
     {
-        return view('admin.courses.concept-maps.create', compact('course'));
+        $modules = $course->modules()->orderBy('sort_order')->get(['id', 'title', 'sort_order']);
+        $usedModuleIds = $course->conceptMaps()->whereNotNull('module_id')->pluck('module_id')->all();
+        $hasCourseMap = $course->conceptMaps()->whereNull('module_id')->exists();
+
+        return view('admin.courses.concept-maps.create', compact('course', 'modules', 'usedModuleIds', 'hasCourseMap'));
     }
 
     public function store(StoreCourseConceptMapRequest $request, Course $course)
     {
+        $moduleId = $request->input('module_id') ?: null;
+        $this->guardUniqueScope($course, $moduleId);
+
         $map = $course->conceptMaps()->create([
+            'module_id' => $moduleId,
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'visibility' => $request->input('visibility', CourseConceptMap::VISIBILITY_DRAFT),
@@ -42,6 +55,83 @@ class CourseConceptMapController extends Controller
         return redirect()
             ->route('admin.courses.concept-maps.edit', [$course, $map])
             ->with('success', 'Mappa concettuale creata. Ora puoi popolarla manualmente o con AI.');
+    }
+
+    /**
+     * "Crea con AI in 1 click": crea il record con titolo automatico,
+     * lancia subito la generazione, e redirige all'editor con la mappa popolata.
+     */
+    public function autoCreate(Request $request, Course $course)
+    {
+        $data = $request->validate([
+            'module_id' => 'nullable|uuid',
+        ]);
+        $moduleId = $data['module_id'] ?? null;
+
+        $module = null;
+        if ($moduleId) {
+            $module = Module::where('id', $moduleId)->where('course_id', $course->id)->firstOrFail();
+        }
+
+        $this->guardUniqueScope($course, $moduleId);
+
+        $title = $module
+            ? "Mappa concettuale — {$module->title}"
+            : "Mappa concettuale del corso";
+
+        $map = $course->conceptMaps()->create([
+            'module_id' => $moduleId,
+            'title' => $title,
+            'description' => null,
+            'visibility' => CourseConceptMap::VISIBILITY_DRAFT,
+            'sort_order' => 0,
+            'data' => ['nodes' => [], 'edges' => [], 'physics' => ['enabled' => true]],
+        ]);
+
+        try {
+            $graph = $this->conceptMapService->generate($course, $module);
+            $map->update([
+                'data' => $graph,
+                'ai_generated' => true,
+                'ai_generated_at' => now(),
+                'content_hash' => $map->currentContentHash(),
+            ]);
+            $note = ' Verifica i nodi/archi e pubblicala quando sei soddisfatto.';
+            Log::info('ConceptMap autoCreate ok', [
+                'concept_map_id' => $map->id,
+                'course_id' => $course->id,
+                'module_id' => $moduleId,
+            ]);
+        } catch (Throwable $e) {
+            Log::error('ConceptMap autoCreate AI failed (record kept empty)', [
+                'concept_map_id' => $map->id,
+                'error' => $e->getMessage(),
+            ]);
+            $note = ' MA la generazione AI è fallita: ' . $e->getMessage() . '. Puoi popolarla manualmente o riprovare con "Genera con AI".';
+        }
+
+        return redirect()
+            ->route('admin.courses.concept-maps.edit', [$course, $map])
+            ->with('success', 'Mappa creata.' . $note);
+    }
+
+    /**
+     * Lancia un'eccezione se esiste già una mappa per questo (course, module).
+     */
+    private function guardUniqueScope(Course $course, ?string $moduleId): void
+    {
+        $exists = CourseConceptMap::where('course_id', $course->id)
+            ->where(function ($q) use ($moduleId) {
+                $moduleId === null
+                    ? $q->whereNull('module_id')
+                    : $q->where('module_id', $moduleId);
+            })
+            ->exists();
+        if ($exists) {
+            abort(422, $moduleId === null
+                ? 'Esiste già una mappa concettuale per questo corso. Modifica quella esistente.'
+                : 'Esiste già una mappa concettuale per questo modulo. Modifica quella esistente.');
+        }
     }
 
     public function edit(Course $course, CourseConceptMap $concept_map)
@@ -96,7 +186,9 @@ class CourseConceptMapController extends Controller
         $this->ensureBelongsToCourse($concept_map, $course);
 
         try {
-            $graph = $this->conceptMapService->generate($course);
+            // Se la mappa è module-level, genera dal solo modulo; altrimenti dal corso.
+            $module = $concept_map->isModuleLevel() ? $concept_map->module : null;
+            $graph = $this->conceptMapService->generate($course, $module);
 
             $concept_map->update([
                 'data' => $graph,
