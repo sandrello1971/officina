@@ -137,6 +137,27 @@
         var edgesDS = new window.vis.DataSet(graph.edges);
         var network = new window.vis.Network(container, { nodes: nodesDS, edges: edgesDS }, buildOptions(editable));
 
+        // Fit iniziale + auto-fit dopo stabilizzazione physics + auto-fit su resize
+        function safeFit() {
+            try { network.fit({ animation: { duration: 400, easingFunction: 'easeOutQuad' } }); } catch (e) {}
+        }
+        network.once('stabilizationIterationsDone', function () {
+            // Una volta stabilizzato, spegni physics per non far ri-balzare i nodi a ogni edit
+            try { network.setOptions({ physics: { enabled: false } }); } catch (e) {}
+            safeFit();
+        });
+        // Backup: alcune browser/layout non triggerano stabilizationIterationsDone
+        // se il container ha ancora dimensione 0 all'init.
+        setTimeout(safeFit, 250);
+        setTimeout(safeFit, 800);
+
+        if (typeof ResizeObserver !== 'undefined') {
+            var ro = new ResizeObserver(function () {
+                try { network.redraw(); } catch (e) {}
+            });
+            ro.observe(container);
+        }
+
         function getData() {
             var positions = network.getPositions();
             var nodes = nodesDS.get().map(function (n) {

@@ -4,7 +4,9 @@
 
 @push('styles')
 <style>
-    .cm-canvas { background:#FFFFFF; border:1px solid #D1D5DB; border-radius:8px; height: 580px; }
+    .cm-canvas { background:#FFFFFF; border:1px solid #D1D5DB; border-radius:8px;
+                 width: 100%; height: 72vh; min-height: 520px; max-height: 800px; }
+    .vis-manipulation, .vis-edit-mode { display: none !important; }
     .cm-side label { display:block; font-size:0.72rem; font-weight:600; color:#1A1F1F; margin-bottom:4px; }
     .cm-side input, .cm-side textarea, .cm-side select {
         width:100%; padding:7px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:0.82rem;
