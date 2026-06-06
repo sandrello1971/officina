@@ -1,13 +1,17 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.0
-python-multipart==0.0.9
-anthropic==0.40.0
-groq==0.11.0
-chromadb==0.5.20
-sentence-transformers==3.3.0
+# Versioni riconciliate con il venv di produzione (/home/noscite/venv,
+# pip freeze del 2026-06-06). Il requirements.txt originale era obsoleto
+# rispetto a ciò che gira realmente in prod (es. chromadb 0.5 -> 1.5,
+# sentence-transformers 3.3 -> 5.4): pinnato alle versioni effettive.
+fastapi==0.136.0
+uvicorn[standard]==0.44.0
+python-multipart==0.0.26
+anthropic==0.96.0
+groq==1.2.0
+chromadb==1.5.8
+sentence-transformers==5.4.1
 ffmpeg-python==0.2.0
-python-dotenv==1.0.1
-pydantic==2.9.0
-httpx==0.27.0
-aiofiles==24.1.0
-tqdm==4.66.0
+python-dotenv==1.2.2
+pydantic==2.13.2
+httpx==0.28.1
+aiofiles==25.1.0
+tqdm==4.67.3
