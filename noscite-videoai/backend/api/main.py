@@ -23,6 +23,9 @@ from backend.api.progress import ProgressTracker
 from backend.storage.database import get_db
 from backend.storage.correlator import compute_correlations
 from backend.ingest.extractor import format_timestamp
+from backend.jobs import JobStore
+from backend.transcription.audio import run_audio_job, ALLOWED_AUDIO_EXTENSIONS
+from backend.transcription.youtube import run_youtube_job
 
 
 app = FastAPI(title="Video Chatbot API", version="1.0.0")
@@ -57,6 +60,10 @@ class MetadataUpdate(BaseModel):
 class CrossSearchRequest(BaseModel):
     question: str
     video_ids: list[str] | None = None
+
+
+class YouTubeRequest(BaseModel):
+    url: str
 
 
 def _compute_video_id(content: bytes) -> str:
@@ -657,3 +664,75 @@ async def delete_video(video_id: str):
     print(f"[API] Cartella {video_dir} eliminata")
 
     return {"success": True, "message": "Video eliminato"}
+
+
+# ---------------------------------------------------------------------------
+# Trascrizione audio / YouTube (job asincroni, polling)
+# Nota auth: come gli endpoint /api/videos/*, questi NON usano autenticazione
+# (il servizio è esposto solo su 127.0.0.1 dietro reverse proxy).
+# ---------------------------------------------------------------------------
+
+def _job_status_payload(data: dict) -> dict:
+    """Payload comune di polling per i job di trascrizione."""
+    return {
+        "status": data.get("status"),
+        "progress": data.get("progress", 0),
+        "transcript": data.get("transcript"),
+        "segments": data.get("segments"),
+        "language": data.get("language"),
+        "duration_seconds": data.get("duration_seconds"),
+        "error": data.get("error"),
+    }
+
+
+@app.post("/api/audio/transcribe")
+async def audio_transcribe(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    """Avvia la trascrizione asincrona di un file audio. Ritorna {job_id}."""
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in ALLOWED_AUDIO_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Formato non supportato: '{ext or 'sconosciuto'}'. "
+                   f"Ammessi: {sorted(ALLOWED_AUDIO_EXTENSIONS)}",
+        )
+
+    content = await file.read()
+    job = JobStore.create("audio", filename=file.filename)
+    audio_path = job.dir / f"source{ext}"
+    async with aiofiles.open(str(audio_path), "wb") as f:
+        await f.write(content)
+
+    background_tasks.add_task(run_audio_job, job.job_id, str(audio_path))
+    return {"job_id": job.job_id}
+
+
+@app.get("/api/audio/{job_id}")
+async def audio_status(job_id: str):
+    """Stato/risultato di un job di trascrizione audio."""
+    data = JobStore(job_id).get()
+    if data.get("status") == "not_found":
+        raise HTTPException(status_code=404, detail="Job non trovato")
+    return _job_status_payload(data)
+
+
+@app.post("/api/youtube/transcribe")
+async def youtube_transcribe(body: YouTubeRequest, background_tasks: BackgroundTasks):
+    """Avvia la trascrizione asincrona di un video YouTube. Ritorna {job_id}."""
+    if not body.url or not body.url.strip():
+        raise HTTPException(status_code=400, detail="URL mancante")
+
+    job = JobStore.create("youtube", url=body.url)
+    background_tasks.add_task(run_youtube_job, job.job_id, body.url)
+    return {"job_id": job.job_id}
+
+
+@app.get("/api/youtube/{job_id}")
+async def youtube_status(job_id: str):
+    """Stato/risultato di un job di trascrizione YouTube (con method + metadati)."""
+    data = JobStore(job_id).get()
+    if data.get("status") == "not_found":
+        raise HTTPException(status_code=404, detail="Job non trovato")
+    payload = _job_status_payload(data)
+    payload["method"] = data.get("method")
+    payload["metadata"] = data.get("metadata")
+    return payload

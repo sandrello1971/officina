@@ -15,3 +15,10 @@ pydantic==2.13.2
 httpx==0.28.1
 aiofiles==25.1.0
 tqdm==4.67.3
+
+# Trascrizione audio / YouTube (endpoint /api/audio, /api/youtube)
+youtube-transcript-api==1.2.4
+yt-dlp==2026.3.17
+
+# Test
+pytest==9.0.3

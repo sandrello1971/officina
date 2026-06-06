@@ -15,6 +15,10 @@ class Settings:
         self.CHUNK_OVERLAP_SECONDS: int = int(os.getenv("CHUNK_OVERLAP_SECONDS", "8"))
         self.MAX_FRAMES_TO_ANALYZE: int = int(os.getenv("MAX_FRAMES_TO_ANALYZE", "50"))
         self.DATA_DIR: Path = Path(os.getenv("DATA_DIR", "./data"))
+        # Limite durata sorgente per trascrizione audio/YouTube (default 3h)
+        self.MAX_TRANSCRIBE_DURATION_SECONDS: int = int(
+            os.getenv("MAX_TRANSCRIBE_DURATION_SECONDS", "10800")
+        )
 
         # Crea directory dati automaticamente
         self.DATA_DIR.mkdir(parents=True, exist_ok=True)
