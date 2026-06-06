@@ -180,7 +180,25 @@ class BrandingAndAssistantIdentityTest extends TestCase
         $this->assertStringContainsString('Rispondi SEMPRE in italiano', $prompt);
         $this->assertStringContainsString('cita il titolo del documento', $prompt);
         $this->assertStringContainsString('[MM:SS]', $prompt);
-        $this->assertStringContainsString('PMI italiane', $prompt);
         $this->assertStringContainsString('DOCUMENTI e sui VIDEO', $prompt);
+    }
+
+    public function test_course_chat_domain_context_is_settings_bound(): void
+    {
+        $ctrl = app(ChatController::class);
+
+        // Senza domain context: fallback generico. 'PMI italiane' era un bias
+        // hardcoded rimosso nel refactor (commit 8524c8c) e reso condizionale
+        // alla setting assistant_domain_context.
+        atheneum_setting_put('assistant_domain_context', '');
+        $generic = $ctrl->buildCourseChatSystemPrompt('Storia', '');
+        $this->assertStringContainsString('esempi pratici concreti', $generic);
+        $this->assertStringNotContainsString('PMI italiane', $generic);
+
+        // Con domain context valorizzato: deve propagare nel prompt.
+        atheneum_setting_put('assistant_domain_context', 'le PMI italiane');
+        $scoped = $ctrl->buildCourseChatSystemPrompt('Storia', '');
+        $this->assertStringContainsString('esempi pratici legati a: le PMI italiane', $scoped);
+        $this->assertStringNotContainsString('esempi pratici concreti', $scoped);
     }
 }
