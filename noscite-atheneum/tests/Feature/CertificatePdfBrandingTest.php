@@ -4,16 +4,44 @@ namespace Tests\Feature;
 
 use App\Models\Certificate;
 use App\Models\Course;
-use App\Models\Setting;
 use App\Models\Student;
+use App\Services\CertificatePdfBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
+/**
+ * Riscritto il 06/06: il certificato non è più renderizzato da una Blade
+ * (pdf/certificate.blade.php + dompdf), ma generato da CertificatePdfBuilder
+ * via FPDI/TCPDF (overlay su template PDF). La vecchia suite testava la Blade
+ * ormai rimossa (commit 38e82d1) e falliva per view inesistente.
+ *
+ * Qui si verifica ciò che resta logica nostra e non rendering di terze parti:
+ *  - il builder produce un PDF valido a partire da un Certificate;
+ *  - il branding (intestatario) è preso da settings, non hardcoded, e propaga
+ *    nei metadati del documento (con fallback al default cablato).
+ */
 class CertificatePdfBrandingTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function makeFixtures(): array
+    private static bool $fontsRegistered = false;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // CertificatePdfBuilder usa font TCPDF custom (Cormorant Garamond, Inter)
+        // generati dai .ttf in storage/fonts/. In un checkout pulito / in CI non
+        // sono ancora registrati: senza, SetFont lancerebbe. La registrazione è
+        // idempotente, la eseguiamo una volta per processo.
+        if (!self::$fontsRegistered) {
+            Artisan::call('pdf:register-tcpdf-fonts');
+            self::$fontsRegistered = true;
+        }
+    }
+
+    private function makeCertificate(): Certificate
     {
         $student = Student::create([
             'name' => 'Mario Rossi',
@@ -27,7 +55,8 @@ class CertificatePdfBrandingTest extends TestCase
             'is_active' => true,
             'sort_order' => 1,
         ]);
-        $cert = Certificate::create([
+
+        return Certificate::create([
             'student_id' => $student->id,
             'course_id'  => $course->id,
             'code'       => 'TEST-' . strtoupper(uniqid()),
@@ -35,89 +64,36 @@ class CertificatePdfBrandingTest extends TestCase
             'issued_at'  => now(),
             'certification_name' => 'Certificato Test',
         ]);
-        return compact('student', 'course', 'cert');
     }
 
-    private function renderPdfView(array $fix): string
+    public function test_builder_produces_a_valid_pdf(): void
     {
-        return view('pdf.certificate', [
-            'cert'      => $fix['cert'],
-            'student'   => $fix['student'],
-            'course'    => $fix['course'],
-            'date'      => $fix['cert']->issued_at->format('d/m/Y'),
-            'qrDataUri' => 'data:image/png;base64,iVBORw0KGgo=',
-            'verifyUrl' => 'https://atheneum.noscite.it/certificato/verifica/' . $fix['cert']->code,
-        ])->render();
+        $pdf = (new CertificatePdfBuilder())->build($this->makeCertificate());
+
+        // Header e trailer di un PDF ben formato + dimensione non banale
+        // (il template viene importato, quindi sono decine di KB).
+        $this->assertStringStartsWith('%PDF-', $pdf);
+        $this->assertStringContainsString('%%EOF', $pdf);
+        $this->assertGreaterThan(2000, strlen($pdf), 'PDF troppo piccolo: build incompleta');
     }
 
-    public function test_pdf_uses_dejavu_fonts_for_unicode_coverage(): void
+    public function test_owner_branding_comes_from_settings(): void
     {
-        $html = $this->renderPdfView($this->makeFixtures());
+        // Default cablato: senza platform_owner il documento usa "Noscite SRLS".
+        $pdfDefault = (new CertificatePdfBuilder())->build($this->makeCertificate());
+        $this->assertStringContainsString('Noscite SRLS', $pdfDefault,
+            'Senza setting, il PDF deve riportare l\'intestatario di default');
 
-        // Font dichiarati nel <style>: DejaVu Serif (body) +
-        // DejaVu Sans Mono (verify-url + codice certificato).
-        $this->assertStringContainsString("font-family: 'DejaVu Serif', serif", $html);
-        $this->assertStringContainsString("'DejaVu Sans Mono', monospace", $html);
+        // Con platform_owner valorizzato (ASCII, così resta literal nei metadati
+        // PDF e l\'asserzione non dipende dalla compressione degli stream di
+        // contenuto), il nuovo intestatario deve propagare nel documento e il
+        // default Noscite non deve più comparire.
+        atheneum_setting_put('platform_owner', 'ACME Formazione SRL');
 
-        // Tagline con macron deve sopravvivere nel render
-        // (Georgia non li ha → senza il fix render come '?').
-        // Il default cablato 'In digitālī nova virtūs' deve apparire
-        // (se atheneum_setting('platform_tagline') è vuoto, fallback).
-        $this->assertStringContainsString('In digitālī nova virtūs', $html);
-    }
-
-    public function test_verify_block_has_explicit_width(): void
-    {
-        $html = $this->renderPdfView($this->makeFixtures());
-
-        // Senza width esplicita, dompdf calcola position:absolute dalla
-        // width naturale del contenuto e il blocco esce dalla pagina.
-        $this->assertStringContainsString('width: 45mm', $html);
-    }
-
-    public function test_brand_strings_come_from_settings_with_fallback(): void
-    {
-        $fix = $this->makeFixtures();
-
-        // Senza settings → default cablati
-        $html = $this->renderPdfView($fix);
-        $this->assertStringContainsString('NOSCITE', $html, 'watermark/logo default');
-        $this->assertStringContainsString('Noscite SRLS', $html, 'rilasciato-da default');
-
-        // Con platform_owner settato → propagazione completa
-        Setting::put('platform_owner', 'Accademia Atena');
-        Setting::put('platform_tagline', 'Sapere est posse');
-        Setting::put('instance_name', 'Atena');
-
-        $html2 = $this->renderPdfView($fix);
-
-        $this->assertStringContainsString('ACCADEMIA ATENA', $html2,
-            'watermark + logo-text usano platform_owner uppercase');
-        $this->assertStringContainsString('Accademia Atena', $html2,
-            'footer "Rilasciato da" usa platform_owner');
-        $this->assertStringContainsString('Sapere est posse', $html2,
-            'logo-sub usa platform_tagline');
-
-        // Nessuno dei brand Noscite-specifici deve rimanere quando
-        // ho settato altri valori
-        $this->assertStringNotContainsString('Noscite SRLS', $html2);
-        $this->assertStringNotContainsString('In digitālī nova virtūs', $html2);
-    }
-
-    public function test_no_georgia_font_in_active_css(): void
-    {
-        $html = $this->renderPdfView($this->makeFixtures());
-
-        // Cerca solo dichiarazioni font-family attive (escludendo commenti).
-        // Estrae tutti i match font-family: ... fino a ; e verifica
-        // che nessuno usi Georgia.
-        preg_match_all('/font-family:\s*([^;]+);/i', $html, $matches);
-        foreach ($matches[1] as $declaration) {
-            $this->assertStringNotContainsStringIgnoringCase(
-                'georgia',
-                $declaration,
-                "Found Georgia in active font-family declaration: $declaration"
-            );
-        }
+        $pdfBranded = (new CertificatePdfBuilder())->build($this->makeCertificate());
+        $this->assertStringContainsString('ACME Formazione SRL', $pdfBranded,
+            'Il PDF deve riportare l\'intestatario impostato via settings');
+        $this->assertStringNotContainsString('Noscite SRLS', $pdfBranded,
+            'L\'intestatario di default non deve sopravvivere quando platform_owner è settato');
     }
 }
