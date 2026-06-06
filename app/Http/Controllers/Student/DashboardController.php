@@ -18,6 +18,13 @@ class DashboardController extends Controller
     {
         $student = Student::findOrFail(session('student_id'));
 
+        // Schola: classi a cui lo studente è iscritto (escluse le rimosse).
+        $myClasses = $student->schoolClasses()
+            ->with('subject')
+            ->wherePivot('status', '!=', 'removed')
+            ->orderBy('name')
+            ->get();
+
         $courses = $this->courseAccess->navigableCourses($student)
             ->loadMissing('modules')
             ->map(function ($course) use ($student) {
@@ -74,6 +81,6 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('student.dashboard', compact('student', 'courses', 'stats', 'lastModule'));
+        return view('student.dashboard', compact('student', 'courses', 'stats', 'lastModule', 'myClasses'));
     }
 }

@@ -93,6 +93,17 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by(session('student_id') ?? session('admin_email') ?? $request->ip());
         });
 
+        // Join classe con codice: 8/min per studente|IP (anti brute-force codici invito).
+        RateLimiter::for('class-join', function (Request $request) {
+            return Limit::perMinute(8)
+                ->by((session('student_id') ?? '') . '|' . $request->ip())
+                ->response(function () {
+                    return back()->withErrors([
+                        'invite_code' => 'Troppi tentativi. Riprova tra un minuto.',
+                    ])->withInput();
+                });
+        });
+
         $this->shareInstanceName();
 
         View::composer('layouts.student', function ($view) {
