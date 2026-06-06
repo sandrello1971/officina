@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'student.auth' => \App\Http\Middleware\StudentAuth::class,
             'student.password' => \App\Http\Middleware\StudentMustChangePassword::class,
+            'professor' => \App\Http\Middleware\ProfessorAuth::class,
             'admin.auth' => \App\Http\Middleware\AdminAuth::class,
             'demo.restrictions' => \App\Http\Middleware\DemoRestrictions::class,
             'legal_representative' => \App\Http\Middleware\EnsureLegalRepresentative::class,

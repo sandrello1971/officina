@@ -12,6 +12,10 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (session('student_id')) {
+            $student = Student::find(session('student_id'));
+            if ($student && $student->isProfessor()) {
+                return redirect()->route('docente.dashboard');
+            }
             return redirect()->route('student.dashboard');
         }
         return view('student.auth.login');
@@ -57,6 +61,11 @@ class AuthController extends Controller
 
         if ($student->must_change_password) {
             return redirect()->route('student.change-password');
+        }
+
+        // Docente Schola → area dedicata /docente
+        if ($student->isProfessor()) {
+            return redirect()->route('docente.dashboard');
         }
 
         return redirect()->route('student.dashboard');

@@ -161,6 +161,12 @@ Route::prefix('admin/auth/microsoft')->group(function () {
         ->name('admin.microsoft.callback');
 });
 
+// ===== AREA DOCENTE SCHOLA =====
+// Auth via sessione studente + gate professor. NON eredita gli accessi instructor.
+Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'professor'])->group(function () {
+    Route::get('/', [App\Http\Controllers\Docente\DashboardController::class, 'index'])->name('dashboard');
+});
+
 // ===== AREA ADMIN ATHENEUM =====
 Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
