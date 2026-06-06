@@ -13,8 +13,12 @@ from backend.ingest.transcriber import transcribe_audio
 from backend.jobs import JobStore
 from backend.transcription.normalize import normalize_transcript, to_public_segments
 
-# Estensioni audio accettate dall'endpoint
-ALLOWED_AUDIO_EXTENSIONS = {".mp3", ".m4a", ".wav", ".ogg"}
+# Estensioni accettate dall'endpoint: audio e contenitori video (si trascrive
+# la traccia audio). Whisper decodifica tutti questi formati via ffmpeg.
+ALLOWED_AUDIO_EXTENSIONS = {
+    ".mp3", ".m4a", ".wav", ".ogg",
+    ".mp4", ".mov", ".mpeg", ".mpg", ".avi", ".webm",
+}
 
 
 def transcribe_audio_file(audio_path: str, window_seconds: float = 30.0) -> dict:

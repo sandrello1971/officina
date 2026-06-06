@@ -687,13 +687,18 @@ def _job_status_payload(data: dict) -> dict:
 
 @app.post("/api/audio/transcribe")
 async def audio_transcribe(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    """Avvia la trascrizione asincrona di un file audio. Ritorna {job_id}."""
+    """Avvia la trascrizione asincrona di un file audio o video. Ritorna {job_id}.
+
+    Accetta file audio (mp3, m4a, wav, ogg) e contenitori video (mp4, mov,
+    mpeg, mpg, avi, webm): in questi ultimi viene trascritta la traccia audio
+    (Whisper li decodifica via ffmpeg). Vedi ALLOWED_AUDIO_EXTENSIONS.
+    """
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_AUDIO_EXTENSIONS:
         raise HTTPException(
             status_code=400,
             detail=f"Formato non supportato: '{ext or 'sconosciuto'}'. "
-                   f"Ammessi: {sorted(ALLOWED_AUDIO_EXTENSIONS)}",
+                   f"Ammessi (audio e video): {sorted(ALLOWED_AUDIO_EXTENSIONS)}",
         )
 
     content = await file.read()
