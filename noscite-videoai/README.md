@@ -64,7 +64,7 @@ API disponibile su `http://localhost:8000`. Documentazione interattiva su `/docs
 | GET | `/api/videos/{video_id}/status` | Stato elaborazione |
 | POST | `/api/videos/{video_id}/chat` | Chat con il video |
 | GET | `/api/videos/` | Lista video indicizzati |
-| POST | `/api/audio/transcribe` | Trascrizione file audio (multipart) → `{job_id}` |
+| POST | `/api/audio/transcribe` | Trascrizione file audio o video (multipart) → `{job_id}` |
 | GET | `/api/audio/{job_id}` | Polling stato/risultato trascrizione audio |
 | POST | `/api/youtube/transcribe` | Trascrizione video YouTube (`{url}`) → `{job_id}` |
 | GET | `/api/youtube/{job_id}` | Polling stato/risultato trascrizione YouTube |
@@ -84,8 +84,10 @@ curl -X POST http://localhost:8000/api/audio/transcribe -F "file=@lezione.mp3"
 curl http://localhost:8000/api/audio/{job_id}
 ```
 
-Formati accettati: `mp3`, `m4a`, `wav`, `ogg`. Elaborazione asincrona che riusa
-la pipeline Whisper (Groq). Risposta del polling:
+Formati accettati: audio `mp3`, `m4a`, `wav`, `ogg` e contenitori video `mp4`,
+`mov`, `mpeg`, `mpg`, `avi`, `webm` (di questi si trascrive la traccia audio,
+decodificata via ffmpeg). Elaborazione asincrona che riusa la pipeline Whisper
+(Groq). Risposta del polling:
 
 ```json
 {
