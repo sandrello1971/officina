@@ -27,22 +27,20 @@ class ConceptMapGenerationService
     private const MAX_CONTENT_CHARS = 30000;
     private const MAX_NODES = 25;
     private const MAX_EDGES = 40;
+    private const PROMPT_VERSION = 'conceptmap-2026-06';
 
     /**
-     * Genera una mappa concettuale.
+     * Genera una mappa concettuale per il mondo corsi.
      *  - $module = null → mappa "intero corso" (aggregata di tutti i moduli)
      *  - $module valorizzato → mappa del singolo modulo
+     *
+     * Percorso storico: comportamento invariato, delega al core generateFromText
+     * e restituisce solo il grafo {nodes, edges, physics}.
      *
      * @return array{nodes: array<int,array>, edges: array<int,array>}
      */
     public function generate(Course $course, ?Module $module = null): array
     {
-        $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
-
-        if (empty($apiKey)) {
-            throw new RuntimeException('Anthropic API key non configurata (config/services.php o env ANTHROPIC_API_KEY)');
-        }
-
         if ($module !== null) {
             if (empty(trim(strip_tags($module->content ?? '')))) {
                 throw new RuntimeException('Il modulo non ha contenuto su cui costruire la mappa concettuale');
@@ -62,22 +60,56 @@ class ConceptMapGenerationService
             $modulesCount = $modules->count();
         }
 
+        $result = $this->generateFromText($aggregated, $scopeLabel, [
+            'focused' => $module !== null,
+            'log_context' => [
+                'course_id' => $course->id,
+                'course_name' => $course->name,
+                'module_id' => $module?->id,
+                'module_title' => $module?->title,
+                'modules_count' => $modulesCount,
+            ],
+        ]);
+
+        return $result['content'];
+    }
+
+    /**
+     * Core parametrizzato: costruisce una mappa concettuale a partire da testo
+     * sorgente arbitrario.
+     *
+     * @param  string  $sourceText    testo già ripulito (no HTML)
+     * @param  string  $contextLabel  etichetta del contesto (es. "Modulo: X" o titolo documento)
+     * @param  array   $options       ['focused' => bool, 'log_context' => array]
+     * @return array{content: array{nodes: array, edges: array, physics: array}, meta: array}
+     */
+    public function generateFromText(string $sourceText, string $contextLabel, array $options = []): array
+    {
+        $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
+
+        if (empty($apiKey)) {
+            throw new RuntimeException('Anthropic API key non configurata (config/services.php o env ANTHROPIC_API_KEY)');
+        }
+
+        $aggregated = trim($sourceText);
+        if ($aggregated === '') {
+            throw new RuntimeException('Nessun testo sorgente su cui costruire la mappa concettuale');
+        }
+
+        $focused = (bool) ($options['focused'] ?? false);
+        $logContext = $options['log_context'] ?? [];
+
         if (mb_strlen($aggregated) > self::MAX_CONTENT_CHARS) {
             $aggregated = mb_substr($aggregated, 0, self::MAX_CONTENT_CHARS)
                 . "\n[...contenuto troncato per limiti di token]";
         }
 
-        $systemPrompt = $this->buildSystemPrompt($module !== null);
-        $userMessage = $this->buildUserMessage($scopeLabel, $aggregated, $module !== null);
+        $systemPrompt = $this->buildSystemPrompt($focused);
+        $userMessage = $this->buildUserMessage($contextLabel, $aggregated, $focused);
 
-        Log::info('ConceptMap generation request', [
-            'course_id' => $course->id,
-            'course_name' => $course->name,
-            'module_id' => $module?->id,
-            'module_title' => $module?->title,
-            'modules_count' => $modulesCount,
+        Log::info('ConceptMap generation request', array_merge($logContext, [
             'content_chars' => mb_strlen($aggregated),
-        ]);
+        ]));
 
         $response = Http::withHeaders([
             'x-api-key' => $apiKey,
@@ -94,11 +126,10 @@ class ConceptMapGenerationService
         ]);
 
         if (! $response->successful()) {
-            Log::error('ConceptMap Claude API failed', [
-                'course_id' => $course->id,
+            Log::error('ConceptMap Claude API failed', array_merge($logContext, [
                 'status' => $response->status(),
                 'body' => $response->body(),
-            ]);
+            ]));
             throw new RuntimeException('Errore Claude API: ' . $response->status());
         }
 
@@ -112,23 +143,29 @@ class ConceptMapGenerationService
         $json = $this->extractJson($raw);
         $parsed = json_decode($json, true);
         if (! is_array($parsed)) {
-            Log::error('ConceptMap JSON parse failed', [
-                'course_id' => $course->id,
+            Log::error('ConceptMap JSON parse failed', array_merge($logContext, [
                 'raw' => Str::limit($raw, 500),
-            ]);
+            ]));
             throw new RuntimeException('Output Claude non è JSON valido');
         }
 
         $validated = $this->validateGraph($parsed);
 
-        Log::info('ConceptMap generated', [
-            'course_id' => $course->id,
+        Log::info('ConceptMap generated', array_merge($logContext, [
             'nodes' => count($validated['nodes']),
             'edges' => count($validated['edges']),
             'usage' => $data['usage'] ?? null,
-        ]);
+        ]));
 
-        return $validated;
+        return [
+            'content' => $validated,
+            'meta' => [
+                'model' => self::CLAUDE_MODEL,
+                'tokens_in' => (int) ($data['usage']['input_tokens'] ?? 0),
+                'tokens_out' => (int) ($data['usage']['output_tokens'] ?? 0),
+                'prompt_version' => self::PROMPT_VERSION,
+            ],
+        ];
     }
 
     private function buildSystemPrompt(bool $isModuleLevel = false): string
