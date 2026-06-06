@@ -282,6 +282,28 @@ class ExamAttemptCapTest extends TestCase
         $this->assertSame(7, (int) $quiz->fresh()->max_attempts);
     }
 
+    public function test_admin_update_without_optional_nullable_fields_does_not_500(): void
+    {
+        $course = $this->makeCourse();
+        $quiz = $this->makeExamQuiz($course, 3);
+
+        // Update con SOLO i campi required: time_limit_minutes, max_attempts e
+        // course_id ASSENTI dalla request. Regressione del bug "Undefined array
+        // key" in QuizController@update (500 per l'admin, dal 20/05): i campi
+        // nullable mancanti non compaiono nei dati validati.
+        $this->withSession(['admin_logged_in' => true, 'admin_email' => 'admin@example.com'])
+            ->put(route('admin.quizzes.update', $quiz->id), [
+                'title'         => $quiz->title,
+                'passing_score' => 60,
+            ])
+            ->assertRedirect();
+
+        $fresh = $quiz->fresh();
+        $this->assertNull($fresh->time_limit_minutes);
+        $this->assertNull($fresh->max_attempts);
+        $this->assertNull($fresh->course_id);
+    }
+
     public function test_grant_attempt_rejected_on_non_exam_quiz(): void
     {
         $student = $this->makeStudent();

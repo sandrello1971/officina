@@ -47,9 +47,13 @@ class QuizController extends Controller
 
         $data['randomize_questions'] = isset($data['randomize_questions']);
         $data['is_active'] = isset($data['is_active']);
-        $data['time_limit_minutes'] = $data['time_limit_minutes'] ?: null;
-        $data['max_attempts'] = $data['max_attempts'] ?: null;
-        $data['course_id'] = $data['course_id'] ?: null;
+        // I campi 'nullable' assenti dalla request NON compaiono nei dati
+        // validati: usare $data['k'] ?: null darebbe "Undefined array key".
+        // (?? null) gestisce la chiave assente; ?: null preserva la semantica
+        // "vuoto/0 = null" (es. 0 tentativi = illimitato).
+        $data['time_limit_minutes'] = ($data['time_limit_minutes'] ?? null) ?: null;
+        $data['max_attempts'] = ($data['max_attempts'] ?? null) ?: null;
+        $data['course_id'] = ($data['course_id'] ?? null) ?: null;
         $data['module_id'] = $data['module_id'] ?? null ?: null;
 
         $quiz = Quiz::create($data);
@@ -88,9 +92,13 @@ class QuizController extends Controller
 
         $data['randomize_questions'] = isset($data['randomize_questions']);
         $data['is_active'] = isset($data['is_active']);
-        $data['time_limit_minutes'] = $data['time_limit_minutes'] ?: null;
-        $data['max_attempts'] = $data['max_attempts'] ?: null;
-        $data['course_id'] = $data['course_id'] ?: null;
+        // I campi 'nullable' assenti dalla request NON compaiono nei dati
+        // validati: usare $data['k'] ?: null darebbe "Undefined array key".
+        // (?? null) gestisce la chiave assente; ?: null preserva la semantica
+        // "vuoto/0 = null" (es. 0 tentativi = illimitato).
+        $data['time_limit_minutes'] = ($data['time_limit_minutes'] ?? null) ?: null;
+        $data['max_attempts'] = ($data['max_attempts'] ?? null) ?: null;
+        $data['course_id'] = ($data['course_id'] ?? null) ?: null;
 
         $quiz->update($data);
 
