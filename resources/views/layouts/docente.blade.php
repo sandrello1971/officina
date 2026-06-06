@@ -57,10 +57,11 @@
            class="nav-item {{ request()->routeIs('docente.classes.*') ? 'active' : '' }}">
             <span>&#128218;</span> Classi
         </a>
-        {{-- Voci dei prossimi pacchetti: visibili ma disabilitate --}}
-        <a href="#" class="nav-item disabled" aria-disabled="true" title="In arrivo">
+        <a href="{{ route('docente.materials.index') }}"
+           class="nav-item {{ request()->routeIs('docente.materials.*') ? 'active' : '' }}">
             <span>&#128196;</span> Materiali
         </a>
+        {{-- Voce del prossimo pacchetto: visibile ma disabilitata --}}
         <a href="#" class="nav-item disabled" aria-disabled="true" title="In arrivo">
             <span>&#127963;</span> Biblioteca
         </a>

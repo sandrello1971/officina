@@ -180,6 +180,17 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::patch('/classi/{class}', [App\Http\Controllers\Docente\ClassController::class, 'update'])->name('classes.update');
     Route::post('/classi/{class}/rigenera-codice', [App\Http\Controllers\Docente\ClassController::class, 'regenerateCode'])->name('classes.regenerate-code');
     Route::patch('/classi/{class}/studenti/{enrollment}', [App\Http\Controllers\Docente\ClassRosterController::class, 'update'])->name('classes.roster.update');
+
+    // Materiali grezzi (pacchetto 4a)
+    Route::get('/materiali', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'index'])->name('materials.index');
+    Route::get('/materiali/crea', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'create'])->name('materials.create');
+    Route::post('/materiali', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'store'])->name('materials.store');
+    Route::get('/materiali/{document}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'show'])->name('materials.show');
+    Route::patch('/materiali/{document}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'update'])->name('materials.update');
+    Route::delete('/materiali/{document}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'destroy'])->name('materials.destroy');
+    Route::get('/materiali/{document}/file/{index}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'downloadSource'])->name('materials.download');
+    Route::get('/materiali/{document}/stato', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'status'])->name('materials.status');
+    Route::post('/materiali/{document}/retry', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'retry'])->name('materials.retry');
 });
 
 // ===== AREA ADMIN ATHENEUM =====
