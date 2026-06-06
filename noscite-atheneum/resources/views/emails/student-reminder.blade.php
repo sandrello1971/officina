@@ -5,7 +5,7 @@ Sono passati alcuni giorni dall'ultima volta che hai visitato **{{ atheneum_sett
 
 Il tuo percorso formativo ti aspetta. Ogni modulo che completi è un passo concreto verso una gestione più efficace dell'AI nella tua azienda.
 
-@component('mail::button', ['url' => url('/learn/dashboard'), 'color' => 'success'])
+@component('mail::button', ['url' => $dashboardUrl, 'color' => 'success'])
 Riprendi il tuo percorso →
 @endcomponent
 
