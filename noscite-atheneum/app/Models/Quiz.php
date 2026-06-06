@@ -43,4 +43,10 @@ class Quiz extends Model
     {
         return $this->hasMany(QuizAttempt::class);
     }
+
+    // Schola: un quiz può essere l'output di un teaching_artifact (module_id NULL).
+    public function teachingArtifact()
+    {
+        return $this->hasOne(TeachingArtifact::class);
+    }
 }
