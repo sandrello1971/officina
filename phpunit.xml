@@ -23,8 +23,22 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <!--
+            I test girano su PostgreSQL, lo stesso motore della produzione: il
+            codebase usa funzionalità pg-specifiche che SQLite non supporta
+            (gen_random_uuid() come default colonna, CHECK constraint via
+            DB::statement, ILIKE, lower(email)). DB dedicato: atheneum_test_db.
+            La password NON è qui (segreto): in locale arriva da .env (gitignored),
+            in CI dalle env reali del runner. Questi <env> sono non-forced, quindi
+            le env del runner CI hanno precedenza (vedi .github/workflows/tests.yml).
+            pgvector non è richiesto: la migrazione documents_rag degrada con
+            try/catch e nemmeno la produzione ha l'estensione installata.
+        -->
+        <env name="DB_CONNECTION" value="pgsql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="5432"/>
+        <env name="DB_DATABASE" value="atheneum_test_db"/>
+        <env name="DB_USERNAME" value="atheneum_user"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
