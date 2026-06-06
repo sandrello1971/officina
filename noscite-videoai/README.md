@@ -64,6 +64,74 @@ API disponibile su `http://localhost:8000`. Documentazione interattiva su `/docs
 | GET | `/api/videos/{video_id}/status` | Stato elaborazione |
 | POST | `/api/videos/{video_id}/chat` | Chat con il video |
 | GET | `/api/videos/` | Lista video indicizzati |
+| POST | `/api/audio/transcribe` | Trascrizione file audio (multipart) → `{job_id}` |
+| GET | `/api/audio/{job_id}` | Polling stato/risultato trascrizione audio |
+| POST | `/api/youtube/transcribe` | Trascrizione video YouTube (`{url}`) → `{job_id}` |
+| GET | `/api/youtube/{job_id}` | Polling stato/risultato trascrizione YouTube |
+
+> **Auth:** gli endpoint API non usano autenticazione (il servizio è esposto
+> solo su `127.0.0.1` dietro reverse proxy). `VIDEO_AI_SECRET` è presente nel
+> `.env` ma attualmente non viene letto dal codice.
+
+### Trascrizione audio
+
+```bash
+# Avvia il job
+curl -X POST http://localhost:8000/api/audio/transcribe -F "file=@lezione.mp3"
+# -> {"job_id": "..."}
+
+# Polling
+curl http://localhost:8000/api/audio/{job_id}
+```
+
+Formati accettati: `mp3`, `m4a`, `wav`, `ogg`. Elaborazione asincrona che riusa
+la pipeline Whisper (Groq). Risposta del polling:
+
+```json
+{
+  "status": "completed",
+  "progress": 100,
+  "transcript": "[00:00] ...\n\n[00:30] ...",
+  "segments": [
+    {"start_seconds": 0.0, "end_seconds": 4.2, "text": "..."},
+    {"start_seconds": 4.2, "end_seconds": 9.1, "text": "..."}
+  ],
+  "language": "it",
+  "duration_seconds": 612.5,
+  "error": null
+}
+```
+
+`status`: `queued` | `processing` | `completed` | `failed`.
+
+- `transcript`: testo continuo con timestamp di paragrafo `[MM:SS]`.
+- `segments`: array `{start_seconds, end_seconds, text}`. Dal path **Whisper**
+  (audio e fallback YouTube) sono i segment nativi di Whisper; dal path
+  **`native_transcript`** (sottotitoli YouTube) sono i paragrafi raggruppati.
+
+### Trascrizione YouTube
+
+```bash
+curl -X POST http://localhost:8000/api/youtube/transcribe \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.youtube.com/watch?v=..."}'
+# -> {"job_id": "..."}
+
+curl http://localhost:8000/api/youtube/{job_id}
+```
+
+Strategia a cascata:
+
+1. **`native_transcript`** — sottotitoli ufficiali via `youtube-transcript-api`
+   (preferendo `it`/`en`), normalizzati in testo continuo con timestamp di
+   paragrafo.
+2. **`whisper`** — fallback: `yt-dlp` scarica l'audio (qualità minima) e lo
+   passa alla pipeline Whisper.
+
+Il polling aggiunge `method` (`native_transcript` | `whisper`) e `metadata`
+(titolo, canale, durata). Video privati/rimossi/region-locked terminano con
+`status: "failed"` ed `error` esplicito. Limite durata configurabile via
+`MAX_TRANSCRIBE_DURATION_SECONDS` (default 3h).
 
 ### Esempio chat
 
@@ -96,6 +164,7 @@ Variabili in `.env`:
 | `CHUNK_OVERLAP_SECONDS` | 8 | Overlap tra chunk |
 | `MAX_FRAMES_TO_ANALYZE` | 50 | Max frame analizzati con Vision |
 | `DATA_DIR` | ./data | Directory dati |
+| `MAX_TRANSCRIBE_DURATION_SECONDS` | 10800 | Limite durata sorgente audio/YouTube (default 3h) |
 
 ## Note su Groq Free Tier
 
