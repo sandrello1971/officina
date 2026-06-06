@@ -16,6 +16,7 @@ class Student extends Authenticatable
         'student'    => 'Studente',
         'instructor' => 'Formatore',
         'admin'      => 'Amministratore',
+        'professor'  => 'Docente (Schola)',
     ];
 
     protected $fillable = [
@@ -70,6 +71,12 @@ class Student extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    // Docente Schola — distinto da instructor (formatore corsi Atheneum).
+    public function isProfessor(): bool
+    {
+        return $this->role === 'professor';
     }
 
     public function moduleProgress()
