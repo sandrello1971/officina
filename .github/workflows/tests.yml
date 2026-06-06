@@ -2,18 +2,23 @@ name: tests
 
 # Esegue la suite PHPUnit di noscite-atheneum su PostgreSQL reale.
 #
-# IMPORTANTE: phpunit.xml di questo progetto è configurato per SQLite
-# :memory: (default Laravel), ma il codebase usa funzionalità
+# phpunit.xml è configurato per PostgreSQL (DB dedicato atheneum_test_db),
+# lo stesso motore della produzione: il codebase usa funzionalità
 # PostgreSQL-specifiche che SQLite NON supporta:
 #   - DB::raw('gen_random_uuid()') come default colonna (migrations)
 #   - CHECK constraint via DB::statement (students_role_check, ecc.)
 #   - operatore ILIKE (RagService)
 #   - lower(email) (migration di remediation auto_enroll)
-# Su SQLite le migration falliscono in partenza. Per questo il job
-# forza una connessione Postgres tramite VARIABILI D'AMBIENTE REALI:
-# PHPUnit non sovrascrive una env var già presente (manca force="true"
-# nel blocco <env> di phpunit.xml), quindi le env del runner vincono
-# sui default sqlite SENZA dover modificare phpunit.xml.
+#
+# Gli <env> DB di phpunit.xml sono NON-forced (manca force="true"): PHPUnit
+# non sovrascrive una env var già presente, quindi le VARIABILI D'AMBIENTE
+# REALI del runner qui sotto hanno precedenza su host/credenziali/nome DB.
+# In locale invece valgono i default di phpunit.xml (atheneum_test_db) e la
+# password arriva da .env (gitignored).
+#
+# pgvector NON è installato di proposito: la migrazione documents_rag degrada
+# con try/catch (salta colonna embedding + indice ivfflat) e nemmeno la
+# produzione ha l'estensione. postgres:16 standard = parità con prod.
 
 on:
   push:
@@ -27,15 +32,15 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
-          POSTGRES_DB: atheneum_testing
-          POSTGRES_USER: atheneum
-          POSTGRES_PASSWORD: atheneum
+          POSTGRES_DB: atheneum_test_db
+          POSTGRES_USER: atheneum_user
+          POSTGRES_PASSWORD: atheneum_user
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U atheneum -d atheneum_testing"
+          --health-cmd "pg_isready -U atheneum_user -d atheneum_test_db"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
@@ -47,9 +52,9 @@ jobs:
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
-      DB_DATABASE: atheneum_testing
-      DB_USERNAME: atheneum
-      DB_PASSWORD: atheneum
+      DB_DATABASE: atheneum_test_db
+      DB_USERNAME: atheneum_user
+      DB_PASSWORD: atheneum_user
       CACHE_STORE: array
       SESSION_DRIVER: array
       QUEUE_CONNECTION: sync
@@ -89,7 +94,7 @@ jobs:
 
       - name: Attendi Postgres
         run: |
-          until pg_isready -h 127.0.0.1 -p 5432 -U atheneum; do
+          until pg_isready -h 127.0.0.1 -p 5432 -U atheneum_user; do
             echo "in attesa di postgres..."; sleep 2;
           done
 
