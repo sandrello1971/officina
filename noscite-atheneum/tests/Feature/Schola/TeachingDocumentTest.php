@@ -234,6 +234,52 @@ class TeachingDocumentTest extends TestCase
         Bus::assertDispatched(ExtractTeachingDocumentJob::class);
     }
 
+    public function test_store_m4a_with_mp4_mime_is_accepted(): void
+    {
+        Bus::fake();
+        Storage::fake('local');
+        $prof = $this->prof();
+
+        // m4a = contenitore MP4: PHP rileva spesso audio/mp4 (o video/mp4).
+        // Con la vecchia regola `mimes:mp3,m4a,wav,ogg` veniva rifiutato.
+        $this->asProf($prof)->post(route('docente.materials.store'), [
+            'title' => 'Lezione m4a', 'source_type' => 'audio',
+            'file' => UploadedFile::fake()->create('lez.m4a', 500, 'audio/mp4'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('teaching_documents', [
+            'teacher_id' => $prof->id, 'title' => 'Lezione m4a', 'source_type' => 'audio',
+        ]);
+        Bus::assertDispatched(ExtractTeachingDocumentJob::class);
+    }
+
+    public function test_store_accepts_video_container_mp4(): void
+    {
+        Bus::fake();
+        Storage::fake('local');
+        $prof = $this->prof();
+
+        // Contenitore video: si trascrive la traccia audio. Accettato dal 5.
+        $this->asProf($prof)->post(route('docente.materials.store'), [
+            'title' => 'Lezione video', 'source_type' => 'audio',
+            'file' => UploadedFile::fake()->create('lez.mp4', 500, 'video/mp4'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        Bus::assertDispatched(ExtractTeachingDocumentJob::class);
+    }
+
+    public function test_store_audio_rejects_non_media_extension(): void
+    {
+        Bus::fake();
+        Storage::fake('local');
+
+        $this->asProf($this->prof())->post(route('docente.materials.store'), [
+            'title' => 'Falso', 'source_type' => 'audio',
+            'file' => UploadedFile::fake()->create('malware.txt', 10, 'text/plain'),
+        ])->assertSessionHasErrors('file');
+        Bus::assertNothingDispatched();
+    }
+
     public function test_owner_only_policy(): void
     {
         $a = $this->prof();
