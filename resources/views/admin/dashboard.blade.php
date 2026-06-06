@@ -14,7 +14,7 @@
         <div style="color:#8A9696; font-size:0.8rem;">{{ $enrollments }} iscrizioni attive</div>
     </div>
     <div style="background:white; border-radius:10px; padding:20px; border-left:4px solid #3A8C89;">
-        <div style="color:#8A9696; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Quiz completati</div>
+        <div style="color:#8A9696; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Prove quiz svolte</div>
         <div style="font-size:2rem; font-weight:700; color:#1A1F1F;">{{ $quizAttempts }}</div>
         <div style="color:#8A9696; font-size:0.8rem;">{{ $passedAttempts }} superati</div>
     </div>
