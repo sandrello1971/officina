@@ -15,19 +15,17 @@ class MindMapGenerationService
     private const MAX_TOKENS = 2000;
     private const TEMPERATURE = 0.3; // basso per output deterministico
     private const MAX_CONTENT_CHARS = 30000;
+    private const PROMPT_VERSION = 'mindmap-2026-06';
 
     /**
      * Genera la mappa mentale di un modulo via Claude API.
      * Ritorna markdown gerarchico compatibile con markmap.js.
+     *
+     * Percorso storico (mondo corsi): comportamento invariato, delega al core
+     * generateFromText e restituisce solo il markdown.
      */
     public function generate(Module $module): string
     {
-        $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
-
-        if (empty($apiKey)) {
-            throw new RuntimeException('Anthropic API key non configurata (config/services.php o env ANTHROPIC_API_KEY)');
-        }
-
         if (empty($module->content)) {
             throw new RuntimeException('Il modulo non ha contenuto da analizzare');
         }
@@ -35,20 +33,49 @@ class MindMapGenerationService
         // Strip HTML per dare a Claude testo pulito (pandoc-generated HTML e' verbose)
         $contentText = trim(strip_tags($module->content));
 
-        // Truncate protettivo (raro ma evita explosione token sui moduli enormi)
+        $result = $this->generateFromText($contentText, $module->title, [
+            'log_context' => ['module_id' => $module->id, 'module_title' => $module->title],
+        ]);
+
+        return $result['content'];
+    }
+
+    /**
+     * Core parametrizzato: genera una mappa mentale a partire da testo sorgente
+     * arbitrario (modulo corso, documento didattico Schola, ecc.).
+     *
+     * @param  string  $sourceText    testo già ripulito (no HTML) da analizzare
+     * @param  string  $contextLabel  titolo/etichetta del contesto (es. titolo modulo o documento)
+     * @param  array   $options       ['log_context' => array]
+     * @return array{content: string, meta: array}
+     */
+    public function generateFromText(string $sourceText, string $contextLabel, array $options = []): array
+    {
+        $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
+
+        if (empty($apiKey)) {
+            throw new RuntimeException('Anthropic API key non configurata (config/services.php o env ANTHROPIC_API_KEY)');
+        }
+
+        $contentText = trim($sourceText);
+        if ($contentText === '') {
+            throw new RuntimeException('Nessun testo sorgente da analizzare');
+        }
+
+        // Truncate protettivo (raro ma evita explosione token sui contenuti enormi)
         if (mb_strlen($contentText) > self::MAX_CONTENT_CHARS) {
             $contentText = mb_substr($contentText, 0, self::MAX_CONTENT_CHARS)
                 . "\n[...contenuto troncato per limiti di token]";
         }
 
-        $systemPrompt = $this->buildSystemPrompt();
-        $userMessage = $this->buildUserMessage($module->title, $contentText);
+        $logContext = $options['log_context'] ?? [];
 
-        Log::info('MindMap generation request', [
-            'module_id' => $module->id,
-            'module_title' => $module->title,
+        $systemPrompt = $this->buildSystemPrompt();
+        $userMessage = $this->buildUserMessage($contextLabel, $contentText);
+
+        Log::info('MindMap generation request', array_merge($logContext, [
             'content_chars' => mb_strlen($contentText),
-        ]);
+        ]));
 
         $response = Http::withHeaders([
             'x-api-key' => $apiKey,
@@ -65,11 +92,10 @@ class MindMapGenerationService
         ]);
 
         if (!$response->successful()) {
-            Log::error('MindMap Claude API failed', [
-                'module_id' => $module->id,
+            Log::error('MindMap Claude API failed', array_merge($logContext, [
                 'status' => $response->status(),
                 'body' => $response->body(),
-            ]);
+            ]));
             throw new RuntimeException('Errore Claude API: ' . $response->status());
         }
 
@@ -85,13 +111,20 @@ class MindMapGenerationService
         $markdown = preg_replace('/\n```\s*$/', '', $markdown);
         $markdown = trim($markdown);
 
-        Log::info('MindMap generated', [
-            'module_id' => $module->id,
+        Log::info('MindMap generated', array_merge($logContext, [
             'output_chars' => mb_strlen($markdown),
             'usage' => $data['usage'] ?? null,
-        ]);
+        ]));
 
-        return $markdown;
+        return [
+            'content' => $markdown,
+            'meta' => [
+                'model' => self::CLAUDE_MODEL,
+                'tokens_in' => (int) ($data['usage']['input_tokens'] ?? 0),
+                'tokens_out' => (int) ($data['usage']['output_tokens'] ?? 0),
+                'prompt_version' => self::PROMPT_VERSION,
+            ],
+        ];
     }
 
     private function buildSystemPrompt(): string

@@ -191,6 +191,14 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::get('/materiali/{document}/file/{index}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'downloadSource'])->name('materials.download');
     Route::get('/materiali/{document}/stato', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'status'])->name('materials.status');
     Route::post('/materiali/{document}/retry', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'retry'])->name('materials.retry');
+
+    // Generazione e gestione artefatti (pacchetto 5)
+    Route::post('/materiali/{document}/genera', [App\Http\Controllers\Docente\ArtifactGenerationController::class, 'store'])->name('artifacts.generate');
+    Route::get('/artefatti/{artifact}', [App\Http\Controllers\Docente\ArtifactController::class, 'show'])->name('artifacts.show');
+    Route::patch('/artefatti/{artifact}', [App\Http\Controllers\Docente\ArtifactController::class, 'update'])->name('artifacts.update');
+    Route::delete('/artefatti/{artifact}', [App\Http\Controllers\Docente\ArtifactController::class, 'destroy'])->name('artifacts.destroy');
+    Route::get('/artefatti/{artifact}/stato', [App\Http\Controllers\Docente\ArtifactController::class, 'status'])->name('artifacts.status');
+    Route::post('/artefatti/{artifact}/rigenera', [App\Http\Controllers\Docente\ArtifactGenerationController::class, 'regenerate'])->name('artifacts.regenerate');
 });
 
 // ===== AREA ADMIN ATHENEUM =====

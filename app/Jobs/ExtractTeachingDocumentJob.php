@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\TeachingArtifact;
 use App\Models\TeachingDocument;
 use App\Services\Schola\TeachingDocumentExtractor;
 use Illuminate\Bus\Queueable;
@@ -42,6 +43,8 @@ class ExtractTeachingDocumentJob implements ShouldQueue
                 'status' => 'ready',
                 'failure_reason' => null,
             ]);
+
+            $this->ensureTranscriptArtifact($doc, $result);
         } catch (Throwable $e) {
             Log::warning('[schola] estrazione teaching_document fallita', [
                 'document_id' => $doc->id,
@@ -54,5 +57,28 @@ class ExtractTeachingDocumentJob implements ShouldQueue
                 'failure_reason' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Crea (o aggiorna, in caso di ri-estrazione) la trascrizione come PRIMO
+     * artefatto del materiale: type=transcript, content = testo estratto, ready.
+     * Idempotente per (documento, transcript): un retry non duplica l'artefatto.
+     */
+    private function ensureTranscriptArtifact(TeachingDocument $doc, array $result): void
+    {
+        TeachingArtifact::updateOrCreate(
+            ['teaching_document_id' => $doc->id, 'type' => 'transcript'],
+            [
+                'teacher_id' => $doc->teacher_id,
+                'title' => 'Trascrizione — ' . $doc->title,
+                'content' => $result['text'],
+                'subject_id' => $doc->subject_id,
+                'status' => 'ready',
+                'generation_meta' => [
+                    'source' => 'extraction',
+                    'method' => $result['meta']['method'] ?? null,
+                ],
+            ]
+        );
     }
 }
