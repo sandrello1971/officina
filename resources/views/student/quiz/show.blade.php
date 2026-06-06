@@ -30,6 +30,23 @@
             @endif
         </div>
 
+        @php
+            $isExam = !empty($quiz->course_id) && empty($quiz->module_id);
+            $effMax = $effectiveMax ?? null;
+            $used = $usedAttempts ?? 0;
+            $passed = $alreadyPassed ?? false;
+            $exhausted = $isExam && $effMax !== null && $used >= $effMax && !$passed;
+        @endphp
+        @if($isExam && $effMax !== null)
+        <div style="background:{{ $exhausted ? '#fff3ec' : '#E8F5F5' }};
+                    border:1px solid {{ $exhausted ? '#E28A53' : '#55B1AE' }};
+                    border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:0.8rem;
+                    color:{{ $exhausted ? '#c97a45' : '#3A8C89' }};">
+            Tentativi: <strong>{{ $used }}/{{ $effMax }}</strong>
+            @if($exhausted) — esauriti, contatta il formatore @endif
+        </div>
+        @endif
+
         @if($pastAttempts->count() > 0)
         <div style="background:#F5F7F7; border-radius:10px; padding:16px; margin-bottom:24px; text-align:left;">
             <div style="font-size:0.8rem; font-weight:700; color:#4A5252; margin-bottom:8px;">I tuoi tentativi precedenti</div>
@@ -37,17 +54,37 @@
             <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #E8F5F5; font-size:0.8rem;">
                 <span style="color:#4A5252;">{{ $attempt->completed_at?->format('d/m/Y H:i') }}</span>
                 <span style="font-weight:700; color:{{ $attempt->passed ? '#3A8C89' : '#E28A53' }}">
-                    {{ $attempt->score }}% — {{ $attempt->passed ? '✓ Superato' : '✗ Non superato' }}
+                    @if($attempt->passed)
+                        {{ $attempt->score }}% — ✓ Superato
+                    @elseif($attempt->abandoned)
+                        ✗ Interrotto — non superato
+                    @else
+                        {{ $attempt->score }}% — ✗ Non superato
+                    @endif
                 </span>
             </div>
             @endforeach
         </div>
         @endif
 
+        @if($passed)
+        <div style="padding:14px 24px; background:#E8F5F5; color:#3A8C89; border-radius:10px; font-size:0.9rem; font-weight:600; display:inline-block;">
+            ✓ Esame già superato. Nessun nuovo tentativo necessario.
+        </div>
+        @elseif($exhausted)
+        <button disabled
+                style="padding:14px 40px; background:#C8D0D0; color:white; border:none; border-radius:10px; font-size:1rem; font-weight:700; cursor:not-allowed; opacity:0.7;">
+            Tentativi esauriti
+        </button>
+        <p style="font-size:0.75rem; color:#8A9696; margin-top:10px;">
+            Contatta il formatore per richiedere un tentativo aggiuntivo.
+        </p>
+        @else
         <button @click="startQuiz()"
                 style="padding:14px 40px; background:#55B1AE; color:white; border:none; border-radius:10px; font-size:1rem; font-weight:700; cursor:pointer;">
             Inizia il quiz →
         </button>
+        @endif
     </div>
 
     {{-- QUIZ IN CORSO --}}
@@ -271,10 +308,47 @@ function quizApp() {
                     body: JSON.stringify({})
                 });
                 const data = await res.json();
+
+                if (!res.ok) {
+                    if (data && data.already_passed) {
+                        alert('Hai già superato questo esame.');
+                    } else if (data && data.attempts_exhausted) {
+                        alert(data.error || 'Tentativi esauriti.');
+                    } else {
+                        alert(data?.error || 'Impossibile avviare il quiz.');
+                    }
+                    window.location.reload();
+                    return;
+                }
+
                 this.attemptId = data.attempt_id;
             } catch(e) {}
 
             this.phase = 'quiz';
+
+            @if(!empty($quiz->course_id) && empty($quiz->module_id))
+            // Esame: beacon best-effort che chiude il tentativo come
+            // abbandonato in caso di chiusura tab / cambio scheda.
+            // Server-side resta autoritativo (force-fail al restart + reaper).
+            this._abandonSent = false;
+            this._sendAbandon = () => {
+                if (!this.attemptId || this._abandonSent) return;
+                this._abandonSent = true;
+                try {
+                    navigator.sendBeacon(
+                        '/learn/quiz/{{ $quiz->id }}/abandon',
+                        new Blob(
+                            [JSON.stringify({_token: '{{ csrf_token() }}'})],
+                            {type: 'application/json'}
+                        )
+                    );
+                } catch(e) {}
+            };
+            window.addEventListener('beforeunload', this._sendAbandon);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') this._sendAbandon();
+            });
+            @endif
 
             @if($quiz->time_limit_minutes)
             this.timer = setInterval(() => {
@@ -390,6 +464,9 @@ function quizApp() {
                 this.correctCount = this.questions.filter(
                     q => this.answered[q.id] === this.corrections[q.id]?.correct_answer
                 ).length;
+                // Submit andato a buon fine: neutralizza il beacon (il tentativo
+                // è già consegnato, non va richiuso come abbandonato).
+                this.attemptId = null;
                 this.phase = 'result';
             } catch(e) {
                 alert('Errore di rete. Riprova.');
