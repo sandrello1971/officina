@@ -185,6 +185,31 @@
                 <span class="row-value">{{ $maskedEmail }}</span>
             </div>
             @endif
+
+            @if($cert->isSigned())
+                <div style="margin-top: 28px; padding: 18px; background: #E8F5F5; border-radius: 10px; border-left: 4px solid #3A8C89;">
+                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: #3A8C89; font-weight: 700; margin-bottom: 10px;">
+                        ✓ Firma digitale qualificata eIDAS
+                    </div>
+                    <div style="color: #1A1F1F; font-size: 0.85rem; line-height: 1.6;">
+                        Firmato digitalmente da
+                        <strong>{{ $cert->signed_by ?? ('Legale rappresentante ' . atheneum_setting('platform_owner', 'Noscite')) }}</strong>,
+                        in qualità di legale rappresentante di {{ atheneum_setting('platform_owner', 'Noscite S.r.l.s.') }},
+                        il <strong>{{ $cert->signed_at->locale('it')->isoFormat('D MMMM YYYY') }}</strong>.
+                    </div>
+                    <a href="{{ route('certificate.verify.pdf', ['code' => $cert->code]) }}"
+                       target="_blank"
+                       rel="noopener"
+                       style="display: inline-block; margin-top: 14px; padding: 10px 18px; background: #3A8C89; color: white; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                        ⬇ Visualizza PDF firmato
+                    </a>
+                    <p style="margin-top: 12px; font-size: 0.75rem; color: #4A5252; line-height: 1.5;">
+                        Il PDF è firmato con firma elettronica qualificata eIDAS,
+                        valida legalmente in tutta l'Unione Europea (Reg. UE 910/2014).
+                        Aprilo con Adobe Reader o un altro lettore conforme per verificare la firma.
+                    </p>
+                </div>
+            @endif
         @else
             <div class="badge badge-invalid">
                 <span>✗</span>
