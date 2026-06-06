@@ -163,7 +163,27 @@ class TeachingDocumentTest extends TestCase
         if (!$this->binaryExists('pdftotext')) {
             $this->markTestSkipped('poppler-utils (pdftotext) non disponibile su questo host');
         }
-        $this->markTestSkipped('Richiede un PDF di fixture con layer testo; coperto in CI con poppler-utils.');
+        Storage::fake('local');
+
+        // PDF con layer testo reale, generato via TCPDF (già in composer).
+        $pdf = new \TCPDF();
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->AddPage();
+        $pdf->SetFont('helvetica', '', 14);
+        $pdf->Write(0, 'Lezione di prova sul moto rettilineo uniforme.');
+        $bytes = $pdf->Output('', 'S');
+
+        $doc = $this->makeDoc($this->prof(), 'pdf');
+        Storage::disk('local')->put('td/source.pdf', $bytes);
+        $doc->update(['source_files' => ['td/source.pdf']]);
+
+        $this->runExtraction($doc);
+        $doc->refresh();
+
+        $this->assertSame('ready', $doc->status);
+        $this->assertStringContainsString('moto rettilineo', $doc->extracted_text);
+        $this->assertSame('pdftext', $doc->extraction_meta['method']);
     }
 
     // ===== Controller: validazioni, policy, retry =====
