@@ -24,6 +24,17 @@
     </div>
     @endif
 
+    @if($errors->any())
+    <div style="margin-bottom:16px; padding:12px 16px; background:#FDECE2; border:1px solid #E28A53; border-radius:6px; color:#A8521F; font-size:0.875rem;">
+        <strong>Impossibile creare il corso. Correggi questi errori:</strong>
+        <ul style="margin:8px 0 0 18px; padding:0;">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
     <form method="POST" action="{{ route('admin.courses.ingest.confirm') }}">
         @csrf
         <input type="hidden" name="job_id" value="{{ $jobId }}">
@@ -147,12 +158,10 @@
         @endif
 
         <div style="display:flex; gap:12px; justify-content:space-between; align-items:center;">
-            <form method="POST" action="{{ route('admin.courses.ingest.cancel') }}" style="margin:0;">
-                @csrf
-                <button type="submit" style="padding:10px 20px; border:1px solid #E28A53; color:#E28A53; background:white; border-radius:8px; font-size:0.875rem; cursor:pointer;">
-                    Annulla e ricomincia
-                </button>
-            </form>
+            <button type="submit" formaction="{{ route('admin.courses.ingest.cancel') }}" formnovalidate
+                    style="padding:10px 20px; border:1px solid #E28A53; color:#E28A53; background:white; border-radius:8px; font-size:0.875rem; cursor:pointer;">
+                Annulla e ricomincia
+            </button>
             <button type="submit" style="padding:10px 28px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.9rem; font-weight:700; cursor:pointer;">
                 ✓ Conferma e crea corso
             </button>

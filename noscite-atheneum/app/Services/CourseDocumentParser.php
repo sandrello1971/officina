@@ -37,8 +37,8 @@ class CourseDocumentParser
             function ($m) {
                 $text = trim(strip_tags($m[1]));
 
-                // Livello 1: PARTE PRIMA/SECONDA/... o MODULO N
-                if (preg_match('/^(?:PARTE|MODULO)\s+(?:PRIMA|SECONDA|TERZA|QUARTA|QUINTA|SESTA|SETTIMA|OTTAVA|NONA|DECIMA|[IVX]+|\d+)\b/iu', $text)) {
+                // Livello 1: PARTE/MODULO/LEZIONE/UNITÀ/SEZIONE/ARGOMENTO seguito da ordinale o numero
+                if (preg_match('/^(?:PARTE|MODULO|LEZIONE|UNIT[ÀA]|SEZIONE|ARGOMENTO)\s+(?:PRIMA|SECONDA|TERZA|QUARTA|QUINTA|SESTA|SETTIMA|OTTAVA|NONA|DECIMA|[IVX]+|\d+)\b/iu', $text)) {
                     return '<h1>' . $m[1] . '</h1>';
                 }
 
@@ -61,7 +61,20 @@ class CourseDocumentParser
     public function splitIntoModules(string $normalizedHtml): array
     {
         $level = $this->chooseTopLevel($normalizedHtml);
-        return $this->extractTopLevelSections($normalizedHtml, $level);
+        $modules = $this->extractTopLevelSections($normalizedHtml, $level);
+
+        // Fallback: nessun titolo riconosciuto come heading → modulo unico con tutto il contenuto.
+        // Evita il blocco "0 moduli"; l'utente può poi suddividere a mano nell'admin.
+        if (empty($modules) && trim(strip_tags($normalizedHtml)) !== '') {
+            $modules[] = [
+                'title' => 'Contenuto del corso',
+                'short_description' => null,
+                'content_html' => $normalizedHtml,
+                'sort_order' => 0,
+            ];
+        }
+
+        return $modules;
     }
 
     public function normalizeAndSplitIntoModules(string $html): array
