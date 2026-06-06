@@ -53,6 +53,68 @@
     </div>
     @endif
 
+    {{-- Generazione artefatti (solo a estrazione completata) --}}
+    @if($document->status === 'ready')
+    <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px; margin-bottom:16px;">
+        <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">Genera artefatto</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            {{-- Riassunto con livello --}}
+            <form method="POST" action="{{ route('docente.artifacts.generate', $document) }}" style="display:flex; gap:6px; align-items:flex-end;">
+                @csrf
+                <input type="hidden" name="type" value="summary">
+                <div>
+                    <label style="font-size:0.7rem; color:#8A9696; display:block;">Riassunto — livello</label>
+                    <select name="level" style="padding:8px 10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.82rem;">
+                        <option value="breve">Breve</option>
+                        <option value="medio" selected>Medio</option>
+                        <option value="dispensa">Dispensa</option>
+                    </select>
+                </div>
+                <button style="padding:9px 14px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Genera</button>
+            </form>
+
+            {{-- Quiz con n. domande --}}
+            <form method="POST" action="{{ route('docente.artifacts.generate', $document) }}" style="display:flex; gap:6px; align-items:flex-end;">
+                @csrf
+                <input type="hidden" name="type" value="quiz">
+                <div>
+                    <label style="font-size:0.7rem; color:#8A9696; display:block;">Quiz — domande</label>
+                    <input type="number" name="num_questions" min="3" max="20" value="10" style="width:70px; padding:8px 10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.82rem;">
+                </div>
+                <button style="padding:9px 14px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Genera</button>
+            </form>
+
+            {{-- Tipi senza opzioni --}}
+            @foreach(['mindmap' => 'Mappa mentale', 'conceptmap' => 'Mappa concettuale', 'outline' => 'Scaletta'] as $t => $label)
+            <form method="POST" action="{{ route('docente.artifacts.generate', $document) }}">
+                @csrf
+                <input type="hidden" name="type" value="{{ $t }}">
+                <button style="padding:9px 14px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">{{ $label }}</button>
+            </form>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    {{-- Artefatti esistenti --}}
+    @if($document->artifacts->count())
+    <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px; margin-bottom:16px;">
+        <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">Artefatti</div>
+        @php $typeLabels = ['transcript'=>'Trascrizione','summary'=>'Riassunto','mindmap'=>'Mappa mentale','conceptmap'=>'Mappa concettuale','quiz'=>'Quiz','outline'=>'Scaletta'];
+             $statusColor = ['generating'=>'#E28A53','ready'=>'#3A8C89','failed'=>'#A8521F'];
+             $statusLabel = ['generating'=>'in corso…','ready'=>'pronto','failed'=>'fallito']; @endphp
+        @foreach($document->artifacts as $a)
+            <a href="{{ route('docente.artifacts.show', $a) }}" style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid #E5E7E7; border-radius:8px; margin-bottom:6px; text-decoration:none;">
+                <span style="font-size:0.875rem; color:#1A1F1F;">
+                    <span style="font-weight:600;">{{ $typeLabels[$a->type] ?? $a->type }}</span>
+                    <span style="color:#8A9696;"> — {{ $a->title }}</span>
+                </span>
+                <span style="font-size:0.72rem; font-weight:700; color:{{ $statusColor[$a->status] ?? '#8A9696' }};">{{ $statusLabel[$a->status] ?? $a->status }}</span>
+            </a>
+        @endforeach
+    </div>
+    @endif
+
     {{-- Editing metadati + testo estratto --}}
     <form method="POST" action="{{ route('docente.materials.update', $document) }}" style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px;">
         @csrf @method('PATCH')

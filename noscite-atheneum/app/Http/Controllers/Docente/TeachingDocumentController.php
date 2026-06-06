@@ -133,7 +133,7 @@ class TeachingDocumentController extends Controller
     public function show(TeachingDocument $document)
     {
         $this->authorizeOwner($document);
-        $document->load('subject');
+        $document->load(['subject', 'artifacts' => fn ($q) => $q->orderBy('created_at')]);
         return view('docente.materiali.show', ['document' => $document]);
     }
 

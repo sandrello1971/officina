@@ -16,8 +16,11 @@ class QuizController extends Controller
 {
     public function index()
     {
+        // I quiz Schola (output di un teaching_artifact, module_id/course_id NULL)
+        // vivono fuori dal mondo corsi: esclusi da questa lista admin.
         $quizzes = Quiz::with(['course', 'module'])
             ->withCount(['questions', 'attempts'])
+            ->whereDoesntHave('teachingArtifact')
             ->orderByDesc('created_at')
             ->get();
 
