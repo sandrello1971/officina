@@ -62,8 +62,23 @@ class TeachingDocumentController extends Controller
         // Validazioni specifiche per tipo sorgente.
         match ($base['source_type']) {
             'audio' => $request->validate([
-                'file' => 'required|file|mimes:mp3,m4a,wav,ogg|max:204800', // 200 MB
-            ], [], ['file' => 'file audio']),
+                // Audio E video: si trascrive la traccia audio (Whisper gestisce i
+                // contenitori video via ffmpeg). Gli m4a sono contenitori MP4 e PHP
+                // li rileva come audio/mp4 o video/mp4: niente regola `mimes` (che
+                // mappa l'estensione a un set rigido), ma estensione esplicita +
+                // lista mime esplicita (audio e video). Limite invariato 200 MB.
+                'file' => [
+                    'required', 'file', 'max:204800',
+                    'extensions:mp3,m4a,wav,ogg,mp4,mov,mpeg,avi,webm',
+                    'mimetypes:'
+                        . 'audio/mpeg,audio/mp3,audio/x-mp3,'
+                        . 'audio/mp4,audio/x-m4a,audio/m4a,'
+                        . 'audio/wav,audio/x-wav,audio/wave,audio/vnd.wave,'
+                        . 'audio/ogg,application/ogg,video/ogg,'
+                        . 'audio/webm,'
+                        . 'video/mp4,video/quicktime,video/mpeg,video/x-msvideo,video/avi,video/msvideo,video/webm',
+                ],
+            ], [], ['file' => 'file audio o video']),
             'pdf' => $request->validate([
                 'file' => 'required|file|mimes:pdf|max:51200', // 50 MB
             ]),

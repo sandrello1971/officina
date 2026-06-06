@@ -27,7 +27,7 @@
 
         <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-top:12px;">Tipo di sorgente *</label>
         <select name="source_type" x-model="type" required style="width:100%; padding:9px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem;">
-            <option value="audio">Audio (mp3/m4a/wav, max 200MB)</option>
+            <option value="audio">Audio o video (verrà trascritta la traccia audio)</option>
             <option value="youtube">Video YouTube (URL)</option>
             <option value="photos">Foto multiple (jpg/png, max 20)</option>
             <option value="pdf">PDF</option>
