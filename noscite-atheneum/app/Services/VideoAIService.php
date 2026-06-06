@@ -92,4 +92,71 @@ class VideoAIService
         if ($response->failed()) return [];
         return $response->json() ?? [];
     }
+
+    // ===== Schola: trascrizione audio puro e YouTube (pacchetto 4a/4b) =====
+    // Endpoint Python aggiunti nel pacchetto 4b. Qui il client: POST → {job_id},
+    // poi polling fino a status completed/failed. Ritorna l'array risultato.
+
+    public function transcribeAudio(string $filePath, string $filename): array
+    {
+        $response = Http::timeout(120)
+            ->attach('file', file_get_contents($filePath), $filename)
+            ->post("{$this->baseUrl}/api/audio/transcribe");
+
+        if ($response->failed()) {
+            throw new \RuntimeException('VideoAI audio transcribe failed: ' . $response->status());
+        }
+
+        $jobId = $response->json('job_id');
+        if (!$jobId) {
+            throw new \RuntimeException('VideoAI audio: job_id mancante nella risposta');
+        }
+
+        return $this->pollTranscription("/api/audio/{$jobId}");
+    }
+
+    public function transcribeYouTube(string $url): array
+    {
+        $response = Http::timeout(60)
+            ->post("{$this->baseUrl}/api/youtube/transcribe", ['url' => $url]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('VideoAI youtube transcribe failed: ' . $response->status());
+        }
+
+        $jobId = $response->json('job_id');
+        if (!$jobId) {
+            throw new \RuntimeException('VideoAI youtube: job_id mancante nella risposta');
+        }
+
+        return $this->pollTranscription("/api/youtube/{$jobId}");
+    }
+
+    /** Polling generico di un job di trascrizione finché completed/failed. */
+    private function pollTranscription(string $statusPath): array
+    {
+        $interval = (int) config('services.videoai.poll_interval', 3);
+        $maxAttempts = (int) config('services.videoai.poll_max_attempts', 200);
+
+        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+            $res = Http::timeout(15)->get("{$this->baseUrl}{$statusPath}");
+            if ($res->failed()) {
+                throw new \RuntimeException('VideoAI status check failed: ' . $res->status());
+            }
+
+            $data = $res->json();
+            $status = $data['status'] ?? 'processing';
+
+            if (in_array($status, ['completed', 'ready', 'done'], true)) {
+                return $data;
+            }
+            if (in_array($status, ['failed', 'error'], true)) {
+                throw new \RuntimeException('VideoAI trascrizione fallita: ' . ($data['reason'] ?? 'motivo non specificato'));
+            }
+
+            sleep($interval);
+        }
+
+        throw new \RuntimeException('VideoAI trascrizione: timeout di polling superato');
+    }
 }

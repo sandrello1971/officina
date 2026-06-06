@@ -37,10 +37,16 @@ return [
 
     'videoai' => [
         'url' => env('VIDEO_AI_URL', 'http://127.0.0.1:8001'),
+        // Polling trascrizione audio/youtube (Schola pacchetto 4a/4b)
+        'poll_interval' => (int) env('VIDEOAI_POLL_INTERVAL', 3),
+        'poll_max_attempts' => (int) env('VIDEOAI_POLL_MAX_ATTEMPTS', 200),
     ],
 
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
+        // Vision (OCR/trascrizione foto e PDF scansionati) — Schola pacchetto 4a
+        'vision_model' => env('ANTHROPIC_VISION_MODEL', 'claude-sonnet-4-5'),
+        'vision_max_tokens' => (int) env('ANTHROPIC_VISION_MAX_TOKENS', 4000),
     ],
 
     'azure' => [
