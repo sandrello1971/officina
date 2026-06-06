@@ -14,6 +14,27 @@
         </p>
     </div>
 
+    {{-- Schola: Le mie classi (contenuti completi nel pacchetto 7) --}}
+    @if(!empty($myClasses) && $myClasses->isNotEmpty())
+    <div style="margin-bottom:24px;">
+        <h2 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:10px;">Le mie classi</h2>
+        @foreach($myClasses as $myClass)
+        <div style="background:white; border-radius:10px; padding:12px 16px; margin-bottom:8px; border:1px solid #C8D0D0; display:flex; align-items:center; gap:10px;">
+            <div style="flex:1;">
+                <span style="font-weight:600; color:#1A1F1F;">{{ $myClass->name }}</span>
+                <span style="color:#8A9696; font-size:0.8rem;">· {{ $myClass->subject->name ?? '—' }} · {{ $myClass->school_year }}</span>
+            </div>
+            @if($myClass->pivot->status === 'pending')
+                <span style="font-size:0.7rem; font-weight:700; color:#E28A53; background:#FDECE2; border:1px solid #E28A53; border-radius:4px; padding:2px 8px;">In attesa</span>
+            @else
+                <span style="font-size:0.7rem; font-weight:700; color:#3A8C89; background:#E8F5F5; border:1px solid #55B1AE; border-radius:4px; padding:2px 8px;">Attiva</span>
+            @endif
+        </div>
+        @endforeach
+        <a href="{{ route('student.classes.index') }}" style="font-size:0.82rem; color:#55B1AE; text-decoration:none;">Vedi tutte →</a>
+    </div>
+    @endif
+
     @if($courses->isEmpty())
     <div style="background:white; border-radius:12px; padding:40px; text-align:center; border:2px dashed #C8D0D0;">
         <div style="font-size:3rem; margin-bottom:12px;">&#128218;</div>

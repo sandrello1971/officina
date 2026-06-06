@@ -24,6 +24,30 @@ class SchoolClass extends Model
         'is_archived' => 'boolean',
     ];
 
+    // Alfabeto senza caratteri ambigui: niente 0/O/1/I/L.
+    public const INVITE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+    /** Codice invito univoco di 7 caratteri non ambigui. */
+    public static function generateInviteCode(int $length = 7): string
+    {
+        $alphabet = self::INVITE_ALPHABET;
+        $max = strlen($alphabet) - 1;
+        do {
+            $code = '';
+            for ($i = 0; $i < $length; $i++) {
+                $code .= $alphabet[random_int(0, $max)];
+            }
+        } while (static::where('invite_code', $code)->exists());
+
+        return $code;
+    }
+
+    /** Una classe accetta nuovi ingressi solo se non archiviata e col codice attivo. */
+    public function acceptsNewMembers(): bool
+    {
+        return !$this->is_archived && $this->invite_enabled;
+    }
+
     public function teacher()
     {
         return $this->belongsTo(Student::class, 'teacher_id');

@@ -44,8 +44,15 @@ Route::prefix('learn')->name('student.')->group(function () {
     Route::get('/change-password', [App\Http\Controllers\Student\AuthController::class, 'showChangePassword'])->name('change-password');
     Route::post('/change-password', [App\Http\Controllers\Student\AuthController::class, 'changePassword'])->name('change-password.post');
 
+    // Iscrizione a una classe con codice (pacchetto 3). Pubblico: gestisce sia lo
+    // studente loggato sia la registrazione di un nuovo studente via codice.
+    Route::get('/classi/unisciti', [App\Http\Controllers\Student\ClassJoinController::class, 'create'])->name('classes.join.create');
+    Route::post('/classi/unisciti', [App\Http\Controllers\Student\ClassJoinController::class, 'store'])
+        ->middleware('throttle:class-join')->name('classes.join.store');
+
     Route::middleware(['student.auth', 'student.password', 'demo.restrictions'])->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\Student\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/classi', [App\Http\Controllers\Student\StudentClassController::class, 'index'])->name('classes.index');
         Route::get('/course/{course:slug}', [App\Http\Controllers\Student\CourseController::class, 'show'])->name('course.show');
         Route::get('/course/{course:slug}/module/{module}', [App\Http\Controllers\Student\CourseController::class, 'module'])->name('module.show');
         Route::post('/course/{course:slug}/module/{module}/complete', [App\Http\Controllers\Student\CourseController::class, 'completeModule'])->name('module.complete');
@@ -165,6 +172,14 @@ Route::prefix('admin/auth/microsoft')->group(function () {
 // Auth via sessione studente + gate professor. NON eredita gli accessi instructor.
 Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'professor'])->group(function () {
     Route::get('/', [App\Http\Controllers\Docente\DashboardController::class, 'index'])->name('dashboard');
+
+    // Classi (pacchetto 3)
+    Route::get('/classi', [App\Http\Controllers\Docente\ClassController::class, 'index'])->name('classes.index');
+    Route::post('/classi', [App\Http\Controllers\Docente\ClassController::class, 'store'])->name('classes.store');
+    Route::get('/classi/{class}', [App\Http\Controllers\Docente\ClassController::class, 'show'])->name('classes.show');
+    Route::patch('/classi/{class}', [App\Http\Controllers\Docente\ClassController::class, 'update'])->name('classes.update');
+    Route::post('/classi/{class}/rigenera-codice', [App\Http\Controllers\Docente\ClassController::class, 'regenerateCode'])->name('classes.regenerate-code');
+    Route::patch('/classi/{class}/studenti/{enrollment}', [App\Http\Controllers\Docente\ClassRosterController::class, 'update'])->name('classes.roster.update');
 });
 
 // ===== AREA ADMIN ATHENEUM =====
