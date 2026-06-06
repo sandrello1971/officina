@@ -11,7 +11,7 @@ class ChatConversation extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'student_id', 'course_id', 'title', 'is_active',
+        'student_id', 'course_id', 'title', 'is_active', 'school_class_id',
     ];
 
     protected $casts = [
@@ -31,5 +31,10 @@ class ChatConversation extends Model
     public function messages()
     {
         return $this->hasMany(ChatMessage::class, 'conversation_id');
+    }
+
+    public function schoolClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'school_class_id');
     }
 }

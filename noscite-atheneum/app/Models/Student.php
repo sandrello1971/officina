@@ -21,7 +21,7 @@ class Student extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password', 'phone', 'company', 'job_title', 'role',
         'avatar_url', 'is_active', 'is_demo', 'must_change_password',
-        'microsoft_id', 'auto_enroll_all_courses',
+        'microsoft_id', 'auto_enroll_all_courses', 'birth_date',
     ];
 
     protected $hidden = [
@@ -36,6 +36,7 @@ class Student extends Authenticatable
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
         'password' => 'hashed',
+        'birth_date' => 'date',
     ];
 
     public function courses()
@@ -114,5 +115,36 @@ class Student extends Authenticatable
     public function conceptMapForks()
     {
         return $this->hasMany(StudentConceptMap::class);
+    }
+
+    // ===== Schola =====
+
+    // Come docente (role=professor)
+    public function schoolClassesAsTeacher()
+    {
+        return $this->hasMany(SchoolClass::class, 'teacher_id');
+    }
+
+    public function teachingDocuments()
+    {
+        return $this->hasMany(TeachingDocument::class, 'teacher_id');
+    }
+
+    public function teachingArtifacts()
+    {
+        return $this->hasMany(TeachingArtifact::class, 'teacher_id');
+    }
+
+    // Come studente di classe
+    public function classEnrollments()
+    {
+        return $this->hasMany(ClassStudent::class, 'student_id');
+    }
+
+    public function schoolClasses()
+    {
+        return $this->belongsToMany(SchoolClass::class, 'class_students', 'student_id', 'school_class_id')
+            ->withPivot('status', 'approved_at')
+            ->withTimestamps();
     }
 }

@@ -15,6 +15,7 @@ class DocumentRag extends Model
     protected $fillable = [
         'course_id', 'module_id', 'title', 'content',
         'file_path', 'chunk_index', 'metadata', 'is_instructor_only',
+        'school_class_id', 'teacher_id', 'scope',
     ];
 
     protected $casts = [
@@ -30,5 +31,16 @@ class DocumentRag extends Model
     public function module()
     {
         return $this->belongsTo(Module::class);
+    }
+
+    // ===== Schola =====
+    public function schoolClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'school_class_id');
+    }
+
+    public function teacher()
+    {
+        return $this->belongsTo(Student::class, 'teacher_id');
     }
 }

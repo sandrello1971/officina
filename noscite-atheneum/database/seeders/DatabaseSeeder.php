@@ -21,5 +21,8 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Schola: materie standard (licei/tecnici), idempotente.
+        $this->call(SubjectSeeder::class);
     }
 }
