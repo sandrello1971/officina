@@ -42,6 +42,17 @@
             @csrf
             @method('PUT')
 
+            @if ($errors->any())
+                <div style="background:#FDECE2; border:1px solid #E28A53; color:#A8521F; border-radius:8px; padding:14px 16px; margin-bottom:16px; font-size:0.85rem;">
+                    <strong>Impossibile salvare le modifiche. Correggi questi errori:</strong>
+                    <ul style="margin:8px 0 0 18px; padding:0;">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div style="display:grid; gap:16px;">
                 <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
                     <div>
