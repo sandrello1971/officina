@@ -193,6 +193,12 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     // Minerva di classe lato docente (scope teacher_private + class). Stessa view, POST su /minerva/ask.
     Route::get('/classi/{class}/minerva', [App\Http\Controllers\Student\ChatController::class, 'showClass'])->name('classes.minerva');
 
+    // Cruscotto (pacchetto 8)
+    Route::get('/classi/{class}/attivita', [App\Http\Controllers\Docente\ClassActivityController::class, 'index'])->name('classes.activity');
+    Route::get('/classi/{class}/domande-scoperte', [App\Http\Controllers\Docente\UnansweredQuestionsController::class, 'index'])->name('classes.questions');
+    Route::post('/classi/{class}/domande-scoperte/azione', [App\Http\Controllers\Docente\UnansweredQuestionsController::class, 'updateCluster'])->name('classes.questions.bulk');
+    Route::patch('/domande-scoperte/{question}', [App\Http\Controllers\Docente\UnansweredQuestionsController::class, 'update'])->name('questions.update');
+
     // Materiali grezzi (pacchetto 4a)
     Route::get('/materiali', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'index'])->name('materials.index');
     Route::get('/materiali/crea', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'create'])->name('materials.create');
