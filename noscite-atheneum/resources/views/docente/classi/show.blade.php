@@ -10,6 +10,8 @@
     <p style="color:#8A9696; font-size:0.875rem; margin-bottom:12px;">{{ $class->subject->name ?? '—' }} · {{ $class->school_year }}</p>
     <div style="margin-bottom:20px;">
         <a href="{{ route('docente.classes.minerva', $class) }}" style="display:inline-block; padding:8px 14px; background:#1A1F1F; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none;">&#9788; Apri Minerva (tuoi materiali + classe)</a>
+        <a href="{{ route('docente.classes.activity', $class) }}" style="display:inline-block; padding:8px 14px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none; margin-left:6px;">&#128202; Attività</a>
+        <a href="{{ route('docente.classes.questions', $class) }}" style="display:inline-block; padding:8px 14px; background:white; color:#A8521F; border:1px solid #E28A53; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none; margin-left:6px;">&#10067; Domande scoperte ({{ $openQuestionsCount ?? 0 }})</a>
     </div>
 
     @if ($errors->any())
