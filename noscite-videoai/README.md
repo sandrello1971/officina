@@ -68,6 +68,7 @@ API disponibile su `http://localhost:8000`. Documentazione interattiva su `/docs
 | GET | `/api/audio/{job_id}` | Polling stato/risultato trascrizione audio |
 | POST | `/api/youtube/transcribe` | Trascrizione video YouTube (`{url}`) → `{job_id}` |
 | GET | `/api/youtube/{job_id}` | Polling stato/risultato trascrizione YouTube |
+| POST | `/api/embeddings` | `{texts:[..]}` → `{embeddings, model, dimensions}` (RAG Schola) |
 
 > **Auth:** gli endpoint API non usano autenticazione (il servizio è esposto
 > solo su `127.0.0.1` dietro reverse proxy). `VIDEO_AI_SECRET` è presente nel

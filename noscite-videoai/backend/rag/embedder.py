@@ -10,11 +10,18 @@ from tqdm import tqdm
 
 from backend.config import settings
 
+# Modello di embedding condiviso (ChromaDB video + endpoint /api/embeddings per
+# il RAG Schola di atheneum). Multilingue, adatto all'italiano. 768 dimensioni.
+EMBEDDING_MODEL_NAME = "paraphrase-multilingual-mpnet-base-v2"
+EMBEDDING_DIMENSIONS = 768
+# Limite di testi per singola richiesta all'endpoint (protezione memoria/CPU).
+MAX_EMBED_TEXTS = 256
+
 
 def load_model():
     try:
         model = SentenceTransformer(
-            "paraphrase-multilingual-mpnet-base-v2",
+            EMBEDDING_MODEL_NAME,
             device="cpu",
         )
         print("[EMBEDDER] Modello caricato su CPU")
@@ -32,6 +39,20 @@ def get_model():
     if _model is None:
         _model = load_model()
     return _model
+
+
+def embed_texts(texts: list[str], batch_size: int = 32) -> list[list[float]]:
+    """Calcola gli embedding di una lista di testi. Vettori normalizzati (L2=1):
+    la similarità coseno con pgvector (operatore <=>) è così diretta e stabile.
+    Ritorna una lista di liste di float (serializzabile in JSON)."""
+    model = get_model()
+    embeddings = model.encode(
+        texts,
+        batch_size=batch_size,
+        normalize_embeddings=True,
+        show_progress_bar=False,
+    )
+    return embeddings.tolist()
 
 
 class VideoIndex:
