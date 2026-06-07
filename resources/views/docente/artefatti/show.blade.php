@@ -178,6 +178,39 @@
     </div>
     @endif
 
+    {{-- Condivisione in Biblioteca docenti (pacchetto 9) --}}
+    @if($artifact->status === 'ready')
+    <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px; margin-bottom:12px;">
+        <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">Biblioteca docenti</div>
+
+        @if($sharingBlocked)
+            <p style="font-size:0.85rem; color:#A8521F; margin:0;">
+                &#128274; Trascrizione integrale di materiale potenzialmente protetto: resta nel perimetro delle tue classi e non è condivisibile in biblioteca.
+            </p>
+        @elseif($artifact->shared_with_teachers)
+            <p style="font-size:0.85rem; color:#3A8C89; margin:0 0 10px;">&#10003; Condiviso con gli altri docenti.</p>
+            <form method="POST" action="{{ route('docente.artifacts.sharing', $artifact) }}" data-async>
+                @csrf @method('PATCH')
+                <input type="hidden" name="shared" value="0">
+                <button data-busy-label="Rimuovo…" style="padding:8px 14px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:8px; font-size:0.82rem; cursor:pointer;">Rimuovi dalla biblioteca</button>
+            </form>
+        @else
+            <p style="font-size:0.82rem; color:#8A9696; margin:0 0 10px;">Condividi questo artefatto trasformativo con gli altri docenti: potranno duplicarne una copia indipendente.</p>
+            <form method="POST" action="{{ route('docente.artifacts.sharing', $artifact) }}" data-async>
+                @csrf @method('PATCH')
+                <input type="hidden" name="shared" value="1">
+                @unless($rightsAcked)
+                    <label style="display:flex; gap:8px; align-items:flex-start; font-size:0.8rem; color:#4A5252; margin-bottom:10px;">
+                        <input type="checkbox" name="rights_ack" value="1" style="margin-top:2px;">
+                        Dichiaro di avere i diritti per condividere questo contenuto con altri docenti e mi assumo la responsabilità di quanto pubblicato.
+                    </label>
+                @endunless
+                <button data-busy-label="Condivido…" style="padding:8px 14px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Condividi in biblioteca</button>
+            </form>
+        @endif
+    </div>
+    @endif
+
     {{-- Azioni: rigenera (con conferma) + elimina. La trascrizione non si rigenera. --}}
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
         @if($artifact->type !== 'transcript' && $artifact->teaching_document_id)

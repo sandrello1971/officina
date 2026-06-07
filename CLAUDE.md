@@ -34,6 +34,12 @@ Riferimento di progettazione: `docs/schola/SPEC.md` (leggere SEMPRE, inclusa la
   mano**: lo script preserva `.env`/`data/`/`venv`. Dopo: installare le deps
   nuove di `requirements.txt` nel venv condiviso `/home/noscite/venv` e
   `sudo systemctl restart noscite-videoai`.
+- **Worktree `/home/noscite/worktree-videoai`**: resta in **detached HEAD**
+  quando inattivo; le sessioni videoai vi creano i propri branch. **Mai tenere
+  `main` checked-out nel worktree** (bloccherebbe i merge dal repo principale).
+- **RAG vettoriale in prod ATTIVO** (mini-deploy videoai svolto): `/api/embeddings`
+  live su `:8001`, `CREATE EXTENSION vector` e backfill (707/707) fatti su
+  `atheneum_db`. Schola può essere attivato.
 
 ### Convenzioni del codebase (rispettare SEMPRE)
 - **PK `uuid`** con `gen_random_uuid()`, relazioni `foreignUuid`, **CHECK

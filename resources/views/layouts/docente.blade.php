@@ -68,7 +68,8 @@
             <span>&#128196;</span> Materiali
         </a>
         {{-- Voce del prossimo pacchetto: visibile ma disabilitata --}}
-        <a href="#" class="nav-item disabled" aria-disabled="true" title="In arrivo">
+        <a href="{{ route('docente.biblioteca.index') }}"
+           class="nav-item {{ request()->routeIs('docente.biblioteca.*') ? 'active' : '' }}">
             <span>&#127963;</span> Biblioteca
         </a>
     </nav>
