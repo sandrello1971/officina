@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\Concerns\ResolvesScholaAccess;
+use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\StudentArtifactView;
 
 class StudentClassController extends Controller
 {
+    use ResolvesScholaAccess;
+
     public function index()
     {
         $student = Student::findOrFail(session('student_id'));
@@ -18,5 +23,29 @@ class StudentClassController extends Controller
             ->get();
 
         return view('student.classi.index', compact('classes'));
+    }
+
+    /**
+     * Feed cronologico delle pubblicazioni della classe + accesso alla chat.
+     * Solo iscrizione ATTIVA.
+     */
+    public function show(SchoolClass $class)
+    {
+        $student = $this->currentStudent();
+        $this->assertActiveEnrollment($class, $student->id);
+
+        // Pubblicazioni della classe (artefatto pronto), più recenti prima.
+        $publications = $class->publications()
+            ->whereHas('artifact', fn ($q) => $q->where('status', 'ready'))
+            ->with('artifact:id,type,title,teaching_document_id')
+            ->orderByDesc('published_at')
+            ->get();
+
+        // Stato "visto/nuovo" per lo studente (una query, niente N+1).
+        $views = StudentArtifactView::where('student_id', $student->id)
+            ->whereIn('artifact_publication_id', $publications->pluck('id'))
+            ->pluck('last_viewed_at', 'artifact_publication_id');
+
+        return view('student.classi.show', compact('class', 'student', 'publications', 'views'));
     }
 }

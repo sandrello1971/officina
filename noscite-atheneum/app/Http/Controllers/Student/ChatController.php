@@ -462,6 +462,19 @@ TXT;
         $asDocente = $this->resolveClassRole($class, $student);
         abort_if($asDocente === null, 403, 'Non hai accesso a questa classe.');
 
+        // Rate limit giornaliero (solo studenti, §8.2): il modello NON viene
+        // chiamato a soglia raggiunta. Messaggio gentile, niente conteggio extra.
+        if (!$asDocente) {
+            $usage = app(\App\Services\Schola\ScholaUsage::class);
+            if (!$usage->chatStatus($student->id)['allowed']) {
+                return response()->json([
+                    'answer' => $usage->limitMessage('chat'),
+                    'sources' => [],
+                    'gate' => 'rate_limited',
+                ]);
+            }
+        }
+
         $teacherId = $asDocente ? $student->id : null;
         $classIds = [$class->id];
         $artifactId = $data['artifact_id'] ?? null;

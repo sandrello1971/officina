@@ -7,12 +7,15 @@ use App\Http\Controllers\Student\Concerns\DeterminesTeachingMode;
 use App\Http\Controllers\Student\Concerns\EvaluatesExamState;
 use App\Mail\CertificationPassedMail;
 use App\Models\Certificate;
+use App\Models\ClassStudent;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Quiz;
 use App\Models\QuizAnswer;
 use App\Models\QuizAttempt;
 use App\Models\Student;
+use App\Models\StudentGeneratedArtifact;
+use App\Models\TeachingArtifact;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,9 +28,39 @@ class QuizController extends Controller
     use DeterminesTeachingMode;
     use EvaluatesExamState;
 
+    /**
+     * Gate di accesso per i quiz SCHOLA (module_id e course_id entrambi NULL):
+     * lo studente può accedere solo se il quiz è (a) un artefatto quiz pubblicato
+     * in una sua classe attiva, oppure (b) un quiz di autoverifica auto-generato
+     * da lui. Per i quiz del MONDO CORSI (course/module valorizzati) è un no-op
+     * → nessuna regressione.
+     */
+    private function guardScholaQuiz(Quiz $quiz, ?string $studentId): void
+    {
+        if ($quiz->module_id !== null || $quiz->course_id !== null) {
+            return; // quiz del mondo corsi: comportamento invariato
+        }
+
+        $activeClassIds = ClassStudent::where('student_id', $studentId)
+            ->where('status', 'active')
+            ->pluck('school_class_id');
+
+        $viaPublication = TeachingArtifact::where('quiz_id', $quiz->id)
+            ->whereHas('publications', fn ($q) => $q->whereIn('school_class_id', $activeClassIds))
+            ->exists();
+
+        $viaSelfGenerated = StudentGeneratedArtifact::where('quiz_id', $quiz->id)
+            ->where('student_id', $studentId)
+            ->exists();
+
+        abort_unless($viaPublication || $viaSelfGenerated, 403,
+            'Non hai accesso a questo quiz.');
+    }
+
     public function show(Quiz $quiz)
     {
         $student = Student::findOrFail(session('student_id'));
+        $this->guardScholaQuiz($quiz, $student->id);
 
         if ($student->is_demo && !$quiz->is_demo) {
             abort(403, 'In modalità demo puoi vedere solo il quiz di prova.');
@@ -87,6 +120,7 @@ class QuizController extends Controller
     public function start(Request $request, Quiz $quiz)
     {
         $student = Student::findOrFail(session('student_id'));
+        $this->guardScholaQuiz($quiz, $student->id);
 
         if ($student->is_demo) {
             return response()->json(['attempt_id' => 'demo-' . uniqid()]);
@@ -185,6 +219,7 @@ class QuizController extends Controller
     public function abandon(Request $request, Quiz $quiz)
     {
         $student = Student::findOrFail(session('student_id'));
+        $this->guardScholaQuiz($quiz, $student->id);
 
         // Demo: no-op
         if ($student->is_demo) {
@@ -238,6 +273,7 @@ class QuizController extends Controller
     {
         $studentId = session('student_id');
         abort_unless($studentId, 403);
+        $this->guardScholaQuiz($quiz, $studentId);
 
         $student = Student::findOrFail($studentId);
 
@@ -354,6 +390,7 @@ class QuizController extends Controller
     {
         $studentId = session('student_id');
         abort_unless($studentId && $attempt->student_id === $studentId, 403);
+        $this->guardScholaQuiz($quiz, $studentId);
         abort_unless($attempt->quiz_id === $quiz->id, 404);
 
         $attempt->load(['answers.question']);
