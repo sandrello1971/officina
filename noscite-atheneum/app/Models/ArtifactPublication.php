@@ -13,6 +13,7 @@ class ArtifactPublication extends Model
     protected $fillable = [
         'teaching_artifact_id', 'school_class_id',
         'students_can_generate', 'downloadable', 'published_at',
+        'rag_status', 'rag_failure_reason',
     ];
 
     protected $casts = [

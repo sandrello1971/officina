@@ -6,6 +6,7 @@ use App\Models\Quiz;
 use App\Models\TeachingArtifact;
 use App\Services\ConceptMapGenerationService;
 use App\Services\MindMapGenerationService;
+use App\Jobs\IngestArtifactTeacherPrivateJob;
 use App\Services\QuizGeneratorService;
 use App\Services\SummaryGenerationService;
 use Illuminate\Bus\Queueable;
@@ -127,6 +128,10 @@ class GenerateArtifactJob implements ShouldQueue
                 'status' => 'ready',
                 'generation_meta' => $meta,
             ]);
+
+            // Minerva del docente: indicizza l'artefatto come teacher_private
+            // (anche se non pubblicato). Best-effort, non blocca la generazione.
+            IngestArtifactTeacherPrivateJob::dispatch($artifact->id);
         } catch (Throwable $e) {
             Log::warning('[schola] generazione artefatto fallita', array_merge($log, [
                 'error' => $e->getMessage(),

@@ -99,10 +99,17 @@ class TeachingDocumentTest extends TestCase
     public function test_photos_extraction_vision_per_image(): void
     {
         Storage::fake('local');
-        Http::fake(['https://api.anthropic.com/*' => Http::response([
-            'content' => [['type' => 'text', 'text' => '# Pagina trascritta']],
-            'usage' => ['input_tokens' => 100, 'output_tokens' => 20],
-        ], 200)]);
+        Http::fake([
+            'https://api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => '# Pagina trascritta']],
+                'usage' => ['input_tokens' => 100, 'output_tokens' => 20],
+            ], 200),
+            // L'estrazione ora crea anche la trascrizione e la indicizza
+            // (teacher_private): l'embeddings va fakeato per non uscire in rete.
+            '*/api/embeddings' => Http::response([
+                'embeddings' => [array_fill(0, 768, 0.01)], 'model' => 'm', 'dimensions' => 768,
+            ], 200),
+        ]);
         $doc = $this->makeDoc($this->prof(), 'photos');
         Storage::disk('local')->put('td/photo_00.jpg', 'IMG1');
         Storage::disk('local')->put('td/photo_01.jpg', 'IMG2');
@@ -114,7 +121,11 @@ class TeachingDocumentTest extends TestCase
         $this->assertSame('ready', $doc->status);
         $this->assertSame('vision', $doc->extraction_meta['method']);
         $this->assertSame(2, $doc->extraction_meta['pages']);
-        Http::assertSentCount(2); // una chiamata per immagine
+        // Una chiamata vision per immagine (le chiamate embeddings sono a parte).
+        $visionCalls = collect(Http::recorded())
+            ->filter(fn ($pair) => str_contains($pair[0]->url(), 'api.anthropic.com'))
+            ->count();
+        $this->assertSame(2, $visionCalls);
     }
 
     public function test_text_extraction_passthrough(): void
