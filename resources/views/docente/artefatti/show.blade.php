@@ -119,6 +119,57 @@
         </details>
     @endif
 
+    {{-- Pubblicazione su classi (con feedback UX: stato + polling) --}}
+    @if($artifact->status === 'ready')
+    <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px; margin-bottom:12px;"
+         x-data="publicationStatus('{{ $artifact->id }}')">
+        <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">Pubblicazione</div>
+
+        {{-- Pubblicazioni esistenti --}}
+        <template x-if="publications.length">
+            <div style="margin-bottom:14px;">
+                <template x-for="p in publications" :key="p.id">
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid #E5E7E7; border-radius:8px; margin-bottom:6px;">
+                        <span style="font-size:0.85rem; color:#1A1F1F;" x-text="p.class_name || 'Classe'"></span>
+                        <span style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:0.72rem; font-weight:700;"
+                                  :style="{color: p.rag_status==='ready' ? '#3A8C89' : (p.rag_status==='failed' ? '#A8521F' : '#E28A53')}"
+                                  x-text="p.rag_status==='ready' ? 'pubblicato' : (p.rag_status==='failed' ? 'errore' : 'pubblicazione in corso…')"></span>
+                            <form :action="'/docente/pubblicazioni/' + p.id" method="POST" onsubmit="return confirm('Ritirare la pubblicazione da questa classe?');">
+                                @csrf @method('DELETE')
+                                <button style="padding:5px 10px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:6px; font-size:0.75rem; cursor:pointer;">Ritira</button>
+                            </form>
+                        </span>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        {{-- Form pubblicazione su nuove classi --}}
+        @if($teacherClasses->count())
+        <form method="POST" action="{{ route('docente.artifacts.publish', $artifact) }}">
+            @csrf
+            <div style="font-size:0.8rem; color:#4A5252; margin-bottom:6px;">Pubblica su:</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                @foreach($teacherClasses as $class)
+                    <label style="display:flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.82rem; {{ in_array($class->id, $publishedClassIds) ? 'opacity:0.5;' : '' }}">
+                        <input type="checkbox" name="class_ids[]" value="{{ $class->id }}" {{ in_array($class->id, $publishedClassIds) ? 'disabled' : '' }}>
+                        {{ $class->name }}
+                    </label>
+                @endforeach
+            </div>
+            <div style="display:flex; gap:16px; align-items:center; margin-bottom:10px; font-size:0.8rem; color:#4A5252;">
+                <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" name="students_can_generate" value="1" checked> gli studenti possono auto-generare</label>
+                <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" name="downloadable" value="1"> scaricabile</label>
+            </div>
+            <button style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Pubblica</button>
+        </form>
+        @else
+            <p style="font-size:0.82rem; color:#8A9696;">Non hai ancora classi attive su cui pubblicare.</p>
+        @endif
+    </div>
+    @endif
+
     {{-- Azioni: rigenera (con conferma) + elimina. La trascrizione non si rigenera. --}}
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
         @if($artifact->type !== 'transcript' && $artifact->teaching_document_id)
@@ -180,6 +231,24 @@ function artifactStatus(id, initial) {
                     }
                 } catch(e) {}
             }, 4000);
+        },
+    };
+}
+
+function publicationStatus(artifactId) {
+    return {
+        publications: [],
+        init() { this.refresh(); },
+        async refresh() {
+            try {
+                const r = await fetch(`/docente/artefatti/${artifactId}/pubblicazioni/stato`, {headers: {'X-Requested-With':'XMLHttpRequest'}});
+                const d = await r.json();
+                this.publications = d.publications || [];
+            } catch(e) {}
+            // Continua a fare polling finché qualche pubblicazione è in corso.
+            if (this.publications.some(p => p.rag_status === 'pending' || p.rag_status === 'indexing')) {
+                setTimeout(() => this.refresh(), 3000);
+            }
         },
     };
 }

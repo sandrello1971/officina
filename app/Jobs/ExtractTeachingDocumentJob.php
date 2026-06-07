@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Jobs\IngestArtifactTeacherPrivateJob;
 use App\Models\TeachingArtifact;
 use App\Models\TeachingDocument;
 use App\Services\Schola\TeachingDocumentExtractor;
@@ -66,7 +67,7 @@ class ExtractTeachingDocumentJob implements ShouldQueue
      */
     private function ensureTranscriptArtifact(TeachingDocument $doc, array $result): void
     {
-        TeachingArtifact::updateOrCreate(
+        $transcript = TeachingArtifact::updateOrCreate(
             ['teaching_document_id' => $doc->id, 'type' => 'transcript'],
             [
                 'teacher_id' => $doc->teacher_id,
@@ -80,5 +81,8 @@ class ExtractTeachingDocumentJob implements ShouldQueue
                 ],
             ]
         );
+
+        // Minerva del docente: indicizza la trascrizione come teacher_private.
+        IngestArtifactTeacherPrivateJob::dispatch($transcript->id);
     }
 }

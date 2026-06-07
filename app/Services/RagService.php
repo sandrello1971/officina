@@ -99,6 +99,10 @@ class RagService
         bool $includeInstructorOnly = false
     ) {
         $scope = function (Builder $q) use ($courseIds, $includePlatform, $includeInstructorOnly) {
+            // Separazione dei mondi: il mondo corsi vede SOLO platform/instructor_only.
+            // I chunk Schola (class, teacher_private) hanno course_id NULL e
+            // altrimenti rientrerebbero nel bucket "platform" (orWhereNull).
+            $q->whereIn('scope', ['platform', 'instructor_only']);
             if (!$includeInstructorOnly) {
                 $q->where('is_instructor_only', false);
             }
@@ -127,6 +131,8 @@ class RagService
         int $limit = 5
     ) {
         $scope = function (Builder $q) use ($courseIds, $instructorScopedCourseIds) {
+            // Separazione dei mondi: mai chunk Schola (class/teacher_private) qui.
+            $q->whereIn('scope', ['platform', 'instructor_only']);
             $q->where(function ($w) use ($courseIds, $instructorScopedCourseIds) {
                 $w->where(function ($s) use ($courseIds) {
                     $s->where('is_instructor_only', false)
@@ -156,6 +162,9 @@ class RagService
         int $limit = 5
     ) {
         $scope = function (Builder $q) use ($courseIds, $isInstructor) {
+            // Separazione dei mondi: il mondo corsi (studenti e instructor) vede
+            // SOLO platform/instructor_only, mai i chunk Schola (course_id NULL).
+            $q->whereIn('scope', ['platform', 'instructor_only']);
             if ($isInstructor) {
                 // Instructor: no filter on course_id, no filter on is_instructor_only.
                 // Coerente con auto_enroll_all_courses=true.
