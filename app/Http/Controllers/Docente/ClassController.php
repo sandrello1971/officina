@@ -70,8 +70,9 @@ class ClassController extends Controller
         $class->load(['subject', 'classStudents.student']);
 
         $roster = $class->classStudents->groupBy('status');
+        $openQuestionsCount = app(\App\Services\Schola\ClassSignalsService::class)->openQuestionsCount($class);
 
-        return view('docente.classi.show', compact('class', 'roster'));
+        return view('docente.classi.show', compact('class', 'roster', 'openQuestionsCount'));
     }
 
     public function update(Request $request, SchoolClass $class)
