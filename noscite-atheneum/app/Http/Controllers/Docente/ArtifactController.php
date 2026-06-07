@@ -27,7 +27,7 @@ class ArtifactController extends Controller
     public function show(TeachingArtifact $artifact)
     {
         $this->authorizeOwner($artifact);
-        $artifact->load(['teachingDocument', 'subject', 'publications.schoolClass']);
+        $artifact->load(['teachingDocument', 'subject', 'publications.schoolClass', 'teacher:id,name,library_rights_ack_at']);
 
         $graph = null;
         $quiz = null;
@@ -50,7 +50,14 @@ class ArtifactController extends Controller
             ->get();
         $publishedClassIds = $artifact->publications->pluck('school_class_id')->all();
 
-        return view('docente.artefatti.show', compact('artifact', 'graph', 'quiz', 'teacherClasses', 'publishedClassIds'));
+        // Biblioteca (pacchetto 9): stato condivisione.
+        $sharingBlocked = \App\Http\Controllers\Docente\ArtifactSharingController::isCopyrightBlocked($artifact);
+        $rightsAcked = (bool) ($artifact->teacher?->library_rights_ack_at);
+
+        return view('docente.artefatti.show', compact(
+            'artifact', 'graph', 'quiz', 'teacherClasses', 'publishedClassIds',
+            'sharingBlocked', 'rightsAcked'
+        ));
     }
 
     /**
