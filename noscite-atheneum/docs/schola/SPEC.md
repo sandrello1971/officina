@@ -8,6 +8,17 @@
 
 ## 0. Stato reale RAG (verificato 06/06) — ⚠️ prerequisito del pacchetto 6
 
+> **AGGIORNAMENTO 07/06 — prerequisito svolto (branch `schola/06pre-pgvector`).**
+> pgvector installato e `CREATE EXTENSION vector` su **dev** e **test** (NON in
+> prod: arriverà al deploy). `documents_rag.embedding = vector(768)` + indice
+> **HNSW cosine**; embedding via videoai `/api/embeddings`
+> (`paraphrase-multilingual-mpnet-base-v2`, 768d); retrieval vettoriale in
+> `RagService` (coseno + soglia `schola.rag_min_similarity`) dietro i flag
+> `rag_vector_enabled_schola` (default true) / `rag_vector_enabled_corsi`
+> (default false). Backfill: `php artisan schola:backfill-embeddings`. Migrazione
+> e codice degradano in sicurezza dove l'estensione manca (prod). Quanto sotto
+> resta la cronaca dello stato pre-intervento.
+
 Verifica diretta su server e codice (06/06): lo stato attuale **diverge** dall'assunto "pgvector 1536" citato sopra.
 
 - **Retrieval attuale = keyword/ILIKE.** `RagService::search`, `searchScoped`, `searchForUser` filtrano con `ILIKE '%termine%'` su `content`/`title`. Nessun uso di embedding, operatori `<=>`/`vector_cosine`, soglie di similarità.

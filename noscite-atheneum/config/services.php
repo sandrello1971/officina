@@ -42,6 +42,17 @@ return [
         'poll_max_attempts' => (int) env('VIDEOAI_POLL_MAX_ATTEMPTS', 200),
     ],
 
+    // Embedding per il RAG vettoriale Schola (pre-pacchetto 6). Il servizio è
+    // videoai (/api/embeddings); le dimensioni DEVONO combaciare con la
+    // colonna vector(D) di documents_rag e col modello scelto.
+    'embeddings' => [
+        'url' => env('EMBEDDINGS_URL', env('VIDEO_AI_URL', 'http://127.0.0.1:8001')),
+        'model' => env('EMBEDDINGS_MODEL', 'paraphrase-multilingual-mpnet-base-v2'),
+        'dimensions' => (int) env('EMBEDDINGS_DIMENSIONS', 768),
+        'batch' => (int) env('EMBEDDINGS_BATCH', 128),
+        'timeout' => (int) env('EMBEDDINGS_TIMEOUT', 60),
+    ],
+
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
         // Vision (OCR/trascrizione foto e PDF scansionati) — Schola pacchetto 4a

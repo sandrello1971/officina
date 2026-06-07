@@ -2,13 +2,21 @@
 
 namespace App\Services;
 
+use App\Jobs\EmbedDocumentChunksJob;
 use App\Models\Course;
 use App\Models\DocumentRag;
 use App\Models\Module;
+use App\Support\PgVector;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class RagService
 {
+    public function __construct(private EmbeddingService $embeddings) {}
+
     public function indexDocument(
         string $text,
         string $title,
@@ -19,8 +27,9 @@ class RagService
     ): void {
         $chunks = $this->chunkText($text, 1000, 200);
 
+        $created = [];
         foreach ($chunks as $index => $chunk) {
-            DocumentRag::create([
+            $created[] = DocumentRag::create([
                 'title' => $title,
                 'content' => $chunk,
                 'course_id' => $courseId,
@@ -33,6 +42,41 @@ class RagService
                     'source_title' => $title,
                 ],
             ]);
+        }
+
+        // Embed-on-create: i nuovi chunk vengono vettorizzati subito (best
+        // effort). Se videoai è giù nascono senza embedding e una coda di
+        // recupero li completa: l'ingestion NON si blocca mai.
+        $this->embedNewChunks(collect($created));
+    }
+
+    /**
+     * Vettorizza i chunk appena creati. Non solleva mai: in caso di errore
+     * accoda EmbedDocumentChunksJob (recupero asincrono) e prosegue.
+     */
+    private function embedNewChunks(\Illuminate\Support\Collection $rows): void
+    {
+        if ($rows->isEmpty() || !$this->embeddingColumnExists()) {
+            return;
+        }
+
+        try {
+            $vectors = $this->embeddings->embed($rows->map(fn ($r) => (string) $r->content)->all());
+
+            DB::transaction(function () use ($rows, $vectors) {
+                foreach ($rows->values() as $i => $row) {
+                    DB::update(
+                        'UPDATE documents_rag SET embedding = ?::vector WHERE id = ?',
+                        [PgVector::toLiteral($vectors[$i]), $row->id]
+                    );
+                }
+            });
+        } catch (Throwable $e) {
+            Log::warning('[rag] embed-on-create fallito, accodo recupero', [
+                'count' => $rows->count(),
+                'error' => $e->getMessage(),
+            ]);
+            EmbedDocumentChunksJob::dispatch($rows->pluck('id')->all());
         }
     }
 
@@ -54,30 +98,19 @@ class RagService
         bool $includePlatform = true,
         bool $includeInstructorOnly = false
     ) {
-        $terms = array_filter(array_map('trim', preg_split('/\s+/', $query)), fn($t) => mb_strlen($t) >= 3);
-        if (empty($terms)) $terms = [$query];
-
-        $q = DocumentRag::query();
-
-        if (!$includeInstructorOnly) {
-            $q->where('is_instructor_only', false);
-        }
-
-        if (is_array($courseIds)) {
-            $q->where(function ($w) use ($courseIds, $includePlatform) {
-                if (!empty($courseIds)) $w->whereIn('course_id', $courseIds);
-                if ($includePlatform) $w->orWhereNull('course_id');
-            });
-        }
-
-        $q->where(function ($w) use ($terms) {
-            foreach ($terms as $term) {
-                $w->orWhere('content', 'ILIKE', '%' . $term . '%')
-                  ->orWhere('title', 'ILIKE', '%' . $term . '%');
+        $scope = function (Builder $q) use ($courseIds, $includePlatform, $includeInstructorOnly) {
+            if (!$includeInstructorOnly) {
+                $q->where('is_instructor_only', false);
             }
-        });
+            if (is_array($courseIds)) {
+                $q->where(function ($w) use ($courseIds, $includePlatform) {
+                    if (!empty($courseIds)) $w->whereIn('course_id', $courseIds);
+                    if ($includePlatform) $w->orWhereNull('course_id');
+                });
+            }
+        };
 
-        return $q->limit($limit)->get();
+        return $this->runRetrieval($query, $scope, $limit, $this->vectorEnabledCorsi());
     }
 
     /**
@@ -93,35 +126,151 @@ class RagService
         array $instructorScopedCourseIds = [],
         int $limit = 5
     ) {
-        $terms = array_filter(
-            array_map('trim', preg_split('/\s+/', $query)),
-            fn($t) => mb_strlen($t) >= 3
-        );
+        $scope = function (Builder $q) use ($courseIds, $instructorScopedCourseIds) {
+            $q->where(function ($w) use ($courseIds, $instructorScopedCourseIds) {
+                $w->where(function ($s) use ($courseIds) {
+                    $s->where('is_instructor_only', false)
+                      ->where(function ($c) use ($courseIds) {
+                          if (!empty($courseIds)) {
+                              $c->whereIn('course_id', $courseIds);
+                          }
+                          $c->orWhereNull('course_id');
+                      });
+                });
+                if (!empty($instructorScopedCourseIds)) {
+                    $w->orWhere(function ($i) use ($instructorScopedCourseIds) {
+                        $i->where('is_instructor_only', true)
+                          ->whereIn('course_id', $instructorScopedCourseIds);
+                    });
+                }
+            });
+        };
+
+        return $this->runRetrieval($query, $scope, $limit, $this->vectorEnabledCorsi());
+    }
+
+    public function searchForUser(
+        string $query,
+        array $courseIds,
+        bool $isInstructor,
+        int $limit = 5
+    ) {
+        $scope = function (Builder $q) use ($courseIds, $isInstructor) {
+            if ($isInstructor) {
+                // Instructor: no filter on course_id, no filter on is_instructor_only.
+                // Coerente con auto_enroll_all_courses=true.
+                return;
+            }
+            $q->where('is_instructor_only', false);
+            $q->where(function ($w) use ($courseIds) {
+                if (!empty($courseIds)) {
+                    $w->whereIn('course_id', $courseIds);
+                }
+                $w->orWhereNull('course_id');
+            });
+        };
+
+        return $this->runRetrieval($query, $scope, $limit, $this->vectorEnabledCorsi());
+    }
+
+    /**
+     * Retrieval Schola per studente di classe (vincolo AI §5): SOLO chunk
+     * scope='class' delle classi attive passate, più — se valorizzato — i
+     * teacher_private del docente. Usa il percorso vettoriale con soglia
+     * quando abilitato (default per Schola); altrimenti ILIKE.
+     *
+     * Restituzione vuota = "non è nei materiali della classe" (gate §5): il
+     * chiamante (pacchetto 6) registra unanswered_question e NON chiama il modello.
+     */
+    public function searchClassScoped(
+        string $query,
+        array $classIds,
+        ?string $teacherId = null,
+        int $limit = 5
+    ) {
+        $classIds = array_values(array_filter($classIds));
+        if (empty($classIds) && $teacherId === null) {
+            return collect(); // nessuno scope → nessun risultato (sicurezza)
+        }
+
+        $scope = function (Builder $q) use ($classIds, $teacherId) {
+            $q->where(function ($w) use ($classIds, $teacherId) {
+                if (!empty($classIds)) {
+                    $w->orWhere(function ($c) use ($classIds) {
+                        $c->where('scope', 'class')->whereIn('school_class_id', $classIds);
+                    });
+                }
+                if ($teacherId !== null) {
+                    $w->orWhere(function ($t) use ($teacherId) {
+                        $t->where('scope', 'teacher_private')->where('teacher_id', $teacherId);
+                    });
+                }
+            });
+        };
+
+        return $this->runRetrieval($query, $scope, $limit, $this->vectorEnabledSchola());
+    }
+
+    // ===== Motore di retrieval (vettoriale con fallback ILIKE) =====
+
+    /**
+     * Esegue il retrieval applicando lo scope dato. Se $vectorEnabled e il
+     * percorso vettoriale è praticabile (colonna embedding presente, query
+     * embeddabile), usa la similarità coseno con soglia; altrimenti ILIKE.
+     */
+    private function runRetrieval(string $query, \Closure $scope, int $limit, bool $vectorEnabled)
+    {
+        if ($vectorEnabled) {
+            $hit = $this->vectorSearch($query, $scope, $limit);
+            if ($hit !== null) {
+                return $hit; // percorso vettoriale praticabile (anche vuoto = gate §5)
+            }
+            // null = percorso non praticabile (videoai giù / colonna assente) → fallback ILIKE
+        }
+
+        return $this->ilikeSearch($query, $scope, $limit);
+    }
+
+    /**
+     * Retrieval vettoriale: coseno con soglia minima (schola.rag_min_similarity).
+     * Ritorna null se non praticabile (così il chiamante fa fallback ILIKE);
+     * ritorna una collection (eventualmente vuota) se il percorso ha funzionato.
+     */
+    private function vectorSearch(string $query, \Closure $scope, int $limit): ?\Illuminate\Support\Collection
+    {
+        if (!$this->embeddingColumnExists()) {
+            return null;
+        }
+
+        try {
+            $vector = $this->embeddings->embedOne($query);
+        } catch (Throwable $e) {
+            Log::warning('[rag] embedding query fallito, fallback ILIKE', ['error' => $e->getMessage()]);
+            return null;
+        }
+
+        $literal = PgVector::toLiteral($vector);
+        $maxDistance = 1.0 - $this->minSimilarity(); // distanza coseno = 1 - similarità
+
+        $q = DocumentRag::query()->whereNotNull('embedding');
+        $scope($q);
+        $q->whereRaw('embedding <=> ?::vector < ?', [$literal, $maxDistance])
+          ->orderByRaw('embedding <=> ?::vector', [$literal])
+          ->limit($limit);
+
+        return $q->get();
+    }
+
+    /**
+     * Retrieval keyword/ILIKE storico (immutato come comportamento).
+     */
+    private function ilikeSearch(string $query, \Closure $scope, int $limit)
+    {
+        $terms = array_filter(array_map('trim', preg_split('/\s+/', $query)), fn ($t) => mb_strlen($t) >= 3);
         if (empty($terms)) $terms = [$query];
 
         $q = DocumentRag::query();
-
-        $q->where(function ($w) use ($courseIds, $instructorScopedCourseIds) {
-            // Documenti studente: non instructor-only, scoped ai corsi
-            // navigabili. Inclusi i doc di piattaforma (course_id NULL).
-            $w->where(function ($s) use ($courseIds) {
-                $s->where('is_instructor_only', false)
-                  ->where(function ($c) use ($courseIds) {
-                      if (!empty($courseIds)) {
-                          $c->whereIn('course_id', $courseIds);
-                      }
-                      $c->orWhereNull('course_id');
-                  });
-            });
-            // Documenti instructor-only: SOLO per i corsi insegnati.
-            if (!empty($instructorScopedCourseIds)) {
-                $w->orWhere(function ($i) use ($instructorScopedCourseIds) {
-                    $i->where('is_instructor_only', true)
-                      ->whereIn('course_id', $instructorScopedCourseIds);
-                });
-            }
-        });
-
+        $scope($q);
         $q->where(function ($w) use ($terms) {
             foreach ($terms as $term) {
                 $w->orWhere('content', 'ILIKE', '%' . $term . '%')
@@ -132,41 +281,41 @@ class RagService
         return $q->limit($limit)->get();
     }
 
-    public function searchForUser(
-        string $query,
-        array $courseIds,
-        bool $isInstructor,
-        int $limit = 5
-    ) {
-        $terms = array_filter(
-            array_map('trim', preg_split('/\s+/', $query)),
-            fn($t) => mb_strlen($t) >= 3
-        );
-        if (empty($terms)) $terms = [$query];
+    // ===== Flag e soglia (settings) =====
 
-        $q = DocumentRag::query();
+    private function vectorEnabledCorsi(): bool
+    {
+        // Default FALSE: il mondo corsi resta su ILIKE finché non lo validiamo
+        // (regola di separazione dei mondi).
+        return filter_var(atheneum_setting('rag_vector_enabled_corsi', false), FILTER_VALIDATE_BOOLEAN);
+    }
 
-        if ($isInstructor) {
-            // Instructor: no filter on course_id, no filter on is_instructor_only.
-            // Coerente con auto_enroll_all_courses=true.
-        } else {
-            $q->where('is_instructor_only', false);
-            $q->where(function ($w) use ($courseIds) {
-                if (!empty($courseIds)) {
-                    $w->whereIn('course_id', $courseIds);
-                }
-                $w->orWhereNull('course_id');
-            });
+    private function vectorEnabledSchola(): bool
+    {
+        return filter_var(atheneum_setting('rag_vector_enabled_schola', true), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    private function minSimilarity(): float
+    {
+        return (float) atheneum_setting('schola.rag_min_similarity', 0.30);
+    }
+
+    private ?bool $embeddingColumnCache = null;
+
+    private function embeddingColumnExists(): bool
+    {
+        if ($this->embeddingColumnCache !== null) {
+            return $this->embeddingColumnCache;
         }
 
-        $q->where(function ($w) use ($terms) {
-            foreach ($terms as $term) {
-                $w->orWhere('content', 'ILIKE', '%' . $term . '%')
-                  ->orWhere('title', 'ILIKE', '%' . $term . '%');
-            }
-        });
+        try {
+            $this->embeddingColumnCache = PgVector::available()
+                && Schema::hasColumn('documents_rag', 'embedding');
+        } catch (Throwable) {
+            $this->embeddingColumnCache = false;
+        }
 
-        return $q->limit($limit)->get();
+        return $this->embeddingColumnCache;
     }
 
     public function searchVideos(string $query, ?string $courseId = null, ?string $moduleId = null, int $limit = 3): array
