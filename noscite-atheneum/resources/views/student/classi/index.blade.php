@@ -12,7 +12,11 @@
         <div style="background:white; border-radius:10px; padding:16px 20px; margin-bottom:10px; border:1px solid #C8D0D0;">
             <div style="display:flex; align-items:center; gap:12px;">
                 <div style="flex:1;">
-                    <div style="font-weight:700; color:#1A1F1F;">{{ $class->name }}</div>
+                    @if($class->pivot->status === 'pending')
+                        <div style="font-weight:700; color:#1A1F1F;">{{ $class->name }}</div>
+                    @else
+                        <a href="{{ route('student.classes.show', $class) }}" style="font-weight:700; color:#1A1F1F; text-decoration:none;">{{ $class->name }} &rarr;</a>
+                    @endif
                     <div style="font-size:0.8rem; color:#8A9696;">{{ $class->subject->name ?? '—' }} · {{ $class->school_year }} · {{ $class->teacher->name ?? '' }}</div>
                 </div>
                 @if($class->pivot->status === 'pending')

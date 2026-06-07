@@ -10,6 +10,9 @@ class StudentArtifactView extends Model
 {
     use HasFactory, HasUuids;
 
+    // La tabella traccia first/last_viewed_at, non created_at/updated_at.
+    public $timestamps = false;
+
     protected $fillable = [
         'artifact_publication_id', 'student_id',
         'first_viewed_at', 'last_viewed_at', 'view_count',

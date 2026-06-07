@@ -55,6 +55,14 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/classi', [App\Http\Controllers\Student\StudentClassController::class, 'index'])->name('classes.index');
         // Minerva di classe (pacchetto 6b): la chat usa /minerva/ask con school_class_id.
         Route::get('/classi/{class}/minerva', [App\Http\Controllers\Student\ChatController::class, 'showClass'])->name('classes.minerva');
+        // Fruizione di classe (pacchetto 7)
+        Route::get('/classi/{class}', [App\Http\Controllers\Student\StudentClassController::class, 'show'])->name('classes.show');
+        Route::get('/classi/{class}/artefatti/{publication}', [App\Http\Controllers\Student\StudentArtifactController::class, 'show'])->name('classes.artifact.show');
+        Route::get('/classi/{class}/artefatti/{publication}/sorgente', [App\Http\Controllers\Student\StudentArtifactController::class, 'source'])->name('classes.artifact.source');
+        Route::post('/classi/{class}/artefatti/{publication}/genera', [App\Http\Controllers\Student\StudentGenerationController::class, 'store'])->name('classes.artifact.generate');
+        Route::get('/classi/{class}/artefatti/{publication}/generati/{generated}/stato', [App\Http\Controllers\Student\StudentGenerationController::class, 'status'])->name('classes.artifact.generated.status');
+        // Trasparenza (§8.1): informativa "l'attività di studio è visibile al docente"
+        Route::view('/info/studio-condiviso', 'student.classi.trasparenza')->name('schola.transparency');
         Route::get('/course/{course:slug}', [App\Http\Controllers\Student\CourseController::class, 'show'])->name('course.show');
         Route::get('/course/{course:slug}/module/{module}', [App\Http\Controllers\Student\CourseController::class, 'module'])->name('module.show');
         Route::post('/course/{course:slug}/module/{module}/complete', [App\Http\Controllers\Student\CourseController::class, 'completeModule'])->name('module.complete');
