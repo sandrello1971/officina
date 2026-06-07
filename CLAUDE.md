@@ -55,13 +55,26 @@ Per gli **studenti di classe**, Minerva risponde **SOLO** da chunk
 Gli studenti di classe non devono MAI ricevere chunk `platform`/`instructor_only`/
 `teacher_private` né di classi altrui.
 
-### Stato reale RAG (oggi)
-Il retrieval è **keyword/ILIKE** (`RagService::search*`), **pgvector NON è
-installato** e `documents_rag` non ha colonna `embedding`. Il passaggio a **RAG
-vettoriale** (installazione estensione, colonna `embedding`, backfill, riscrittura
-retrieval con similarità+soglia, CI su `pgvector/pgvector:pg17`) è **PREREQUISITO
-del pacchetto 6**, da svolgere in **sessione dedicata con sudo dell'utente**.
-Dettagli: `docs/schola/SPEC.md` §0.
+### Stato reale RAG (aggiornato — prerequisito pacchetto 6 svolto)
+RAG vettoriale implementato (sessione pre-6):
+- **pgvector installato e `CREATE EXTENSION vector`** su **dev** e **test** (NON
+  ancora in **prod**: arriverà al deploy). `documents_rag.embedding` =
+  `vector(768)` + indice **HNSW cosine** (migrazione con skip esplicito via
+  `App\Support\PgVector::available()` quando l'estensione manca → prod-safe).
+- **Embedding**: modello `paraphrase-multilingual-mpnet-base-v2` (768d,
+  multilingue) servito da videoai `POST /api/embeddings`; client
+  `EmbeddingService` (dimensioni da `config services.embeddings`).
+- **Retrieval vettoriale** in `RagService` (coseno + soglia
+  `schola.rag_min_similarity`) dietro flag: `rag_vector_enabled_schola`
+  (default **true**), `rag_vector_enabled_corsi` (default **FALSE** — il mondo
+  corsi resta su ILIKE finché non validato). Fallback ILIKE quando l'embedding
+  non è praticabile (videoai giù / colonna assente). I nuovi chunk sono
+  embeddati alla creazione; se videoai è giù, `EmbedDocumentChunksJob` li
+  recupera (l'ingestion non si blocca). Backfill: `php artisan schola:backfill-embeddings`.
+- **CI** su immagine `pgvector/pgvector:pg17`.
+
+Da completare al **deploy prod**: installare pgvector + `CREATE EXTENSION` su
+`atheneum_db`, eseguire la migrazione e il backfill. Dettagli: `docs/schola/SPEC.md` §0.
 
 ### Agente proattivo (imminente)
 Ogni feature che produce dati di attività studente deve scrivere su **tabelle
