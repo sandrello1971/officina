@@ -16,9 +16,11 @@ name: tests
 # In locale invece valgono i default di phpunit.xml (atheneum_test_db) e la
 # password arriva da .env (gitignored).
 #
-# pgvector NON è installato di proposito: la migrazione documents_rag degrada
-# con try/catch (salta colonna embedding + indice ivfflat) e nemmeno la
-# produzione ha l'estensione. postgres:16 standard = parità con prod.
+# pgvector È installato in CI (immagine pgvector/pgvector:pg17): dal pacchetto 6
+# il RAG Schola usa il retrieval vettoriale (colonna embedding vector(768) +
+# indice HNSW cosine), che i test esercitano. La produzione NON ha ancora
+# l'estensione: la migrazione fa skip esplicito quando `vector` non è creata
+# (App\Support\PgVector::available), quindi resta sicura anche là.
 
 on:
   push:
@@ -32,7 +34,9 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17
+        # pgvector/pgvector:pg17 = PostgreSQL 17 con l'estensione vector
+        # disponibile (parità col target post-deploy del RAG vettoriale).
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_DB: atheneum_test_db
           POSTGRES_USER: atheneum_user
@@ -97,6 +101,11 @@ jobs:
           until pg_isready -h 127.0.0.1 -p 5432 -U atheneum_user; do
             echo "in attesa di postgres..."; sleep 2;
           done
+
+      - name: Abilita pgvector (CREATE EXTENSION)
+        env:
+          PGPASSWORD: atheneum_user
+        run: psql -h 127.0.0.1 -p 5432 -U atheneum_user -d atheneum_test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
       - name: Migrazioni (verifica schema su Postgres reale)
         working-directory: noscite-atheneum
