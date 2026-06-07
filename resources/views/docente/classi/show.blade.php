@@ -7,7 +7,10 @@
     <h1 style="font-size:1.4rem; font-weight:700; color:#1A1F1F;">{{ $class->name }}
         @if($class->is_archived)<span style="font-size:0.7rem; color:#A8521F; background:#FDECE2; border:1px solid #E28A53; border-radius:4px; padding:2px 8px; margin-left:8px;">Archiviata</span>@endif
     </h1>
-    <p style="color:#8A9696; font-size:0.875rem; margin-bottom:20px;">{{ $class->subject->name ?? '—' }} · {{ $class->school_year }}</p>
+    <p style="color:#8A9696; font-size:0.875rem; margin-bottom:12px;">{{ $class->subject->name ?? '—' }} · {{ $class->school_year }}</p>
+    <div style="margin-bottom:20px;">
+        <a href="{{ route('docente.classes.minerva', $class) }}" style="display:inline-block; padding:8px 14px; background:#1A1F1F; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none;">&#9788; Apri Minerva (tuoi materiali + classe)</a>
+    </div>
 
     @if ($errors->any())
         <div style="background:#FDECE2; border:1px solid #E28A53; color:#A8521F; border-radius:8px; padding:14px 16px; margin-bottom:16px; font-size:0.85rem;">

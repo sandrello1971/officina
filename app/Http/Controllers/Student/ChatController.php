@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Student\Concerns\EvaluatesExamState;
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
+use App\Models\ClassStudent;
 use App\Models\Course;
+use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\UnansweredQuestion;
 use App\Services\RagService;
 use App\Support\StudentCourseAccess;
 use Illuminate\Http\Request;
@@ -53,6 +56,13 @@ class ChatController extends Controller
                 'error' => 'Minerva non è disponibile durante un esame in corso.',
                 'exam_lock' => true,
             ], 423);
+        }
+
+        // === Schola — Minerva di classe (pacchetto 6b) ===
+        // Contesto di classe opzionale: quando presente si applica il vincolo §5
+        // (retrieval di classe + gate). Il mondo corsi qui sotto resta INVARIATO.
+        if ($request->filled('school_class_id')) {
+            return $this->classMinervaAsk($request, Student::findOrFail($studentId));
         }
 
         $data = $request->validate([
@@ -406,5 +416,273 @@ TXT;
         } catch (\Throwable $e) {
             return ['content' => 'Assistente momentaneamente non disponibile.', 'tokens' => null];
         }
+    }
+
+    // ===================== SCHOLA — Minerva di classe (pacchetto 6b) =====================
+
+    /**
+     * Pagina chat di classe (studente o docente). Stessa view, ruolo dedotto
+     * dalla proprietà della classe (docente) o dall'iscrizione attiva (studente).
+     */
+    public function showClass(SchoolClass $class)
+    {
+        $studentId = session('student_id');
+        abort_unless($studentId, 403);
+        $student = Student::findOrFail($studentId);
+
+        $asDocente = $this->resolveClassRole($class, $student); // true=docente, false=studente, null=403
+        abort_if($asDocente === null, 403, 'Non hai accesso a questa classe.');
+
+        $conversation = $this->classConversation($student, $class);
+        $messages = $conversation->messages()->orderBy('created_at')->get();
+
+        return view('student.chat.class', compact('class', 'student', 'asDocente', 'conversation', 'messages'));
+    }
+
+    /**
+     * Q&A di classe con il vincolo §5. Chiamata da minervaAsk quando è presente
+     * school_class_id. NON tocca il percorso corsi.
+     */
+    private function classMinervaAsk(Request $request, Student $student)
+    {
+        $data = $request->validate([
+            'question' => 'required|string|max:4000',
+            'school_class_id' => 'required|uuid',
+            'artifact_id' => 'nullable|uuid',
+            'history' => 'nullable|array',
+            'history.*.role' => 'required_with:history|in:user,assistant',
+            'history.*.content' => 'required_with:history|string',
+        ]);
+
+        $class = SchoolClass::find($data['school_class_id']);
+        abort_unless($class, 403);
+
+        // Ruolo + scope. Studente: SOLO la sua classe (enrollment active).
+        // Docente: teacher_private (suoi) + class (questa sua classe).
+        $asDocente = $this->resolveClassRole($class, $student);
+        abort_if($asDocente === null, 403, 'Non hai accesso a questa classe.');
+
+        $teacherId = $asDocente ? $student->id : null;
+        $classIds = [$class->id];
+        $artifactId = $data['artifact_id'] ?? null;
+
+        // Retrieval di classe (gate §5). Pre-filtro sull'artefatto se richiesto:
+        // si interroga "prima di tutto" quel documento, poi si allarga alla classe.
+        $result = $this->rag->searchClassScopedScored($data['question'], $classIds, $teacherId, 6, $artifactId);
+        if ($artifactId && $result['docs']->isEmpty()) {
+            $result = $this->rag->searchClassScopedScored($data['question'], $classIds, $teacherId, 6, null);
+        }
+
+        $conversation = $this->classConversation($student, $class);
+        ChatMessage::create([
+            'conversation_id' => $conversation->id,
+            'role' => 'user',
+            'content' => $data['question'],
+        ]);
+
+        // GATE §5: nessun chunk sopra soglia → il modello NON viene chiamato.
+        if ($result['docs']->isEmpty()) {
+            UnansweredQuestion::create([
+                'school_class_id' => $class->id,
+                'student_id' => $asDocente ? null : $student->id,
+                'question' => $data['question'],
+                'best_similarity' => $result['best_similarity'],
+                'status' => 'open',
+            ]);
+
+            $answer = $asDocente
+                ? 'Non trovo questo nei tuoi materiali. Prova con altre parole, oppure genera/pubblica un materiale che copra questo argomento.'
+                : 'Questo argomento non è nei materiali della tua classe — chiedi al tuo docente, o riprova con altre parole.';
+
+            ChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'role' => 'assistant',
+                'content' => $answer,
+                'context_documents' => [],
+            ]);
+
+            return response()->json([
+                'answer' => $answer,
+                'sources' => [],
+                'gate' => 'empty',
+            ]);
+        }
+
+        // Contesto + citazioni dai chunk recuperati.
+        [$context, $sources] = $this->buildClassContextAndSources($result['docs'], $asDocente);
+
+        $reply = $this->callClaudeForClass(
+            $data['question'],
+            $data['history'] ?? [],
+            $context,
+            $asDocente
+        );
+
+        ChatMessage::create([
+            'conversation_id' => $conversation->id,
+            'role' => 'assistant',
+            'content' => $reply['content'],
+            'tokens_used' => $reply['tokens'] ?? null,
+            'context_documents' => $sources,
+        ]);
+
+        return response()->json([
+            'answer' => $reply['content'],
+            'sources' => $sources,
+            'tokens' => $reply['tokens'] ?? null,
+            'gate' => 'answered',
+        ]);
+    }
+
+    /**
+     * Ruolo nel contesto classe: true=docente proprietario, false=studente con
+     * iscrizione ATTIVA, null=nessun accesso (pending/removed/estraneo).
+     */
+    private function resolveClassRole(SchoolClass $class, Student $student): ?bool
+    {
+        if ($class->teacher_id === $student->id) {
+            return true;
+        }
+        $active = ClassStudent::where('school_class_id', $class->id)
+            ->where('student_id', $student->id)
+            ->where('status', 'active')
+            ->exists();
+
+        return $active ? false : null;
+    }
+
+    private function classConversation(Student $student, SchoolClass $class): ChatConversation
+    {
+        return ChatConversation::firstOrCreate(
+            ['student_id' => $student->id, 'school_class_id' => $class->id, 'is_active' => true],
+            ['title' => 'Classe ' . $class->name, 'course_id' => null]
+        );
+    }
+
+    /**
+     * System prompt Schola (SEPARATO da quello corsi): vincolo §5 cablato.
+     * Pubblico per testabilità.
+     */
+    public function buildScholaSystemPrompt(bool $asDocente, string $context = ''): string
+    {
+        $assistantName = atheneum_setting('assistant_name', 'Minerva');
+        $platformName = atheneum_setting('instance_name', 'Atheneum');
+
+        $audience = $asDocente
+            ? "Stai assistendo un DOCENTE sui materiali della sua classe."
+            : "Stai assistendo uno STUDENTE di scuola superiore sui materiali della sua classe. Usa un tono chiaro, semplice e incoraggiante.";
+
+        return <<<TXT
+Sei {$assistantName}, l'assistente di studio di {$platformName} per la classe.
+
+{$audience}
+
+VINCOLO ASSOLUTO (non derogabile):
+- Rispondi ESCLUSIVAMENTE in base al CONTESTO fornito qui sotto (i materiali della classe).
+- È VIETATO integrare con la tua conoscenza generale o con informazioni esterne al contesto.
+- Se il contesto copre solo parzialmente la domanda, RISPONDI su ciò che è coperto e DICHIARA esplicitamente cosa manca.
+- Non rivelare MAI l'esistenza o il contenuto di materiali fuori da questo contesto.
+- Cita sempre i materiali da cui trai la risposta (titolo; per i video, il minutaggio [mm:ss]).
+- Rispondi in italiano.
+
+Se il contesto non contiene la risposta, dillo chiaramente e invita a rivolgersi al docente: NON inventare.
+
+CONTESTO (materiali della classe):
+{$context}
+TXT;
+    }
+
+    private function callClaudeForClass(string $question, array $history, string $context, bool $asDocente): array
+    {
+        $systemPrompt = $this->buildScholaSystemPrompt($asDocente, $context);
+
+        $messages = array_values($history);
+        $messages[] = ['role' => 'user', 'content' => $question];
+
+        try {
+            $response = Http::withHeaders([
+                'x-api-key' => config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY'),
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+                'model' => 'claude-sonnet-4-5',
+                'max_tokens' => 1024,
+                'system' => $systemPrompt,
+                'messages' => $messages,
+            ]);
+
+            if ($response->failed()) {
+                \Log::error('Minerva classe Claude API failed', ['status' => $response->status()]);
+                return ['content' => 'Errore nella risposta. Riprova.', 'tokens' => null];
+            }
+
+            $body = $response->json();
+            return [
+                'content' => $body['content'][0]['text'] ?? 'Risposta vuota.',
+                'tokens' => ($body['usage']['input_tokens'] ?? 0) + ($body['usage']['output_tokens'] ?? 0),
+            ];
+        } catch (\Throwable $e) {
+            return ['content' => 'Assistente momentaneamente non disponibile.', 'tokens' => null];
+        }
+    }
+
+    /**
+     * Costruisce il contesto testuale e l'elenco delle fonti (citazioni) dai
+     * chunk recuperati. Ogni fonte: titolo + eventuale minutaggio + link.
+     *
+     * @return array{0: string, 1: array<int, array>}
+     */
+    private function buildClassContextAndSources($docs, bool $asDocente): array
+    {
+        $context = '';
+        $sources = [];
+        $seen = [];
+
+        foreach ($docs as $doc) {
+            $meta = is_array($doc->metadata) ? $doc->metadata : [];
+            $title = $doc->title ?: 'Materiale';
+            $start = $meta['start_seconds'] ?? null;
+            $tsStr = $start !== null ? $this->formatTimestampSeconds((int) $start) : null;
+
+            $ctxLabel = $tsStr ? "{$title} [{$tsStr}]" : $title;
+            $context .= "--- {$ctxLabel} ---\n{$doc->content}\n\n";
+
+            // Link: youtube → url con ?t=secondi; altrimenti (docente) pagina artefatto.
+            $url = null;
+            if (!empty($meta['source_url'])) {
+                $url = $meta['source_url'];
+                if ($start !== null) {
+                    $url .= (str_contains($url, '?') ? '&' : '?') . 't=' . (int) $start;
+                }
+            } elseif ($asDocente && !empty($meta['artifact_id'])) {
+                $url = route('docente.artifacts.show', $meta['artifact_id']);
+            }
+
+            // Dedup per (artifact_id|titolo|minutaggio).
+            $key = ($meta['artifact_id'] ?? $title) . '|' . ($tsStr ?? '');
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+
+            $sources[] = [
+                'title' => $title,
+                'artifact_id' => $meta['artifact_id'] ?? null,
+                'seconds' => $start !== null ? (int) $start : null,
+                'timestamp' => $tsStr,
+                'url' => $url,
+            ];
+        }
+
+        return [$context, $sources];
+    }
+
+    private function formatTimestampSeconds(int $seconds): string
+    {
+        $h = intdiv($seconds, 3600);
+        $m = intdiv($seconds % 3600, 60);
+        $s = $seconds % 60;
+
+        return $h > 0 ? sprintf('%d:%02d:%02d', $h, $m, $s) : sprintf('%d:%02d', $m, $s);
     }
 }
