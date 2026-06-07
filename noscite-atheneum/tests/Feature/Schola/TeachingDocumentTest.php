@@ -242,7 +242,7 @@ class TeachingDocumentTest extends TestCase
         $this->assertDatabaseHas('teaching_documents', [
             'teacher_id' => $prof->id, 'title' => 'Lezione audio', 'source_type' => 'audio', 'status' => 'pending',
         ]);
-        Bus::assertDispatched(ExtractTeachingDocumentJob::class);
+        Bus::assertDispatchedAfterResponse(ExtractTeachingDocumentJob::class);
     }
 
     public function test_store_m4a_with_mp4_mime_is_accepted(): void
@@ -261,7 +261,7 @@ class TeachingDocumentTest extends TestCase
         $this->assertDatabaseHas('teaching_documents', [
             'teacher_id' => $prof->id, 'title' => 'Lezione m4a', 'source_type' => 'audio',
         ]);
-        Bus::assertDispatched(ExtractTeachingDocumentJob::class);
+        Bus::assertDispatchedAfterResponse(ExtractTeachingDocumentJob::class);
     }
 
     public function test_store_accepts_video_container_mp4(): void
@@ -276,7 +276,7 @@ class TeachingDocumentTest extends TestCase
             'file' => UploadedFile::fake()->create('lez.mp4', 500, 'video/mp4'),
         ])->assertRedirect()->assertSessionHasNoErrors();
 
-        Bus::assertDispatched(ExtractTeachingDocumentJob::class);
+        Bus::assertDispatchedAfterResponse(ExtractTeachingDocumentJob::class);
     }
 
     public function test_store_audio_rejects_non_media_extension(): void
@@ -327,7 +327,7 @@ class TeachingDocumentTest extends TestCase
 
         $failed = $this->makeDoc($prof, 'text', ['status' => 'failed', 'failure_reason' => 'x']);
         $this->asProf($prof)->post(route('docente.materials.retry', $failed))->assertRedirect();
-        Bus::assertDispatched(ExtractTeachingDocumentJob::class);
+        Bus::assertDispatchedAfterResponse(ExtractTeachingDocumentJob::class);
         $this->assertSame('pending', $failed->fresh()->status);
     }
 
