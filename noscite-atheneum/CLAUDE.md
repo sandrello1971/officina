@@ -30,6 +30,10 @@ Riferimento di progettazione: `docs/schola/SPEC.md` (leggere SEMPRE, inclusa la
   configurato per pgsql). Staging: **https://dev.atheneum.noscite.it** (basic auth).
 - Il `sudo` disponibile copre **solo** `chown`/`chmod`/`setfacl`. Per **nginx,
   certbot, apt, postgres** (creazione DB, estensioni, ecc.) **chiedere all'utente**.
+- **Deploy videoai prod = `noscite-videoai/deploy-videoai.sh`, mai rsync a
+  mano**: lo script preserva `.env`/`data/`/`venv`. Dopo: installare le deps
+  nuove di `requirements.txt` nel venv condiviso `/home/noscite/venv` e
+  `sudo systemctl restart noscite-videoai`.
 
 ### Convenzioni del codebase (rispettare SEMPRE)
 - **PK `uuid`** con `gen_random_uuid()`, relazioni `foreignUuid`, **CHECK
