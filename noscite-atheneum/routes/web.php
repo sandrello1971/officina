@@ -199,6 +199,11 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::delete('/artefatti/{artifact}', [App\Http\Controllers\Docente\ArtifactController::class, 'destroy'])->name('artifacts.destroy');
     Route::get('/artefatti/{artifact}/stato', [App\Http\Controllers\Docente\ArtifactController::class, 'status'])->name('artifacts.status');
     Route::post('/artefatti/{artifact}/rigenera', [App\Http\Controllers\Docente\ArtifactGenerationController::class, 'regenerate'])->name('artifacts.regenerate');
+
+    // Pubblicazione su classe (pacchetto 6)
+    Route::post('/artefatti/{artifact}/pubblica', [App\Http\Controllers\Docente\PublicationController::class, 'store'])->name('artifacts.publish');
+    Route::get('/artefatti/{artifact}/pubblicazioni/stato', [App\Http\Controllers\Docente\PublicationController::class, 'status'])->name('artifacts.publications.status');
+    Route::delete('/pubblicazioni/{publication}', [App\Http\Controllers\Docente\PublicationController::class, 'destroy'])->name('publications.destroy');
 });
 
 // ===== AREA ADMIN ATHENEUM =====

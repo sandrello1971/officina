@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Docente;
 
 use App\Http\Controllers\Controller;
+use App\Models\SchoolClass;
 use App\Models\TeachingArtifact;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -26,7 +27,7 @@ class ArtifactController extends Controller
     public function show(TeachingArtifact $artifact)
     {
         $this->authorizeOwner($artifact);
-        $artifact->load(['teachingDocument', 'subject']);
+        $artifact->load(['teachingDocument', 'subject', 'publications.schoolClass']);
 
         $graph = null;
         $quiz = null;
@@ -40,7 +41,16 @@ class ArtifactController extends Controller
             $quiz = $artifact->quiz()->with('questions')->first();
         }
 
-        return view('docente.artefatti.show', compact('artifact', 'graph', 'quiz'));
+        // Classi del docente pubblicabili (transcript escluso: vedi nota copyright
+        // SPEC §6; in 6a teniamo la pubblicazione su tutti i tipi tranne transcript
+        // da foto/pdf — guardrail completo arriva con la Biblioteca).
+        $teacherClasses = SchoolClass::where('teacher_id', $artifact->teacher_id)
+            ->where('is_archived', false)
+            ->orderBy('name')
+            ->get();
+        $publishedClassIds = $artifact->publications->pluck('school_class_id')->all();
+
+        return view('docente.artefatti.show', compact('artifact', 'graph', 'quiz', 'teacherClasses', 'publishedClassIds'));
     }
 
     /**

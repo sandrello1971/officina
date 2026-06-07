@@ -68,6 +68,8 @@ TXT;
                 'method' => 'whisper',
                 'language' => $result['language'] ?? null,
                 'duration_seconds' => $result['duration_seconds'] ?? null,
+                // Segments con minutaggio: servono alle citazioni RAG (pacchetto 6).
+                'segments' => $this->normalizeSegments($result['segments'] ?? null),
             ],
         ];
     }
@@ -83,8 +85,44 @@ TXT;
                 'language' => $result['language'] ?? null,
                 'duration_seconds' => $result['duration_seconds'] ?? null,
                 'video' => $result['video'] ?? null, // titolo, canale, durata
+                // Segments con minutaggio per le citazioni RAG (pacchetto 6).
+                'segments' => $this->normalizeSegments($result['segments'] ?? null),
             ],
         ];
+    }
+
+    /**
+     * Normalizza i segments di videoai in {start_seconds, end_seconds, text}.
+     * Accetta le chiavi note (start_seconds/end_seconds oppure start/end).
+     * Ritorna null se assenti/non validi (es. trascrizioni senza timing).
+     *
+     * @return array<int, array{start_seconds: float, end_seconds: float, text: string}>|null
+     */
+    private function normalizeSegments($segments): ?array
+    {
+        if (!is_array($segments) || empty($segments)) {
+            return null;
+        }
+
+        $out = [];
+        foreach ($segments as $seg) {
+            if (!is_array($seg)) {
+                continue;
+            }
+            $start = $seg['start_seconds'] ?? $seg['start'] ?? null;
+            $end = $seg['end_seconds'] ?? $seg['end'] ?? null;
+            $text = trim((string) ($seg['text'] ?? ''));
+            if ($start === null || $text === '') {
+                continue;
+            }
+            $out[] = [
+                'start_seconds' => round((float) $start, 2),
+                'end_seconds' => round((float) ($end ?? $start), 2),
+                'text' => $text,
+            ];
+        }
+
+        return $out ?: null;
     }
 
     private function extractPhotos(TeachingDocument $doc): array
