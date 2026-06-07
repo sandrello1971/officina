@@ -17,7 +17,13 @@ from backend.ingest.extractor import extract_audio, extract_keyframes, extract_t
 from backend.ingest.transcriber import transcribe_audio
 from backend.ingest.vision_analyzer import analyze_frames_batch
 from backend.rag.chunker import build_chunks
-from backend.rag.embedder import VideoIndex
+from backend.rag.embedder import (
+    VideoIndex,
+    embed_texts,
+    EMBEDDING_MODEL_NAME,
+    EMBEDDING_DIMENSIONS,
+    MAX_EMBED_TEXTS,
+)
 from backend.chat.engine import chat, global_chat, generate_video_summary, generate_tags, search_across_videos, auto_assign_collection
 from backend.api.progress import ProgressTracker
 from backend.storage.database import get_db
@@ -64,6 +70,10 @@ class CrossSearchRequest(BaseModel):
 
 class YouTubeRequest(BaseModel):
     url: str
+
+
+class EmbeddingsRequest(BaseModel):
+    texts: list[str]
 
 
 def _compute_video_id(content: bytes) -> str:
@@ -709,6 +719,39 @@ async def audio_transcribe(background_tasks: BackgroundTasks, file: UploadFile =
 
     background_tasks.add_task(run_audio_job, job.job_id, str(audio_path))
     return {"job_id": job.job_id}
+
+
+@app.post("/api/embeddings")
+def embeddings(body: EmbeddingsRequest):
+    """Calcola gli embedding di una lista di testi (RAG Schola di atheneum).
+
+    Body: {"texts": ["...", "..."]}
+    Risposta: {"embeddings": [[...], ...], "model": "...", "dimensions": N}
+
+    Endpoint sincrono (CPU-bound): FastAPI lo esegue nel threadpool, così non
+    blocca l'event loop. Vettori normalizzati (L2=1) → coseno diretto.
+    """
+    texts = body.texts
+    if not texts:
+        raise HTTPException(status_code=400, detail="Campo 'texts' mancante o vuoto.")
+    if len(texts) > MAX_EMBED_TEXTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Troppi testi: {len(texts)} (massimo {MAX_EMBED_TEXTS} per richiesta).",
+        )
+    if all(not (t and t.strip()) for t in texts):
+        raise HTTPException(status_code=400, detail="Tutti i testi sono vuoti.")
+
+    try:
+        vectors = embed_texts([t or "" for t in texts])
+    except Exception as e:  # noqa: BLE001 — errore esplicito al chiamante
+        raise HTTPException(status_code=500, detail=f"Errore calcolo embeddings: {e}")
+
+    return {
+        "embeddings": vectors,
+        "model": EMBEDDING_MODEL_NAME,
+        "dimensions": EMBEDDING_DIMENSIONS,
+    }
 
 
 @app.get("/api/audio/{job_id}")
