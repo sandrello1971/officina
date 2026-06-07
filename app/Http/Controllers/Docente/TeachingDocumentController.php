@@ -139,7 +139,7 @@ class TeachingDocumentController extends Controller
 
         $doc->update(['source_files' => $sourceFiles ?: null, 'source_url' => $sourceUrl]);
 
-        ExtractTeachingDocumentJob::dispatch($doc->id);
+        ExtractTeachingDocumentJob::dispatch($doc->id)->afterResponse();
 
         return redirect()->route('docente.materials.show', $doc)
             ->with('success', 'Materiale caricato. Estrazione del testo in corso…');
@@ -215,7 +215,7 @@ class TeachingDocumentController extends Controller
         abort_unless($document->status === 'failed', 422, 'Solo i materiali falliti possono essere ritentati.');
 
         $document->update(['status' => 'pending', 'failure_reason' => null]);
-        ExtractTeachingDocumentJob::dispatch($document->id);
+        ExtractTeachingDocumentJob::dispatch($document->id)->afterResponse();
 
         return redirect()->route('docente.materials.show', $document)
             ->with('success', 'Nuovo tentativo di estrazione avviato.');

@@ -25,6 +25,12 @@
             .mobile-toggle { display: inline-flex !important; }
         }
     </style>
+    <style>
+        /* Feedback UX: spinner per le operazioni async (vedi CLAUDE.md). */
+        @keyframes nosc-spin { to { transform: rotate(360deg); } }
+        .nosc-spin { display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,0.5); border-top-color:#fff; border-radius:50%; animation: nosc-spin 0.7s linear infinite; vertical-align:-2px; margin-right:6px; }
+        button[disabled] { opacity:0.65; cursor:progress; }
+    </style>
     @stack('styles')
 </head>
 <body>
@@ -99,6 +105,25 @@
         @yield('content')
     </div>
 </div>
+<script>
+// Feedback UX globale (CLAUDE.md "Feedback UX — NON negoziabile"):
+// ogni form con data-async, al submit, disabilita il bottone, mostra lo
+// spinner con l'etichetta "in corso" e previene il doppio submit.
+document.addEventListener('submit', function (e) {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-async')) return;
+    if (form.dataset.submitting === '1') { e.preventDefault(); return; }
+    form.dataset.submitting = '1';
+    const btn = form.querySelector('button[type="submit"], button:not([type])');
+    if (btn) {
+        const label = btn.getAttribute('data-busy-label') || 'Attendere…';
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="nosc-spin"></span>' + label;
+        // Disabilita dopo il tick così il form invia regolarmente i suoi dati.
+        setTimeout(function () { btn.disabled = true; }, 0);
+    }
+}, true);
+</script>
 @stack('scripts')
 </body>
 </html>

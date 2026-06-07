@@ -55,6 +55,14 @@ Per gli **studenti di classe**, Minerva risponde **SOLO** da chunk
 Gli studenti di classe non devono MAI ricevere chunk `platform`/`instructor_only`/
 `teacher_private` né di classi altrui.
 
+### Feedback UX — NON negoziabile
+Ogni operazione che non si completa istantaneamente (generazioni AI, estrazione,
+upload, ingestion, pubblicazione) deve dare evidenza visiva **IMMEDIATA** al click
+e **CONTINUA** fino al completamento: bottone disabilitato + spinner, elemento in
+stato "in corso" che compare subito nella lista, polling che lo aggiorna a
+pronto/fallito senza richiedere refresh manuale. Doppio submit sempre prevenuto
+(guard client + server). Nessuna feature async si considera completa senza questo.
+
 ### Stato reale RAG (aggiornato — prerequisito pacchetto 6 svolto)
 RAG vettoriale implementato (sessione pre-6):
 - **pgvector installato e `CREATE EXTENSION vector`** su **dev** e **test** (NON

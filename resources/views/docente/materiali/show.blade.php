@@ -25,9 +25,9 @@
         </div>
         @if($document->status === 'failed')
             <p style="margin-top:8px; font-size:0.82rem; color:#A8521F;">{{ $document->failure_reason }}</p>
-            <form method="POST" action="{{ route('docente.materials.retry', $document) }}" style="margin-top:10px;">
+            <form method="POST" action="{{ route('docente.materials.retry', $document) }}" data-async style="margin-top:10px;">
                 @csrf
-                <button style="padding:8px 14px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.82rem; cursor:pointer;">Riprova estrazione</button>
+                <button style="padding:8px 14px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.82rem; cursor:pointer;" data-busy-label="Avvio…">Riprova estrazione</button>
             </form>
         @endif
         @if($document->extraction_meta)
@@ -59,7 +59,7 @@
         <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">Genera artefatto</div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
             {{-- Riassunto con livello --}}
-            <form method="POST" action="{{ route('docente.artifacts.generate', $document) }}" style="display:flex; gap:6px; align-items:flex-end;">
+            <form method="POST" action="{{ route('docente.artifacts.generate', $document) }}" data-async style="display:flex; gap:6px; align-items:flex-end;">
                 @csrf
                 <input type="hidden" name="type" value="summary">
                 <div>
@@ -70,26 +70,26 @@
                         <option value="dispensa">Dispensa</option>
                     </select>
                 </div>
-                <button style="padding:9px 14px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Genera</button>
+                <button style="padding:9px 14px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;" data-busy-label="Generazione in corso…">Genera</button>
             </form>
 
             {{-- Quiz con n. domande --}}
-            <form method="POST" action="{{ route('docente.artifacts.generate', $document) }}" style="display:flex; gap:6px; align-items:flex-end;">
+            <form method="POST" action="{{ route('docente.artifacts.generate', $document) }}" data-async style="display:flex; gap:6px; align-items:flex-end;">
                 @csrf
                 <input type="hidden" name="type" value="quiz">
                 <div>
                     <label style="font-size:0.7rem; color:#8A9696; display:block;">Quiz — domande</label>
                     <input type="number" name="num_questions" min="3" max="20" value="10" style="width:70px; padding:8px 10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.82rem;">
                 </div>
-                <button style="padding:9px 14px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Genera</button>
+                <button style="padding:9px 14px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;" data-busy-label="Generazione in corso…">Genera</button>
             </form>
 
             {{-- Tipi senza opzioni --}}
             @foreach(['mindmap' => 'Mappa mentale', 'conceptmap' => 'Mappa concettuale', 'outline' => 'Scaletta'] as $t => $label)
-            <form method="POST" action="{{ route('docente.artifacts.generate', $document) }}">
+            <form method="POST" action="{{ route('docente.artifacts.generate', $document) }}" data-async>
                 @csrf
                 <input type="hidden" name="type" value="{{ $t }}">
-                <button style="padding:9px 14px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">{{ $label }}</button>
+                <button style="padding:9px 14px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;" data-busy-label="Generazione…">{{ $label }}</button>
             </form>
             @endforeach
         </div>
@@ -104,12 +104,16 @@
              $statusColor = ['generating'=>'#E28A53','ready'=>'#3A8C89','failed'=>'#A8521F'];
              $statusLabel = ['generating'=>'in corso…','ready'=>'pronto','failed'=>'fallito']; @endphp
         @foreach($document->artifacts as $a)
-            <a href="{{ route('docente.artifacts.show', $a) }}" style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid #E5E7E7; border-radius:8px; margin-bottom:6px; text-decoration:none;">
+            <a href="{{ route('docente.artifacts.show', $a) }}"
+               x-data="artifactRow('{{ $a->id }}', '{{ $a->status }}')"
+               style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid #E5E7E7; border-radius:8px; margin-bottom:6px; text-decoration:none;">
                 <span style="font-size:0.875rem; color:#1A1F1F;">
                     <span style="font-weight:600;">{{ $typeLabels[$a->type] ?? $a->type }}</span>
                     <span style="color:#8A9696;"> — {{ $a->title }}</span>
                 </span>
-                <span style="font-size:0.72rem; font-weight:700; color:{{ $statusColor[$a->status] ?? '#8A9696' }};">{{ $statusLabel[$a->status] ?? $a->status }}</span>
+                <span style="font-size:0.72rem; font-weight:700;"
+                      :style="{color: status==='ready' ? '#3A8C89' : (status==='failed' ? '#A8521F' : '#E28A53')}"
+                      x-text="status==='ready' ? 'pronto' : (status==='failed' ? 'fallito' : 'in corso…')">{{ $statusLabel[$a->status] ?? $a->status }}</span>
             </a>
         @endforeach
     </div>
@@ -162,6 +166,25 @@ function materialStatus(id, initial) {
                         clearInterval(timer);
                         window.location.reload(); // mostra testo / errore
                     }
+                } catch(e) {}
+            }, 4000);
+        },
+    };
+}
+
+// Riga artefatto nella lista: se è "in corso", il polling la porta a
+// pronto/fallito senza refresh manuale (regola Feedback UX).
+function artifactRow(id, initial) {
+    return {
+        status: initial,
+        init() { if (this.status === 'generating') this.poll(); },
+        poll() {
+            const timer = setInterval(async () => {
+                try {
+                    const r = await fetch(`/docente/artefatti/${id}/stato`, {headers: {'X-Requested-With':'XMLHttpRequest'}});
+                    const d = await r.json();
+                    this.status = d.status;
+                    if (d.status === 'ready' || d.status === 'failed') clearInterval(timer);
                 } catch(e) {}
             }, 4000);
         },

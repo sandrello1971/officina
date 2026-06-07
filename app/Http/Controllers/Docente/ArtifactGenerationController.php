@@ -37,6 +37,18 @@ class ArtifactGenerationController extends Controller
 
         $options = $this->options($data);
 
+        // Guard anti-duplicato (server): se esiste già un artefatto dello stesso
+        // tipo in stato generating per questo documento, NON duplicare. Risolve
+        // il doppio submit (anche quando il click resta senza feedback).
+        $inProgress = TeachingArtifact::where('teaching_document_id', $document->id)
+            ->where('type', $data['type'])
+            ->where('status', 'generating')
+            ->first();
+        if ($inProgress) {
+            return redirect()->route('docente.artifacts.show', $inProgress)
+                ->with('success', 'Generazione già in corso per questo tipo: eccola qui.');
+        }
+
         $artifact = TeachingArtifact::create([
             'teaching_document_id' => $document->id,
             'teacher_id' => $document->teacher_id,
@@ -47,7 +59,10 @@ class ArtifactGenerationController extends Controller
             'generation_meta' => ['requested_options' => $options],
         ]);
 
-        GenerateArtifactJob::dispatch($artifact->id, $options);
+        // afterResponse: la risposta HTTP torna SUBITO (anche con QUEUE=sync, dove
+        // dispatch() girerebbe inline bloccando ~90s). L'utente vede l'artefatto
+        // in stato generating e il polling lo porta a pronto/fallito.
+        GenerateArtifactJob::dispatch($artifact->id, $options)->afterResponse();
 
         return redirect()->route('docente.artifacts.show', $artifact)
             ->with('success', 'Generazione avviata. L\'artefatto sarà pronto a breve.');
@@ -79,7 +94,7 @@ class ArtifactGenerationController extends Controller
             ]),
         ]);
 
-        GenerateArtifactJob::dispatch($artifact->id, $options);
+        GenerateArtifactJob::dispatch($artifact->id, $options)->afterResponse();
 
         return redirect()->route('docente.artifacts.show', $artifact)
             ->with('success', 'Rigenerazione avviata: il contenuto verrà sovrascritto.');

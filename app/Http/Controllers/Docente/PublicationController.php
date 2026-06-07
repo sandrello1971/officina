@@ -56,7 +56,7 @@ class PublicationController extends Controller
                 ]
             );
 
-            IngestPublicationRagJob::dispatch($publication->id);
+            IngestPublicationRagJob::dispatch($publication->id)->afterResponse();
         }
 
         return redirect()->route('docente.artifacts.show', $artifact)
@@ -72,7 +72,7 @@ class PublicationController extends Controller
         $publication->delete();
 
         // Pulizia RAG dei chunk class (idempotente, per publication_id).
-        PurgeWithdrawnPublicationJob::dispatch($publicationId);
+        PurgeWithdrawnPublicationJob::dispatch($publicationId)->afterResponse();
 
         return redirect()->route('docente.artifacts.show', $artifact)
             ->with('success', 'Pubblicazione ritirata.');
