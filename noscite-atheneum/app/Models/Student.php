@@ -23,6 +23,7 @@ class Student extends Authenticatable
         'name', 'email', 'password', 'phone', 'company', 'job_title', 'role',
         'avatar_url', 'is_active', 'is_demo', 'must_change_password',
         'microsoft_id', 'auto_enroll_all_courses', 'birth_date',
+        'library_rights_ack_at',
     ];
 
     protected $hidden = [
@@ -38,6 +39,7 @@ class Student extends Authenticatable
         'last_login_at' => 'datetime',
         'password' => 'hashed',
         'birth_date' => 'date',
+        'library_rights_ack_at' => 'datetime',
     ];
 
     public function courses()
