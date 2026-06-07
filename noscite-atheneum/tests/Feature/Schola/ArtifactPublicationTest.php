@@ -324,7 +324,7 @@ class ArtifactPublicationTest extends TestCase
         $this->assertDatabaseHas('artifact_publications', [
             'teaching_artifact_id' => $art->id, 'school_class_id' => $class->id, 'rag_status' => 'pending',
         ]);
-        Bus::assertDispatched(IngestPublicationRagJob::class);
+        Bus::assertDispatchedAfterResponse(IngestPublicationRagJob::class);
     }
 
     public function test_publish_rejects_class_of_another_teacher(): void
@@ -366,7 +366,7 @@ class ArtifactPublicationTest extends TestCase
         $this->asProf($prof)->delete(route('docente.publications.destroy', $pub))->assertRedirect();
 
         $this->assertDatabaseMissing('artifact_publications', ['id' => $pub->id]);
-        Bus::assertDispatched(PurgeWithdrawnPublicationJob::class);
+        Bus::assertDispatchedAfterResponse(PurgeWithdrawnPublicationJob::class);
     }
 
     protected function tearDown(): void

@@ -8,7 +8,7 @@
 
     @if($errors->any())<div style="margin-bottom:14px; padding:12px 16px; background:#FDECE2; border:1px solid #E28A53; border-radius:8px; color:#A8521F; font-size:0.85rem;"><ul style="margin:0 0 0 18px;">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 
-    <form method="POST" action="{{ route('docente.materials.store') }}" enctype="multipart/form-data" @submit="prepare($event)"
+    <form method="POST" action="{{ route('docente.materials.store') }}" enctype="multipart/form-data" data-async @submit="prepare($event)"
           style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:22px;">
         @csrf
         <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px;">
@@ -94,7 +94,7 @@
         <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-top:14px;">Tag (separati da virgola)</label>
         <input type="text" name="tags" value="{{ old('tags') }}" style="width:100%; padding:9px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem;">
 
-        <button type="submit" style="margin-top:18px; padding:11px 22px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.9rem; font-weight:700; cursor:pointer;">Carica e avvia estrazione</button>
+        <button type="submit" style="margin-top:18px; padding:11px 22px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.9rem; font-weight:700; cursor:pointer;" data-busy-label="Caricamento…">Carica e avvia estrazione</button>
     </form>
 </div>
 

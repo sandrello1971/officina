@@ -293,7 +293,7 @@ class ArtifactGenerationTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame('generating', $art->fresh()->status);
-        Bus::assertDispatched(GenerateArtifactJob::class);
+        Bus::assertDispatchedAfterResponse(GenerateArtifactJob::class);
     }
 
     public function test_regenerate_quiz_reuses_same_quiz_record(): void
@@ -338,7 +338,25 @@ class ArtifactGenerationTest extends TestCase
         $this->assertDatabaseHas('teaching_artifacts', [
             'teaching_document_id' => $doc->id, 'type' => 'mindmap', 'status' => 'generating',
         ]);
-        Bus::assertDispatched(GenerateArtifactJob::class);
+        // Dispatch afterResponse: la risposta torna subito anche con QUEUE=sync.
+        Bus::assertDispatchedAfterResponse(GenerateArtifactJob::class);
+    }
+
+    public function test_store_generation_guards_against_duplicate_in_progress(): void
+    {
+        Bus::fake();
+        $prof = $this->prof();
+        $doc = $this->readyDoc($prof);
+        $existing = $this->artifact($doc, 'summary', ['status' => 'generating']);
+
+        // Secondo POST dello stesso tipo mentre il primo è ancora "generating":
+        // niente duplicato, redirect all'artefatto già in corso.
+        $this->asProf($prof)->post(route('docente.artifacts.generate', $doc), ['type' => 'summary'])
+            ->assertRedirect(route('docente.artifacts.show', $existing));
+
+        $this->assertSame(1, TeachingArtifact::where('teaching_document_id', $doc->id)
+            ->where('type', 'summary')->count());
+        Bus::assertNotDispatchedAfterResponse(GenerateArtifactJob::class);
     }
 
     public function test_store_generation_blocked_when_document_not_ready(): void

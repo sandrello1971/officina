@@ -41,8 +41,16 @@
             <template x-if="status==='failed'"><span style="color:#A8521F; font-weight:700; font-size:0.9rem;">&#10007; Generazione fallita</span></template>
         </div>
 
-        @if($artifact->status === 'failed' && ($artifact->generation_meta['failure_reason'] ?? null))
-            <p style="margin-top:8px; font-size:0.82rem; color:#A8521F;">{{ $artifact->generation_meta['failure_reason'] }}</p>
+        @if($artifact->status === 'failed')
+            @if($artifact->generation_meta['failure_reason'] ?? null)
+                <p style="margin-top:8px; font-size:0.82rem; color:#A8521F;">{{ $artifact->generation_meta['failure_reason'] }}</p>
+            @endif
+            @if($artifact->type !== 'transcript' && $artifact->teaching_document_id)
+                <form method="POST" action="{{ route('docente.artifacts.regenerate', $artifact) }}" data-async style="margin-top:10px;">
+                    @csrf
+                    <button data-busy-label="Riprovo…" style="padding:8px 14px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.82rem; font-weight:600; cursor:pointer;">Riprova</button>
+                </form>
+            @endif
         @endif
 
         @if($artifact->generation_meta && $artifact->status === 'ready')
@@ -137,7 +145,7 @@
                                   x-text="p.rag_status==='ready' ? 'pubblicato' : (p.rag_status==='failed' ? 'errore' : 'pubblicazione in corso…')"></span>
                             <form :action="'/docente/pubblicazioni/' + p.id" method="POST" onsubmit="return confirm('Ritirare la pubblicazione da questa classe?');">
                                 @csrf @method('DELETE')
-                                <button style="padding:5px 10px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:6px; font-size:0.75rem; cursor:pointer;">Ritira</button>
+                                <button style="padding:5px 10px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:6px; font-size:0.75rem; cursor:pointer;" data-busy-label="Ritiro…">Ritira</button>
                             </form>
                         </span>
                     </div>
@@ -147,7 +155,7 @@
 
         {{-- Form pubblicazione su nuove classi --}}
         @if($teacherClasses->count())
-        <form method="POST" action="{{ route('docente.artifacts.publish', $artifact) }}">
+        <form method="POST" action="{{ route('docente.artifacts.publish', $artifact) }}" data-async>
             @csrf
             <div style="font-size:0.8rem; color:#4A5252; margin-bottom:6px;">Pubblica su:</div>
             <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
@@ -162,7 +170,7 @@
                 <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" name="students_can_generate" value="1" checked> gli studenti possono auto-generare</label>
                 <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" name="downloadable" value="1"> scaricabile</label>
             </div>
-            <button style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Pubblica</button>
+            <button style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;" data-busy-label="Pubblicazione…">Pubblica</button>
         </form>
         @else
             <p style="font-size:0.82rem; color:#8A9696;">Non hai ancora classi attive su cui pubblicare.</p>
@@ -174,7 +182,7 @@
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
         @if($artifact->type !== 'transcript' && $artifact->teaching_document_id)
             <form method="POST" action="{{ route('docente.artifacts.regenerate', $artifact) }}"
-                  onsubmit="return confirm('Rigenerare questo artefatto? Il contenuto attuale verrà sovrascritto.');">
+                  onsubmit="return confirm('Rigenerare questo artefatto? Il contenuto attuale verrà sovrascritto.');" data-async>
                 @csrf
                 @if($artifact->type === 'summary')
                     <select name="level" style="padding:9px 10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.82rem;">
@@ -186,7 +194,7 @@
                 @if($artifact->type === 'quiz')
                     <input type="number" name="num_questions" min="3" max="20" value="10" style="width:70px; padding:9px 10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.82rem;">
                 @endif
-                <button style="padding:9px 16px; background:#E28A53; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Rigenera</button>
+                <button style="padding:9px 16px; background:#E28A53; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;" data-busy-label="Rigenerazione…">Rigenera</button>
             </form>
         @endif
 
