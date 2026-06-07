@@ -220,6 +220,76 @@ class RagService
         return $this->runRetrieval($query, $scope, $limit, $this->vectorEnabledSchola());
     }
 
+    /**
+     * Variante "scored" del retrieval di classe per il gate §5 (pacchetto 6b):
+     * oltre ai documenti sopra soglia, ritorna la MIGLIOR similarità trovata
+     * nello scope (anche se sotto soglia) — serve a unanswered_questions — e se
+     * il percorso usato è vettoriale.
+     *
+     *  - $artifactId: pre-filtro opzionale sul documento sorgente (apertura
+     *    chat dal contesto di un artefatto: si interroga "prima di tutto" quello).
+     *
+     * @return array{docs: \Illuminate\Support\Collection, best_similarity: float|null, vector: bool}
+     */
+    public function searchClassScopedScored(
+        string $query,
+        array $classIds,
+        ?string $teacherId = null,
+        int $limit = 6,
+        ?string $artifactId = null
+    ): array {
+        $classIds = array_values(array_filter($classIds));
+        if (empty($classIds) && $teacherId === null) {
+            return ['docs' => collect(), 'best_similarity' => null, 'vector' => false];
+        }
+
+        $scope = function (Builder $q) use ($classIds, $teacherId, $artifactId) {
+            $q->where(function ($w) use ($classIds, $teacherId) {
+                if (!empty($classIds)) {
+                    $w->orWhere(function ($c) use ($classIds) {
+                        $c->where('scope', 'class')->whereIn('school_class_id', $classIds);
+                    });
+                }
+                if ($teacherId !== null) {
+                    $w->orWhere(function ($t) use ($teacherId) {
+                        $t->where('scope', 'teacher_private')->where('teacher_id', $teacherId);
+                    });
+                }
+            });
+            if ($artifactId !== null) {
+                $q->where('metadata->artifact_id', $artifactId);
+            }
+        };
+
+        if ($this->vectorEnabledSchola() && $this->embeddingColumnExists()) {
+            try {
+                $vector = $this->embeddings->embedOne($query);
+            } catch (Throwable $e) {
+                Log::warning('[rag] embedding query (class) fallito, fallback ILIKE', ['error' => $e->getMessage()]);
+
+                return ['docs' => $this->ilikeSearch($query, $scope, $limit), 'best_similarity' => null, 'vector' => false];
+            }
+
+            $literal = PgVector::toLiteral($vector);
+            $minSim = $this->minSimilarity();
+
+            $q = DocumentRag::query()->whereNotNull('embedding');
+            $scope($q);
+            $rows = $q->select('documents_rag.*')
+                ->selectRaw('1 - (embedding <=> ?::vector) AS _similarity', [$literal])
+                ->orderByRaw('embedding <=> ?::vector', [$literal])
+                ->limit(max($limit, 1))
+                ->get();
+
+            $best = $rows->isNotEmpty() ? (float) $rows->first()->_similarity : null;
+            $docs = $rows->filter(fn ($r) => (float) $r->_similarity >= $minSim)->take($limit)->values();
+
+            return ['docs' => $docs, 'best_similarity' => $best, 'vector' => true];
+        }
+
+        return ['docs' => $this->ilikeSearch($query, $scope, $limit), 'best_similarity' => null, 'vector' => false];
+    }
+
     // ===== Motore di retrieval (vettoriale con fallback ILIKE) =====
 
     /**

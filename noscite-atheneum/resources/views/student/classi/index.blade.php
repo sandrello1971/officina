@@ -18,6 +18,7 @@
                 @if($class->pivot->status === 'pending')
                     <span style="font-size:0.72rem; font-weight:700; color:#E28A53; background:#FDECE2; border:1px solid #E28A53; border-radius:4px; padding:3px 10px;">In attesa di approvazione</span>
                 @else
+                    <a href="{{ route('student.classes.minerva', $class) }}" style="font-size:0.75rem; font-weight:700; color:#55B1AE; background:#1A1F1F; border-radius:6px; padding:6px 12px; text-decoration:none;">&#9788; Chiedi a Minerva</a>
                     <span style="font-size:0.72rem; font-weight:700; color:#3A8C89; background:#E8F5F5; border:1px solid #55B1AE; border-radius:4px; padding:3px 10px;">Attiva</span>
                 @endif
             </div>
