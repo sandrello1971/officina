@@ -101,6 +101,11 @@
         {{ session('error') }}
     </div>
     @endif
+    @if(session('warning'))
+    <div style="margin:16px 24px; padding:12px 16px; background:#FBF3E2; border-left:4px solid #E2A653; border-radius:6px; color:#9A7B2E; font-size:0.875rem;">
+        &#9888; {{ session('warning') }}
+    </div>
+    @endif
 
     <div style="padding:24px;">
         @yield('content')

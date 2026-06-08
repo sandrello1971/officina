@@ -15,7 +15,9 @@ class ClassActivityController extends Controller
 
     public function index(SchoolClass $class)
     {
-        abort_unless($class->teacher_id === session('student_id'), 403);
+        // Accesso al cruscotto: proprietà (classe libera) o cattedra (P15).
+        abort_unless(app(\App\Services\Schola\TeacherClassAccess::class)
+            ->canTeach(session('student_id'), $class), 403);
 
         return view('docente.classi.attivita', [
             'class' => $class,

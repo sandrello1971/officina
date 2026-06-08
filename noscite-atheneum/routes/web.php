@@ -252,6 +252,16 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
     Route::get('/studenti/import/{batch}/risultato', [App\Http\Controllers\Scuola\StudentImportController::class, 'result'])->name('studenti.import.result');
     Route::get('/studenti/import/{batch}/credenziali.csv', [App\Http\Controllers\Scuola\StudentImportController::class, 'credentialsDownload'])->name('studenti.import.credentials');
     Route::post('/studenti/import/{batch}/discard', [App\Http\Controllers\Scuola\StudentImportController::class, 'discard'])->name('studenti.import.discard');
+
+    // Classi e cattedre (P15): gestione segreteria
+    Route::get('/classi', [App\Http\Controllers\Scuola\ClassController::class, 'index'])->name('classi.index');
+    Route::get('/classi/crea', [App\Http\Controllers\Scuola\ClassController::class, 'create'])->name('classi.create');
+    Route::post('/classi', [App\Http\Controllers\Scuola\ClassController::class, 'store'])->name('classi.store');
+    Route::get('/classi/{class}', [App\Http\Controllers\Scuola\ClassController::class, 'show'])->name('classi.show');
+    Route::patch('/classi/{class}', [App\Http\Controllers\Scuola\ClassController::class, 'update'])->name('classi.update');
+    Route::post('/classi/{class}/studenti', [App\Http\Controllers\Scuola\ClassController::class, 'assignStudents'])->name('classi.students');
+    Route::post('/classi/{class}/cattedre', [App\Http\Controllers\Scuola\ClassController::class, 'assignCattedra'])->name('classi.cattedre.store');
+    Route::delete('/cattedre/{assignment}', [App\Http\Controllers\Scuola\ClassController::class, 'destroyCattedra'])->name('cattedre.destroy');
 });
 
 // Logo scuola da storage privato — accessibile a tutti gli utenti della scuola

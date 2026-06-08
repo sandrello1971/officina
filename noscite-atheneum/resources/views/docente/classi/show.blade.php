@@ -20,6 +20,14 @@
         </div>
     @endif
 
+    {{-- Classe di SCUOLA: gestita dalla segreteria, il docente la vede in sola lettura (§3, P15) --}}
+    @if($class->school_id !== null)
+    <div style="background:#F0F6F6; border:1px solid #C8E0E0; border-radius:10px; padding:14px 18px; margin-bottom:16px; font-size:0.85rem; color:#3A8C89;">
+        &#128274; Classe gestita dalla <strong>segreteria scolastica</strong>: roster, codice e impostazioni si modificano dall'area Scuola. Qui prepari e pubblichi i materiali per le tue cattedre.
+    </div>
+    @endif
+
+    @if($class->school_id === null)
     {{-- Codice invito --}}
     <div style="background:white; border-radius:10px; padding:20px; margin-bottom:16px; border:1px solid #C8D0D0;">
         <div style="font-size:0.8rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Codice invito</div>
@@ -61,6 +69,7 @@
             <button type="submit" style="margin-top:14px; padding:10px 20px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:600; cursor:pointer;">Salva</button>
         </form>
     </div>
+    @endif
 
     {{-- Roster --}}
     <div style="background:white; border-radius:10px; padding:20px; border:1px solid #C8D0D0;">
@@ -68,7 +77,7 @@
 
         @php $pending = $roster->get('pending', collect()); $active = $roster->get('active', collect()); $removed = $roster->get('removed', collect()); @endphp
 
-        @if($pending->isNotEmpty())
+        @if($class->school_id === null && $pending->isNotEmpty())
             <div style="font-size:0.75rem; font-weight:700; color:#E28A53; text-transform:uppercase; margin:10px 0 6px;">In attesa di approvazione ({{ $pending->count() }})</div>
             @foreach($pending as $e)
                 <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #F5F7F7;">
@@ -90,13 +99,15 @@
         <div style="font-size:0.75rem; font-weight:700; color:#3A8C89; text-transform:uppercase; margin:14px 0 6px;">Attivi ({{ $active->count() }})</div>
         @forelse($active as $e)
             <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #F5F7F7;">
-                <div style="flex:1; font-size:0.875rem; color:#1A1F1F;">{{ $e->student->name }} <span style="color:#8A9696;">· {{ $e->student->email }}</span></div>
+                <div style="flex:1; font-size:0.875rem; color:#1A1F1F;">{{ $e->student->name }} <span style="color:#8A9696;">· {{ $e->student->email ?? $e->student->username }}</span></div>
+                @if($class->school_id === null)
                 <form method="POST" action="{{ route('docente.classes.roster.update', [$class, $e]) }}"
                       onsubmit="return confirm('Rimuovere {{ $e->student->name }} dalla classe?');">
                     @csrf @method('PATCH')
                     <input type="hidden" name="action" value="remove">
                     <button style="padding:6px 12px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:6px; font-size:0.78rem; cursor:pointer;">Rimuovi</button>
                 </form>
+                @endif
             </div>
         @empty
             <p style="color:#8A9696; font-size:0.85rem;">Nessuno studente attivo.</p>

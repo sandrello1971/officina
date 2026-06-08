@@ -54,6 +54,13 @@ class SchoolClass extends Model
         return $this->belongsTo(Student::class, 'teacher_id');
     }
 
+    // Fase 2: nel modello scuola teacher_id assume il significato di
+    // "coordinatore" (opzionale). Alias semantico.
+    public function coordinator()
+    {
+        return $this->belongsTo(Student::class, 'teacher_id');
+    }
+
     public function subject()
     {
         return $this->belongsTo(Subject::class);
