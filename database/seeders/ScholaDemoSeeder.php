@@ -64,7 +64,92 @@ class ScholaDemoSeeder extends Seeder
         $this->seedSubject($classF, $prof, $fisica, $this->fisicaContent(), array_slice($students, 0, 5));
         $this->seedSubject($classS, $prof, $storia, $this->storiaContent(), array_slice($students, 3, 5));
 
-        $this->command?->info('ScholaDemoSeeder: 1 professor, 2 classi, ' . count($students) . ' studenti, materiali/artefatti/pubblicazioni/attività su 3 settimane.');
+        // Fase 2: due SCUOLE complete per collaudare l'isolamento a occhio.
+        $this->seedOneSchool('Liceo Galilei', 'demo-galilei', $fisica, $storia);
+        $this->seedOneSchool('ITIS Fermi', 'demo-fermi', $fisica, $storia);
+
+        $this->command?->info('ScholaDemoSeeder: 1 docente libero + 2 classi; 2 scuole complete (segreteria, docenti+cattedre, classi, studenti con/senza email, attività).');
+    }
+
+    // ===== fase 2: scuola completa =====
+
+    private function seedOneSchool(string $name, string $slug, Subject $fisica, Subject $storia): void
+    {
+        $domain = '@' . $slug . '.scuola';
+        $school = \App\Models\School::create([
+            'name' => $name, 'slug' => $slug, 'type' => 'liceo', 'city' => 'Demo',
+            'status' => 'active', 'dpa_signed_at' => $slug === 'demo-galilei' ? now()->subMonth() : null,
+        ]);
+
+        \App\Models\Student::create(['name' => 'Segreteria ' . $name, 'email' => 'segreteria' . $domain,
+            'password' => bcrypt('password'), 'role' => 'school_admin', 'school_id' => $school->id,
+            'is_active' => true, 'must_change_password' => false]);
+
+        // 2 docenti con competenze + 2 classi + cattedre.
+        $profF = $this->schoolTeacher($school, 'Carla Neri', 'c.neri' . $domain, [$fisica]);
+        $profS = $this->schoolTeacher($school, 'Ugo Bianchi', 'u.bianchi' . $domain, [$storia]);
+
+        $classA = $this->schoolClass($school, '3A');
+        $classB = $this->schoolClass($school, '4B');
+
+        foreach ([[$profF, $fisica], [$profS, $storia]] as [$t, $sub]) {
+            foreach ([$classA, $classB] as $class) {
+                \App\Models\TeachingAssignment::create(['school_id' => $school->id, 'teacher_id' => $t->id,
+                    'subject_id' => $sub->id, 'school_class_id' => $class->id, 'school_year' => $class->school_year]);
+            }
+        }
+
+        // 6 studenti: 4 con email, 2 senza (username interno).
+        $names = ['Anna Russo', 'Marco Galli', 'Sara Costa', 'Luca Moro', 'Eva Sala', 'Tom Vinci'];
+        foreach ($names as $i => $sname) {
+            $hasEmail = $i < 4;
+            $student = \App\Models\Student::create([
+                'name' => $sname,
+                'email' => $hasEmail ? \Illuminate\Support\Str::of($sname)->lower()->replace(' ', '.') . $domain : null,
+                'username' => $hasEmail ? null : \Illuminate\Support\Str::slug($sname, '.') . '.' . $slug,
+                'password' => bcrypt('password'), 'role' => 'student', 'school_id' => $school->id,
+                'birth_date' => Carbon::create(2009, 1, 1)->addDays($i * 60),
+                'is_active' => true, 'must_change_password' => $hasEmail,
+            ]);
+            $class = $i % 2 === 0 ? $classA : $classB;
+            ClassStudent::create(['school_class_id' => $class->id, 'student_id' => $student->id,
+                'status' => 'active', 'approved_at' => now()->subWeeks(2)]);
+        }
+
+        // Attività: una pubblicazione del docente di Fisica su 3A + qualche vista/domanda.
+        $doc = TeachingDocument::create(['teacher_id' => $profF->id, 'title' => 'Lezione ' . $name, 'source_type' => 'text',
+            'status' => 'ready', 'extracted_text' => 'Contenuto demo.', 'subject_id' => $fisica->id,
+            'source_files' => ['teaching-documents/demo/' . $school->id . '/t.md']]);
+        $art = TeachingArtifact::create(['teaching_document_id' => $doc->id, 'teacher_id' => $profF->id,
+            'subject_id' => $fisica->id, 'type' => 'summary', 'title' => 'Riassunto demo',
+            'content' => "## Riassunto\nContenuto di esempio.", 'status' => 'ready']);
+        $pub = ArtifactPublication::create(['teaching_artifact_id' => $art->id, 'school_class_id' => $classA->id,
+            'students_can_generate' => true, 'published_at' => now()->subWeeks(2), 'rag_status' => 'ready']);
+
+        $classAStudents = ClassStudent::where('school_class_id', $classA->id)->pluck('student_id');
+        foreach ($classAStudents->take(2) as $j => $sid) {
+            StudentArtifactView::create(['artifact_publication_id' => $pub->id, 'student_id' => $sid,
+                'first_viewed_at' => now()->subDays(5 + $j), 'last_viewed_at' => now()->subDays(3 + $j), 'view_count' => 1 + $j]);
+        }
+        UnansweredQuestion::create(['school_class_id' => $classA->id, 'student_id' => $classAStudents->first(),
+            'question' => 'Domanda demo fuori KB?', 'best_similarity' => 0.2, 'status' => 'open']);
+    }
+
+    private function schoolTeacher(\App\Models\School $school, string $name, string $email, array $subjects): Student
+    {
+        $teacher = Student::create(['name' => $name, 'email' => $email, 'password' => bcrypt('password'),
+            'role' => 'professor', 'school_id' => $school->id, 'is_active' => true, 'must_change_password' => false]);
+        foreach ($subjects as $sub) {
+            \App\Models\ProfessorSubject::create(['teacher_id' => $teacher->id, 'subject_id' => $sub->id, 'school_id' => $school->id]);
+        }
+        return $teacher;
+    }
+
+    private function schoolClass(\App\Models\School $school, string $name): SchoolClass
+    {
+        return SchoolClass::create(['school_id' => $school->id, 'teacher_id' => null, 'name' => $name,
+            'subject_id' => null, 'school_year' => '2026/2027', 'invite_code' => SchoolClass::generateInviteCode(),
+            'invite_enabled' => false, 'requires_approval' => false, 'is_archived' => false]);
     }
 
     // ===== cleanup idempotente =====
@@ -72,6 +157,18 @@ class ScholaDemoSeeder extends Seeder
     private function cleanup(): void
     {
         $demoIds = Student::where('email', 'like', '%' . self::DEMO_DOMAIN)->pluck('id');
+        // Scuole demo (slug demo-*) + i loro membri/classi/cattedre/import.
+        $demoSchoolIds = \App\Models\School::where('slug', 'like', 'demo-%')->pluck('id');
+        if ($demoSchoolIds->isNotEmpty()) {
+            $memberIds = Student::whereIn('school_id', $demoSchoolIds)->pluck('id');
+            SchoolClass::whereIn('school_id', $demoSchoolIds)->forceDelete();
+            \App\Models\TeachingAssignment::whereIn('school_id', $demoSchoolIds)->delete();
+            \App\Models\ProfessorSubject::whereIn('school_id', $demoSchoolIds)->delete();
+            \App\Models\ImportBatch::whereIn('school_id', $demoSchoolIds)->delete();
+            Student::whereIn('id', $memberIds)->forceDelete();
+            \App\Models\School::whereIn('id', $demoSchoolIds)->forceDelete();
+        }
+
         if ($demoIds->isEmpty()) {
             return;
         }
