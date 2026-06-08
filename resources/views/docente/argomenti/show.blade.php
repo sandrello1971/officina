@@ -32,10 +32,11 @@
                     <button type="button" onclick="moveLesson('{{ $lesson->id }}',-1)" title="Su" style="border:none; background:none; cursor:pointer; color:#8A9696; font-size:0.7rem; line-height:1;">&#9650;</button>
                     <button type="button" onclick="moveLesson('{{ $lesson->id }}',1)" title="Giù" style="border:none; background:none; cursor:pointer; color:#8A9696; font-size:0.7rem; line-height:1;">&#9660;</button>
                 </div>
-                <div style="flex:1;">
+                <a href="{{ route('docente.lessons.show', $lesson) }}" style="flex:1; text-decoration:none;">
                     <div style="font-weight:700; color:#1A1F1F;">{{ $lesson->title }}</div>
-                    <div style="font-size:0.78rem; color:#8A9696;">{{ $docs->count() }} {{ $docs->count() === 1 ? 'materiale' : 'materiali' }} · {{ $lesson->generation_status }}</div>
-                </div>
+                    @php $glabels = ['draft'=>'bozza','generating'=>'in composizione','ready'=>'pronta','failed'=>'fallita']; @endphp
+                    <div style="font-size:0.78rem; color:#8A9696;">{{ $docs->count() }} {{ $docs->count() === 1 ? 'materiale' : 'materiali' }} · {{ $glabels[$lesson->generation_status] ?? $lesson->generation_status }}</div>
+                </a>
                 <details style="position:relative;">
                     <summary style="list-style:none; cursor:pointer; color:#8A9696; font-size:1.1rem; padding:0 6px;">&#8943;</summary>
                     <div style="position:absolute; right:0; top:24px; background:white; border:1px solid #C8D0D0; border-radius:8px; padding:8px; z-index:10; min-width:200px; box-shadow:0 4px 12px rgba(0,0,0,0.08);">

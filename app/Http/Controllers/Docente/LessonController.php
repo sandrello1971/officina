@@ -28,6 +28,32 @@ class LessonController extends Controller
         abort_unless($lesson->teacher_id === $this->teacherId(), 403);
     }
 
+    public function show(Lesson $lesson)
+    {
+        $this->authorizeLesson($lesson);
+
+        $lesson->load(['topic.subject']);
+        $materials = $lesson->teachingDocuments()->with('subject')->orderBy('created_at')->get();
+        $artifacts = $lesson->teachingArtifacts()->orderByDesc('created_at')->get();
+
+        return view('docente.lezioni.show', compact('lesson', 'materials', 'artifacts'));
+    }
+
+    // Editing del corpo lezione: SEMPRE modificabile dal docente dopo la generazione.
+    public function updateContent(Request $request, Lesson $lesson)
+    {
+        $this->authorizeLesson($lesson);
+
+        $data = $request->validate([
+            'content' => 'nullable|string',
+        ]);
+
+        $lesson->update(['content' => $data['content'] ?? null]);
+
+        return redirect()->route('docente.lessons.show', $lesson)
+            ->with('success', 'Lezione aggiornata.');
+    }
+
     public function store(Request $request, Topic $topic)
     {
         $this->authorizeTopic($topic);
