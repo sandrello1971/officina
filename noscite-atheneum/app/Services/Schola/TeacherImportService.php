@@ -111,6 +111,34 @@ class TeacherImportService
     }
 
     /**
+     * Inserimento SINGOLO (form): stessa identica logica del massivo — costruisce
+     * una riga CSV e passa per analyze()+commit(). Nessuna logica duplicata.
+     *
+     * @param array{nome:string,cognome:string,email:string,materie:array<int,string>} $fields
+     * @return array{result:array, row:?array}
+     */
+    public function commitSingle(array $fields, School $school): array
+    {
+        $csv = ImportCsv::oneRow(
+            ['nome', 'cognome', 'email', 'materie'],
+            [$fields['nome'] ?? '', $fields['cognome'] ?? '', $fields['email'] ?? '', implode('|', $fields['materie'] ?? [])]
+        );
+
+        $analysis = $this->analyze($csv, $school);
+        $batch = ImportBatch::create([
+            'school_id' => $school->id, 'created_by' => session('student_id'),
+            'type' => 'professors', 'status' => 'previewed',
+            'source_filename' => 'Inserimento manuale',
+            'summary' => $analysis['summary'], 'rows' => $analysis['rows'],
+        ]);
+
+        $result = $this->commit($batch, $school, 'update');
+        $batch->update(['status' => 'committed', 'summary' => array_merge($batch->summary ?? [], ['result' => $result])]);
+
+        return ['result' => $result, 'row' => $analysis['rows'][0] ?? null];
+    }
+
+    /**
      * Applica un batch "previewed". Idempotente per email. Solo righe valide o
      * duplicate (secondo $duplicateAction). Tenancy: scrive solo nella scuola.
      *

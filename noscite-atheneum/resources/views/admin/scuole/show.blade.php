@@ -11,7 +11,13 @@
     <p style="color:#8A9696; font-size:0.85rem; margin-bottom:16px;">{{ $typeLabels[$school->type] ?? $school->type }}@if($school->city) · {{ $school->city }}@endif · slug <code>{{ $school->slug }}</code></p>
 
     @if(session('success'))<div style="margin-bottom:14px; padding:10px 14px; background:#E8F5F5; border-left:4px solid #55B1AE; border-radius:6px; color:#3A8C89; font-size:0.85rem;">{{ session('success') }}</div>@endif
-    @if(session('temp_password'))<div style="margin-bottom:14px; padding:12px 14px; background:#FBF6E2; border-left:4px solid #E2A653; border-radius:6px; color:#7A5B0E; font-size:0.85rem;">Password temporanea (comunicala alla segreteria, sarà richiesto il cambio al primo accesso): <strong style="font-family:monospace;">{{ session('temp_password') }}</strong></div>@endif
+    @if(session('temp_password'))
+    <div style="margin-bottom:14px; padding:14px 16px; background:#FBF6E2; border:1px solid #E2A653; border-radius:8px; color:#7A5B0E; font-size:0.88rem;">
+        <strong>&#9888; Annotala ora — mostrata una sola volta, non sarà più recuperabile.</strong><br>
+        Password temporanea @if(session('temp_password_for'))per <strong>{{ session('temp_password_for') }}</strong>@endif (cambio obbligatorio al primo accesso):
+        <div style="font-family:monospace; font-size:1.1rem; font-weight:700; margin-top:6px; color:#1A1F1F;">{{ session('temp_password') }}</div>
+    </div>
+    @endif
     @if($errors->any())<div style="margin-bottom:14px; padding:10px 14px; background:#FDECE2; border-left:4px solid #E28A53; border-radius:6px; color:#A8521F; font-size:0.85rem;">{{ $errors->first() }}</div>@endif
 
     {{-- Conteggi --}}
@@ -24,23 +30,44 @@
         @endforeach
     </div>
 
-    {{-- Nomina segreteria --}}
+    {{-- Segreteria: elenco + azioni di recupero --}}
     <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px; margin-bottom:16px;">
         <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">Segreteria (school_admin)</div>
         @forelse($admins as $a)
-            <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #F0F2F2; font-size:0.85rem;">
-                <span>{{ $a->name }} <span style="color:#8A9696;">· {{ $a->email }}</span></span>
-                <span style="font-size:0.72rem; color:{{ $a->must_change_password ? '#E28A53' : '#3A8C89' }};">{{ $a->must_change_password ? 'invito da completare' : 'attivo' }}</span>
+            <div style="padding:10px 0; border-bottom:1px solid #F0F2F2;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <div style="font-size:0.85rem;">
+                        {{ $a->name }} <span style="color:#8A9696;">· {{ $a->email }}</span>
+                        <span style="margin-left:6px; font-size:0.72rem; font-weight:700; color:{{ !$a->is_active ? '#A8521F' : ($a->must_change_password ? '#E28A53' : '#3A8C89') }};">
+                            {{ !$a->is_active ? 'disattivato' : ($a->must_change_password ? 'invito in sospeso / cambio pw' : 'attivo') }}
+                        </span>
+                        <span style="font-size:0.72rem; color:#8A9696;">· ultimo accesso: {{ $a->last_login_at?->format('d/m/Y H:i') ?? 'mai' }}</span>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <form method="POST" action="{{ route('admin.scuole.segreteria.reset', [$school, $a]) }}">@csrf
+                            <label style="font-size:0.68rem; color:#8A9696;"><input type="checkbox" name="send_email" value="1"> email</label>
+                            <button style="padding:4px 9px; background:#E8F5F5; color:#3A8C89; border:1px solid #55B1AE; border-radius:6px; font-size:0.72rem; cursor:pointer;">Reset password</button>
+                        </form>
+                        <form method="POST" action="{{ route('admin.scuole.segreteria.resend', [$school, $a]) }}">@csrf
+                            <button style="padding:4px 9px; background:white; color:#3A8C89; border:1px solid #C8D0D0; border-radius:6px; font-size:0.72rem; cursor:pointer;">Reinvia invito</button>
+                        </form>
+                        <form method="POST" action="{{ route('admin.scuole.segreteria.toggle', [$school, $a]) }}">@csrf @method('PATCH')
+                            <button style="padding:4px 9px; background:white; color:{{ $a->is_active ? '#A8521F' : '#3A8C89' }}; border:1px solid {{ $a->is_active ? '#E2A653' : '#55B1AE' }}; border-radius:6px; font-size:0.72rem; cursor:pointer;">{{ $a->is_active ? 'Disattiva' : 'Riattiva' }}</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         @empty
             <p style="color:#8A9696; font-size:0.85rem; margin:0 0 12px;">Nessuna segreteria nominata.</p>
         @endforelse
 
-        <form method="POST" action="{{ route('admin.scuole.nominate', $school) }}" data-async style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+        <div style="font-size:0.72rem; font-weight:700; color:#4A5252; text-transform:uppercase; margin:14px 0 8px;">Aggiungi segreteria</div>
+        <form method="POST" action="{{ route('admin.scuole.nominate', $school) }}" data-async style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
             @csrf
             <input type="text" name="name" placeholder="Nome e cognome" required style="flex:1; min-width:160px; padding:8px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.85rem;">
             <input type="email" name="email" placeholder="email@scuola.it" required style="flex:1; min-width:180px; padding:8px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.85rem;">
-            <button data-busy-label="Nomino…" style="padding:8px 16px; background:#1A1F1F; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Nomina segreteria</button>
+            <label style="font-size:0.72rem; color:#8A9696;"><input type="checkbox" name="send_email" value="1"> invia email</label>
+            <button data-busy-label="Aggiungo…" style="padding:8px 16px; background:#1A1F1F; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Aggiungi segreteria</button>
         </form>
     </div>
 
