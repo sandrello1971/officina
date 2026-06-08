@@ -352,18 +352,26 @@ scuola (JSON scoped), audit import. Retention: `schola:retention`.
 importa docenti/studenti e compone classi/cattedre. Nessuna modifica
 infrastrutturale; videoai/RAG già pronti.
 
-**Deploy aggiornamento Schola** (codice già in prod; procedura breve):
-```bash
-cd /var/www/noscite-atheneum
-sudo -u www-data php artisan down
-git pull            # se /var/www è un working tree; altrimenti via release-swap (vedi storico deploy)
-composer install --no-dev --optimize-autoloader
-php artisan migrate --force
-php artisan config:cache && php artisan route:cache && php artisan view:cache
-sudo systemctl reload php8.4-fpm
-sudo systemctl restart noscite-atheneum-queue.service   # worker sul codice nuovo
-php artisan up
-```
+**Deploy di noscite-atheneum in produzione.**
+`/var/www/noscite-atheneum` **NON è un clone git** (l'app è una sottocartella del
+monorepo: stesso motivo per cui videoai usa rsync, non sparse-checkout). Due modalità:
+
+- **Aggiornamenti correnti → `deploy-atheneum.sh`** (procedura ufficiale, dalla
+  fase 2 in poi). Eseguito dal monorepo in `/home`: `git pull` → `rsync` verso
+  `/var/www/noscite-atheneum` **escludendo (hardcoded) `.env`, `storage/`,
+  `vendor/`, `node_modules/`** → `composer install --no-dev` → `npm ci && build`
+  → `migrate --force` → cache → reload php-fpm → restart queue worker.
+  Supporta `--dry-run` (mostra il rsync senza scrivere).
+  ```bash
+  /home/noscite/noscite-websites/noscite-atheneum/deploy-atheneum.sh --dry-run
+  /home/noscite/noscite-websites/noscite-atheneum/deploy-atheneum.sh
+  ```
+- **Salto grosso / prima volta → swap-as-copy** (usato l'8/6/2026 per il salto
+  pkg1-6 → fase 2, 12 migrazioni additive). Build completa in
+  `noscite-atheneum-new`, copia `.env` + rsync dell'intero `storage/` dalla live,
+  `down` → swap `mv` (live → `noscite-atheneum-old-<data>`, new → live) →
+  `migrate --force` → cache → reload fpm → restart queue → `up`. Rollback: `mv`
+  di ritorno alla dir `-old` + dump DB pre-deploy.
 
 **Checklist ATTIVAZIONE Schola in prod** (videoai già pronto: `/api/embeddings`
 live, pgvector + backfill fatti):
