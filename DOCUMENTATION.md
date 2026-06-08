@@ -310,8 +310,47 @@ php artisan schola:backfill-embeddings [--batch=] [--limit=] [--dry-run]
     # Schedulato daily 03:30 (rete di recupero se videoai era giù).
 
 php artisan db:seed --class=ScholaDemoSeeder
-    # SOLO non-prod: dataset demo realistico per il cruscotto e lo sviluppo.
+    # SOLO non-prod: dataset demo (docente libero + 2 scuole complete).
+
+php artisan schola:retention --school=<id|slug> --school-year=<AAAA/AAAA> [--force]
+    # Retention fine anno: anonimizza la PII degli studenti USCITI dell'anno
+    # indicato. Dry-run di DEFAULT (elenca, non scrive); --force per eseguire.
+    # Materiali docente conservati.
 ```
+
+#### Fase 2 — Scuole, segreteria e tenancy
+Strato multi-tenant scolastico (vedi `docs/schola/SPEC-FASE2.md`,
+`docs/schola/SECURITY_AUDIT_FASE2.md`). **Modello scolastico puro**: la
+segreteria possiede anagrafiche/classi/cattedre; il docente vi lavora dentro.
+
+**Gerarchia a 3 livelli**:
+- **Platform admin** (`/admin/scuole`): crea/sospende le Scuole, nomina il primo
+  `school_admin`.
+- **Segreteria** (`school_admin`, area `/scuola`): anagrafiche docenti+studenti
+  (import CSV), classi, cattedre (`teaching_assignments`: docente×materia×classe),
+  branding di scuola, GDPR.
+- **Professore**: vede le classi dove ha una **cattedra**; pubblica lì (per le
+  classi di scuola serve la cattedra; per le classi "libere" `school_id` NULL
+  resta il criterio di proprietà di fetta 1, **invariato**).
+- **Studente**: provisioned dalla segreteria; **login duale** email O username
+  (studenti senza email → username interno + password temporanea).
+
+**Tenancy (non negoziabile)**: ogni query `/scuola` è scoped su `school_id`
+(`BelongsToSchool` + `ResolvesSchoolAccess`); solo il platform admin attraversa
+le scuole. Accesso docente alle classi via `TeacherClassAccess`.
+
+**Import massivo** (`/scuola/docenti|studenti/import`): preview/dry-run (nessuna
+scrittura, report con duplicati/conflitti/minori) → commit su conferma →
+risultato (per gli studenti senza email, lista credenziali **una tantum**
+scaricabile in CSV). Tracciato in `import_batches`.
+
+**GDPR** (`/scuola/privacy`): record DPA (`schools.dpa_signed_at`), export dati
+scuola (JSON scoped), audit import. Retention: `schola:retention`.
+
+**Attivazione di una scuola in prod**: il platform admin crea la scuola da
+`/admin/scuole` e nomina la segreteria (un `school_admin`). Da lì la segreteria
+importa docenti/studenti e compone classi/cattedre. Nessuna modifica
+infrastrutturale; videoai/RAG già pronti.
 
 **Deploy aggiornamento Schola** (codice già in prod; procedura breve):
 ```bash
