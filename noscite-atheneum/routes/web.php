@@ -59,7 +59,7 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/classi/{class}', [App\Http\Controllers\Student\StudentClassController::class, 'show'])->name('classes.show');
         Route::get('/classi/{class}/artefatti/{publication}', [App\Http\Controllers\Student\StudentArtifactController::class, 'show'])->name('classes.artifact.show');
         Route::get('/classi/{class}/artefatti/{publication}/sorgente', [App\Http\Controllers\Student\StudentArtifactController::class, 'source'])->name('classes.artifact.source');
-        Route::post('/classi/{class}/artefatti/{publication}/genera', [App\Http\Controllers\Student\StudentGenerationController::class, 'store'])->name('classes.artifact.generate');
+        Route::post('/classi/{class}/artefatti/{publication}/genera', [App\Http\Controllers\Student\StudentGenerationController::class, 'store'])->name('classes.artifact.generate')->middleware('throttle:schola-generate');
         Route::get('/classi/{class}/artefatti/{publication}/generati/{generated}/stato', [App\Http\Controllers\Student\StudentGenerationController::class, 'status'])->name('classes.artifact.generated.status');
         // Trasparenza (§8.1): informativa "l'attività di studio è visibile al docente"
         Route::view('/info/studio-condiviso', 'student.classi.trasparenza')->name('schola.transparency');
@@ -202,21 +202,21 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     // Materiali grezzi (pacchetto 4a)
     Route::get('/materiali', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'index'])->name('materials.index');
     Route::get('/materiali/crea', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'create'])->name('materials.create');
-    Route::post('/materiali', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'store'])->name('materials.store');
+    Route::post('/materiali', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'store'])->name('materials.store')->middleware('throttle:schola-generate');
     Route::get('/materiali/{document}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'show'])->name('materials.show');
     Route::patch('/materiali/{document}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'update'])->name('materials.update');
     Route::delete('/materiali/{document}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'destroy'])->name('materials.destroy');
     Route::get('/materiali/{document}/file/{index}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'downloadSource'])->name('materials.download');
     Route::get('/materiali/{document}/stato', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'status'])->name('materials.status');
-    Route::post('/materiali/{document}/retry', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'retry'])->name('materials.retry');
+    Route::post('/materiali/{document}/retry', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'retry'])->name('materials.retry')->middleware('throttle:schola-generate');
 
     // Generazione e gestione artefatti (pacchetto 5)
-    Route::post('/materiali/{document}/genera', [App\Http\Controllers\Docente\ArtifactGenerationController::class, 'store'])->name('artifacts.generate');
+    Route::post('/materiali/{document}/genera', [App\Http\Controllers\Docente\ArtifactGenerationController::class, 'store'])->name('artifacts.generate')->middleware('throttle:schola-generate');
     Route::get('/artefatti/{artifact}', [App\Http\Controllers\Docente\ArtifactController::class, 'show'])->name('artifacts.show');
     Route::patch('/artefatti/{artifact}', [App\Http\Controllers\Docente\ArtifactController::class, 'update'])->name('artifacts.update');
     Route::delete('/artefatti/{artifact}', [App\Http\Controllers\Docente\ArtifactController::class, 'destroy'])->name('artifacts.destroy');
     Route::get('/artefatti/{artifact}/stato', [App\Http\Controllers\Docente\ArtifactController::class, 'status'])->name('artifacts.status');
-    Route::post('/artefatti/{artifact}/rigenera', [App\Http\Controllers\Docente\ArtifactGenerationController::class, 'regenerate'])->name('artifacts.regenerate');
+    Route::post('/artefatti/{artifact}/rigenera', [App\Http\Controllers\Docente\ArtifactGenerationController::class, 'regenerate'])->name('artifacts.regenerate')->middleware('throttle:schola-generate');
 
     // Biblioteca docenti (pacchetto 9)
     Route::patch('/artefatti/{artifact}/condivisione', [App\Http\Controllers\Docente\ArtifactSharingController::class, 'update'])->name('artifacts.sharing');

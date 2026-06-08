@@ -67,7 +67,7 @@
         <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px; margin-bottom:16px;">
             @if($isMarkdown)
                 <div class="md-body" style="font-size:0.9rem; line-height:1.65; color:#1A1F1F;">
-                    {!! \Illuminate\Support\Str::markdown($artifact->content ?? '') !!}
+                    {!! schola_markdown($artifact->content) !!}
                 </div>
 
             @elseif($artifact->type === 'mindmap')

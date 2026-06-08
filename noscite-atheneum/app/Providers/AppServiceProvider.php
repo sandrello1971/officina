@@ -88,6 +88,18 @@ class AppServiceProvider extends ServiceProvider
                 });
         });
 
+        // Generazione/ingestion AI Schola: 8/min per utente|IP (oltre al tetto
+        // GIORNALIERO §8.2). Protegge gli endpoint che dispatchano lavoro AI
+        // (auto-generazione studente, generazione/rigenerazione artefatti,
+        // upload/estrazione materiali).
+        RateLimiter::for('schola-generate', function (Request $request) {
+            return Limit::perMinute(8)
+                ->by((session('student_id') ?? '') . '|' . $request->ip())
+                ->response(function () {
+                    return back()->with('error', 'Troppe richieste di generazione. Attendi un minuto e riprova.');
+                });
+        });
+
         // API default: 60/min per utente (protezione generica).
         RateLimiter::for('api-default', function (Request $request) {
             return Limit::perMinute(60)->by(session('student_id') ?? session('admin_email') ?? $request->ip());

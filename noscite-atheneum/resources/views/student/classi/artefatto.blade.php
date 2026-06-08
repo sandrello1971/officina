@@ -29,7 +29,7 @@
     {{-- Contenuto per tipo --}}
     <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px; margin-bottom:16px;">
         @if($isMarkdown)
-            <div class="md-body" style="font-size:0.9rem; line-height:1.65; color:#1A1F1F;">{!! \Illuminate\Support\Str::markdown($artifact->content ?? '') !!}</div>
+            <div class="md-body" style="font-size:0.9rem; line-height:1.65; color:#1A1F1F;">{!! schola_markdown($artifact->content) !!}</div>
         @elseif($artifact->type === 'mindmap')
             <div style="position:relative; width:100%; height:600px; border:1px solid #F5F7F7; border-radius:8px; overflow:hidden; background:#FDFEFE;">
                 <svg id="artifact-mindmap-svg" style="width:100%; height:100%;"></svg>
