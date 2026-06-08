@@ -13,11 +13,12 @@ class ClassStudent extends Model
     protected $table = 'class_students';
 
     protected $fillable = [
-        'school_class_id', 'student_id', 'status', 'approved_at',
+        'school_class_id', 'student_id', 'status', 'approved_at', 'consent_at',
     ];
 
     protected $casts = [
         'approved_at' => 'datetime',
+        'consent_at' => 'datetime',
     ];
 
     public function schoolClass()

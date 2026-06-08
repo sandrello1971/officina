@@ -243,6 +243,15 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
     Route::post('/docenti/import/preview', [App\Http\Controllers\Scuola\TeacherImportController::class, 'preview'])->name('docenti.import.preview');
     Route::post('/docenti/import/commit', [App\Http\Controllers\Scuola\TeacherImportController::class, 'commit'])->name('docenti.import.commit');
     Route::post('/docenti/import/{batch}/discard', [App\Http\Controllers\Scuola\TeacherImportController::class, 'discard'])->name('docenti.import.discard');
+
+    // Studenti (P14): elenco + import CSV a gate con credenziali duali
+    Route::get('/studenti', [App\Http\Controllers\Scuola\StudentController::class, 'index'])->name('studenti.index');
+    Route::get('/studenti/import', [App\Http\Controllers\Scuola\StudentImportController::class, 'create'])->name('studenti.import.create');
+    Route::post('/studenti/import/preview', [App\Http\Controllers\Scuola\StudentImportController::class, 'preview'])->name('studenti.import.preview');
+    Route::post('/studenti/import/commit', [App\Http\Controllers\Scuola\StudentImportController::class, 'commit'])->name('studenti.import.commit');
+    Route::get('/studenti/import/{batch}/risultato', [App\Http\Controllers\Scuola\StudentImportController::class, 'result'])->name('studenti.import.result');
+    Route::get('/studenti/import/{batch}/credenziali.csv', [App\Http\Controllers\Scuola\StudentImportController::class, 'credentialsDownload'])->name('studenti.import.credentials');
+    Route::post('/studenti/import/{batch}/discard', [App\Http\Controllers\Scuola\StudentImportController::class, 'discard'])->name('studenti.import.discard');
 });
 
 // Logo scuola da storage privato — accessibile a tutti gli utenti della scuola
