@@ -236,6 +236,13 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
     Route::get('/', [App\Http\Controllers\Scuola\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'edit'])->name('anagrafica.edit');
     Route::patch('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'update'])->name('anagrafica.update');
+
+    // Docenti (P13): elenco + import CSV a gate (preview → commit → discard)
+    Route::get('/docenti', [App\Http\Controllers\Scuola\TeacherController::class, 'index'])->name('docenti.index');
+    Route::get('/docenti/import', [App\Http\Controllers\Scuola\TeacherImportController::class, 'create'])->name('docenti.import.create');
+    Route::post('/docenti/import/preview', [App\Http\Controllers\Scuola\TeacherImportController::class, 'preview'])->name('docenti.import.preview');
+    Route::post('/docenti/import/commit', [App\Http\Controllers\Scuola\TeacherImportController::class, 'commit'])->name('docenti.import.commit');
+    Route::post('/docenti/import/{batch}/discard', [App\Http\Controllers\Scuola\TeacherImportController::class, 'discard'])->name('docenti.import.discard');
 });
 
 // Logo scuola da storage privato — accessibile a tutti gli utenti della scuola
