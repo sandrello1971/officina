@@ -157,10 +157,21 @@ class ScholaDemoSeeder extends Seeder
     private function cleanup(): void
     {
         $demoIds = Student::where('email', 'like', '%' . self::DEMO_DOMAIN)->pluck('id');
-        // Scuole demo (slug demo-*) + i loro membri/classi/cattedre/import.
         $demoSchoolIds = \App\Models\School::where('slug', 'like', 'demo-%')->pluck('id');
+        $memberIds = $demoSchoolIds->isNotEmpty()
+            ? Student::whereIn('school_id', $demoSchoolIds)->pluck('id')
+            : collect();
+
+        // Rimuovi PRIMA le righe con FK nullOnDelete verso students (es.
+        // unanswered_questions.student_id): cancellarle direttamente evita
+        // l'UPDATE (SET NULL) che ri-valida school_class_id e può inciampare su
+        // FK penzolanti quando padre e figlio spariscono nello stesso DELETE.
+        $allDemoStudentIds = $demoIds->merge($memberIds)->unique();
+        if ($allDemoStudentIds->isNotEmpty()) {
+            UnansweredQuestion::whereIn('student_id', $allDemoStudentIds)->delete();
+        }
+
         if ($demoSchoolIds->isNotEmpty()) {
-            $memberIds = Student::whereIn('school_id', $demoSchoolIds)->pluck('id');
             SchoolClass::whereIn('school_id', $demoSchoolIds)->forceDelete();
             \App\Models\TeachingAssignment::whereIn('school_id', $demoSchoolIds)->delete();
             \App\Models\ProfessorSubject::whereIn('school_id', $demoSchoolIds)->delete();

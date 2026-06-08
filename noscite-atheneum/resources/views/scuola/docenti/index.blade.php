@@ -5,7 +5,10 @@
 <div style="max-width:980px;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
         <h1 style="font-size:1.4rem; font-weight:700; color:#1A1F1F; margin:0;">Docenti</h1>
-        <a href="{{ route('scuola.docenti.import.create') }}" style="padding:9px 16px; background:#55B1AE; color:white; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none;">&#11014; Importa da CSV</a>
+        <div style="display:flex; gap:8px;">
+            <a href="{{ route('scuola.docenti.create') }}" style="padding:9px 16px; background:#55B1AE; color:white; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none;">+ Aggiungi docente</a>
+            <a href="{{ route('scuola.docenti.import.create') }}" style="padding:9px 16px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none;">&#11014; Importa CSV</a>
+        </div>
     </div>
 
     <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; overflow:hidden;">

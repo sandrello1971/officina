@@ -239,6 +239,8 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
 
     // Docenti (P13): elenco + import CSV a gate (preview → commit → discard)
     Route::get('/docenti', [App\Http\Controllers\Scuola\TeacherController::class, 'index'])->name('docenti.index');
+    Route::get('/docenti/aggiungi', [App\Http\Controllers\Scuola\TeacherController::class, 'create'])->name('docenti.create');
+    Route::post('/docenti', [App\Http\Controllers\Scuola\TeacherController::class, 'store'])->name('docenti.store');
     Route::get('/docenti/import', [App\Http\Controllers\Scuola\TeacherImportController::class, 'create'])->name('docenti.import.create');
     Route::post('/docenti/import/preview', [App\Http\Controllers\Scuola\TeacherImportController::class, 'preview'])->name('docenti.import.preview');
     Route::post('/docenti/import/commit', [App\Http\Controllers\Scuola\TeacherImportController::class, 'commit'])->name('docenti.import.commit');
@@ -246,6 +248,8 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
 
     // Studenti (P14): elenco + import CSV a gate con credenziali duali
     Route::get('/studenti', [App\Http\Controllers\Scuola\StudentController::class, 'index'])->name('studenti.index');
+    Route::get('/studenti/aggiungi', [App\Http\Controllers\Scuola\StudentController::class, 'create'])->name('studenti.create');
+    Route::post('/studenti', [App\Http\Controllers\Scuola\StudentController::class, 'store'])->name('studenti.store');
     Route::get('/studenti/import', [App\Http\Controllers\Scuola\StudentImportController::class, 'create'])->name('studenti.import.create');
     Route::post('/studenti/import/preview', [App\Http\Controllers\Scuola\StudentImportController::class, 'preview'])->name('studenti.import.preview');
     Route::post('/studenti/import/commit', [App\Http\Controllers\Scuola\StudentImportController::class, 'commit'])->name('studenti.import.commit');
@@ -287,6 +291,9 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::get('scuole/{school}', [App\Http\Controllers\Admin\SchoolController::class, 'show'])->name('scuole.show');
     Route::patch('scuole/{school}', [App\Http\Controllers\Admin\SchoolController::class, 'update'])->name('scuole.update');
     Route::post('scuole/{school}/segreteria', [App\Http\Controllers\Admin\SchoolController::class, 'nominateAdmin'])->name('scuole.nominate');
+    Route::post('scuole/{school}/segreteria/{admin}/reset', [App\Http\Controllers\Admin\SchoolController::class, 'resetAdminPassword'])->name('scuole.segreteria.reset');
+    Route::post('scuole/{school}/segreteria/{admin}/reinvia', [App\Http\Controllers\Admin\SchoolController::class, 'resendInvite'])->name('scuole.segreteria.resend');
+    Route::patch('scuole/{school}/segreteria/{admin}/stato', [App\Http\Controllers\Admin\SchoolController::class, 'toggleAdminActive'])->name('scuole.segreteria.toggle');
 
     Route::get('courses/ingest', [App\Http\Controllers\Admin\CourseIngestController::class, 'form'])->name('courses.ingest.form');
     Route::post('courses/ingest/parse', [App\Http\Controllers\Admin\CourseIngestController::class, 'parse'])->name('courses.ingest.parse');
