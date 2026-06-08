@@ -47,13 +47,24 @@ class GenerateArtifactJob implements ShouldQueue
             return; // artefatto eliminato nel frattempo
         }
 
+        // Sorgente: il materiale grezzo (artefatto di materiale) oppure il corpo
+        // della lezione composta (artefatto di lezione, lesson_id valorizzato).
+        // Stessi servizi, stesso flusso: niente logica duplicata.
         $doc = $artifact->teachingDocument;
-        $source = trim((string) ($doc?->extracted_text ?? ''));
-        $label = $doc?->title ?: $artifact->title;
+        if ($doc) {
+            $source = trim((string) $doc->extracted_text);
+            $label = $doc->title ?: $artifact->title;
+        } else {
+            $lesson = $artifact->lesson;
+            $source = trim((string) ($lesson?->content ?? ''));
+            $label = $lesson?->title ?: $artifact->title;
+        }
         $log = ['artifact_id' => $artifact->id, 'type' => $artifact->type];
 
         if ($source === '') {
-            $this->markFailed($artifact, 'Il materiale non ha testo estratto su cui lavorare.');
+            $this->markFailed($artifact, $doc || $artifact->lesson_id
+                ? 'La fonte non ha testo su cui lavorare.'
+                : 'Artefatto senza materiale o lezione di origine.');
             return;
         }
 

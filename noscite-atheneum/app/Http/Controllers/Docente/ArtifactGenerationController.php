@@ -77,8 +77,9 @@ class ArtifactGenerationController extends Controller
         abort_unless($artifact->teacher_id === $this->teacherId(), 403);
         abort_unless(in_array($artifact->type, self::GENERABLE, true), 422,
             'Questo tipo di artefatto non può essere rigenerato.');
-        abort_unless($artifact->teachingDocument !== null, 422,
-            'Artefatto senza materiale di origine: rigenerazione non disponibile.');
+        // Sorgente di rigenerazione: materiale grezzo OPPURE lezione (artefatto di lezione, P19).
+        abort_unless($artifact->teachingDocument !== null || $artifact->lesson_id !== null, 422,
+            'Artefatto senza materiale o lezione di origine: rigenerazione non disponibile.');
 
         $data = $request->validate([
             'level' => 'nullable|in:breve,medio,dispensa',
