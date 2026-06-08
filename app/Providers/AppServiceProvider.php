@@ -118,6 +118,16 @@ class AppServiceProvider extends ServiceProvider
 
         $this->shareInstanceName();
 
+        // Branding per scuola (fase 2): risolto sopra il default piattaforma e
+        // condiviso con i layout segreteria e docente. Utenti "liberi"
+        // (school_id NULL) → branding piattaforma invariato.
+        View::composer(['layouts.scuola', 'layouts.docente'], function ($view) {
+            $studentId = session('student_id');
+            $student = $studentId ? Student::find($studentId) : null;
+            $school = $student?->school_id ? \App\Models\School::find($student->school_id) : null;
+            $view->with('branding', \App\Services\Schola\SchoolBranding::for($school));
+        });
+
         View::composer('layouts.student', function ($view) {
             $studentId = session('student_id');
             $student = $studentId ? Student::find($studentId) : null;
