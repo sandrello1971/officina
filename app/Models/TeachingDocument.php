@@ -12,7 +12,7 @@ class TeachingDocument extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'teacher_id', 'title', 'source_type', 'source_url', 'source_files',
+        'teacher_id', 'lesson_id', 'title', 'source_type', 'source_url', 'source_files',
         'status', 'failure_reason', 'extracted_text', 'extraction_meta',
         'subject_id', 'tags',
     ];
@@ -31,6 +31,12 @@ class TeachingDocument extends Model
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    // Lezione in cui il materiale è classificato (NULL = pool "da organizzare").
+    public function lesson()
+    {
+        return $this->belongsTo(Lesson::class);
     }
 
     public function artifacts()
