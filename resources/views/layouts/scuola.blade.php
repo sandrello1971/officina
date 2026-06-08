@@ -56,8 +56,8 @@
         </a>
         <a href="{{ route('scuola.docenti.index') }}" class="nav-item {{ request()->routeIs('scuola.docenti.*') ? 'active' : '' }}"><span>&#127979;</span> Docenti</a>
         <a href="{{ route('scuola.studenti.index') }}" class="nav-item {{ request()->routeIs('scuola.studenti.*') ? 'active' : '' }}"><span>&#127891;</span> Studenti</a>
-        {{-- Voci dei prossimi pacchetti (P15–P16): visibili ma disabilitate --}}
-        <a href="#" class="nav-item disabled" aria-disabled="true" title="In arrivo (P15)"><span>&#128218;</span> Classi</a>
+        <a href="{{ route('scuola.classi.index') }}" class="nav-item {{ request()->routeIs('scuola.classi.*') || request()->routeIs('scuola.cattedre.*') ? 'active' : '' }}"><span>&#128218;</span> Classi</a>
+        {{-- Voce del prossimo pacchetto (P16): visibile ma disabilitata --}}
         <a href="#" class="nav-item disabled" aria-disabled="true" title="In arrivo (P16)"><span>&#128274;</span> Privacy</a>
     </nav>
     </div>{{-- /.sidebar-scroll --}}

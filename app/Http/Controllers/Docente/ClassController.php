@@ -4,26 +4,37 @@ namespace App\Http\Controllers\Docente;
 
 use App\Http\Controllers\Controller;
 use App\Models\SchoolClass;
+use App\Models\Student;
 use App\Models\Subject;
+use App\Services\Schola\TeacherClassAccess;
 use Illuminate\Http\Request;
 
 class ClassController extends Controller
 {
+    public function __construct(private TeacherClassAccess $access) {}
+
     /** Id del docente loggato (garantito professor dal middleware). */
     private function teacherId(): string
     {
         return session('student_id');
     }
 
-    /** Difesa: il docente opera SOLO sulle proprie classi. */
-    private function authorizeOwner(SchoolClass $class): void
+    /** Accesso in lettura/operativo: classe libera propria O cattedra (P15). */
+    private function authorizeView(SchoolClass $class): void
     {
-        abort_unless($class->teacher_id === $this->teacherId(), 403);
+        abort_unless($this->access->canTeach($this->teacherId(), $class), 403);
+    }
+
+    /** Gestione (modifica/codice/roster): SOLO classi libere proprie. Le classi
+     *  di scuola sono gestite dalla segreteria (§3 confine). */
+    private function authorizeManage(SchoolClass $class): void
+    {
+        abort_unless($this->access->canManage($this->teacherId(), $class), 403);
     }
 
     public function index()
     {
-        $classes = SchoolClass::where('teacher_id', $this->teacherId())
+        $classes = $this->access->classesQuery($this->teacherId())
             ->with('subject')
             ->withCount([
                 'classStudents as active_count' => fn ($q) => $q->where('status', 'active'),
@@ -33,12 +44,16 @@ class ClassController extends Controller
             ->get();
 
         $subjects = Subject::orderBy('name')->get();
+        $canCreate = $this->access->canCreateClasses(Student::findOrFail($this->teacherId()));
 
-        return view('docente.classi.index', compact('classes', 'subjects'));
+        return view('docente.classi.index', compact('classes', 'subjects', 'canCreate'));
     }
 
     public function store(Request $request)
     {
+        abort_unless($this->access->canCreateClasses(Student::findOrFail($this->teacherId())), 403,
+            'La creazione delle classi è gestita dalla segreteria.');
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'subject_id' => 'required|uuid|exists:subjects,id',
@@ -65,7 +80,7 @@ class ClassController extends Controller
 
     public function show(SchoolClass $class)
     {
-        $this->authorizeOwner($class);
+        $this->authorizeView($class);
 
         $class->load(['subject', 'classStudents.student']);
 
@@ -77,7 +92,7 @@ class ClassController extends Controller
 
     public function update(Request $request, SchoolClass $class)
     {
-        $this->authorizeOwner($class);
+        $this->authorizeManage($class);
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
@@ -99,7 +114,7 @@ class ClassController extends Controller
 
     public function regenerateCode(SchoolClass $class)
     {
-        $this->authorizeOwner($class);
+        $this->authorizeManage($class);
 
         $class->update(['invite_code' => SchoolClass::generateInviteCode()]);
 

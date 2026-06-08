@@ -37,16 +37,22 @@ class PublicationController extends Controller
             'downloadable' => 'sometimes|boolean',
         ]);
 
-        // Solo classi del docente (defense in depth: niente pubblicazione altrui).
-        $ownClassIds = SchoolClass::where('teacher_id', $this->teacherId())
-            ->whereIn('id', $data['class_ids'])
-            ->pluck('id')
-            ->all();
-        abort_if(count($ownClassIds) !== count(array_unique($data['class_ids'])), 403, 'Classe non valida.');
+        // Criterio di pubblicazione (P15): classe LIBERA → proprietà (invariato
+        // fetta 1); classe di SCUOLA → cattedra (teaching_assignment). Niente
+        // pubblicazione altrui in nessun caso.
+        $access = app(\App\Services\Schola\TeacherClassAccess::class);
+        $candidateIds = array_values(array_unique($data['class_ids']));
+        $classes = SchoolClass::whereIn('id', $candidateIds)->get();
+        abort_if($classes->count() !== count($candidateIds), 403, 'Classe non valida.');
 
-        foreach ($ownClassIds as $classId) {
+        foreach ($classes as $class) {
+            abort_unless($access->canTeach($this->teacherId(), $class), 403, 'Non hai cattedra in questa classe.');
+        }
+
+        $outOfCattedra = [];
+        foreach ($classes as $class) {
             $publication = ArtifactPublication::updateOrCreate(
-                ['teaching_artifact_id' => $artifact->id, 'school_class_id' => $classId],
+                ['teaching_artifact_id' => $artifact->id, 'school_class_id' => $class->id],
                 [
                     'students_can_generate' => (bool) ($data['students_can_generate'] ?? true),
                     'downloadable' => (bool) ($data['downloadable'] ?? false),
@@ -57,10 +63,21 @@ class PublicationController extends Controller
             );
 
             IngestPublicationRagJob::dispatch($publication->id)->afterResponse();
+
+            if (!$access->subjectCoveredByCattedra($this->teacherId(), $class, $artifact->subject_id)) {
+                $outOfCattedra[] = $class->name;
+            }
         }
 
-        return redirect()->route('docente.artifacts.show', $artifact)
+        $redirect = redirect()->route('docente.artifacts.show', $artifact)
             ->with('success', 'Pubblicazione avviata: indicizzazione in corso…');
+
+        if ($outOfCattedra) {
+            $redirect->with('warning', 'Attenzione: la materia dell\'artefatto non corrisponde a una tua cattedra in: '
+                . implode(', ', $outOfCattedra) . '.');
+        }
+
+        return $redirect;
     }
 
     public function destroy(ArtifactPublication $publication)

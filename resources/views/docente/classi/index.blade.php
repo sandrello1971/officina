@@ -13,7 +13,8 @@
         </div>
     @endif
 
-    {{-- Nuova classe --}}
+    {{-- Nuova classe: nascosta ai docenti di scuola senza deroga (modello puro, P15) --}}
+    @if($canCreate ?? true)
     <div style="background:white; border-radius:10px; padding:20px; margin-bottom:24px; border:1px solid #C8D0D0;">
         <h2 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:14px;">Nuova classe</h2>
         <form method="POST" action="{{ route('docente.classes.store') }}">
@@ -48,6 +49,7 @@
             </button>
         </form>
     </div>
+    @endif
 
     {{-- Elenco classi --}}
     @forelse ($classes as $class)
