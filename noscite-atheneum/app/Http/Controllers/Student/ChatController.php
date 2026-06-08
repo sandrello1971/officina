@@ -553,7 +553,8 @@ TXT;
      */
     private function resolveClassRole(SchoolClass $class, Student $student): ?bool
     {
-        if ($class->teacher_id === $student->id) {
+        // Docente: proprietà (classe libera) O cattedra (classe di scuola) — P15.
+        if (app(\App\Services\Schola\TeacherClassAccess::class)->canTeach($student->id, $class)) {
             return true;
         }
         $active = ClassStudent::where('school_class_id', $class->id)

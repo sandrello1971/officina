@@ -17,7 +17,9 @@ class UnansweredQuestionsController extends Controller
 
     private function authorizeClass(SchoolClass $class): void
     {
-        abort_unless($class->teacher_id === session('student_id'), 403);
+        // Proprietà (classe libera) o cattedra (classe di scuola) — P15.
+        abort_unless(app(\App\Services\Schola\TeacherClassAccess::class)
+            ->canTeach(session('student_id'), $class), 403);
     }
 
     public function index(SchoolClass $class)
@@ -36,7 +38,8 @@ class UnansweredQuestionsController extends Controller
     public function update(Request $request, UnansweredQuestion $question)
     {
         $class = $question->schoolClass;
-        abort_unless($class && $class->teacher_id === session('student_id'), 403);
+        abort_unless($class && app(\App\Services\Schola\TeacherClassAccess::class)
+            ->canTeach(session('student_id'), $class), 403);
 
         $data = $request->validate(['status' => 'required|in:open,addressed,dismissed']);
         $question->update(['status' => $data['status']]);

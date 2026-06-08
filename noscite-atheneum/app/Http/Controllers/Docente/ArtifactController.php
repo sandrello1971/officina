@@ -44,7 +44,10 @@ class ArtifactController extends Controller
         // Classi del docente pubblicabili (transcript escluso: vedi nota copyright
         // SPEC §6; in 6a teniamo la pubblicazione su tutti i tipi tranne transcript
         // da foto/pdf — guardrail completo arriva con la Biblioteca).
-        $teacherClasses = SchoolClass::where('teacher_id', $artifact->teacher_id)
+        // Selettore di pubblicazione: classi su cui il docente può pubblicare —
+        // libere proprie + classi di scuola dove ha cattedra (P15).
+        $teacherClasses = app(\App\Services\Schola\TeacherClassAccess::class)
+            ->classesQuery($artifact->teacher_id)
             ->where('is_archived', false)
             ->orderBy('name')
             ->get();
