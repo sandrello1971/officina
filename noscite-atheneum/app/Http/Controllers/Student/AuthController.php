@@ -13,6 +13,9 @@ class AuthController extends Controller
     {
         if (session('student_id')) {
             $student = Student::find(session('student_id'));
+            if ($student && $student->isSchoolAdmin()) {
+                return redirect()->route('scuola.dashboard');
+            }
             if ($student && $student->isProfessor()) {
                 return redirect()->route('docente.dashboard');
             }
@@ -63,6 +66,11 @@ class AuthController extends Controller
             return redirect()->route('student.change-password');
         }
 
+        // Segreteria scolastica → area dedicata /scuola
+        if ($student->isSchoolAdmin()) {
+            return redirect()->route('scuola.dashboard');
+        }
+
         // Docente Schola → area dedicata /docente
         if ($student->isProfessor()) {
             return redirect()->route('docente.dashboard');
@@ -111,6 +119,13 @@ class AuthController extends Controller
             'email' => $student->email,
             'ip' => $request->ip(),
         ]);
+
+        if ($student->isSchoolAdmin()) {
+            return redirect()->route('scuola.dashboard')->with('success', 'Password aggiornata!');
+        }
+        if ($student->isProfessor()) {
+            return redirect()->route('docente.dashboard')->with('success', 'Password aggiornata!');
+        }
 
         return redirect()->route('student.dashboard')
             ->with('success', 'Password aggiornata!');
