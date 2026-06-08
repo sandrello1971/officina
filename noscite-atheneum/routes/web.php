@@ -210,6 +210,21 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::get('/materiali/{document}/stato', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'status'])->name('materials.status');
     Route::post('/materiali/{document}/retry', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'retry'])->name('materials.retry')->middleware('throttle:schola-generate');
 
+    // Argomenti e Lezioni (fase 3, P18) — solo organizzazione, niente generazione
+    Route::get('/argomenti', [App\Http\Controllers\Docente\TopicController::class, 'index'])->name('topics.index');
+    Route::post('/argomenti', [App\Http\Controllers\Docente\TopicController::class, 'store'])->name('topics.store');
+    Route::post('/argomenti/riordina', [App\Http\Controllers\Docente\TopicController::class, 'reorder'])->name('topics.reorder');
+    Route::get('/argomenti/{topic}', [App\Http\Controllers\Docente\TopicController::class, 'show'])->name('topics.show');
+    Route::patch('/argomenti/{topic}', [App\Http\Controllers\Docente\TopicController::class, 'update'])->name('topics.update');
+    Route::delete('/argomenti/{topic}', [App\Http\Controllers\Docente\TopicController::class, 'destroy'])->name('topics.destroy');
+
+    Route::post('/argomenti/{topic}/lezioni', [App\Http\Controllers\Docente\LessonController::class, 'store'])->name('lessons.store');
+    Route::post('/argomenti/{topic}/lezioni/riordina', [App\Http\Controllers\Docente\LessonController::class, 'reorder'])->name('lessons.reorder');
+    Route::patch('/lezioni/{lesson}', [App\Http\Controllers\Docente\LessonController::class, 'update'])->name('lessons.update');
+    Route::delete('/lezioni/{lesson}', [App\Http\Controllers\Docente\LessonController::class, 'destroy'])->name('lessons.destroy');
+    Route::post('/lezioni/{lesson}/materiali', [App\Http\Controllers\Docente\LessonController::class, 'assignMaterial'])->name('lessons.materials.assign');
+    Route::delete('/lezioni/{lesson}/materiali/{document}', [App\Http\Controllers\Docente\LessonController::class, 'unassignMaterial'])->name('lessons.materials.unassign');
+
     // Generazione e gestione artefatti (pacchetto 5)
     Route::post('/materiali/{document}/genera', [App\Http\Controllers\Docente\ArtifactGenerationController::class, 'store'])->name('artifacts.generate')->middleware('throttle:schola-generate');
     Route::get('/artefatti/{artifact}', [App\Http\Controllers\Docente\ArtifactController::class, 'show'])->name('artifacts.show');

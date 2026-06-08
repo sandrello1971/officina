@@ -63,6 +63,10 @@
            class="nav-item {{ request()->routeIs('docente.classes.*') ? 'active' : '' }}">
             <span>&#128218;</span> Classi
         </a>
+        <a href="{{ route('docente.topics.index') }}"
+           class="nav-item {{ request()->routeIs('docente.topics.*') || request()->routeIs('docente.lessons.*') ? 'active' : '' }}">
+            <span>&#128214;</span> Argomenti
+        </a>
         <a href="{{ route('docente.materials.index') }}"
            class="nav-item {{ request()->routeIs('docente.materials.*') ? 'active' : '' }}">
             <span>&#128196;</span> Materiali
