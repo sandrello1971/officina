@@ -26,16 +26,23 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        // Login DUALE (§8.1): il campo accetta email OPPURE username (studenti
+        // di scuola senza email). Niente più vincolo |email per non escludere
+        // gli username.
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string',
             'password' => 'required',
         ], [
-            'email.required' => 'Inserisci la tua email.',
+            'email.required' => 'Inserisci email o username.',
             'password.required' => 'Inserisci la password.',
         ]);
 
-        $student = Student::where('email', $request->email)
-            ->where('is_active', true)
+        $login = trim($request->input('email'));
+        $student = Student::where('is_active', true)
+            ->where(function ($q) use ($login) {
+                $q->whereRaw('LOWER(email) = ?', [mb_strtolower($login)])
+                  ->orWhereRaw('LOWER(username) = ?', [mb_strtolower($login)]);
+            })
             ->first();
 
         if (!$student || !Hash::check($request->password, $student->password)) {

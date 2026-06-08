@@ -23,7 +23,7 @@ class Student extends Authenticatable
         'name', 'email', 'password', 'phone', 'company', 'job_title', 'role',
         'avatar_url', 'is_active', 'is_demo', 'must_change_password',
         'microsoft_id', 'auto_enroll_all_courses', 'birth_date',
-        'library_rights_ack_at', 'school_id',
+        'library_rights_ack_at', 'school_id', 'username',
     ];
 
     protected $hidden = [
