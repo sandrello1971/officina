@@ -8,6 +8,32 @@
 
 ---
 
+## AS-BUILT (aggiornato 2026-06-08, pacchetto 16) — fase 2 COMPLETA
+
+Tutto in produzione (codice), dormiente finché non si crea una scuola.
+
+| Sezione / Pacchetto | Stato | Note di realizzazione |
+|---|---|---|
+| §1 Gerarchia 3 livelli (P11) | ✅ FATTO | ruolo `school_admin`; admin `/admin/scuole` crea scuola + nomina segreteria |
+| §2 Isolamento (P11–P16) | ✅ FATTO | trait `BelongsToSchool` (scope) + `ResolvesSchoolAccess` (controller); IDOR sweep verde, `SECURITY_AUDIT_FASE2.md` |
+| §3 Cambia-vs-fetta1 (P15) | ✅ FATTO | pubblicazione/accesso via `TeacherClassAccess` (cattedra/proprietà); docenti liberi byte-identici; roster scuola = solo segreteria |
+| §4 Migrazioni | ✅ FATTO | schools, teaching_assignments, import_batches, professor_subjects; students.school_id/username/email-nullable; class_students.consent_at; school_classes teacher_id/subject_id nullable |
+| §5.1 Admin `/admin/scuole` (P11) | ✅ FATTO | CRUD + nomina school_admin |
+| §5.2 Area `/scuola` (P12–P16) | ✅ FATTO | dashboard, anagrafica+branding, docenti, studenti, classi/cattedre, privacy |
+| §5.3 Impatti `/docente` (P15) | ✅ FATTO | classi-cattedra; "Crea classe" gated; classi scuola read-only |
+| §6 Import massivo (P13/P14) | ✅ FATTO | preview→commit; credenziali duali (email/username); minori; classi da creare |
+| §7 P16 GDPR + hardening | ✅ FATTO | DPA, export dati, `schola:retention` (dry-run+force), audit import, IDOR sweep |
+| §8.1 credenziali (variato) | ✅ FATTO | **duale confermato**: login email O username |
+| §8.2 consenso | ✅ FATTO | piattaforma non lo raccoglie; DPA + `consent_at` opzionale; nota legale chat→Claude |
+| §8.3 anno scolastico | ⏸ DIFFERITO | passaggio anno automatico → fase 2.1 (la retention copre la chiusura) |
+| §8.4 SSO/registro elettronico | ⏸ DIFFERITO | import via API (Argo/ClasseViva/SIDI) → fase 3 |
+
+**Comandi fase 2**: `schola:retention --school --school-year [--force]`,
+export via `/scuola/privacy`. **Seed**: `ScholaDemoSeeder` ora include 2 scuole
+complete (oltre al docente libero).
+
+---
+
 ## 1. Gerarchia a tre livelli
 
 ```

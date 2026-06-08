@@ -262,6 +262,12 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
     Route::post('/classi/{class}/studenti', [App\Http\Controllers\Scuola\ClassController::class, 'assignStudents'])->name('classi.students');
     Route::post('/classi/{class}/cattedre', [App\Http\Controllers\Scuola\ClassController::class, 'assignCattedra'])->name('classi.cattedre.store');
     Route::delete('/cattedre/{assignment}', [App\Http\Controllers\Scuola\ClassController::class, 'destroyCattedra'])->name('cattedre.destroy');
+
+    // GDPR (P16): DPA, export dati scuola, audit import
+    Route::get('/privacy', [App\Http\Controllers\Scuola\PrivacyController::class, 'index'])->name('privacy.index');
+    Route::post('/privacy/dpa', [App\Http\Controllers\Scuola\PrivacyController::class, 'markDpa'])->name('privacy.dpa');
+    Route::post('/privacy/export', [App\Http\Controllers\Scuola\PrivacyController::class, 'export'])->name('privacy.export');
+    Route::get('/privacy/export/download', [App\Http\Controllers\Scuola\PrivacyController::class, 'download'])->name('privacy.export.download');
 });
 
 // Logo scuola da storage privato — accessibile a tutti gli utenti della scuola
