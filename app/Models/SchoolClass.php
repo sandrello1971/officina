@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SchoolClass extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes, BelongsToSchool;
 
     protected $table = 'school_classes';
 
@@ -73,5 +74,11 @@ class SchoolClass extends Model
     public function publications()
     {
         return $this->hasMany(ArtifactPublication::class);
+    }
+
+    // Fase 2: cattedre sulla classe (professore × materia).
+    public function teachingAssignments()
+    {
+        return $this->hasMany(TeachingAssignment::class, 'school_class_id');
     }
 }
