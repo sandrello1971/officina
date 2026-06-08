@@ -6,6 +6,32 @@
 
 ---
 
+## AS-BUILT (aggiornato 2026-06-08, pacchetto 10) — fetta 1 COMPLETA
+
+Stato reale rispetto al progetto qui sotto. Tutto in produzione (codice), Schola
+**dormiente** finché non si promuove un professor.
+
+| Sezione SPEC | Stato | Note di realizzazione |
+|---|---|---|
+| §0 RAG vettoriale | ✅ FATTO (variato) | **768 dim** (`paraphrase-multilingual-mpnet-base-v2`), non 1536; embedding via videoai `/api/embeddings`; indice **HNSW** (non ivfflat); pgvector live su dev/test/**prod**, backfill 707/707 |
+| §1 Decisioni | ✅ FATTO | `subjects` normalizzata subito; `birth_date` su students; ruolo `professor` |
+| §2 Migrazioni | ✅ FATTO | + `embedding vector(768)`, `rag_status` su publications, `library_rights_ack_at`, `student_generated_artifacts` |
+| §3.1 Rotte docente | ✅ FATTO | classi, materiali, artefatti, pubblicazione, biblioteca, cruscotto |
+| §3.2 Rotte studente | ✅ FATTO | feed, fruizione, sorgente audio (seek), auto-generazione, chat di classe |
+| §4 Job asincroni | ✅ FATTO | Extract, GenerateArtifact, IngestPublicationRag, PurgeWithdrawn, EmbedDocumentChunks (recupero), StudentGenerateArtifact; dispatch `afterResponse` (feedback UX) |
+| §5 Politica AI (gate) | ✅ FATTO | `searchClassScopedScored` (coseno+soglia), no-model-call+`unanswered_questions`, citazioni con minutaggio, prompt Schola separato |
+| §6 Biblioteca | ✅ FATTO | toggle condivisione, blocco copyright transcript photos/pdf, fork copia profonda con `origin_artifact_id`, quiz duplicato |
+| §7 Fuori perimetro | invariato | lessons/compiti/agente proattivo restano fetta 2+ |
+| §8 Decisioni | ✅ FATTO | tracciamento completo + trasparenza UI; rate limit giornaliero + throttle/min |
+| Cruscotto (agente-ready) | ✅ FATTO | `ClassSignalsService` (metodi puri): coverage, pain points, attività, inattivi, cluster domande; dashboard cross-classe |
+| Hardening (pkg 10) | ✅ FATTO | audit `SECURITY_AUDIT_SCHOLA.md`; fix XSS markdown + rate limit AI; `schola:status`; `ScholaDemoSeeder` |
+
+**Differito a fetta 2** (come da §7): ente scuola/SSO, `lessons`, compiti con
+correzione AI, agente proattivo (livello 3). I dati del cruscotto sono già
+strutturati come suo input.
+
+---
+
 ## 0. Stato reale RAG (verificato 06/06) — ⚠️ prerequisito del pacchetto 6
 
 > **AGGIORNAMENTO 07/06 — prerequisito svolto (branch `schola/06pre-pgvector`).**
