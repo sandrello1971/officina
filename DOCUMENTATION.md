@@ -260,6 +260,83 @@ php artisan atheneum:purge-deleted-notes [--days=30] [--dry-run]
 
 ---
 
+### 3.2.bis Modulo Schola (verticale scuole superiori)
+
+Verticale per le scuole superiori dentro Atheneum. **Dormiente** in produzione
+finché non si promuove un `professor`. Riferimenti: `docs/schola/SPEC.md`
+(as-built in testa), `docs/schola/SECURITY_AUDIT_SCHOLA.md`.
+
+**Attori**: `professor` (nuovo `role` su `students`) e studenti di classe
+(iscritti via codice invito). I due mondi (corsi/formatori vs Schola) NON
+condividono scope RAG né interfacce.
+
+**Pipeline contenuti**:
+`teaching_documents` (grezzo: audio/video/foto/PDF/YouTube/testo) →
+estrazione (videoai/Whisper, Claude vision, pandoc, pdftotext) →
+`teaching_artifacts` (transcript/summary/mindmap/conceptmap/quiz/outline,
+generati via Claude) → `artifact_publications` (per classe) →
+indicizzazione RAG `scope='class'`.
+
+**RAG di classe (vincolo §5, NON negoziabile)**: lo studente interroga Minerva
+SOLO sui chunk `scope='class'` delle sue classi attive (coseno + soglia
+`schola.rag_min_similarity`); sotto soglia il modello NON viene chiamato e la
+domanda va in `unanswered_questions`. Embedding: videoai `POST /api/embeddings`
+(`paraphrase-multilingual-mpnet-base-v2`, 768d) → `documents_rag.embedding
+vector(768)` + indice HNSW. Flag: `rag_vector_enabled_schola` (default on),
+`rag_vector_enabled_corsi` (default off).
+
+**Aree e rotte** (prefissi: docente `/docente`, studente `/learn`):
+- Docente: `/docente` (dashboard), `/docente/classi` (+ `{class}` show, roster,
+  `attivita`, `domande-scoperte`, `minerva`), `/docente/materiali`,
+  `/docente/artefatti/{artifact}` (show/update/destroy/genera/rigenera/pubblica/
+  condivisione), `/docente/biblioteca` (+ `{artifact}` show, `duplica`).
+- Studente: `/learn/classi` (+ `{class}` feed, `minerva`),
+  `/learn/classi/{class}/artefatti/{publication}` (+ `sorgente` audio, `genera`),
+  `/learn/minerva/ask` (chat con `school_class_id`), `/learn/quiz/{quiz}`.
+
+**Servizi chiave**: `app/Services/EmbeddingService.php` (client videoai),
+`app/Services/Schola/ArtifactRagIngestor.php` (chunking ~420 char + scope +
+segments/minutaggio), `app/Services/Schola/ClassSignalsService.php` (cruscotto/
+agente: aggregazioni pure), `app/Services/Schola/ScholaUsage.php` (rate limit).
+
+**Comandi**:
+```bash
+php artisan schola:status
+    # Colpo d'occhio operativo (classi, studenti, documenti, pubblicazioni,
+    # embedding pending, domande scoperte, generazioni 24h).
+
+php artisan schola:backfill-embeddings [--batch=] [--limit=] [--dry-run]
+    # Vettorizza i chunk di documents_rag senza embedding. Riprendibile.
+    # Schedulato daily 03:30 (rete di recupero se videoai era giù).
+
+php artisan db:seed --class=ScholaDemoSeeder
+    # SOLO non-prod: dataset demo realistico per il cruscotto e lo sviluppo.
+```
+
+**Deploy aggiornamento Schola** (codice già in prod; procedura breve):
+```bash
+cd /var/www/noscite-atheneum
+sudo -u www-data php artisan down
+git pull            # se /var/www è un working tree; altrimenti via release-swap (vedi storico deploy)
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+sudo systemctl reload php8.4-fpm
+sudo systemctl restart noscite-atheneum-queue.service   # worker sul codice nuovo
+php artisan up
+```
+
+**Checklist ATTIVAZIONE Schola in prod** (videoai già pronto: `/api/embeddings`
+live, pgvector + backfill fatti):
+1. Promuovere un utente a `professor`: `/admin/students/{student}/role` → `professor`.
+   **Nient'altro è richiesto.**
+2. (Opzionale) verificare con `php artisan schola:status`.
+3. Da quel momento il professor accede a `/docente`; gli studenti si iscrivono
+   via codice invito. Il RAG di classe funziona end-to-end (embed-on-create +
+   backfill notturno di recupero).
+
+---
+
 ### 3.3 Servizi Python ausiliari
 
 #### noscite-videoai
@@ -329,14 +406,20 @@ systemctl status noscite-pkm-agent        # PKM Agent watcher
 ```cron
 */10 * * * * /home/noscite/sync-kb.sh >> /var/log/kb-sync.log 2>&1
 * * * * *    cd /var/www/noscite-site && php artisan schedule:run >> /dev/null 2>&1
+* * * * *    cd /var/www/noscite-atheneum && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-Il `php artisan schedule:run` su noscite-site è il scheduler Laravel attivo. Su atheneum, il scheduler è registrato in `routes/console.php` ma **non c'è una entry cron dedicata** — questo significa che `atheneum:purge-deleted-notes` non gira automaticamente. ⚠️ **Da fixare** durante migrazione (vedi 7.6).
+Entrambe le app hanno la entry cron `schedule:run` (quella atheneum aggiunta nel
+pacchetto 8 Schola). Lo scheduler Laravel esegue i comandi registrati in
+`routes/console.php`.
 
 ### Schedule Laravel
 
 - **noscite-site**: scheduling generico (verificare con `php artisan schedule:list` da `/var/www/noscite-site`)
-- **noscite-atheneum**: `atheneum:purge-deleted-notes` daily 03:00 (necessita cron dedicato)
+- **noscite-atheneum**:
+  - `atheneum:purge-deleted-notes` daily 03:00
+  - `exams:fail-stale` ogni 5 min (reaper esami corsi)
+  - `schola:backfill-embeddings` daily 03:30 (recupero embedding RAG di classe)
 
 ---
 
