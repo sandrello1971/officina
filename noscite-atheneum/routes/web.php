@@ -230,6 +230,20 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::delete('/pubblicazioni/{publication}', [App\Http\Controllers\Docente\PublicationController::class, 'destroy'])->name('publications.destroy');
 });
 
+// ===== AREA SEGRETERIA SCOLASTICA (fase 2, P12) =====
+// Gate school_admin + cambio password obbligatorio. Tutto scoped su school_id.
+Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.password'])->group(function () {
+    Route::get('/', [App\Http\Controllers\Scuola\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'edit'])->name('anagrafica.edit');
+    Route::patch('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'update'])->name('anagrafica.update');
+});
+
+// Logo scuola da storage privato — accessibile a tutti gli utenti della scuola
+// (segreteria/docenti/studenti) e al platform admin, quindi fuori dal gate
+// school_admin ma sotto student.auth.
+Route::get('/branding/scuola/{school}/logo', [App\Http\Controllers\Scuola\BrandingController::class, 'logo'])
+    ->middleware('student.auth')->name('scuola.logo');
+
 // ===== AREA ADMIN ATHENEUM =====
 Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
