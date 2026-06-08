@@ -23,7 +23,7 @@ class Student extends Authenticatable
         'name', 'email', 'password', 'phone', 'company', 'job_title', 'role',
         'avatar_url', 'is_active', 'is_demo', 'must_change_password',
         'microsoft_id', 'auto_enroll_all_courses', 'birth_date',
-        'library_rights_ack_at',
+        'library_rights_ack_at', 'school_id',
     ];
 
     protected $hidden = [
@@ -79,6 +79,22 @@ class Student extends Authenticatable
     public function isProfessor(): bool
     {
         return $this->role === 'professor';
+    }
+
+    public function isSchoolAdmin(): bool
+    {
+        return $this->role === 'school_admin';
+    }
+
+    // ===== Fase 2: appartenenza scuola =====
+    public function school()
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    public function teachingAssignments()
+    {
+        return $this->hasMany(TeachingAssignment::class, 'teacher_id');
     }
 
     public function moduleProgress()

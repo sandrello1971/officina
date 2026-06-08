@@ -46,6 +46,13 @@ Implementazione: trait/global scope `BelongsToSchool` + helper
   artefatto a una classe SOLO se ha una cattedra attiva lì. (In fetta 1
   bastava esserne proprietario.) Per i docenti liberi resta il vecchio
   criterio di proprietà.
+- **Confine roster ↔ didattica (regola).** La **segreteria** gestisce
+  l'**anagrafica**: chi sta in quale classe (aggiunge/rimuove studenti),
+  cattedre, account. Il **docente** opera SOLO sul livello **didattico**
+  (materiali, artefatti, pubblicazione, Minerva, monitoraggio) e **vede** il
+  roster delle sue classi-cattedra ma **non** aggiunge/rimuove studenti.
+  Eccezione docenti liberi (`school_id NULL`): gestiscono il proprio roster
+  via codici invito/approvazione, come in fetta 1.
 - **Lo studente di scuola non usa il codice invito.** È provisioned e mappato
   dalla segreteria. Il codice invito e il self-join restano attivi solo per
   classi senza `school_id` (docenti liberi).
@@ -130,10 +137,14 @@ DB::statement("ALTER TABLE import_batches ADD CONSTRAINT import_batches_status_c
   CHECK (status IN ('previewed','committed','discarded'))");
 ```
 
-Nota GDPR/minori: il consenso e la retention si gestiscono a livello di
-scuola e anno. `class_students` può ricevere `consent_at` se serve tracciare
-il consenso per iscrizione; la cancellazione di fine anno è un comando
-dedicato (vedi pacchetto 16), non un campo.
+Nota GDPR/minori (decisione confermata, §8.2): **la piattaforma NON raccoglie
+il consenso**. Base giuridica: la **scuola è titolare**, **Noscite responsabile**
+del trattamento (art. 28 GDPR). L'attestazione vive a livello di scuola tramite
+`schools.dpa_signed_at` (accordo titolare/responsabile firmato). In aggiunta, un
+campo **OPZIONALE** `class_students.consent_at` (nullable) per audit interno
+della scuola, se la segreteria vuole tracciare il consenso per iscrizione — non
+obbligatorio, non bloccante. La cancellazione di fine anno è un comando dedicato
+(pacchetto 16), non un campo.
 
 ---
 
@@ -188,6 +199,11 @@ POST   /scuola/privacy/export             export dati scuola (job)
   (salvo `schools.allow_professor_create_classes=true`).
 - La pubblicazione valida la cattedra (può pubblicare alla classe X solo se
   ha un assignment lì). Docenti liberi: comportamento fetta 1 invariato.
+- **Roster in sola lettura per il docente di scuola.** Vede il roster delle
+  sue classi-cattedra (per monitoraggio e pubblicazione) ma le azioni di
+  anagrafica — aggiungi/rimuovi studente, gestione cattedre — restano alla
+  segreteria nell'area `/scuola`. (Docente libero: gestisce il proprio
+  roster come in fetta 1.)
 
 ---
 
@@ -207,11 +223,17 @@ Pipeline a due passi (cultura a gate):
 1. **preview/dry-run**: valida tutto, NON scrive, restituisce report —
    righe valide, duplicati per email (con azione: salta/aggiorna), errori di
    formato, mapping classi/materie non risolti, conteggio minori.
-2. **commit**: applica solo se l'utente conferma; crea gli account
-   (password temporanea + link di impostazione via email, oppure credenziale
-   emessa dalla scuola per studenti senza email propria — decisione per
-   pacchetto 13/14), associa `school_id`, mappa classi/cattedre. Idempotente
-   per email.
+2. **commit**: applica solo se l'utente conferma; crea gli account, associa
+   `school_id`, mappa classi/cattedre. Idempotente per email/username.
+
+**Credenziali — supporto DUALE (confermato, §8.1)**:
+- **Con email**: account con email → link di impostazione password
+  (set-password) inviato via email.
+- **Senza email**: **username interno generato** (`nome.cognome`, con
+  disambiguazione numerica; in alternativa un codice) + **password temporanea**
+  distribuita dalla segreteria (stampabile). Nessun indirizzo email richiesto.
+- Il **login accetta email O username**. La password temporanea forza il
+  cambio al primo accesso.
 
 ---
 
@@ -248,12 +270,22 @@ Pipeline a due passi (cultura a gate):
 
 ## 8. Decisioni ancora da prendere (prima di P13/P14)
 
-1. **Credenziali studenti minori senza email propria**: account con email
-   della scuola/genitore? Credenziale emessa dalla segreteria (username +
-   password temporanea stampabile)? Magic link? Da definire — incide su P14.
-2. **Consenso genitoriale**: tracciato in piattaforma (campo + data + chi),
-   oppure responsabilità interamente della scuola fuori piattaforma con sola
-   dichiarazione in fase di DPA? Incide su schema P14 e su P16.
+1. ✅ **DECISA — Credenziali studenti: supporto DUALE.** Import con email →
+   account email + link set-password. Senza email → **username interno
+   generato** (`nome.cognome`/codice) + **password temporanea** distribuita
+   dalla segreteria. Il **login accetta email O username**; password temporanea
+   forza il cambio al primo accesso. Incide su P14 (schema `students`: lo
+   `username` interno e l'email diventano entrambi opzionali ma almeno uno
+   presente) e sul controller di login.
+2. ✅ **DECISA — Consenso: la piattaforma NON lo raccoglie.** La **scuola è
+   titolare**, **Noscite responsabile** (art. 28). Attestazione a livello scuola
+   in fase DPA (`schools.dpa_signed_at`, già previsto) + campo **opzionale**
+   `class_students.consent_at` per audit interno della scuola. **Nota legale
+   (bloccante prima del primo studente reale)**: il **DPA deve esplicitare il
+   flusso dati verso il modello AI** (chat Minerva). Stato tecnico: gli
+   **embedding sono locali** (modello self-hosted su videoai), ma la **chat va a
+   Claude** (Anthropic) — da **validare con il legale** prima del primo studente
+   reale (eventuale DPA/sub-responsabile Anthropic, zona dati, retention).
 3. **Anno scolastico**: gestione del passaggio anno (le classi/cattedre sono
    per `school_year`) — promozione/archiviazione automatica o manuale? Può
    restare per una fase 2.1.
