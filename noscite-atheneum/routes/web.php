@@ -234,6 +234,14 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
 Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
 
+    // Scuole (fase 2, P11) — il platform admin è l'unico che attraversa le scuole.
+    Route::get('scuole', [App\Http\Controllers\Admin\SchoolController::class, 'index'])->name('scuole.index');
+    Route::get('scuole/crea', [App\Http\Controllers\Admin\SchoolController::class, 'create'])->name('scuole.create');
+    Route::post('scuole', [App\Http\Controllers\Admin\SchoolController::class, 'store'])->name('scuole.store');
+    Route::get('scuole/{school}', [App\Http\Controllers\Admin\SchoolController::class, 'show'])->name('scuole.show');
+    Route::patch('scuole/{school}', [App\Http\Controllers\Admin\SchoolController::class, 'update'])->name('scuole.update');
+    Route::post('scuole/{school}/segreteria', [App\Http\Controllers\Admin\SchoolController::class, 'nominateAdmin'])->name('scuole.nominate');
+
     Route::get('courses/ingest', [App\Http\Controllers\Admin\CourseIngestController::class, 'form'])->name('courses.ingest.form');
     Route::post('courses/ingest/parse', [App\Http\Controllers\Admin\CourseIngestController::class, 'parse'])->name('courses.ingest.parse');
     Route::get('courses/ingest/preview', [App\Http\Controllers\Admin\CourseIngestController::class, 'preview'])->name('courses.ingest.preview');
