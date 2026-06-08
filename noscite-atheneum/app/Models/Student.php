@@ -97,6 +97,13 @@ class Student extends Authenticatable
         return $this->hasMany(TeachingAssignment::class, 'teacher_id');
     }
 
+    // Materie che il docente PUÒ insegnare (competenze, non cattedre).
+    public function teachableSubjects()
+    {
+        return $this->belongsToMany(Subject::class, 'professor_subjects', 'teacher_id', 'subject_id')
+            ->withPivot('school_id')->withTimestamps();
+    }
+
     public function moduleProgress()
     {
         return $this->hasMany(StudentModuleProgress::class);

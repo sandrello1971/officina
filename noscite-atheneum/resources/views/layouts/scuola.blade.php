@@ -54,8 +54,8 @@
         <a href="{{ route('scuola.dashboard') }}" class="nav-item {{ request()->routeIs('scuola.dashboard') ? 'active' : '' }}">
             <span>&#9632;</span> Dashboard
         </a>
-        {{-- Voci dei prossimi pacchetti (P13–P16): visibili ma disabilitate --}}
-        <a href="#" class="nav-item disabled" aria-disabled="true" title="In arrivo (P13)"><span>&#127979;</span> Docenti</a>
+        <a href="{{ route('scuola.docenti.index') }}" class="nav-item {{ request()->routeIs('scuola.docenti.*') ? 'active' : '' }}"><span>&#127979;</span> Docenti</a>
+        {{-- Voci dei prossimi pacchetti (P14–P16): visibili ma disabilitate --}}
         <a href="#" class="nav-item disabled" aria-disabled="true" title="In arrivo (P14)"><span>&#127891;</span> Studenti</a>
         <a href="#" class="nav-item disabled" aria-disabled="true" title="In arrivo (P15)"><span>&#128218;</span> Classi</a>
         <a href="#" class="nav-item disabled" aria-disabled="true" title="In arrivo (P16)"><span>&#128274;</span> Privacy</a>
