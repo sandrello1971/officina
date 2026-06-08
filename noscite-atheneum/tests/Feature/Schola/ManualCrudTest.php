@@ -33,7 +33,7 @@ class ManualCrudTest extends TestCase
     private function admin(): Student
     {
         return Student::create(['name' => 'Segr', 'email' => 'sa' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => $this->school->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $this->school->id, 'is_active' => true, 'must_change_password' => false]);
     }
 
     private function asSchoolAdmin(?Student $a = null): self
@@ -65,7 +65,7 @@ class ManualCrudTest extends TestCase
         $resp->assertRedirect()->assertSessionHas('temp_password');
 
         $sa = Student::where('email', 'maria@galilei.it')->first();
-        $this->assertSame('school_admin', $sa->role);
+        $this->assertTrue((bool) $sa->is_secretary);
         $this->assertSame($this->school->id, $sa->school_id);
         $this->assertTrue((bool) $sa->must_change_password);
         Mail::assertQueued(SchoolAdminInviteMail::class, 1);
@@ -110,7 +110,7 @@ class ManualCrudTest extends TestCase
         // segreteria di un'ALTRA scuola passata su questa scuola → 404
         $other = School::create(['name' => 'B', 'slug' => 'b-' . uniqid(), 'type' => 'altro', 'status' => 'active']);
         $foreignSa = Student::create(['name' => 'X', 'email' => 'x' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => $other->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $other->id, 'is_active' => true, 'must_change_password' => false]);
         $this->asPlatformAdmin()->post(route('admin.scuole.segreteria.reset', [$this->school, $foreignSa]))->assertNotFound();
     }
 

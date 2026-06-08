@@ -76,6 +76,17 @@
     </div>{{-- /.sidebar-scroll --}}
 
     <div class="sidebar-footer">
+        @if(($identity['courses'] ?? false) || ($identity['secretary'] ?? false))
+        <div style="margin-bottom:8px;">
+            <div style="color:#8A9696; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px;">Cambia contesto</div>
+            @if($identity['courses'] ?? false)
+                <a href="{{ route('student.dashboard') }}" style="display:block; text-align:center; padding:7px; margin-bottom:4px; background:rgba(85,177,174,0.1); color:#55B1AE; border:1px solid rgba(85,177,174,0.3); border-radius:6px; font-size:0.78rem; text-decoration:none;">&#128218; I miei corsi</a>
+            @endif
+            @if($identity['secretary'] ?? false)
+                <a href="{{ route('scuola.dashboard') }}" style="display:block; text-align:center; padding:7px; background:rgba(85,177,174,0.1); color:#55B1AE; border:1px solid rgba(85,177,174,0.3); border-radius:6px; font-size:0.78rem; text-decoration:none;">&#128188; Segreteria</a>
+            @endif
+        </div>
+        @endif
         <form method="POST" action="/learn/logout">
             @csrf
             <button type="submit" style="width:100%; padding:8px; background:rgba(226,138,83,0.1); color:#E28A53; border:1px solid rgba(226,138,83,0.3); border-radius:6px; font-size:0.8rem; cursor:pointer;">

@@ -24,9 +24,10 @@ class SchoolAreaTest extends TestCase
 
     private function member(School $school, string $role, bool $mustChange = false): Student
     {
+        $secretary = $role === 'school_admin';
         return Student::create(['name' => ucfirst($role), 'email' => $role . uniqid() . '@e.it',
-            'password' => bcrypt('x'), 'role' => $role, 'school_id' => $school->id,
-            'is_active' => true, 'must_change_password' => $mustChange]);
+            'password' => bcrypt('x'), 'role' => $secretary ? null : $role, 'is_secretary' => $secretary,
+            'school_id' => $school->id, 'is_active' => true, 'must_change_password' => $mustChange]);
     }
 
     private function as(Student $s): self
@@ -53,7 +54,7 @@ class SchoolAreaTest extends TestCase
     public function test_school_admin_without_school_is_denied(): void
     {
         $orphan = Student::create(['name' => 'X', 'email' => 'o' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => null, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => null, 'is_active' => true, 'must_change_password' => false]);
         $this->as($orphan)->get(route('scuola.dashboard'))->assertForbidden();
     }
 
@@ -153,7 +154,7 @@ class SchoolAreaTest extends TestCase
     {
         $school = $this->school();
         Student::create(['name' => 'Segr', 'email' => 'segr@x.it', 'password' => bcrypt('secret123'),
-            'role' => 'school_admin', 'school_id' => $school->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $school->id, 'is_active' => true, 'must_change_password' => false]);
 
         $this->post(route('student.login.post'), ['email' => 'segr@x.it', 'password' => 'secret123'])
             ->assertRedirect(route('scuola.dashboard'));

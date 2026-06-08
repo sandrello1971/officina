@@ -88,26 +88,43 @@ class SchoolController extends Controller
     }
 
     /**
-     * Aggiunge una segreteria (school_admin): account con password temporanea
-     * SEMPRE mostrata a schermo una volta (l'email può non arrivare), + invio
-     * email opzionale. Vale anche per le segreterie oltre alla prima.
+     * Aggiunge una segreteria. Segreteria = CAPACITÀ (flag is_secretary):
+     * - email NUOVA → crea account (role null) + flag + password temporanea
+     *   SEMPRE mostrata una volta (+ email opzionale);
+     * - email ESISTENTE senza scuola o di QUESTA scuola → AGGANCIA il flag,
+     *   preservando role/professore/iscrizioni e la password attuale;
+     * - email di un'ALTRA scuola → bloccata.
      */
     public function nominateAdmin(Request $request, School $school)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => ['required', 'email', 'max:255', Rule::unique('students', 'email')],
+            'email' => 'required|email|max:255',
             'send_email' => 'sometimes|boolean',
         ]);
 
-        $tempPassword = $this->generateTempPassword();
+        $existing = Student::where('email', $data['email'])->first();
 
+        if ($existing) {
+            if ($existing->school_id && $existing->school_id !== $school->id) {
+                return redirect()->route('admin.scuole.show', $school)
+                    ->with('error', "Impossibile: {$data['email']} appartiene già a un'altra scuola.");
+            }
+            // Aggancio: NON tocca password/role/iscrizioni dell'account esistente.
+            $existing->update(['school_id' => $school->id, 'is_secretary' => true, 'is_active' => true]);
+
+            return redirect()->route('admin.scuole.show', $school)
+                ->with('success', "Segreteria agganciata all'account esistente {$data['email']} (mantiene la sua password e gli altri ruoli).");
+        }
+
+        $tempPassword = $this->generateTempPassword();
         $admin = Student::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $tempPassword,           // cast 'hashed' su Student
-            'role' => 'school_admin',
+            'role' => null,                        // segreteria = flag, non role
             'school_id' => $school->id,
+            'is_secretary' => true,
             'is_active' => true,
             'must_change_password' => true,
         ]);
@@ -158,7 +175,7 @@ class SchoolController extends Controller
 
     private function authorizeAdmin(School $school, Student $admin): void
     {
-        abort_unless($admin->school_id === $school->id && $admin->role === 'school_admin', 404);
+        abort_unless($admin->school_id === $school->id && $admin->is_secretary, 404);
     }
 
     private function generateTempPassword(): string

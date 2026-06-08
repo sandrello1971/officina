@@ -44,7 +44,7 @@ class TeacherImportService
         $seenEmails = [];
 
         $rows = [];
-        $summary = ['total' => 0, 'valid' => 0, 'duplicate' => 0, 'conflict' => 0, 'error' => 0, 'unknown_subjects' => 0];
+        $summary = ['total' => 0, 'valid' => 0, 'attach' => 0, 'duplicate' => 0, 'conflict' => 0, 'error' => 0, 'unknown_subjects' => 0];
 
         foreach ($records as $line => $cells) {
             $nome = trim($cells[$idx['nome']] ?? '');
@@ -87,17 +87,23 @@ class TeacherImportService
                     $summary['unknown_subjects']++;
                 }
 
-                // Esistenza account / conflitto cross-scuola
+                // Esistenza account: AGGANCIO (identità multi-contesto) invece
+                // di blocco. Si blocca SOLO se l'email è di un'ALTRA scuola.
                 $existing = Student::where('email', $email)->first();
                 if ($existing) {
-                    if ($existing->school_id === $school->id && $existing->role === 'professor') {
+                    if ($existing->school_id && $existing->school_id !== $school->id) {
+                        $row['status'] = 'conflict';
+                        $row['message'] = 'Account già esistente in un\'altra scuola: non spostato.';
+                    } elseif ($existing->school_id === $school->id && $existing->role === 'professor') {
                         $row['status'] = 'duplicate';
                         $row['message'] = 'Docente già presente in questa scuola.';
                     } else {
-                        $row['status'] = 'conflict';
+                        // school_id null (corsista / professore libero / formatore)
+                        // oppure stessa scuola con altro cappello (es. segreteria).
+                        $row['status'] = 'attach';
                         $row['message'] = $existing->school_id
-                            ? 'Account già esistente in un\'altra scuola: non spostato.'
-                            : 'Account già esistente fuori da una scuola: non assorbito.';
+                            ? 'Account già in questa scuola: aggiunta la capacità docente (altri ruoli preservati).'
+                            : 'Account esistente senza scuola: agganciato come docente (iscrizioni corsi preservate).';
                     }
                 }
             }
@@ -150,7 +156,7 @@ class TeacherImportService
 
         foreach (($batch->rows ?? []) as $row) {
             $status = $row['status'] ?? 'error';
-            if (!in_array($status, ['valid', 'duplicate'], true)) {
+            if (!in_array($status, ['valid', 'attach', 'duplicate'], true)) {
                 continue; // error/conflict mai applicati
             }
             if ($status === 'duplicate' && $duplicateAction === 'skip') {
@@ -158,19 +164,18 @@ class TeacherImportService
                 continue;
             }
 
-            DB::transaction(function () use ($row, $school, $duplicateAction, &$result) {
+            DB::transaction(function () use ($row, $school, &$result) {
                 $existing = Student::where('email', $row['email'])->first();
 
-                // Re-check di sicurezza/idempotenza al momento dell'apply.
+                // Re-check al momento dell'apply: blocco SOLO se di un'altra scuola.
                 if ($existing) {
-                    if ($existing->school_id !== $school->id || $existing->role !== 'professor') {
+                    if ($existing->school_id && $existing->school_id !== $school->id) {
                         $result['skipped']++; // conflitto cross-scuola → mai spostato
                         return;
                     }
-                    if ($duplicateAction === 'skip') {
-                        $result['skipped']++;
-                        return;
-                    }
+                    // AGGANCIO: aggiunge la capacità docente, preservando il resto
+                    // (role solo promosso a professor; is_secretary/iscrizioni intatti).
+                    $existing->update(['school_id' => $school->id, 'role' => 'professor']);
                     $this->syncSubjects($existing, $row['subject_ids'] ?? [], $school);
                     $result['updated']++;
                     return;

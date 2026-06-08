@@ -30,8 +30,11 @@ class TenancyHardeningTest extends TestCase
 
     private function member(School $s, string $role): Student
     {
+        // Segreteria = flag (non role) dal pacchetto identità multi-contesto.
+        $secretary = $role === 'school_admin';
         return Student::create(['name' => ucfirst($role), 'email' => $role . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => $role, 'school_id' => $s->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => $secretary ? null : $role, 'is_secretary' => $secretary,
+            'school_id' => $s->id, 'is_active' => true, 'must_change_password' => false]);
     }
 
     private function as(Student $u): self

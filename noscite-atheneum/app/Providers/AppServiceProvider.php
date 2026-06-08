@@ -128,6 +128,18 @@ class AppServiceProvider extends ServiceProvider
             $view->with('branding', \App\Services\Schola\SchoolBranding::for($school));
         });
 
+        // Identità multi-contesto: capacità dell'account per lo switch di
+        // contesto (un account può essere corsista + professore + segreteria).
+        View::composer(['layouts.scuola', 'layouts.docente', 'layouts.student'], function ($view) {
+            $studentId = session('student_id');
+            $s = $studentId ? Student::find($studentId) : null;
+            $view->with('identity', [
+                'professor' => (bool) $s?->isProfessor(),
+                'secretary' => (bool) $s?->isSecretary(),
+                'courses' => (bool) $s?->hasCourseAccess(),
+            ]);
+        });
+
         View::composer('layouts.student', function ($view) {
             $studentId = session('student_id');
             $student = $studentId ? Student::find($studentId) : null;
