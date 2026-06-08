@@ -65,6 +65,16 @@
         <a href="{{ route('scuola.anagrafica.edit') }}" style="display:block; text-align:center; margin-bottom:8px; padding:8px; background:rgba(85,177,174,0.1); color:#55B1AE; border:1px solid rgba(85,177,174,0.3); border-radius:6px; font-size:0.8rem; text-decoration:none;">
             &#9881; Anagrafica & branding
         </a>
+        @if(($identity['professor'] ?? false) || ($identity['courses'] ?? false))
+        <div style="margin-bottom:8px;">
+            @if($identity['professor'] ?? false)
+                <a href="{{ route('docente.dashboard') }}" style="display:block; text-align:center; padding:7px; margin-bottom:4px; background:rgba(85,177,174,0.1); color:#55B1AE; border:1px solid rgba(85,177,174,0.3); border-radius:6px; font-size:0.78rem; text-decoration:none;">&#9788; Area docente</a>
+            @endif
+            @if($identity['courses'] ?? false)
+                <a href="{{ route('student.dashboard') }}" style="display:block; text-align:center; padding:7px; background:rgba(85,177,174,0.1); color:#55B1AE; border:1px solid rgba(85,177,174,0.3); border-radius:6px; font-size:0.78rem; text-decoration:none;">&#128218; I miei corsi</a>
+            @endif
+        </div>
+        @endif
         <form method="POST" action="/learn/logout">
             @csrf
             <button type="submit" style="width:100%; padding:8px; background:rgba(226,138,83,0.1); color:#E28A53; border:1px solid rgba(226,138,83,0.3); border-radius:6px; font-size:0.8rem; cursor:pointer;">Esci</button>

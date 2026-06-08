@@ -70,6 +70,9 @@ class TeacherController extends Controller
         if ($status === 'error') {
             return redirect()->back()->with('error', "$label non aggiunto: " . ($row['message'] ?? 'dati non validi.'));
         }
+        if ($status === 'attach') {
+            return redirect($back)->with('success', "$label agganciato all'account esistente (eventuali corsi/ruoli preservati).");
+        }
         if (($result['updated'] ?? 0) > 0) {
             return redirect($back)->with('success', "$label già presente: aggiornato.");
         }

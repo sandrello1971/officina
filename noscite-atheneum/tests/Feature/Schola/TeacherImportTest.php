@@ -28,7 +28,7 @@ class TeacherImportTest extends TestCase
         $this->school = School::create(['name' => 'Liceo Galilei', 'slug' => 'galilei-' . uniqid(),
             'type' => 'liceo', 'status' => 'active']);
         $this->admin = Student::create(['name' => 'Segr', 'email' => 'sa' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => $this->school->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $this->school->id, 'is_active' => true, 'must_change_password' => false]);
     }
 
     private function asAdmin(?Student $a = null): self
@@ -180,7 +180,7 @@ class TeacherImportTest extends TestCase
 
         $otherSchool = School::create(['name' => 'Altra', 'slug' => 'altra-' . uniqid(), 'type' => 'altro', 'status' => 'active']);
         $otherAdmin = Student::create(['name' => 'Segr2', 'email' => 'sa2' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => $otherSchool->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $otherSchool->id, 'is_active' => true, 'must_change_password' => false]);
 
         $this->asAdmin($otherAdmin)->post(route('scuola.docenti.import.commit'),
             ['batch_id' => $batch->id, 'duplicate_action' => 'update'])->assertForbidden();

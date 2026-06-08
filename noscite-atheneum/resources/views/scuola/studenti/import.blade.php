@@ -5,6 +5,7 @@
 @php
     $statusMeta = [
         'valid'     => ['Nuovo',     '#3A8C89', '#E8F5F5'],
+        'attach'    => ['Aggancio',  '#3A5A8C', '#EEF3FB'],
         'duplicate' => ['Duplicato', '#9A7B2E', '#FBF3E2'],
         'conflict'  => ['Conflitto', '#A8521F', '#FDECE2'],
         'error'     => ['Errore',    '#C52A2A', '#FCE9E2'],
@@ -29,6 +30,7 @@
             <div style="font-size:0.78rem; color:#8A9696; margin-bottom:10px;">Anteprima di <strong>{{ $batch->source_filename }}</strong> — {{ $s['total'] }} righe. <em>Nessun dato è stato scritto.</em></div>
             <div style="display:flex; gap:8px; flex-wrap:wrap; font-size:0.78rem;">
                 <span style="background:#E8F5F5; color:#3A8C89; padding:4px 10px; border-radius:6px;">Nuovi: {{ $s['valid'] }}</span>
+                <span style="background:#EEF3FB; color:#3A5A8C; padding:4px 10px; border-radius:6px;">Agganci: {{ $s['attach'] ?? 0 }}</span>
                 <span style="background:#FBF3E2; color:#9A7B2E; padding:4px 10px; border-radius:6px;">Duplicati: {{ $s['duplicate'] }}</span>
                 <span style="background:#FDECE2; color:#A8521F; padding:4px 10px; border-radius:6px;">Conflitti: {{ $s['conflict'] }}</span>
                 <span style="background:#FCE9E2; color:#C52A2A; padding:4px 10px; border-radius:6px;">Errori: {{ $s['error'] }}</span>
@@ -85,7 +87,7 @@
                 @else
                     <input type="hidden" name="duplicate_action" value="update">
                 @endif
-                <button data-busy-label="Importo…" style="padding:10px 18px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer;">Conferma e importa ({{ $s['valid'] + $s['duplicate'] }})</button>
+                <button data-busy-label="Importo…" style="padding:10px 18px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer;">Conferma e importa ({{ $s['valid'] + ($s['attach'] ?? 0) + $s['duplicate'] }})</button>
             </div>
         </form>
         <form method="POST" action="{{ route('scuola.studenti.import.discard', $batch) }}">
