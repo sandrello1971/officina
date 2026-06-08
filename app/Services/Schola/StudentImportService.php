@@ -129,6 +129,42 @@ class StudentImportService
     }
 
     /**
+     * Inserimento SINGOLO (form): stessa logica del massivo via analyze()+commit().
+     * NON crea classi mancanti (il form sceglie una classe esistente). Ritorna
+     * anche le eventuali credenziali generate (riga senza email).
+     *
+     * @param array{nome:string,cognome:string,email:?string,birth_date:string,classe:string,consent?:bool} $fields
+     * @return array{result:array, row:?array}
+     */
+    public function commitSingle(array $fields, School $school): array
+    {
+        $csv = ImportCsv::oneRow(
+            ['nome', 'cognome', 'email', 'data_nascita', 'classe', 'consenso'],
+            [
+                $fields['nome'] ?? '', $fields['cognome'] ?? '', $fields['email'] ?? '',
+                $fields['birth_date'] ?? '', $fields['classe'] ?? '',
+                !empty($fields['consent']) ? 'si' : '',
+            ]
+        );
+
+        $analysis = $this->analyze($csv, $school);
+        $batch = ImportBatch::create([
+            'school_id' => $school->id, 'created_by' => session('student_id'),
+            'type' => 'students', 'status' => 'previewed',
+            'source_filename' => 'Inserimento manuale',
+            'summary' => $analysis['summary'], 'rows' => $analysis['rows'],
+        ]);
+
+        // createMissingClasses=false: il form offre solo classi esistenti.
+        $result = $this->commit($batch, $school, false, 'update');
+        $clean = $result;
+        unset($clean['generated']);
+        $batch->update(['status' => 'committed', 'summary' => array_merge($batch->summary ?? [], ['result' => $clean])]);
+
+        return ['result' => $result, 'row' => $analysis['rows'][0] ?? null];
+    }
+
+    /**
      * Applica un batch previewed. Idempotente. Ritorna anche le credenziali
      * generate (username + password in CHIARO, una tantum) per le righe senza
      * email — il chiamante le mostra/esporta una sola volta.

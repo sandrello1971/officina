@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\SchoolAdminInviteMail;
 use App\Models\School;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -53,7 +55,8 @@ class SchoolController extends Controller
     public function show(School $school)
     {
         $school->loadCount(['schoolAdmins', 'teachers', 'students', 'schoolClasses']);
-        $admins = $school->schoolAdmins()->orderBy('name')->get();
+        $admins = $school->schoolAdmins()->orderBy('name')
+            ->get(['id', 'name', 'email', 'is_active', 'must_change_password', 'last_login_at', 'school_id', 'role']);
 
         return view('admin.scuole.show', compact('school', 'admins'));
     }
@@ -85,19 +88,21 @@ class SchoolController extends Controller
     }
 
     /**
-     * Crea/nomina il PRIMO school_admin (segreteria) della scuola: account
-     * con password temporanea (cambio obbligatorio al primo accesso).
+     * Aggiunge una segreteria (school_admin): account con password temporanea
+     * SEMPRE mostrata a schermo una volta (l'email può non arrivare), + invio
+     * email opzionale. Vale anche per le segreterie oltre alla prima.
      */
     public function nominateAdmin(Request $request, School $school)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255', Rule::unique('students', 'email')],
+            'send_email' => 'sometimes|boolean',
         ]);
 
-        $tempPassword = 'Nsc2024!' . Str::upper(Str::random(4));
+        $tempPassword = $this->generateTempPassword();
 
-        Student::create([
+        $admin = Student::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $tempPassword,           // cast 'hashed' su Student
@@ -107,9 +112,70 @@ class SchoolController extends Controller
             'must_change_password' => true,
         ]);
 
+        if ($request->boolean('send_email')) {
+            Mail::to($admin->email)->queue(new SchoolAdminInviteMail($admin, $tempPassword, $school));
+        }
+
         return redirect()->route('admin.scuole.show', $school)
-            ->with('success', "Segreteria nominata: {$data['email']}")
-            ->with('temp_password', $tempPassword);
+            ->with('success', "Segreteria aggiunta: {$data['email']}")
+            ->with('temp_password', $tempPassword)
+            ->with('temp_password_for', $admin->email);
+    }
+
+    /** Reimposta la password (mostrata una volta; email opzionale). */
+    public function resetAdminPassword(Request $request, School $school, Student $admin)
+    {
+        $this->authorizeAdmin($school, $admin);
+        $temp = $this->issueTempPassword($admin, $request->boolean('send_email'), $school);
+
+        return redirect()->route('admin.scuole.show', $school)
+            ->with('success', "Password reimpostata per {$admin->email}. Annotala ora: non sarà più mostrata.")
+            ->with('temp_password', $temp)
+            ->with('temp_password_for', $admin->email);
+    }
+
+    /** Reinvia l'invito: nuova password temporanea, email inviata, mostrata una volta. */
+    public function resendInvite(School $school, Student $admin)
+    {
+        $this->authorizeAdmin($school, $admin);
+        $temp = $this->issueTempPassword($admin, true, $school);
+
+        return redirect()->route('admin.scuole.show', $school)
+            ->with('success', "Invito reinviato a {$admin->email} (email + password qui sotto, annotala).")
+            ->with('temp_password', $temp)
+            ->with('temp_password_for', $admin->email);
+    }
+
+    /** Attiva/disattiva l'account di segreteria. */
+    public function toggleAdminActive(School $school, Student $admin)
+    {
+        $this->authorizeAdmin($school, $admin);
+        $admin->update(['is_active' => !$admin->is_active]);
+
+        return redirect()->route('admin.scuole.show', $school)
+            ->with('success', $admin->is_active ? "Segreteria riattivata: {$admin->email}" : "Segreteria disattivata: {$admin->email}");
+    }
+
+    private function authorizeAdmin(School $school, Student $admin): void
+    {
+        abort_unless($admin->school_id === $school->id && $admin->role === 'school_admin', 404);
+    }
+
+    private function generateTempPassword(): string
+    {
+        return 'Nsc' . now()->format('y') . '!' . Str::upper(Str::random(5));
+    }
+
+    private function issueTempPassword(Student $admin, bool $sendEmail, School $school): string
+    {
+        $temp = $this->generateTempPassword();
+        $admin->update(['password' => $temp, 'must_change_password' => true, 'is_active' => true]);
+
+        if ($sendEmail) {
+            Mail::to($admin->email)->queue(new SchoolAdminInviteMail($admin, $temp, $school));
+        }
+
+        return $temp;
     }
 
     private function uniqueSlug(string $base): string
