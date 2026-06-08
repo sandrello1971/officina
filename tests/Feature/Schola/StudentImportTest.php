@@ -25,7 +25,7 @@ class StudentImportTest extends TestCase
         parent::setUp();
         $this->school = School::create(['name' => 'Liceo Galilei', 'slug' => 'galilei', 'type' => 'liceo', 'status' => 'active']);
         $this->admin = Student::create(['name' => 'Segr', 'email' => 'sa' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => $this->school->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $this->school->id, 'is_active' => true, 'must_change_password' => false]);
         $this->existingClass('3A');
     }
 
@@ -198,7 +198,7 @@ class StudentImportTest extends TestCase
 
         $other = School::create(['name' => 'Altra', 'slug' => 'altra', 'type' => 'altro', 'status' => 'active']);
         $otherAdmin = Student::create(['name' => 'S2', 'email' => 'sa2' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => $other->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $other->id, 'is_active' => true, 'must_change_password' => false]);
 
         $this->asAdmin($otherAdmin)->post(route('scuola.studenti.import.commit'),
             ['batch_id' => $batch->id, 'duplicate_action' => 'update'])->assertForbidden();

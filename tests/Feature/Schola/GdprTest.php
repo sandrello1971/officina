@@ -28,7 +28,7 @@ class GdprTest extends TestCase
     {
         $s ??= $this->school;
         return Student::create(['name' => 'Segr', 'email' => 'sa' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => $s->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $s->id, 'is_active' => true, 'must_change_password' => false]);
     }
 
     private function as(Student $u): self

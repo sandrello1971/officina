@@ -40,7 +40,7 @@ class StudentImportService
         $seen = [];
 
         $rows = [];
-        $summary = ['total' => 0, 'valid' => 0, 'duplicate' => 0, 'conflict' => 0, 'error' => 0,
+        $summary = ['total' => 0, 'valid' => 0, 'attach' => 0, 'duplicate' => 0, 'conflict' => 0, 'error' => 0,
             'minors' => 0, 'without_email' => 0, 'classes_to_create' => []];
 
         foreach ($records as $i => $cells) {
@@ -96,16 +96,19 @@ class StudentImportService
                     $summary['classes_to_create'][$className] = true;
                 }
 
-                // Dedup / conflitto
+                // Dedup / aggancio (identità multi-contesto). Blocco SOLO se altra scuola.
                 if ($email !== '') {
                     $existing = Student::where('email', $email)->first();
                     if ($existing) {
-                        if ($existing->school_id === $school->id && $existing->role === 'student') {
+                        if ($existing->school_id && $existing->school_id !== $school->id) {
+                            $row['status'] = 'conflict';
+                            $row['message'] = 'Account già esistente in un\'altra scuola: non spostato.';
+                        } elseif ($existing->school_id === $school->id && $existing->role === 'student') {
                             $row['status'] = 'duplicate';
                             $row['message'] = 'Studente già presente in questa scuola.';
                         } else {
-                            $row['status'] = 'conflict';
-                            $row['message'] = 'Account email già esistente altrove: non assorbito.';
+                            $row['status'] = 'attach';
+                            $row['message'] = 'Account esistente senza scuola: agganciato e iscritto alla classe (iscrizioni corsi preservate).';
                         }
                     }
                 } else {
@@ -179,7 +182,7 @@ class StudentImportService
         // Risoluzione/creazione classi (una volta per nome).
         $classMap = $this->schoolClassMap($school); // lower(name) => id
         foreach ($rows as $row) {
-            if (!in_array($row['status'] ?? '', ['valid', 'duplicate'], true)) {
+            if (!in_array($row['status'] ?? '', ['valid', 'attach', 'duplicate'], true)) {
                 continue;
             }
             $key = mb_strtolower($row['class_name']);
@@ -197,7 +200,7 @@ class StudentImportService
 
         foreach ($rows as $row) {
             $status = $row['status'] ?? 'error';
-            if (!in_array($status, ['valid', 'duplicate'], true)) {
+            if (!in_array($status, ['valid', 'attach', 'duplicate'], true)) {
                 continue;
             }
             if ($status === 'duplicate' && $duplicateAction === 'skip') {
@@ -233,14 +236,17 @@ class StudentImportService
             : Student::where('username', $row['username_base'])->where('school_id', $school->id)->where('role', 'student')->first();
 
         if ($existing) {
-            if ($existing->school_id !== $school->id || $existing->role !== 'student') {
+            if ($existing->school_id && $existing->school_id !== $school->id) {
                 $result['skipped']++; // conflitto cross-scuola → mai assorbito
                 return null;
             }
-            if ($duplicateAction === 'skip') {
-                $result['skipped']++;
-                return null;
+            // AGGANCIO: set school_id; promuovi a 'student' SOLO se senza ruolo
+            // (non declassare un professore); iscrizioni corsi preservate.
+            $updates = ['school_id' => $school->id];
+            if ($existing->role === null) {
+                $updates['role'] = 'student';
             }
+            $existing->update($updates);
             $result['updated']++;
             return $existing; // iscrizione/consenso assicurati dal chiamante
         }

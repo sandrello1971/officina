@@ -73,6 +73,10 @@ class StudentController extends Controller
 
         $redirect = redirect()->route('scuola.studenti.index');
 
+        if ($status === 'attach') {
+            return $redirect->with('success', 'Studente agganciato all\'account esistente e iscritto (corsi preservati).');
+        }
+
         // Credenziali generate (studente senza email): mostrate UNA volta.
         if (!empty($result['generated'])) {
             $redirect->with('single_credentials', $result['generated']);

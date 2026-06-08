@@ -82,7 +82,7 @@ class ScholaDemoSeeder extends Seeder
         ]);
 
         \App\Models\Student::create(['name' => 'Segreteria ' . $name, 'email' => 'segreteria' . $domain,
-            'password' => bcrypt('password'), 'role' => 'school_admin', 'school_id' => $school->id,
+            'password' => bcrypt('password'), 'role' => null, 'is_secretary' => true, 'school_id' => $school->id,
             'is_active' => true, 'must_change_password' => false]);
 
         // 2 docenti con competenze + 2 classi + cattedre.

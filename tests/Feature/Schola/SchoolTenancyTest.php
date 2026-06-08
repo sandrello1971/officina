@@ -42,7 +42,7 @@ class SchoolTenancyTest extends TestCase
     {
         $school = $this->school();
         $a = Student::create(['name' => 'Segr', 'email' => 'sa' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => $school->id, 'is_active' => true, 'must_change_password' => true]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $school->id, 'is_active' => true, 'must_change_password' => true]);
         $this->assertTrue($a->fresh()->isSchoolAdmin());
     }
 
@@ -75,7 +75,7 @@ class SchoolTenancyTest extends TestCase
     {
         $a = $this->school('A'); $b = $this->school('B');
         $admin = Student::create(['name' => 'Segr A', 'email' => 'sa' . uniqid() . '@e.it', 'password' => bcrypt('x'),
-            'role' => 'school_admin', 'school_id' => $a->id, 'is_active' => true, 'must_change_password' => false]);
+            'role' => null, 'is_secretary' => true, 'school_id' => $a->id, 'is_active' => true, 'must_change_password' => false]);
         $this->withSession(['student_id' => $admin->id])->get('/'); // boot session
         session(['student_id' => $admin->id]);
 
@@ -117,7 +117,8 @@ class SchoolTenancyTest extends TestCase
 
         $admin = Student::where('email', 'segreteria@galilei.it')->first();
         $this->assertNotNull($admin);
-        $this->assertSame('school_admin', $admin->role);
+        $this->assertTrue((bool) $admin->is_secretary); // segreteria = flag, non role
+        $this->assertNull($admin->role);
         $this->assertSame($school->id, $admin->school_id);
         $this->assertTrue((bool) $admin->must_change_password);
     }
@@ -127,15 +128,29 @@ class SchoolTenancyTest extends TestCase
         $this->get(route('admin.scuole.index'))->assertRedirect(); // no admin session → redirect login
     }
 
-    public function test_nominate_rejects_duplicate_email(): void
+    public function test_nominate_attaches_secretary_to_existing_free_account(): void
     {
+        // Identità multi-contesto: nominare la segreteria su un'email esistente
+        // SENZA scuola (es. corsista) AGGANCIA il flag, non blocca.
         $school = $this->school();
-        Student::create(['name' => 'Esiste', 'email' => 'dup@x.it', 'password' => bcrypt('x'),
+        $existing = Student::create(['name' => 'Esiste', 'email' => 'dup@x.it', 'password' => bcrypt('secret123'),
             'role' => 'student', 'is_active' => true, 'must_change_password' => false]);
+        $oldHash = $existing->password;
 
-        $this->asAdmin()->from(route('admin.scuole.show', $school))
-            ->post(route('admin.scuole.nominate', $school), ['name' => 'Y', 'email' => 'dup@x.it'])
-            ->assertRedirect(route('admin.scuole.show', $school))
-            ->assertSessionHasErrors('email');
+        $this->asAdmin()->post(route('admin.scuole.nominate', $school), ['name' => 'Y', 'email' => 'dup@x.it'])
+            ->assertRedirect(route('admin.scuole.show', $school));
+
+        $existing->refresh();
+        $this->assertTrue((bool) $existing->is_secretary);     // capacità segreteria agganciata
+        $this->assertSame($school->id, $existing->school_id);
+        $this->assertSame('student', $existing->role);         // role NON sovrascritto
+        $this->assertSame($oldHash, $existing->password);      // password NON resettata
+
+        // Email di un'ALTRA scuola → bloccata.
+        $other = School::create(['name' => 'Altra', 'slug' => 'altra-' . uniqid(), 'type' => 'altro', 'status' => 'active']);
+        Student::create(['name' => 'Z', 'email' => 'z@x.it', 'password' => bcrypt('x'),
+            'role' => 'professor', 'school_id' => $other->id, 'is_active' => true, 'must_change_password' => false]);
+        $this->asAdmin()->post(route('admin.scuole.nominate', $school), ['name' => 'Z', 'email' => 'z@x.it'])
+            ->assertRedirect()->assertSessionHas('error');
     }
 }

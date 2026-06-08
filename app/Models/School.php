@@ -40,7 +40,9 @@ class School extends Model
 
     public function schoolAdmins()
     {
-        return $this->hasMany(Student::class)->where('role', 'school_admin');
+        // Segreteria = capacità (flag), non role: un account può essere anche
+        // professore della stessa scuola.
+        return $this->hasMany(Student::class)->where('is_secretary', true);
     }
 
     public function teachers()

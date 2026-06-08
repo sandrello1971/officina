@@ -23,7 +23,7 @@ class Student extends Authenticatable
         'name', 'email', 'password', 'phone', 'company', 'job_title', 'role',
         'avatar_url', 'is_active', 'is_demo', 'must_change_password',
         'microsoft_id', 'auto_enroll_all_courses', 'birth_date',
-        'library_rights_ack_at', 'school_id', 'username',
+        'library_rights_ack_at', 'school_id', 'username', 'is_secretary',
     ];
 
     protected $hidden = [
@@ -40,6 +40,7 @@ class Student extends Authenticatable
         'password' => 'hashed',
         'birth_date' => 'date',
         'library_rights_ack_at' => 'datetime',
+        'is_secretary' => 'boolean',
     ];
 
     public function courses()
@@ -81,9 +82,23 @@ class Student extends Authenticatable
         return $this->role === 'professor';
     }
 
+    // Segreteria = CAPACITÀ (flag is_secretary), non un valore di role: così
+    // un account può essere professore E segreteria insieme. Storico:
+    // isSchoolAdmin() resta come alias del flag (call site invariati).
+    public function isSecretary(): bool
+    {
+        return (bool) $this->is_secretary;
+    }
+
     public function isSchoolAdmin(): bool
     {
-        return $this->role === 'school_admin';
+        return $this->isSecretary();
+    }
+
+    // Corsista = CAPACITÀ-da-dato (iscrizioni corsi), ortogonale a role.
+    public function hasCourseAccess(): bool
+    {
+        return $this->courses()->exists();
     }
 
     // ===== Fase 2: appartenenza scuola =====
