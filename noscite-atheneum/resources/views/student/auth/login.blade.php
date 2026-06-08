@@ -90,8 +90,8 @@
             <form method="POST" action="{{ route('student.login.post') }}" class="rounded-2xl p-6 space-y-5" style="background:rgba(42,47,47,0.95);border:1px solid #3a3f3f;backdrop-filter:blur(10px)">
                 @csrf
                 <div>
-                    <label class="block text-sm font-medium mb-1" style="color:#ccc">Email</label>
-                    <input type="email" name="email" value="{{ old('email') }}" required autofocus class="w-full px-4 py-2.5 rounded-lg text-sm" style="background:#1A1F1F;border:1px solid #3a3f3f;color:white">
+                    <label class="block text-sm font-medium mb-1" style="color:#ccc">Email o username</label>
+                    <input type="text" name="email" value="{{ old('email') }}" required autofocus autocapitalize="none" class="w-full px-4 py-2.5 rounded-lg text-sm" style="background:#1A1F1F;border:1px solid #3a3f3f;color:white">
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1" style="color:#ccc">Password</label>
