@@ -128,7 +128,7 @@
 </div>
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="{{ asset('vendor/katex/katex.min.css') }}">
 <style>
 [x-cloak]{display:none!important}
 
@@ -202,9 +202,9 @@
 </style>@endpush
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-{{-- KaTeX: rende le formule LaTeX ($…$, $$…$$) presenti nel corpo lezione. --}}
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+{{-- KaTeX self-hosted (asset locali, niente CDN): rende le formule LaTeX del corpo. --}}
+<script defer src="{{ asset('vendor/katex/katex.min.js') }}"></script>
+<script defer src="{{ asset('vendor/katex/contrib/auto-render.min.js') }}"></script>
 <script>
 window.addEventListener('load', function () {
     if (typeof renderMathInElement !== 'function') return;
