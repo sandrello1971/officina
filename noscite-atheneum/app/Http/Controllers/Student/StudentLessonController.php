@@ -62,8 +62,16 @@ class StudentLessonController extends Controller
             ->get(['anchor', 'content'])
             ->keyBy('anchor');
 
+        // Auto-generati PRIVATI dello studente per questa lezione (P20c) + rate limit.
+        $generated = \App\Models\StudentGeneratedArtifact::where('student_id', $student->id)
+            ->where('lesson_publication_id', $publication->id)
+            ->orderByDesc('created_at')
+            ->get();
+        $usage = app(\App\Services\Schola\ScholaUsage::class)->generationStatus($student->id);
+
         return view('student.lezioni.show', compact(
-            'class', 'lesson', 'publication', 'bodyHtml', 'mediaMaterials', 'notes', 'teacherNotes'
+            'class', 'lesson', 'publication', 'bodyHtml', 'mediaMaterials', 'notes', 'teacherNotes',
+            'generated', 'usage'
         ));
     }
 

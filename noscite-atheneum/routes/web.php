@@ -61,6 +61,9 @@ Route::prefix('learn')->name('student.')->group(function () {
         // Fruizione lezioni (P20b): corpo + appunti per paragrafo + media + Minerva di lezione
         Route::get('/classi/{class}/lezioni/{lesson}', [App\Http\Controllers\Student\StudentLessonController::class, 'show'])->name('classes.lesson.show');
         Route::get('/classi/{class}/lezioni/{lesson}/materiali/{document}/sorgente', [App\Http\Controllers\Student\StudentLessonController::class, 'materialSource'])->name('classes.lesson.material.source');
+        // Auto-generazione studente dalla lezione (P20c): quiz/autoverifica privato
+        Route::post('/classi/{class}/lezioni/{lesson}/genera', [App\Http\Controllers\Student\StudentGenerationController::class, 'storeFromLesson'])->name('classes.lesson.generate')->middleware('throttle:schola-generate');
+        Route::get('/classi/{class}/lezioni/{lesson}/generati/{generated}/stato', [App\Http\Controllers\Student\StudentGenerationController::class, 'lessonStatus'])->name('classes.lesson.generated.status');
         Route::post('/classi/{class}/lezioni/{lesson}/appunti', [App\Http\Controllers\Student\LessonNoteController::class, 'save'])->name('classes.lesson.notes.save');
         Route::get('/classi/{class}/lezioni/{lesson}/appunti', [App\Http\Controllers\Student\LessonNoteController::class, 'list'])->name('classes.lesson.notes.list');
         Route::delete('/lezioni-appunti/{note}', [App\Http\Controllers\Student\LessonNoteController::class, 'delete'])->name('classes.lesson.notes.delete');

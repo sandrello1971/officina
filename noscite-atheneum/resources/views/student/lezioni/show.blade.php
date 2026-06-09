@@ -37,6 +37,45 @@
         </div>
     </div>
 
+    {{-- Auto-generazione studente: quiz di autoverifica DALLA lezione (P20c) --}}
+    @if($publication->students_can_generate)
+    <div style="margin-top:16px; background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px;">
+        <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Mettiti alla prova</div>
+        <p style="font-size:0.8rem; color:#8A9696; margin:0 0 4px;">Genera per te un quiz di autoverifica da questa lezione. Restano {{ $usage['remaining'] }} generazioni oggi.</p>
+        <p style="font-size:0.74rem; color:#8A9696; margin:0 0 12px;">&#128274; È <strong>generato da te</strong>, non dal docente: resta privato, visibile solo a te.</p>
+
+        @if($usage['allowed'])
+        <form method="POST" action="{{ route('student.classes.lesson.generate', [$class, $lesson]) }}" data-async style="display:flex; gap:6px; align-items:center;">
+            @csrf
+            <input type="hidden" name="type" value="quiz">
+            <input type="number" name="num_questions" min="3" max="15" value="8" style="width:64px; padding:8px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.82rem;">
+            <button data-busy-label="Genero…" style="padding:9px 14px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">&#10067; Quiz di autoverifica</button>
+        </form>
+        @else
+        <p style="font-size:0.82rem; color:#A8521F;">Hai raggiunto il limite di generazioni per oggi. Riprova domani &#128578;</p>
+        @endif
+
+        @if($generated->count())
+        <div style="margin-top:16px;">
+            <div style="font-size:0.78rem; font-weight:700; color:#8A9696; margin-bottom:6px;">I tuoi quiz (privati)</div>
+            @foreach($generated as $g)
+                <div x-data="lessonGenRow('{{ $g->id }}', '{{ $g->status }}', @js($g->quiz_id))"
+                     style="display:flex; align-items:center; justify-content:space-between; padding:9px 12px; border:1px solid #E5E7E7; border-radius:8px; margin-bottom:6px;">
+                    <span style="font-size:0.85rem; color:#1A1F1F;">&#10067; Quiz di autoverifica</span>
+                    <span style="font-size:0.78rem;">
+                        <span x-show="status==='generating'" style="color:#E28A53; font-weight:600;">generazione in corso…</span>
+                        <template x-if="status==='ready' && quizId">
+                            <a :href="'/learn/quiz/' + quizId" style="color:#3A8C89; font-weight:600; text-decoration:none;">Svolgi &rarr;</a>
+                        </template>
+                        <span x-show="status==='failed'" style="color:#A8521F; font-weight:600;">non riuscita</span>
+                    </span>
+                </div>
+            @endforeach
+        </div>
+        @endif
+    </div>
+    @endif
+
     {{-- Editor appunto per paragrafo (popover) --}}
     <div x-show="noteEditor.open" x-cloak @click.self="closeNote()"
          style="position:fixed; inset:0; background:rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; z-index:50;">
@@ -91,6 +130,35 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
+// Feedback UX: form[data-async] → disabilita + spinner + anti doppio submit.
+document.addEventListener('submit', function (e) {
+    const f = e.target;
+    if (!(f instanceof HTMLFormElement) || !f.hasAttribute('data-async')) return;
+    if (f.dataset.submitting === '1') { e.preventDefault(); return; }
+    f.dataset.submitting = '1';
+    const b = f.querySelector('button[type="submit"], button:not([type])');
+    if (b) { const l=b.getAttribute('data-busy-label')||'Attendere…'; b.dataset.html=b.innerHTML; b.textContent=l; setTimeout(()=>b.disabled=true,0); }
+}, true);
+
+// Polling di una generazione studente DA LEZIONE (privata).
+function lessonGenRow(id, status, quizId) {
+    return {
+        status, quizId,
+        init() { if (this.status === 'generating') this.poll(); },
+        poll() {
+            const url = `/learn/classi/{{ $class->id }}/lezioni/{{ $lesson->id }}/generati/${id}/stato`;
+            const timer = setInterval(async () => {
+                try {
+                    const r = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+                    const d = await r.json();
+                    this.status = d.status; this.quizId = d.quiz_id;
+                    if (d.status === 'ready' || d.status === 'failed') { clearInterval(timer); if (d.status==='ready') window.location.reload(); }
+                } catch(e) {}
+            }, 4000);
+        },
+    };
+}
+
 function lessonPage() {
     const csrf = document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}';
     const notesUrl = '{{ route('student.classes.lesson.notes.list', [$class, $lesson]) }}';
