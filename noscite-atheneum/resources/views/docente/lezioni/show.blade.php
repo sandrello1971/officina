@@ -142,6 +142,47 @@
         @endif
     @endif
 
+    {{-- Presentazione .pptx (P21) — Feedback UX: stato + polling, anti-doppio-submit --}}
+    @if($lesson->generation_status === 'ready')
+    <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:16px 18px; margin-bottom:16px;"
+         x-data="presentationStatus('{{ $presentation?->status ?? 'none' }}')">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; flex:1;">Presentazione (.pptx)</div>
+            <template x-if="status==='generating'">
+                <span style="display:flex; align-items:center; gap:8px; color:#E28A53; font-size:0.85rem; font-weight:600;">
+                    <span style="width:10px;height:10px;border-radius:50%;background:#E28A53;display:inline-block;animation:pulse 1s infinite;"></span>
+                    <span>Generazione in corso…</span>
+                </span>
+            </template>
+            <template x-if="status==='ready'"><span style="color:#3A8C89; font-weight:700; font-size:0.85rem;">&#10003; Pronta</span></template>
+            <template x-if="status==='failed'"><span style="color:#A8521F; font-weight:700; font-size:0.85rem;">&#10007; Generazione fallita</span></template>
+        </div>
+
+        @if(($presentation?->status ?? null) === 'failed' && ($presentation->generation_meta['failure_reason'] ?? null))
+            <p style="margin-top:8px; font-size:0.82rem; color:#A8521F;">{{ $presentation->generation_meta['failure_reason'] }}</p>
+        @endif
+        @if(($presentation?->status ?? null) === 'ready' && ($presentation->generation_meta['slides'] ?? null))
+            <div style="margin-top:6px; font-size:0.75rem; color:#8A9696;">{{ $presentation->generation_meta['slides'] }} slide @isset($presentation->generation_meta['model']) · {{ $presentation->generation_meta['model'] }} @endisset</div>
+        @endif
+
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;" x-show="status!=='generating'">
+            @if(!$presentation || $presentation->status === 'pending' || $presentation->status === 'failed')
+                <form method="POST" action="{{ route('docente.lessons.presentation.generate', $lesson) }}" data-async>
+                    @csrf
+                    <button data-busy-label="Generazione…" style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">{{ ($presentation?->status ?? null) === 'failed' ? 'Riprova' : 'Genera presentazione' }}</button>
+                </form>
+            @elseif($presentation->status === 'ready')
+                <a href="{{ route('docente.lessons.presentation.download', $lesson) }}" style="padding:9px 16px; background:#3A8C89; color:white; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none;">&#11015; Scarica .pptx</a>
+                <form method="POST" action="{{ route('docente.lessons.presentation.regenerate', $lesson) }}" data-async
+                      onsubmit="return confirm('Rigenerare la presentazione? Il file attuale verrà sovrascritto.');">
+                    @csrf
+                    <button data-busy-label="Rigenerazione…" style="padding:9px 16px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Rigenera</button>
+                </form>
+            @endif
+        </div>
+    </div>
+    @endif
+
     {{-- Pubblicazione su classi (P20a) — Feedback UX: rag_status + polling --}}
     @if($lesson->generation_status === 'ready')
     <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:16px 18px; margin-bottom:16px;" x-data="lessonPublications('{{ $lesson->id }}')">
@@ -284,6 +325,23 @@ function docenteLessonNotes() {
             } catch(e) {}
             const el = this.$el.querySelector(`.lesson-body [data-note-anchor="${anchor}"]`);
             if (el) this.render(el, anchor);
+        },
+    };
+}
+// Polling stato presentazione (.pptx) generating→ready/failed.
+function presentationStatus(initial) {
+    return {
+        status: initial,
+        init() { if (this.status === 'generating') this.poll(); },
+        poll() {
+            const timer = setInterval(async () => {
+                try {
+                    const r = await fetch('{{ route('docente.lessons.presentation.status', $lesson) }}', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+                    const d = await r.json();
+                    this.status = d.status;
+                    if (d.status === 'ready' || d.status === 'failed') { clearInterval(timer); window.location.reload(); }
+                } catch(e) {}
+            }, 5000);
         },
     };
 }
