@@ -51,9 +51,12 @@ class LessonController extends Controller
             ->get();
         $publishedClassIds = $lesson->publications->pluck('school_class_id')->all();
 
+        // Presentazione .pptx (P21): singola, riusata su rigenerazione.
+        $presentation = $lesson->presentations()->latest()->first();
+
         return view('docente.lezioni.show', compact(
             'lesson', 'materials', 'artifacts', 'teacherClasses', 'publishedClassIds',
-            'bodyHtml', 'teacherNotes'
+            'bodyHtml', 'teacherNotes', 'presentation'
         ));
     }
 

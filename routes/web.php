@@ -61,6 +61,7 @@ Route::prefix('learn')->name('student.')->group(function () {
         // Fruizione lezioni (P20b): corpo + appunti per paragrafo + media + Minerva di lezione
         Route::get('/classi/{class}/lezioni/{lesson}', [App\Http\Controllers\Student\StudentLessonController::class, 'show'])->name('classes.lesson.show');
         Route::get('/classi/{class}/lezioni/{lesson}/materiali/{document}/sorgente', [App\Http\Controllers\Student\StudentLessonController::class, 'materialSource'])->name('classes.lesson.material.source');
+        Route::get('/classi/{class}/lezioni/{lesson}/presentazione', [App\Http\Controllers\Student\StudentLessonController::class, 'presentation'])->name('classes.lesson.presentation');
         // Auto-generazione studente dalla lezione (P20c): quiz/autoverifica privato
         Route::post('/classi/{class}/lezioni/{lesson}/genera', [App\Http\Controllers\Student\StudentGenerationController::class, 'storeFromLesson'])->name('classes.lesson.generate')->middleware('throttle:schola-generate');
         Route::get('/classi/{class}/lezioni/{lesson}/generati/{generated}/stato', [App\Http\Controllers\Student\StudentGenerationController::class, 'lessonStatus'])->name('classes.lesson.generated.status');
@@ -247,6 +248,12 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     // Note del docente per paragrafo (P20b) — didattiche, visibili agli studenti
     Route::post('/lezioni/{lesson}/note-docente', [App\Http\Controllers\Docente\LessonTeacherNoteController::class, 'save'])->name('lessons.teacher-notes.save');
     Route::get('/lezioni/{lesson}/note-docente', [App\Http\Controllers\Docente\LessonTeacherNoteController::class, 'list'])->name('lessons.teacher-notes.list');
+
+    // Presentazione .pptx della lezione (P21) — generazione/rigenerazione/stato/download (owner)
+    Route::post('/lezioni/{lesson}/presentazione', [App\Http\Controllers\Docente\LessonPresentationController::class, 'generate'])->name('lessons.presentation.generate')->middleware('throttle:schola-generate');
+    Route::post('/lezioni/{lesson}/presentazione/rigenera', [App\Http\Controllers\Docente\LessonPresentationController::class, 'regenerate'])->name('lessons.presentation.regenerate')->middleware('throttle:schola-generate');
+    Route::get('/lezioni/{lesson}/presentazione/stato', [App\Http\Controllers\Docente\LessonPresentationController::class, 'status'])->name('lessons.presentation.status');
+    Route::get('/lezioni/{lesson}/presentazione/download', [App\Http\Controllers\Docente\LessonPresentationController::class, 'download'])->name('lessons.presentation.download');
 
     // Pubblicazione lezione su classe (P20a) — cattedra/proprietà + ingestion RAG asincrona
     Route::post('/lezioni/{lesson}/pubblica', [App\Http\Controllers\Docente\LessonPublicationController::class, 'store'])->name('lessons.publish');
