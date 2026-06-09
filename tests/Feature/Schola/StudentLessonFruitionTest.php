@@ -8,6 +8,7 @@ use App\Models\Lesson;
 use App\Models\LessonPublication;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\LessonTeacherNote;
 use App\Models\StudentLessonNote;
 use App\Models\Subject;
 use App\Models\Topic;
@@ -79,6 +80,11 @@ La rivoluzione del 1789.'): Lesson
     private function asUser(Student $s): self
     {
         return $this->withSession(['student_id' => $s->id, 'student_name' => $s->name, 'student_email' => $s->email]);
+    }
+
+    private function asProf(Student $p): self
+    {
+        return $this->withSession(['student_id' => $p->id, 'student_name' => $p->name, 'student_email' => $p->email]);
     }
 
     private function unit(int $i): array
@@ -341,5 +347,105 @@ La rivoluzione del 1789.'): Lesson
         $this->asUser($stranger)->postJson(route('student.classes.lesson.notes.save', [$class, $lesson]), [
             'anchor' => 'p-001', 'content' => 'x',
         ])->assertForbidden();
+    }
+
+    // ===== Note del DOCENTE (didattiche, visibili a tutti) =====
+
+    public function test_teacher_notes_visible_to_all_students(): void
+    {
+        $prof = $this->prof();
+        $class = $this->schoolClass($prof);
+        $a = $this->student();
+        $b = $this->student();
+        $this->enroll($class, $a);
+        $this->enroll($class, $b);
+        $lesson = $this->lesson($prof);
+        $this->publish($lesson, $class);
+
+        // Il docente crea una nota per il paragrafo p-001.
+        $this->asProf($prof)->postJson(route('docente.lessons.teacher-notes.save', $lesson), [
+            'anchor' => 'p-001', 'content' => 'NOTA-DOCENTE-VISIBILE',
+        ])->assertOk();
+
+        // Entrambi gli studenti la vedono nella pagina lezione.
+        $this->asUser($a)->get(route('student.classes.lesson.show', [$class, $lesson]))
+            ->assertOk()->assertSee('NOTA-DOCENTE-VISIBILE');
+        $this->asUser($b)->get(route('student.classes.lesson.show', [$class, $lesson]))
+            ->assertOk()->assertSee('NOTA-DOCENTE-VISIBILE');
+    }
+
+    public function test_teacher_notes_crud_and_ownership(): void
+    {
+        $prof = $this->prof();
+        $other = $this->prof();
+        $lesson = $this->lesson($prof);
+
+        // Crea
+        $this->asProf($prof)->postJson(route('docente.lessons.teacher-notes.save', $lesson), [
+            'anchor' => 'p-002', 'content' => 'Spiega meglio qui',
+        ])->assertOk();
+        $this->assertDatabaseHas('lesson_teacher_notes', ['lesson_id' => $lesson->id, 'anchor' => 'p-002', 'content' => 'Spiega meglio qui']);
+
+        // Un altro docente NON può scrivere note sulla lezione altrui.
+        $this->asProf($other)->postJson(route('docente.lessons.teacher-notes.save', $lesson), [
+            'anchor' => 'p-003', 'content' => 'intruso',
+        ])->assertForbidden();
+        $this->asProf($other)->getJson(route('docente.lessons.teacher-notes.list', $lesson))->assertForbidden();
+
+        // Toggle-off
+        $this->asProf($prof)->postJson(route('docente.lessons.teacher-notes.save', $lesson), [
+            'anchor' => 'p-002', 'content' => '',
+        ])->assertOk()->assertJson(['deleted' => true]);
+        $this->assertDatabaseMissing('lesson_teacher_notes', ['lesson_id' => $lesson->id, 'anchor' => 'p-002']);
+    }
+
+    // ===== Privacy: il docente NON vede MAI le note personali dello studente =====
+
+    public function test_teacher_never_sees_student_personal_notes(): void
+    {
+        $prof = $this->prof();
+        $class = $this->schoolClass($prof);
+        $student = $this->student();
+        $this->enroll($class, $student);
+        $lesson = $this->lesson($prof);
+        $this->publish($lesson, $class);
+
+        // Lo studente scrive un appunto PERSONALE.
+        StudentLessonNote::create(['student_id' => $student->id, 'lesson_id' => $lesson->id,
+            'anchor' => 'p-001', 'content' => 'SEGRETO-PERSONALE']);
+
+        // 1) Lista note docente: contiene SOLO note docente, mai le personali.
+        $this->asProf($prof)->getJson(route('docente.lessons.teacher-notes.list', $lesson))
+            ->assertOk()->assertJsonMissing(['content' => 'SEGRETO-PERSONALE']);
+
+        // 2) Pagina lezione lato docente: niente nota personale.
+        $this->asProf($prof)->get(route('docente.lessons.show', $lesson))
+            ->assertOk()->assertDontSee('SEGRETO-PERSONALE');
+
+        // 3) Cruscotto attività della classe (§8.1): niente nota personale.
+        $this->asProf($prof)->get(route('docente.classes.activity', $class))
+            ->assertOk()->assertDontSee('SEGRETO-PERSONALE');
+    }
+
+    public function test_student_page_does_not_embed_other_students_personal_note(): void
+    {
+        $prof = $this->prof();
+        $class = $this->schoolClass($prof);
+        $a = $this->student();
+        $b = $this->student();
+        $this->enroll($class, $a);
+        $this->enroll($class, $b);
+        $lesson = $this->lesson($prof);
+        $this->publish($lesson, $class);
+
+        StudentLessonNote::create(['student_id' => $b->id, 'lesson_id' => $lesson->id,
+            'anchor' => 'p-001', 'content' => 'NOTA-DI-B']);
+
+        // A apre la lezione: la nota personale di B non è nella pagina.
+        $this->asUser($a)->get(route('student.classes.lesson.show', [$class, $lesson]))
+            ->assertOk()->assertDontSee('NOTA-DI-B');
+        // E nemmeno nel proprio elenco note.
+        $this->asUser($a)->getJson(route('student.classes.lesson.notes.list', [$class, $lesson]))
+            ->assertOk()->assertJsonMissing(['content' => 'NOTA-DI-B']);
     }
 }

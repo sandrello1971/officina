@@ -50,6 +50,12 @@ class Lesson extends Model
         return $this->hasMany(LessonPublication::class);
     }
 
+    // Note del docente per paragrafo (didattiche, visibili agli studenti).
+    public function teacherNotes()
+    {
+        return $this->hasMany(LessonTeacherNote::class);
+    }
+
     public function presentations()
     {
         return $this->hasMany(LessonPresentation::class);

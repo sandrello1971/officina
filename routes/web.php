@@ -241,6 +241,10 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     // Artefatti a livello di lezione (riuso GenerateArtifactJob via lesson_id)
     Route::post('/lezioni/{lesson}/artefatti', [App\Http\Controllers\Docente\LessonArtifactController::class, 'store'])->name('lessons.artifacts.generate')->middleware('throttle:schola-generate');
 
+    // Note del docente per paragrafo (P20b) — didattiche, visibili agli studenti
+    Route::post('/lezioni/{lesson}/note-docente', [App\Http\Controllers\Docente\LessonTeacherNoteController::class, 'save'])->name('lessons.teacher-notes.save');
+    Route::get('/lezioni/{lesson}/note-docente', [App\Http\Controllers\Docente\LessonTeacherNoteController::class, 'list'])->name('lessons.teacher-notes.list');
+
     // Pubblicazione lezione su classe (P20a) — cattedra/proprietà + ingestion RAG asincrona
     Route::post('/lezioni/{lesson}/pubblica', [App\Http\Controllers\Docente\LessonPublicationController::class, 'store'])->name('lessons.publish');
     Route::get('/lezioni/{lesson}/pubblicazioni/stato', [App\Http\Controllers\Docente\LessonPublicationController::class, 'status'])->name('lessons.publications.status');

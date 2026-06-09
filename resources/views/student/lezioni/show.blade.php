@@ -85,7 +85,9 @@
     </div>
 </div>
 
-@push('styles')<style>[x-cloak]{display:none!important} .lesson-body [data-note-anchor]{position:relative} .note-tab{position:absolute; left:-26px; top:2px; border:none; background:none; cursor:pointer; color:#C8D0D0; font-size:0.9rem;} .note-tab.has-note{color:#E28A53;} .lesson-body [data-note-anchor]:hover .note-tab{color:#55B1AE;} .note-inline{background:#FFF7EF; border-left:3px solid #E28A53; padding:6px 10px; margin:6px 0; font-size:0.82rem; color:#7A4A28; border-radius:0 6px 6px 0;}</style>@endpush
+@push('styles')<style>[x-cloak]{display:none!important} .lesson-body [data-note-anchor]{position:relative} .note-tab{position:absolute; left:-26px; top:2px; border:none; background:none; cursor:pointer; color:#C8D0D0; font-size:0.9rem;} .note-tab.has-note{color:#E28A53;} .lesson-body [data-note-anchor]:hover .note-tab{color:#55B1AE;} .note-inline{background:#FFF7EF; border-left:3px solid #E28A53; padding:6px 10px; margin:6px 0; font-size:0.82rem; color:#7A4A28; border-radius:0 6px 6px 0;}
+.note-teacher{background:#EEF7F6; border-left:3px solid #55B1AE; padding:6px 10px; margin:6px 0; font-size:0.85rem; color:#1A1F1F; border-radius:0 6px 6px 0;}
+.note-teacher-label{display:block; font-size:0.7rem; font-weight:700; color:#3A8C89; text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px;}</style>@endpush
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
@@ -100,6 +102,7 @@ function lessonPage() {
         question: '',
         loading: false,
         notes: {},
+        teacherNotes: @json($teacherNotes->map->content),
         noteEditor: {open: false, anchor: null, content: ''},
         init() {
             this.loadNotes();
@@ -128,7 +131,17 @@ function lessonPage() {
         },
         renderNote(el, anchor) {
             const tab = el.querySelector('.note-tab');
-            el.querySelectorAll('.note-inline').forEach(n => n.remove());
+            el.querySelectorAll('.note-inline, .note-teacher').forEach(n => n.remove());
+            // Nota del docente (didattica, visibile a tutti): sempre mostrata.
+            if (this.teacherNotes[anchor]) {
+                const t = document.createElement('div');
+                t.className = 'note-teacher';
+                t.innerHTML = '<span class="note-teacher-label">&#128221; Nota del docente</span>';
+                const body = document.createElement('div');
+                body.textContent = this.teacherNotes[anchor];
+                t.appendChild(body);
+                el.appendChild(t);
+            }
             if (this.notes[anchor]) {
                 if (tab) tab.classList.add('has-note');
                 const div = document.createElement('div');
