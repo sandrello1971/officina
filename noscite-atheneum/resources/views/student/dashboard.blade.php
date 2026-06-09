@@ -35,7 +35,10 @@
     </div>
     @endif
 
-    @if($courses->isEmpty())
+    {{-- Box "nessun corso" SOLO per chi non ha né corsi né classi: gli studenti
+         di scuola (con classi, senza corsi) non devono vedere questo rumore
+         dual-identity (P23). --}}
+    @if($courses->isEmpty() && (empty($myClasses) || $myClasses->isEmpty()))
     <div style="background:white; border-radius:12px; padding:40px; text-align:center; border:2px dashed #C8D0D0;">
         <div style="font-size:3rem; margin-bottom:12px;">&#128218;</div>
         <h2 style="color:#1A1F1F; margin-bottom:8px;">Nessun corso attivo</h2>
@@ -45,7 +48,7 @@
         </p>
     </div>
 
-    @else
+    @elseif($courses->isNotEmpty())
     <div style="display:grid; gap:16px;">
         @foreach($courses as $course)
         <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
