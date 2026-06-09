@@ -19,7 +19,11 @@
             <h1 style="font-size:1.4rem; font-weight:700; color:#1A1F1F; margin:0;">{{ $class->name }}</h1>
             <p style="color:#8A9696; font-size:0.875rem; margin:2px 0 0;">{{ $class->subject->name ?? '—' }} · {{ $class->school_year }} · {{ $class->teacher->name ?? '' }}</p>
         </div>
-        <a href="{{ route('student.classes.minerva', $class) }}" style="padding:9px 16px; background:#1A1F1F; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none;">&#9788; Chiedi a Minerva</a>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="{{ route('student.classi.messaggi.index', $class) }}" style="padding:9px 16px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none;">&#9993; Messaggi</a>
+            <a href="{{ route('student.classi.annunci.index', $class) }}" style="padding:9px 16px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none;">&#128226; Annunci</a>
+            <a href="{{ route('student.classes.minerva', $class) }}" style="padding:9px 16px; background:#1A1F1F; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none;">&#9788; Chiedi a Minerva</a>
+        </div>
     </div>
 
     {{-- Trasparenza (§8.1) — informativa non allarmistica --}}
