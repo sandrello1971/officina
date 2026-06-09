@@ -31,6 +31,24 @@
     @if(session('success'))<div style="margin-bottom:12px; padding:10px 14px; background:#E8F5F5; border-left:4px solid #55B1AE; border-radius:6px; color:#3A8C89; font-size:0.85rem;">{{ session('success') }}</div>@endif
     @if(session('error'))<div style="margin-bottom:12px; padding:10px 14px; background:#FDECE2; border-left:4px solid #E28A53; border-radius:6px; color:#A8521F; font-size:0.85rem;">{{ session('error') }}</div>@endif
 
+    {{-- Lezioni pubblicate, organizzate per Argomento → Lezione (P20b) --}}
+    @if(!empty($lessonsByTopic) && $lessonsByTopic->isNotEmpty())
+        <h2 style="font-size:0.95rem; font-weight:700; color:#4A5252; margin:18px 0 10px;">Lezioni</h2>
+        @foreach($lessonsByTopic as $topicName => $lessons)
+            <div style="margin-bottom:14px;">
+                <div style="font-size:0.78rem; font-weight:700; color:#8A9696; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">{{ $topicName }}</div>
+                @foreach($lessons as $lesson)
+                    <a href="{{ route('student.classes.lesson.show', [$class, $lesson]) }}"
+                       style="display:flex; align-items:center; gap:12px; padding:13px 16px; background:white; border:1px solid #C8D0D0; border-radius:10px; margin-bottom:6px; text-decoration:none;">
+                        <span style="font-size:1.3rem;">&#128214;</span>
+                        <span style="flex:1; font-weight:600; color:#1A1F1F; font-size:0.92rem;">{{ $lesson->title }}</span>
+                        <span style="color:#55B1AE; font-size:0.8rem;">apri &rarr;</span>
+                    </a>
+                @endforeach
+            </div>
+        @endforeach
+    @endif
+
     <h2 style="font-size:0.95rem; font-weight:700; color:#4A5252; margin:18px 0 10px;">Materiali pubblicati</h2>
 
     @forelse($publications as $p)

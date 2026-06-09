@@ -236,14 +236,15 @@ class RagService
         array $classIds,
         ?string $teacherId = null,
         int $limit = 6,
-        ?string $artifactId = null
+        ?string $artifactId = null,
+        ?string $lessonId = null
     ): array {
         $classIds = array_values(array_filter($classIds));
         if (empty($classIds) && $teacherId === null) {
             return ['docs' => collect(), 'best_similarity' => null, 'vector' => false];
         }
 
-        $scope = function (Builder $q) use ($classIds, $teacherId, $artifactId) {
+        $scope = function (Builder $q) use ($classIds, $teacherId, $artifactId, $lessonId) {
             $q->where(function ($w) use ($classIds, $teacherId) {
                 if (!empty($classIds)) {
                     $w->orWhere(function ($c) use ($classIds) {
@@ -258,6 +259,10 @@ class RagService
             });
             if ($artifactId !== null) {
                 $q->where('metadata->artifact_id', $artifactId);
+            }
+            // Minerva di lezione (P20b): pre-filtro sui chunk di QUELLA lezione.
+            if ($lessonId !== null) {
+                $q->where('metadata->lesson_id', $lessonId);
             }
         };
 
