@@ -51,14 +51,19 @@ class StudentLessonController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        // Appunti personali dello studente per questa lezione (per ancora).
+        // Appunti PERSONALI dello studente (privati: solo suoi, mai del docente).
         $notes = StudentLessonNote::where('student_id', $student->id)
             ->where('lesson_id', $lesson->id)
             ->get(['id', 'anchor', 'content'])
             ->keyBy('anchor');
 
+        // Note del DOCENTE per paragrafo (didattiche: visibili a tutti gli studenti).
+        $teacherNotes = \App\Models\LessonTeacherNote::where('lesson_id', $lesson->id)
+            ->get(['anchor', 'content'])
+            ->keyBy('anchor');
+
         return view('student.lezioni.show', compact(
-            'class', 'lesson', 'publication', 'bodyHtml', 'mediaMaterials', 'notes'
+            'class', 'lesson', 'publication', 'bodyHtml', 'mediaMaterials', 'notes', 'teacherNotes'
         ));
     }
 

@@ -102,8 +102,9 @@
                 </form>
             </div>
 
-            <div x-show="tab==='preview'" style="display:none;">
-                <div class="md-body" style="font-size:0.9rem; line-height:1.65; color:#1A1F1F;">{!! schola_markdown($lesson->content) !!}</div>
+            <div x-show="tab==='preview'" style="display:none;" x-data="docenteLessonNotes()">
+                <p style="font-size:0.78rem; color:#8A9696; margin:0 0 10px;">Passa il mouse su un paragrafo e clicca &#9998; per aggiungere una <strong>nota del docente</strong>: la vedranno tutti gli studenti della classe.</p>
+                <div class="md-body lesson-body" style="font-size:0.9rem; line-height:1.65; color:#1A1F1F;">{!! $bodyHtml !!}</div>
             </div>
         </div>
 
@@ -190,7 +191,13 @@
     @endif
 </div>
 
-@push('styles')<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}</style>@endpush
+@push('styles')<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.lesson-body [data-note-anchor]{position:relative}
+.lesson-body .note-tab{position:absolute; left:-24px; top:2px; border:none; background:none; cursor:pointer; color:#C8D0D0; font-size:0.9rem;}
+.lesson-body .note-tab.has-note{color:#3A8C89;}
+.lesson-body [data-note-anchor]:hover .note-tab{color:#55B1AE;}
+.note-teacher{background:#EEF7F6; border-left:3px solid #55B1AE; padding:6px 10px; margin:6px 0; font-size:0.85rem; color:#1A1F1F; border-radius:0 6px 6px 0;}
+.note-teacher-label{display:block; font-size:0.7rem; font-weight:700; color:#3A8C89; text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px;}</style>@endpush
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
@@ -226,6 +233,57 @@ function artifactRow(id, initial) {
                     if (d.status === 'ready' || d.status === 'failed') clearInterval(timer);
                 } catch(e) {}
             }, 5000);
+        },
+    };
+}
+// Note del docente per paragrafo (didattiche, visibili agli studenti).
+function docenteLessonNotes() {
+    const csrf = '{{ csrf_token() }}';
+    const saveUrl = '{{ route('docente.lessons.teacher-notes.save', $lesson) }}';
+    const initial = @json($teacherNotes->map->content);
+    return {
+        notes: initial,
+        init() { this.decorate(); },
+        decorate() {
+            this.$el.querySelectorAll('.lesson-body [data-note-anchor]').forEach(el => {
+                const anchor = el.getAttribute('data-note-anchor');
+                if (!el.querySelector('.note-tab')) {
+                    const btn = document.createElement('button');
+                    btn.className = 'note-tab';
+                    btn.innerHTML = '&#9998;';
+                    btn.title = 'Nota del docente';
+                    btn.addEventListener('click', () => this.edit(anchor));
+                    el.prepend(btn);
+                }
+                this.render(el, anchor);
+            });
+        },
+        render(el, anchor) {
+            const tab = el.querySelector('.note-tab');
+            el.querySelectorAll('.note-teacher').forEach(n => n.remove());
+            if (this.notes[anchor]) {
+                if (tab) tab.classList.add('has-note');
+                const t = document.createElement('div');
+                t.className = 'note-teacher';
+                t.innerHTML = '<span class="note-teacher-label">&#128221; Nota del docente</span>';
+                const b = document.createElement('div'); b.textContent = this.notes[anchor]; t.appendChild(b);
+                el.appendChild(t);
+            } else if (tab) { tab.classList.remove('has-note'); }
+        },
+        async edit(anchor) {
+            const current = this.notes[anchor] || '';
+            const val = window.prompt('Nota del docente per questo paragrafo (vuoto = elimina):', current);
+            if (val === null) return;
+            try {
+                await fetch(saveUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'X-Requested-With':'XMLHttpRequest'},
+                    body: JSON.stringify({anchor, content: val}),
+                });
+                if (val.trim() === '') delete this.notes[anchor]; else this.notes[anchor] = val;
+            } catch(e) {}
+            const el = this.$el.querySelector(`.lesson-body [data-note-anchor="${anchor}"]`);
+            if (el) this.render(el, anchor);
         },
     };
 }

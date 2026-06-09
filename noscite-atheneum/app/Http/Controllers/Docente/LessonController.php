@@ -36,6 +36,13 @@ class LessonController extends Controller
         $materials = $lesson->teachingDocuments()->with('subject')->orderBy('created_at')->get();
         $artifacts = $lesson->teachingArtifacts()->orderByDesc('created_at')->get();
 
+        // Anteprima con anchor per paragrafo + note docente esistenti (per-paragrafo).
+        $bodyHtml = $lesson->content
+            ? app(\App\Services\NoteAnchorInjector::class)->inject(schola_markdown($lesson->content))
+            : null;
+        $teacherNotes = \App\Models\LessonTeacherNote::where('lesson_id', $lesson->id)
+            ->get(['anchor', 'content'])->keyBy('anchor');
+
         // Classi pubblicabili: libere proprie + classi di scuola con cattedra (P15).
         $teacherClasses = app(\App\Services\Schola\TeacherClassAccess::class)
             ->classesQuery($lesson->teacher_id)
@@ -45,7 +52,8 @@ class LessonController extends Controller
         $publishedClassIds = $lesson->publications->pluck('school_class_id')->all();
 
         return view('docente.lezioni.show', compact(
-            'lesson', 'materials', 'artifacts', 'teacherClasses', 'publishedClassIds'
+            'lesson', 'materials', 'artifacts', 'teacherClasses', 'publishedClassIds',
+            'bodyHtml', 'teacherNotes'
         ));
     }
 
