@@ -62,6 +62,16 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/classi/{class}/lezioni/{lesson}', [App\Http\Controllers\Student\StudentLessonController::class, 'show'])->name('classes.lesson.show');
         Route::get('/classi/{class}/lezioni/{lesson}/materiali/{document}/sorgente', [App\Http\Controllers\Student\StudentLessonController::class, 'materialSource'])->name('classes.lesson.material.source');
         Route::get('/classi/{class}/lezioni/{lesson}/presentazione', [App\Http\Controllers\Student\StudentLessonController::class, 'presentation'])->name('classes.lesson.presentation');
+
+        // Messaggistica di classe (P22) — thread col docente + annunci (sola lettura)
+        Route::get('/classi/{class}/messaggi', [App\Http\Controllers\Student\ClassMessageController::class, 'index'])->name('classi.messaggi.index');
+        Route::post('/classi/{class}/messaggi', [App\Http\Controllers\Student\ClassMessageController::class, 'store'])->name('classi.messaggi.store');
+        Route::get('/classi/{class}/messaggi/{conversation}', [App\Http\Controllers\Student\ClassMessageController::class, 'show'])->name('classi.messaggi.show');
+        Route::post('/classi/{class}/messaggi/{conversation}/messaggi', [App\Http\Controllers\Student\ClassMessageController::class, 'reply'])->name('classi.messaggi.reply');
+        Route::patch('/classi/{class}/messaggi/{conversation}/letto', [App\Http\Controllers\Student\ClassMessageController::class, 'markRead'])->name('classi.messaggi.markRead');
+
+        Route::get('/classi/{class}/annunci', [App\Http\Controllers\Student\ClassAnnouncementController::class, 'index'])->name('classi.annunci.index');
+        Route::get('/classi/{class}/annunci/{announcement}', [App\Http\Controllers\Student\ClassAnnouncementController::class, 'show'])->name('classi.annunci.show');
         // Auto-generazione studente dalla lezione (P20c): quiz/autoverifica privato
         Route::post('/classi/{class}/lezioni/{lesson}/genera', [App\Http\Controllers\Student\StudentGenerationController::class, 'storeFromLesson'])->name('classes.lesson.generate')->middleware('throttle:schola-generate');
         Route::get('/classi/{class}/lezioni/{lesson}/generati/{generated}/stato', [App\Http\Controllers\Student\StudentGenerationController::class, 'lessonStatus'])->name('classes.lesson.generated.status');
@@ -199,6 +209,19 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::post('/classi', [App\Http\Controllers\Docente\ClassController::class, 'store'])->name('classes.store');
     Route::get('/classi/{class}', [App\Http\Controllers\Docente\ClassController::class, 'show'])->name('classes.show');
     Route::patch('/classi/{class}', [App\Http\Controllers\Docente\ClassController::class, 'update'])->name('classes.update');
+
+    // Messaggistica di classe (P22) — thread studente↔docente + annunci (cattedra)
+    Route::get('/classi/{class}/messaggi', [App\Http\Controllers\Docente\ClassMessageController::class, 'index'])->name('classi.messaggi.index');
+    Route::get('/classi/{class}/messaggi/nuovo', [App\Http\Controllers\Docente\ClassMessageController::class, 'create'])->name('classi.messaggi.create');
+    Route::post('/classi/{class}/messaggi', [App\Http\Controllers\Docente\ClassMessageController::class, 'store'])->name('classi.messaggi.store');
+    Route::get('/classi/{class}/messaggi/{conversation}', [App\Http\Controllers\Docente\ClassMessageController::class, 'show'])->name('classi.messaggi.show');
+    Route::post('/classi/{class}/messaggi/{conversation}/messaggi', [App\Http\Controllers\Docente\ClassMessageController::class, 'reply'])->name('classi.messaggi.reply');
+    Route::patch('/classi/{class}/messaggi/{conversation}/letto', [App\Http\Controllers\Docente\ClassMessageController::class, 'markRead'])->name('classi.messaggi.markRead');
+
+    Route::get('/classi/{class}/annunci', [App\Http\Controllers\Docente\ClassAnnouncementController::class, 'index'])->name('classi.annunci.index');
+    Route::get('/classi/{class}/annunci/nuovo', [App\Http\Controllers\Docente\ClassAnnouncementController::class, 'create'])->name('classi.annunci.create');
+    Route::post('/classi/{class}/annunci', [App\Http\Controllers\Docente\ClassAnnouncementController::class, 'store'])->name('classi.annunci.store');
+    Route::get('/classi/{class}/annunci/{announcement}', [App\Http\Controllers\Docente\ClassAnnouncementController::class, 'show'])->name('classi.annunci.show');
     Route::post('/classi/{class}/rigenera-codice', [App\Http\Controllers\Docente\ClassController::class, 'regenerateCode'])->name('classes.regenerate-code');
     Route::patch('/classi/{class}/studenti/{enrollment}', [App\Http\Controllers\Docente\ClassRosterController::class, 'update'])->name('classes.roster.update');
     // Minerva di classe lato docente (scope teacher_private + class). Stessa view, POST su /minerva/ask.
