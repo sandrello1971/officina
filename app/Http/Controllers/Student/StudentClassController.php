@@ -46,6 +46,16 @@ class StudentClassController extends Controller
             ->whereIn('artifact_publication_id', $publications->pluck('id'))
             ->pluck('last_viewed_at', 'artifact_publication_id');
 
-        return view('student.classi.show', compact('class', 'student', 'publications', 'views'));
+        // Lezioni pubblicate (P20b): organizzate per Argomento → Lezione (non lista
+        // piatta). Solo lezioni pronte pubblicate su QUESTA classe.
+        $lessons = \App\Models\Lesson::whereHas('publications', fn ($q) => $q->where('school_class_id', $class->id))
+            ->where('generation_status', 'ready')
+            ->with('topic')
+            ->get();
+        $lessonsByTopic = $lessons
+            ->sortBy(fn ($l) => [$l->topic?->position ?? 0, $l->position])
+            ->groupBy(fn ($l) => $l->topic?->name ?? 'Senza argomento');
+
+        return view('student.classi.show', compact('class', 'student', 'publications', 'views', 'lessonsByTopic'));
     }
 }
