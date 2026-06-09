@@ -57,6 +57,13 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/classi/{class}/minerva', [App\Http\Controllers\Student\ChatController::class, 'showClass'])->name('classes.minerva');
         // Fruizione di classe (pacchetto 7)
         Route::get('/classi/{class}', [App\Http\Controllers\Student\StudentClassController::class, 'show'])->name('classes.show');
+
+        // Fruizione lezioni (P20b): corpo + appunti per paragrafo + media + Minerva di lezione
+        Route::get('/classi/{class}/lezioni/{lesson}', [App\Http\Controllers\Student\StudentLessonController::class, 'show'])->name('classes.lesson.show');
+        Route::get('/classi/{class}/lezioni/{lesson}/materiali/{document}/sorgente', [App\Http\Controllers\Student\StudentLessonController::class, 'materialSource'])->name('classes.lesson.material.source');
+        Route::post('/classi/{class}/lezioni/{lesson}/appunti', [App\Http\Controllers\Student\LessonNoteController::class, 'save'])->name('classes.lesson.notes.save');
+        Route::get('/classi/{class}/lezioni/{lesson}/appunti', [App\Http\Controllers\Student\LessonNoteController::class, 'list'])->name('classes.lesson.notes.list');
+        Route::delete('/lezioni-appunti/{note}', [App\Http\Controllers\Student\LessonNoteController::class, 'delete'])->name('classes.lesson.notes.delete');
         Route::get('/classi/{class}/artefatti/{publication}', [App\Http\Controllers\Student\StudentArtifactController::class, 'show'])->name('classes.artifact.show');
         Route::get('/classi/{class}/artefatti/{publication}/sorgente', [App\Http\Controllers\Student\StudentArtifactController::class, 'source'])->name('classes.artifact.source');
         Route::post('/classi/{class}/artefatti/{publication}/genera', [App\Http\Controllers\Student\StudentGenerationController::class, 'store'])->name('classes.artifact.generate')->middleware('throttle:schola-generate');

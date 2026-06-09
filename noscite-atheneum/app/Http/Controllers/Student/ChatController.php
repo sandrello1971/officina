@@ -449,6 +449,7 @@ TXT;
             'question' => 'required|string|max:4000',
             'school_class_id' => 'required|uuid',
             'artifact_id' => 'nullable|uuid',
+            'lesson_id' => 'nullable|uuid',
             'history' => 'nullable|array',
             'history.*.role' => 'required_with:history|in:user,assistant',
             'history.*.content' => 'required_with:history|string',
@@ -461,6 +462,15 @@ TXT;
         // Docente: teacher_private (suoi) + class (questa sua classe).
         $asDocente = $this->resolveClassRole($class, $student);
         abort_if($asDocente === null, 403, 'Non hai accesso a questa classe.');
+
+        // Minerva di lezione (P20b): il contesto è una lezione PUBBLICATA su questa
+        // classe. Verifica la pubblicazione (niente leak: senza pubblicazione 403).
+        $lessonId = $data['lesson_id'] ?? null;
+        if ($lessonId !== null) {
+            $published = \App\Models\LessonPublication::where('lesson_id', $lessonId)
+                ->where('school_class_id', $class->id)->exists();
+            abort_unless($published, 403, 'Lezione non disponibile in questa classe.');
+        }
 
         // Rate limit giornaliero (solo studenti, §8.2): il modello NON viene
         // chiamato a soglia raggiunta. Messaggio gentile, niente conteggio extra.
@@ -479,11 +489,12 @@ TXT;
         $classIds = [$class->id];
         $artifactId = $data['artifact_id'] ?? null;
 
-        // Retrieval di classe (gate §5). Pre-filtro sull'artefatto se richiesto:
-        // si interroga "prima di tutto" quel documento, poi si allarga alla classe.
-        $result = $this->rag->searchClassScopedScored($data['question'], $classIds, $teacherId, 6, $artifactId);
-        if ($artifactId && $result['docs']->isEmpty()) {
-            $result = $this->rag->searchClassScopedScored($data['question'], $classIds, $teacherId, 6, null);
+        // Retrieval di classe (gate §5). Pre-filtro sull'artefatto o sulla LEZIONE
+        // se richiesto: si interroga "prima di tutto" quel contesto, poi — se vuoto —
+        // si allarga ai materiali della classe (resta dentro lo scope §5).
+        $result = $this->rag->searchClassScopedScored($data['question'], $classIds, $teacherId, 6, $artifactId, $lessonId);
+        if (($artifactId || $lessonId) && $result['docs']->isEmpty()) {
+            $result = $this->rag->searchClassScopedScored($data['question'], $classIds, $teacherId, 6, null, null);
         }
 
         $conversation = $this->classConversation($student, $class);
