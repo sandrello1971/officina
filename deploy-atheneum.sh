@@ -74,6 +74,9 @@ echo "==> npm ci && build"
 echo "==> migrazioni (additive; se una fallisce, lo script si ferma)"
 sudo -u www-data php "$DEST/artisan" migrate --force
 
+echo "==> seed materie standard (idempotente: firstOrCreate, non tocca le custom)"
+sudo -u www-data php "$DEST/artisan" db:seed --class=SubjectSeeder --force
+
 echo "==> cache config/route/view"
 sudo -u www-data php "$DEST/artisan" config:cache
 sudo -u www-data php "$DEST/artisan" route:cache
