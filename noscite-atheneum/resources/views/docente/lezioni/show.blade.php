@@ -140,6 +140,54 @@
         </div>
         @endif
     @endif
+
+    {{-- Pubblicazione su classi (P20a) — Feedback UX: rag_status + polling --}}
+    @if($lesson->generation_status === 'ready')
+    <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:16px 18px; margin-bottom:16px;" x-data="lessonPublications('{{ $lesson->id }}')">
+        <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">Pubblica agli studenti</div>
+
+        @if($teacherClasses->isEmpty())
+            <p style="color:#8A9696; font-size:0.85rem;">Nessuna classe disponibile: ti serve una cattedra (o una classe libera) per pubblicare.</p>
+        @else
+        <form method="POST" action="{{ route('docente.lessons.publish', $lesson) }}" data-async>
+            @csrf
+            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;">
+                @foreach($teacherClasses as $class)
+                    @php $pub = $lesson->publications->firstWhere('school_class_id', $class->id); @endphp
+                    <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#1A1F1F;">
+                        <input type="checkbox" name="class_ids[]" value="{{ $class->id }}" @checked($pub)>
+                        <span style="flex:1;">{{ $class->name }} @if($class->school_id)<span style="color:#8A9696; font-size:0.75rem;">· scuola</span>@else<span style="color:#8A9696; font-size:0.75rem;">· libera</span>@endif</span>
+                        @if($pub)
+                            @php $rs = ['pending'=>['#8A9696','in coda'],'indexing'=>['#E28A53','indicizzazione…'],'ready'=>['#3A8C89','pubblicata'],'failed'=>['#A8521F','fallita']]; [$c,$l]=$rs[$pub->rag_status]??['#8A9696',$pub->rag_status]; @endphp
+                            <span data-pub-class="{{ $class->id }}" style="font-size:0.72rem; font-weight:700; color:{{ $c }}; border:1px solid {{ $c }}; border-radius:4px; padding:1px 8px;">{{ $l }}</span>
+                        @endif
+                    </label>
+                @endforeach
+            </div>
+            <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; color:#4A5252; margin-bottom:10px;">
+                <input type="checkbox" name="students_can_generate" value="1" checked>
+                Gli studenti possono generare quiz/autoverifica dalla lezione
+            </label>
+            <button data-busy-label="Pubblicazione…" style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Pubblica / aggiorna</button>
+        </form>
+
+        @if($lesson->publications->isNotEmpty())
+        <div style="margin-top:12px; border-top:1px solid #F0F2F2; padding-top:10px;">
+            <div style="font-size:0.72rem; color:#8A9696; margin-bottom:6px;">Pubblicazioni attive — il ritiro rimuove i contenuti dalla classe (RAG).</div>
+            @foreach($lesson->publications as $pub)
+                <div style="display:flex; align-items:center; gap:8px; padding:5px 0; font-size:0.82rem;">
+                    <span style="flex:1; color:#1A1F1F;">{{ $pub->schoolClass->name ?? '—' }}</span>
+                    <form method="POST" action="{{ route('docente.lesson-publications.destroy', $pub) }}" data-async onsubmit="return confirm('Ritirare la pubblicazione da questa classe? Gli studenti non vedranno più la lezione.');">
+                        @csrf @method('DELETE')
+                        <button data-busy-label="Ritiro…" style="border:none; background:none; color:#A8521F; cursor:pointer; font-size:0.78rem;">ritira</button>
+                    </form>
+                </div>
+            @endforeach
+        </div>
+        @endif
+        @endif
+    </div>
+    @endif
 </div>
 
 @push('styles')<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}</style>@endpush
@@ -178,6 +226,31 @@ function artifactRow(id, initial) {
                     if (d.status === 'ready' || d.status === 'failed') clearInterval(timer);
                 } catch(e) {}
             }, 5000);
+        },
+    };
+}
+// Polling stato pubblicazioni (rag_status pending→indexing→ready/failed).
+function lessonPublications(lessonId) {
+    const LABELS = {pending:['#8A9696','in coda'],indexing:['#E28A53','indicizzazione…'],ready:['#3A8C89','pubblicata'],failed:['#A8521F','fallita']};
+    return {
+        init() {
+            const pending = () => Array.from(this.$el.querySelectorAll('[data-pub-class]'))
+                .some(el => !el.textContent.includes('pubblicata') && !el.textContent.includes('fallita'));
+            if (!pending()) return;
+            const timer = setInterval(async () => {
+                try {
+                    const r = await fetch(`/docente/lezioni/${lessonId}/pubblicazioni/stato`, {headers: {'X-Requested-With':'XMLHttpRequest'}});
+                    const d = await r.json();
+                    let allDone = true;
+                    d.publications.forEach(p => {
+                        const el = this.$el.querySelector(`[data-pub-class="${p.school_class_id}"]`);
+                        const [c,l] = LABELS[p.rag_status] || ['#8A9696', p.rag_status];
+                        if (el) { el.textContent = l; el.style.color = c; el.style.borderColor = c; }
+                        if (p.rag_status !== 'ready' && p.rag_status !== 'failed') allDone = false;
+                    });
+                    if (allDone) clearInterval(timer);
+                } catch(e) {}
+            }, 4000);
         },
     };
 }

@@ -32,11 +32,21 @@ class LessonController extends Controller
     {
         $this->authorizeLesson($lesson);
 
-        $lesson->load(['topic.subject']);
+        $lesson->load(['topic.subject', 'publications.schoolClass']);
         $materials = $lesson->teachingDocuments()->with('subject')->orderBy('created_at')->get();
         $artifacts = $lesson->teachingArtifacts()->orderByDesc('created_at')->get();
 
-        return view('docente.lezioni.show', compact('lesson', 'materials', 'artifacts'));
+        // Classi pubblicabili: libere proprie + classi di scuola con cattedra (P15).
+        $teacherClasses = app(\App\Services\Schola\TeacherClassAccess::class)
+            ->classesQuery($lesson->teacher_id)
+            ->where('is_archived', false)
+            ->orderBy('name')
+            ->get();
+        $publishedClassIds = $lesson->publications->pluck('school_class_id')->all();
+
+        return view('docente.lezioni.show', compact(
+            'lesson', 'materials', 'artifacts', 'teacherClasses', 'publishedClassIds'
+        ));
     }
 
     // Editing del corpo lezione: SEMPRE modificabile dal docente dopo la generazione.
