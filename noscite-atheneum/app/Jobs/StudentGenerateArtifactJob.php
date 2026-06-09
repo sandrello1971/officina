@@ -29,17 +29,25 @@ class StudentGenerateArtifactJob implements ShouldQueue
 
     public function handle(MindMapGenerationService $mindMap, QuizGeneratorService $quiz): void
     {
-        $gen = StudentGeneratedArtifact::with('publication.artifact')->find($this->generatedId);
+        $gen = StudentGeneratedArtifact::with(['publication.artifact', 'lessonPublication.lesson'])->find($this->generatedId);
         if (!$gen) {
             return;
         }
 
-        $artifact = $gen->publication?->artifact;
-        $source = trim($this->artifactToText($artifact));
-        $label = $artifact?->title ?? 'Materiale della classe';
+        // Sorgente: il corpo della LEZIONE pubblicata (P20c) oppure l'artefatto
+        // pubblicato (fetta 1). Esattamente uno dei due è valorizzato.
+        if ($gen->lesson_publication_id) {
+            $lesson = $gen->lessonPublication?->lesson;
+            $source = trim((string) $lesson?->content);
+            $label = $lesson?->title ?? 'Lezione della classe';
+        } else {
+            $artifact = $gen->publication?->artifact;
+            $source = trim($this->artifactToText($artifact));
+            $label = $artifact?->title ?? 'Materiale della classe';
+        }
 
         if ($source === '') {
-            $this->fail($gen, 'Il materiale pubblicato non ha contenuto su cui generare.');
+            $this->fail($gen, 'La fonte pubblicata non ha contenuto su cui generare.');
             return;
         }
 
