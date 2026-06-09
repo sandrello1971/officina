@@ -9,7 +9,12 @@
             <h1 style="font-size:1.4rem; font-weight:700; color:#1A1F1F; margin:0;">{{ $lesson->title }}</h1>
             <p style="color:#8A9696; font-size:0.875rem; margin:2px 0 0;">{{ $lesson->topic->name ?? '' }}</p>
         </div>
-        <button @click="minervaOpen = !minervaOpen" style="padding:9px 16px; background:#1A1F1F; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">&#9788; Chiedi a Minerva</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            @if($hasPresentation)
+                <a href="{{ route('student.classes.lesson.presentation', [$class, $lesson]) }}" style="padding:9px 16px; background:#3A8C89; color:white; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none;">&#11015; Presentazione (.pptx)</a>
+            @endif
+            <button @click="minervaOpen = !minervaOpen" style="padding:9px 16px; background:#1A1F1F; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">&#9788; Chiedi a Minerva</button>
+        </div>
     </div>
 
     {{-- Materiali audio/video della lezione (ricerca video / player con seek) --}}

@@ -68,4 +68,10 @@ return [
         'proxy'         => env('HTTPS_PROXY', null),
     ],
 
+    // Generazione .pptx (Schola P21): python-pptx nel venv condiviso.
+    'pptx' => [
+        'python' => env('PPTX_PYTHON', '/home/noscite/venv/bin/python'),
+        'model'  => env('PPTX_MODEL', 'claude-sonnet-4-5'),
+    ],
+
 ];

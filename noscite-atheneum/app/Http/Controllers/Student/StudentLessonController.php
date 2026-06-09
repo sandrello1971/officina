@@ -69,10 +69,34 @@ class StudentLessonController extends Controller
             ->get();
         $usage = app(\App\Services\Schola\ScholaUsage::class)->generationStatus($student->id);
 
+        // Presentazione .pptx pronta (P21): scaricabile, mai generabile dallo studente.
+        $hasPresentation = $lesson->presentations()->where('status', 'ready')->exists();
+
         return view('student.lezioni.show', compact(
             'class', 'lesson', 'publication', 'bodyHtml', 'mediaMaterials', 'notes', 'teacherNotes',
-            'generated', 'usage'
+            'generated', 'usage', 'hasPresentation'
         ));
+    }
+
+    /**
+     * Download della presentazione .pptx di una lezione pubblicata (P21). Lo
+     * studente può SOLO scaricare (niente generazione). Stesso criterio di accesso
+     * della fruizione: iscrizione attiva + lezione pubblicata sulla sua classe.
+     * File da storage PRIVATO, mai URL diretto.
+     */
+    public function presentation(SchoolClass $class, Lesson $lesson)
+    {
+        $student = $this->currentStudent();
+        $this->assertActiveEnrollment($class, $student->id);
+        $this->assertLessonPublished($lesson, $class);
+
+        $presentation = $lesson->presentations()->where('status', 'ready')->latest()->first();
+        abort_unless($presentation && $presentation->file_path
+            && Storage::disk('local')->exists($presentation->file_path), 404);
+
+        $filename = $presentation->generation_meta['filename'] ?? (\Illuminate\Support\Str::slug($lesson->title) . '.pptx');
+
+        return response()->download(Storage::disk('local')->path($presentation->file_path), $filename);
     }
 
     /**
