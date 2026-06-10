@@ -3,7 +3,7 @@
 
 grazie per aver scaricato la **Mappa Percorso AI**.
 
-In allegato trovi il PDF con il decision tree per orientarti tra i nostri percorsi formativi (PRIMUS, CONSILIUM, INITIUM) e capire da dove partire — calibrato sui profili professionali e aggiornato all'AI Act e alla Legge 132/2025.
+In allegato trovi il PDF con il decision tree per orientarti tra i nostri percorsi formativi (RUMORE DI FONDO, INTERFERENZA, SEGNALE) e capire da dove partire — calibrato sui profili professionali e aggiornato all'AI Act e alla Legge 132/2025.
 
 Se dopo averla letta vuoi parlarne con noi (capire dubbi, fare domande sul percorso giusto per {{ $lead->company }}, o esplorare opzioni custom per il tuo team), basta rispondere a questa email oppure usare il modulo contatti del sito.
 

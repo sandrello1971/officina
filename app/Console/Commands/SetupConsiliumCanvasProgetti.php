@@ -14,7 +14,7 @@ class SetupConsiliumCanvasProgetti extends Command
                             {--dry-run : Show planned changes without writing to DB}
                             {--rename-existing=true : Rename the legacy Material from "Canvas 4 — Scheda progetto prioritario" to "Canvas 4 — Scheda Progetto 1"}';
 
-    protected $description = 'Crea i tre Material "Canvas 4 — Scheda Progetto 1/2/3" per Consilium puntando allo stesso file_path HTML, con UUID indipendenti per slot di storage separati in student_canvas_data.';
+    protected $description = 'Crea i tre Material "Canvas 4 — Scheda Progetto 1/2/3" per Interferenza puntando allo stesso file_path HTML, con UUID indipendenti per slot di storage separati in student_canvas_data.';
 
     private const COURSE_SLUG = 'consilium';
     private const LEGACY_TITLE_PATTERNS = ['canvas 4 — scheda progetto prioritario', 'canvas 4 - scheda progetto prioritario'];
@@ -25,7 +25,7 @@ class SetupConsiliumCanvasProgetti extends Command
         $dryRun = (bool) $this->option('dry-run');
         $renameExisting = filter_var($this->option('rename-existing'), FILTER_VALIDATE_BOOLEAN);
 
-        $this->info('=== Setup Consilium Canvas Progetti ===');
+        $this->info('=== Setup Interferenza Canvas Progetti ===');
         $this->line('Mode: ' . ($dryRun ? 'DRY RUN (no writes)' : 'LIVE'));
         $this->line('Rename legacy: ' . ($renameExisting ? 'yes' : 'no'));
         $this->newLine();
@@ -33,7 +33,7 @@ class SetupConsiliumCanvasProgetti extends Command
         DB::beginTransaction();
 
         try {
-            // 1. Find Consilium course
+            // 1. Find Interferenza course
             $course = Course::where('slug', self::COURSE_SLUG)->first();
             if (!$course) {
                 $this->error('Corso "' . self::COURSE_SLUG . '" non trovato.');
@@ -45,7 +45,7 @@ class SetupConsiliumCanvasProgetti extends Command
             // 2. Find existing Canvas 4 Material (legacy or already-renamed)
             $existing = $this->findCanvas4Material($course);
             if (!$existing) {
-                $this->error('Nessun Material Canvas 4 trovato in Consilium. Atteso uno con title contenente "Canvas 4" o file_path con "canvas-4".');
+                $this->error('Nessun Material Canvas 4 trovato in Interferenza. Atteso uno con title contenente "Canvas 4" o file_path con "canvas-4".');
                 DB::rollBack();
                 return 1;
             }

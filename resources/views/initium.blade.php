@@ -1,11 +1,11 @@
 @extends('layouts.app')
-@section('title', 'INITIUM — Fondamenta AI Operativa')
-@section('description', 'INITIUM — 20 ore di formazione AI operativa per manager e team. ChatGPT, Claude, Copilot 365, prompt engineering, data governance. Certified AI Productivity User. EU AI Act Art. 4.')
+@section('title', 'SEGNALE — Fondamenta AI Operativa')
+@section('description', 'SEGNALE — 20 ore di formazione AI operativa per manager e team. ChatGPT, Claude, Copilot 365, prompt engineering, data governance. Certified AI Productivity User. EU AI Act Art. 4.')
 
 @section('content')
 <div class="max-w-4xl mx-auto px-4 py-16">
     <span class="badge-teal mb-4 inline-block">Per Manager &middot; Professionisti &middot; Team operativi</span>
-    <h1 class="text-4xl font-bold mb-2" style="color:#1A1F1F">INITIUM — Fondamenta AI Operativa</h1>
+    <h1 class="text-4xl font-bold mb-2" style="color:#1A1F1F">SEGNALE — Fondamenta AI Operativa</h1>
     <p class="text-lg mb-6" style="color:#4A5252">Il punto di partenza per chi vuole capire davvero l'AI generativa. Formato 70% pratico, 30% teoria.</p>
     <div class="flex flex-wrap gap-3 mb-8">
         <span class="badge-orange">20h + 3h esame</span>
@@ -52,6 +52,6 @@
         </div>
     </div>
 
-    <a href="/contatti" class="btn-orange">Richiedi informazioni su INITIUM</a>
+    <a href="/contatti" class="btn-orange">Richiedi informazioni su SEGNALE</a>
 </div>
 @endsection

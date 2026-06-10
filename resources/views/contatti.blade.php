@@ -67,10 +67,10 @@
                     <label class="block text-sm font-medium mb-1" style="color:#1A1F1F">Corso di interesse</label>
                     <select name="course" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" style="border-color:#C8D0D0">
                         <option value="">— Seleziona —</option>
-                        <option>CONSILIUM — Strategia AI per PMI</option>
-                        <option>INITIUM — Fondamenta AI Operativa</option>
-                        <option>STRUCTURA — Second Brain Aziendale</option>
-                        <option>AI AGENTS & MCP — Agenti AI in Azienda</option>
+                        <option>INTERFERENZA — Strategia AI per PMI</option>
+                        <option>SEGNALE — Fondamenta AI Operativa</option>
+                        <option>CIRCUITO — Second Brain Aziendale</option>
+                        <option>FREQUENZA — Agenti AI in Azienda</option>
                         <option>Percorso personalizzato</option>
                     </select>
                 </div>

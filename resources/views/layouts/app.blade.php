@@ -6,7 +6,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
     <title>@yield('title', atheneum_setting('instance_name', 'Officina')) — {{ atheneum_setting('instance_name', 'Officina') }}</title>
-    <meta name="description" content="@yield('description', 'Officina Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: CONSILIUM, INITIUM, STRUCTURA, AI AGENTS & MCP.')">
+    <meta name="description" content="@yield('description', 'Officina Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: INTERFERENZA, SEGNALE, CIRCUITO, FREQUENZA.')">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
@@ -14,7 +14,7 @@
     <meta property="og:locale" content="it_IT">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:title" content="@yield('og_title', View::getSection('title') ?? 'Officina Noscite — Formazione AI per PMI')">
-    <meta property="og:description" content="@yield('og_description', View::getSection('description') ?? 'Officina Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: CONSILIUM, INITIUM, STRUCTURA, AI AGENTS & MCP.')">
+    <meta property="og:description" content="@yield('og_description', View::getSection('description') ?? 'Officina Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: INTERFERENZA, SEGNALE, CIRCUITO, FREQUENZA.')">
     <meta property="og:image" content="@yield('og_image', url('/images/atheneum_new.png'))">
     <meta property="og:image:width" content="1536">
     <meta property="og:image:height" content="1024">
@@ -126,11 +126,11 @@
         </a>
         <nav class="hidden md:flex items-center gap-6">
             <a href="/" class="nav-link text-sm font-medium {{ request()->is('/') ? 'active' : '' }}">Home</a>
-            <a href="/primus" class="nav-link text-sm font-medium {{ request()->is('primus') ? 'active' : '' }}">PRIMUS</a>
-            <a href="/consilium" class="nav-link text-sm font-medium {{ request()->is('consilium') ? 'active' : '' }}">Consilium</a>
-            <a href="/initium" class="nav-link text-sm font-medium {{ request()->is('initium') ? 'active' : '' }}">Initium</a>
-            <a href="/structura" class="nav-link text-sm font-medium {{ request()->is('structura') ? 'active' : '' }}">Structura</a>
-            <a href="/ai-agents-mcp" class="nav-link text-sm font-medium {{ request()->is('ai-agents-mcp') ? 'active' : '' }}">AI Agents</a>
+            <a href="/primus" class="nav-link text-sm font-medium {{ request()->is('primus') ? 'active' : '' }}">RUMORE DI FONDO</a>
+            <a href="/consilium" class="nav-link text-sm font-medium {{ request()->is('consilium') ? 'active' : '' }}">Interferenza</a>
+            <a href="/initium" class="nav-link text-sm font-medium {{ request()->is('initium') ? 'active' : '' }}">Segnale</a>
+            <a href="/structura" class="nav-link text-sm font-medium {{ request()->is('structura') ? 'active' : '' }}">Circuito</a>
+            <a href="/ai-agents-mcp" class="nav-link text-sm font-medium {{ request()->is('ai-agents-mcp') ? 'active' : '' }}">Frequenza</a>
             <a href="/conformita-ai-act" class="nav-link text-sm font-medium {{ request()->is('conformita-ai-act') ? 'active' : '' }}">Conformità AI Act</a>
             <a href="/learn/login"
                style="display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid #55B1AE;color:#55B1AE;border-radius:6px;font-size:0.8rem;font-weight:600;text-decoration:none;transition:all 0.2s;"
@@ -147,11 +147,11 @@
     <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 bg-white">
         <div class="px-4 py-3 flex flex-col gap-3">
             <a href="/" class="nav-link text-sm font-medium py-1">Home</a>
-            <a href="/primus" class="nav-link text-sm font-medium py-1">PRIMUS</a>
-            <a href="/consilium" class="nav-link text-sm font-medium py-1">Consilium</a>
-            <a href="/initium" class="nav-link text-sm font-medium py-1">Initium</a>
-            <a href="/structura" class="nav-link text-sm font-medium py-1">Structura</a>
-            <a href="/ai-agents-mcp" class="nav-link text-sm font-medium py-1">AI Agents & MCP</a>
+            <a href="/primus" class="nav-link text-sm font-medium py-1">RUMORE DI FONDO</a>
+            <a href="/consilium" class="nav-link text-sm font-medium py-1">Interferenza</a>
+            <a href="/initium" class="nav-link text-sm font-medium py-1">Segnale</a>
+            <a href="/structura" class="nav-link text-sm font-medium py-1">Circuito</a>
+            <a href="/ai-agents-mcp" class="nav-link text-sm font-medium py-1">Frequenza</a>
             <a href="/conformita-ai-act" class="nav-link text-sm font-medium py-1">Conformità AI Act</a>
             <a href="/learn/login"
                style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 14px;border:1px solid #55B1AE;color:#55B1AE;border-radius:6px;font-size:0.8rem;font-weight:600;text-decoration:none;"
@@ -179,11 +179,11 @@
         <div>
             <div class="font-bold mb-3" style="color:#55B1AE">Corsi</div>
             <div class="flex flex-col gap-2 text-sm" style="color:#8A9696">
-                <a href="/primus" class="hover:text-white transition-colors">Primus — Prima di tutto il perche</a>
-                <a href="/consilium" class="hover:text-white transition-colors">Consilium — Strategia AI</a>
-                <a href="/initium" class="hover:text-white transition-colors">Initium — Fondamenta AI</a>
-                <a href="/structura" class="hover:text-white transition-colors">Structura — Second Brain</a>
-                <a href="/ai-agents-mcp" class="hover:text-white transition-colors">AI Agents & MCP</a>
+                <a href="/primus" class="hover:text-white transition-colors">Rumore di fondo — Prima di tutto il perche</a>
+                <a href="/consilium" class="hover:text-white transition-colors">Interferenza — Strategia AI</a>
+                <a href="/initium" class="hover:text-white transition-colors">Segnale — Fondamenta AI</a>
+                <a href="/structura" class="hover:text-white transition-colors">Circuito — Second Brain</a>
+                <a href="/ai-agents-mcp" class="hover:text-white transition-colors">Frequenza</a>
             </div>
         </div>
         <div>

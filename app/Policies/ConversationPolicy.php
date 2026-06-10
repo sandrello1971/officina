@@ -15,7 +15,7 @@ class ConversationPolicy
      *
      * Discriminazione studente/formatore via DB (student_course / course_instructor),
      * NON via Student->role: in Officina un admin globale può essere formatore di un
-     * corso senza role='instructor' (es. Stefano è role='admin' ma insegna PRIMUS).
+     * corso senza role='instructor' (es. Stefano è role='admin' ma insegna RUMORE DI FONDO).
      */
     public function startConversationWith(Student $initiator, Student $target, Course $course): bool
     {

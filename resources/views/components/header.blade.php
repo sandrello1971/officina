@@ -29,15 +29,15 @@
                          x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-1"
                          class="absolute left-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                         <a href="{{ route('consilium') }}" class="block px-4 py-2.5 text-sm hover:bg-primary-50 hover:text-primary-600 transition-colors {{ request()->is('consilium') ? 'text-primary-600 bg-primary-50' : 'text-gray-700' }}">
-                            <span class="font-medium">Consilium</span>
+                            <span class="font-medium">Interferenza</span>
                             <span class="block text-xs text-gray-400 mt-0.5">Strategia AI per CEO</span>
                         </a>
                         <a href="{{ route('initium') }}" class="block px-4 py-2.5 text-sm hover:bg-primary-50 hover:text-primary-600 transition-colors {{ request()->is('initium') ? 'text-primary-600 bg-primary-50' : 'text-gray-700' }}">
-                            <span class="font-medium">Initium</span>
+                            <span class="font-medium">Segnale</span>
                             <span class="block text-xs text-gray-400 mt-0.5">Fondamenti digitali</span>
                         </a>
                         <a href="{{ route('structura') }}" class="block px-4 py-2.5 text-sm hover:bg-primary-50 hover:text-primary-600 transition-colors {{ request()->is('structura') ? 'text-primary-600 bg-primary-50' : 'text-gray-700' }}">
-                            <span class="font-medium">Structura</span>
+                            <span class="font-medium">Circuito</span>
                             <span class="block text-xs text-gray-400 mt-0.5">Second Brain aziendale</span>
                         </a>
                     </div>
@@ -101,9 +101,9 @@
 
             <div class="px-3 py-2">
                 <p class="text-xs font-bold uppercase text-gray-400 tracking-wider mb-2">Programmi</p>
-                <a href="{{ route('consilium') }}" class="block py-1.5 text-sm {{ request()->is('consilium') ? 'text-primary-600 font-medium' : 'text-gray-700' }}">Consilium</a>
-                <a href="{{ route('initium') }}" class="block py-1.5 text-sm {{ request()->is('initium') ? 'text-primary-600 font-medium' : 'text-gray-700' }}">Initium</a>
-                <a href="{{ route('structura') }}" class="block py-1.5 text-sm {{ request()->is('structura') ? 'text-primary-600 font-medium' : 'text-gray-700' }}">Structura</a>
+                <a href="{{ route('consilium') }}" class="block py-1.5 text-sm {{ request()->is('consilium') ? 'text-primary-600 font-medium' : 'text-gray-700' }}">Interferenza</a>
+                <a href="{{ route('initium') }}" class="block py-1.5 text-sm {{ request()->is('initium') ? 'text-primary-600 font-medium' : 'text-gray-700' }}">Segnale</a>
+                <a href="{{ route('structura') }}" class="block py-1.5 text-sm {{ request()->is('structura') ? 'text-primary-600 font-medium' : 'text-gray-700' }}">Circuito</a>
             </div>
 
             <div class="px-3 py-2">

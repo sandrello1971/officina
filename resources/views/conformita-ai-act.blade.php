@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
 @section('title', 'Conformità EU AI Act — Track AI Noscite')
-@section('description', 'Analisi di copertura dei corsi PRIMUS · CONSILIUM · INITIUM rispetto all\'obbligo di alfabetizzazione AI dell\'EU AI Act (Reg. UE 2024/1689, Art. 4). Documento Noscite di compliance e posizionamento commerciale.')
+@section('description', 'Analisi di copertura dei corsi RUMORE DI FONDO · INTERFERENZA · SEGNALE rispetto all\'obbligo di alfabetizzazione AI dell\'EU AI Act (Reg. UE 2024/1689, Art. 4). Documento Noscite di compliance e posizionamento commerciale.')
 @section('og_title', 'Conformità EU AI Act — Track AI Noscite')
-@section('og_description', 'Analisi di copertura dei tre corsi del percorso lineare PRIMUS → CONSILIUM → INITIUM rispetto alle quattro aree dell\'alfabetizzazione AI richieste dall\'AI Act.')
+@section('og_description', 'Analisi di copertura dei tre corsi del percorso lineare RUMORE DI FONDO → INTERFERENZA → SEGNALE rispetto alle quattro aree dell\'alfabetizzazione AI richieste dall\'AI Act.')
 
 @push('styles')
 <style>
@@ -49,7 +49,7 @@
       Track AI Noscite — Conformità all'AI Act
     </h1>
     <p class="text-base" style="color:#4A5252;">
-      Analisi di copertura dei tre corsi del percorso lineare: <strong>PRIMUS → CONSILIUM → INITIUM</strong>
+      Analisi di copertura dei tre corsi del percorso lineare: <strong>RUMORE DI FONDO → INTERFERENZA → SEGNALE</strong>
     </p>
     <p class="italic text-sm mt-3" style="color:#E28A53;">In digitālī nova virtūs</p>
   </div>
@@ -114,10 +114,10 @@
           </tr>
         </thead>
         <tbody>
-          {{-- PRIMUS — muted --}}
+          {{-- RUMORE DI FONDO — muted --}}
           <tr class="border-b border-gray-200 align-top" style="background:#FBFBFC;">
             <th scope="row" class="p-3 text-left font-normal">
-              <div class="font-bold" style="color:#1A1F1F;">PRIMUS</div>
+              <div class="font-bold" style="color:#1A1F1F;">RUMORE DI FONDO</div>
               <div class="text-xs" style="color:#8A9696;">Awareness · 4h · 4 moduli</div>
             </th>
             <td class="p-3 text-center"><span class="pill-na" aria-label="Non applicabile">—<span class="sr-only"> Non applicabile</span></span></td>
@@ -125,13 +125,13 @@
             <td class="p-3 text-center"><span class="pill-na" aria-label="Non applicabile">—<span class="sr-only"> Non applicabile</span></span></td>
             <td class="p-3 text-center"><span class="pill-na" aria-label="Non applicabile">—<span class="sr-only"> Non applicabile</span></span></td>
             <td class="hidden md:table-cell p-3 text-xs max-w-[280px]" style="color:#4A5252;">
-              <strong style="color:#E28A53;">Pre-compliance.</strong> Workshop di awareness che precede la literacy formalizzata: crea la consapevolezza del gap digitale, ma non eroga ancora i contenuti Art. 4. Prepara il terreno a CONSILIUM e INITIUM.
+              <strong style="color:#E28A53;">Pre-compliance.</strong> Workshop di awareness che precede la literacy formalizzata: crea la consapevolezza del gap digitale, ma non eroga ancora i contenuti Art. 4. Prepara il terreno a INTERFERENZA e SEGNALE.
             </td>
           </tr>
-          {{-- CONSILIUM --}}
+          {{-- INTERFERENZA --}}
           <tr class="bg-white border-b border-gray-200 align-top">
             <th scope="row" class="p-3 text-left font-normal">
-              <div class="font-bold" style="color:#1A1F1F;">CONSILIUM</div>
+              <div class="font-bold" style="color:#1A1F1F;">INTERFERENZA</div>
               <div class="text-xs" style="color:#8A9696;">Strategia AI · 7h · 4 moduli</div>
             </th>
             <td class="p-3 text-center"><span class="pill-partial" aria-label="Parziale, 1 modulo su 4">◑ 1/4<span class="sr-only"> Parziale</span></span></td>
@@ -142,10 +142,10 @@
               Literacy <strong>direzionale</strong>. La CT è approfondita solo nel Modulo 1 (scenario AI), perché il board non necessita di profondità tecnica su ogni modulo. La CN è presidiata su 3 moduli su 4 (campo normativo nei canvas + AI Usage Policy).
             </td>
           </tr>
-          {{-- INITIUM — highlight --}}
+          {{-- SEGNALE — highlight --}}
           <tr class="border-b border-gray-200 align-top" style="background:#E8F5F5;">
             <th scope="row" class="p-3 text-left font-normal">
-              <div class="font-bold" style="color:#1A1F1F;">INITIUM</div>
+              <div class="font-bold" style="color:#1A1F1F;">SEGNALE</div>
               <div class="text-xs" style="color:#8A9696;">Fondamenta AI Operativa · 20h + 3h esame · 5 moduli · v6</div>
             </th>
             <td class="p-3 text-center"><span class="pill-full" aria-label="Piena, 4 moduli su 5">✓ 4/5<span class="sr-only"> Piena</span></span></td>
@@ -163,36 +163,36 @@
     {{-- Fallback mobile: card-stack riassuntivo del posizionamento --}}
     <div class="md:hidden px-6 py-4 space-y-3 text-xs" style="color:#4A5252;">
       <div class="p-3 rounded" style="background:#FBFBFC;">
-        <div class="font-bold mb-1" style="color:#1A1F1F;">PRIMUS</div>
-        <strong style="color:#E28A53;">Pre-compliance.</strong> Workshop di awareness che precede la literacy formalizzata: prepara il terreno a CONSILIUM e INITIUM.
+        <div class="font-bold mb-1" style="color:#1A1F1F;">RUMORE DI FONDO</div>
+        <strong style="color:#E28A53;">Pre-compliance.</strong> Workshop di awareness che precede la literacy formalizzata: prepara il terreno a INTERFERENZA e SEGNALE.
       </div>
       <div class="p-3 rounded bg-white border border-gray-200">
-        <div class="font-bold mb-1" style="color:#1A1F1F;">CONSILIUM</div>
+        <div class="font-bold mb-1" style="color:#1A1F1F;">INTERFERENZA</div>
         Literacy <strong>direzionale</strong>. CT approfondita nel Modulo 1; CN presidiata su 3 moduli su 4.
       </div>
       <div class="p-3 rounded" style="background:#E8F5F5;">
-        <div class="font-bold mb-1" style="color:#1A1F1F;">INITIUM</div>
+        <div class="font-bold mb-1" style="color:#1A1F1F;">SEGNALE</div>
         <strong style="color:#3D8B88;">Compliance primaria Art. 4.</strong> Copre tutte e quattro le aree in tutti i moduli (v6).
       </div>
     </div>
   </div>
 
-  {{-- ===== BOX NOTA PRIMUS ===== --}}
+  {{-- ===== BOX NOTA RUMORE DI FONDO ===== --}}
   <div class="compliance-card compliance-bg-primus rounded-md p-5 mb-5 text-sm" style="background:#FBF6F1; border-left:4px solid #E28A53; color:#4A5252;">
-    <strong style="color:#E28A53;">Perché PRIMUS è a "—" su tutte le aree.</strong> Non è una lacuna: è una scelta di onestà metodologica. L'Art. 4 richiede alfabetizzazione AI; PRIMUS opera a monte, sul riconoscimento del bisogno. Indicarlo come pre-compliance è più solido — e più forte commercialmente — che attribuirgli una copertura fittizia. La compliance formale inizia con CONSILIUM (direzione) e si completa con INITIUM (tutto il personale deployer).
+    <strong style="color:#E28A53;">Perché RUMORE DI FONDO è a "—" su tutte le aree.</strong> Non è una lacuna: è una scelta di onestà metodologica. L'Art. 4 richiede alfabetizzazione AI; RUMORE DI FONDO opera a monte, sul riconoscimento del bisogno. Indicarlo come pre-compliance è più solido — e più forte commercialmente — che attribuirgli una copertura fittizia. La compliance formale inizia con INTERFERENZA (direzione) e si completa con SEGNALE (tutto il personale deployer).
   </div>
 
-  {{-- ===== BOX NOTA INITIUM ===== --}}
+  {{-- ===== BOX NOTA SEGNALE ===== --}}
   <div class="compliance-card compliance-bg-initium rounded-md p-5 mb-5 text-sm" style="background:#E8F5F5; border-left:4px solid #55B1AE; color:#4A5252;">
-    <strong style="color:#3D8B88;">INITIUM è il corso di compliance primaria.</strong> Per una PMI che deve formalizzare l'obbligo Art. 4 sui dipendenti che usano strumenti AI generativi, INITIUM è il percorso che lo copre pienamente. Con la versione 6 i due pilastri — Umanesimo Digitale e human-in-the-loop — sono espliciti (Cap 0) e il Modulo 5 affronta direttamente il quadro normativo dell'AI Act. CONSILIUM presidia il livello strategico-direzionale a monte.
+    <strong style="color:#3D8B88;">SEGNALE è il corso di compliance primaria.</strong> Per una PMI che deve formalizzare l'obbligo Art. 4 sui dipendenti che usano strumenti AI generativi, SEGNALE è il percorso che lo copre pienamente. Con la versione 6 i due pilastri — Umanesimo Digitale e human-in-the-loop — sono espliciti (Cap 0) e il Modulo 5 affronta direttamente il quadro normativo dell'AI Act. INTERFERENZA presidia il livello strategico-direzionale a monte.
   </div>
 
-  {{-- ===== DETTAGLIO CONSILIUM ===== --}}
+  {{-- ===== DETTAGLIO INTERFERENZA ===== --}}
   <div class="compliance-card bg-white rounded-lg shadow-sm mb-5 overflow-hidden">
-    <h2 class="text-xl font-bold px-6 pt-6 pb-3" style="color:#3D8B88;">Dettaglio analitico — CONSILIUM (7h, 4 moduli)</h2>
+    <h2 class="text-xl font-bold px-6 pt-6 pb-3" style="color:#3D8B88;">Dettaglio analitico — INTERFERENZA (7h, 4 moduli)</h2>
 
     <div class="overflow-x-auto">
-      <table class="w-full border-collapse text-sm" role="table" aria-label="Dettaglio analitico CONSILIUM per modulo">
+      <table class="w-full border-collapse text-sm" role="table" aria-label="Dettaglio analitico INTERFERENZA per modulo">
         <thead>
           <tr class="text-xs uppercase tracking-wider text-white" style="background:#3D8B88;">
             <th scope="col" class="text-left p-3 font-semibold">Modulo</th>
@@ -241,12 +241,12 @@
     </div>
   </div>
 
-  {{-- ===== DETTAGLIO INITIUM v6 ===== --}}
+  {{-- ===== DETTAGLIO SEGNALE v6 ===== --}}
   <div class="compliance-card bg-white rounded-lg shadow-sm mb-5 overflow-hidden">
-    <h2 class="text-xl font-bold px-6 pt-6 pb-3" style="color:#3D8B88;">Dettaglio analitico — INITIUM v6 (20h + 3h esame, 5 moduli)</h2>
+    <h2 class="text-xl font-bold px-6 pt-6 pb-3" style="color:#3D8B88;">Dettaglio analitico — SEGNALE v6 (20h + 3h esame, 5 moduli)</h2>
 
     <div class="overflow-x-auto">
-      <table class="w-full border-collapse text-sm" role="table" aria-label="Dettaglio analitico INITIUM v6 per modulo">
+      <table class="w-full border-collapse text-sm" role="table" aria-label="Dettaglio analitico SEGNALE v6 per modulo">
         <thead>
           <tr class="text-xs uppercase tracking-wider text-white" style="background:#3D8B88;">
             <th scope="col" class="text-left p-3 font-semibold">Modulo</th>
@@ -336,7 +336,7 @@
 
   {{-- ===== FOOTER PAGINA ===== --}}
   <div class="text-center text-xs py-5" style="color:#8A9696;">
-    <div>Track AI Noscite · Conformità EU AI Act Art. 4 · coerente con INITIUM v6 e con la Mappa di Conformità (Reg. UE 2024/1689) · Maggio 2026</div>
+    <div>Track AI Noscite · Conformità EU AI Act Art. 4 · coerente con SEGNALE v6 e con la Mappa di Conformità (Reg. UE 2024/1689) · Maggio 2026</div>
     <div class="italic mt-1" style="color:#E28A53;">In digitālī nova virtūs</div>
     <div class="mt-1">Documento per uso commerciale e compliance · Conservare per audit AI Act (min. 5 anni)</div>
   </div>

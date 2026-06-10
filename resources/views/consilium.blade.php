@@ -1,11 +1,11 @@
 @extends('layouts.app')
-@section('title', 'CONSILIUM — Strategia AI per PMI')
-@section('description', 'CONSILIUM — Laboratorio direzionale 7 ore per CEO e board PMI. Strategia AI, AI Usage Policy e roadmap 90 giorni. Certified AI Strategist. Conforme EU AI Act.')
+@section('title', 'INTERFERENZA — Strategia AI per PMI')
+@section('description', 'INTERFERENZA — Laboratorio direzionale 7 ore per CEO e board PMI. Strategia AI, AI Usage Policy e roadmap 90 giorni. Certified AI Strategist. Conforme EU AI Act.')
 
 @section('content')
 <div class="max-w-4xl mx-auto px-4 py-16">
     <span class="badge-teal mb-4 inline-block">Per Board &middot; Direzione &middot; Imprenditori</span>
-    <h1 class="text-4xl font-bold mb-2" style="color:#1A1F1F">CONSILIUM — Strategia AI per PMI</h1>
+    <h1 class="text-4xl font-bold mb-2" style="color:#1A1F1F">INTERFERENZA — Strategia AI per PMI</h1>
     <p class="text-lg mb-6" style="color:#4A5252">Laboratorio direzionale di 7 ore. Formato 25% teoria, 75% lavoro laboratoriale su canvas.</p>
     <div class="flex flex-wrap gap-3 mb-8">
         <span class="badge-orange">7 ore &middot; 1 giornata</span>
@@ -50,6 +50,6 @@
         </div>
     </div>
 
-    <a href="/contatti" class="btn-orange">Richiedi informazioni su CONSILIUM</a>
+    <a href="/contatti" class="btn-orange">Richiedi informazioni su INTERFERENZA</a>
 </div>
 @endsection

@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'PRIMUS — Prima di tutto il perche')
-@section('description', 'PRIMUS — Il punto zero del percorso Noscite. 4 ore per imprenditori e dirigenti PMI. Mappa di Maturita Digitale personalizzata. Propedeutico a CONSILIUM e INITIUM.')
+@section('title', 'RUMORE DI FONDO — Prima di tutto il perche')
+@section('description', 'RUMORE DI FONDO — Il punto zero del percorso Noscite. 4 ore per imprenditori e dirigenti PMI. Mappa di Maturita Digitale personalizzata. Propedeutico a INTERFERENZA e SEGNALE.')
 
 @section('content')
 <!-- HERO -->
@@ -8,7 +8,7 @@
     <div style="position:absolute;inset:0;background-image:url('/images/atheneum_new.png');background-size:cover;background-position:center;opacity:0.15;z-index:0;" aria-hidden="true"></div>
     <div class="max-w-4xl mx-auto" style="position:relative;z-index:1">
         <span style="background:rgba(255,255,255,0.15);color:white;padding:0.4rem 1rem;border-radius:9999px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;display:inline-block" class="mb-4">Propedeutico &middot; 4 ore &middot; Nessun prerequisito</span>
-        <h1 class="text-5xl md:text-6xl font-bold mb-2">PRIMUS</h1>
+        <h1 class="text-5xl md:text-6xl font-bold mb-2">RUMORE DI FONDO</h1>
         <p class="text-xl font-semibold mb-6" style="color:#E28A53">Prima di tutto il perche</p>
         <p class="text-base max-w-2xl" style="color:rgba(255,255,255,0.9)">Il punto zero del percorso Noscite. Per imprenditori e dirigenti che vogliono capire se e perche l'AI riguarda davvero la loro PMI — prima di investire tempo, energia e denaro in formazione.</p>
     </div>
@@ -17,7 +17,7 @@
 <!-- OBIETTIVI -->
 <section class="py-16 px-4" style="background:white">
     <div class="max-w-4xl mx-auto">
-        <h2 class="text-2xl font-bold mb-8" style="color:#1A1F1F">Obiettivi di PRIMUS</h2>
+        <h2 class="text-2xl font-bold mb-8" style="color:#1A1F1F">Obiettivi di RUMORE DI FONDO</h2>
         <div class="space-y-4">
             @foreach([
                 "Capire cos'e l'AI generativa senza gergo tecnico, con esempi del proprio settore",
@@ -91,7 +91,7 @@
                     <h3 class="text-xl font-bold" style="color:#1A1F1F">La tua mappa e il tuo percorso</h3>
                     <span class="ml-auto text-sm" style="color:#8A9696">35'</span>
                 </div>
-                <p style="color:#4A5252">Consegna della Mappa di Maturita Digitale personalizzata. Presentazione del percorso Noscite consigliato: CONSILIUM (strategia), INITIUM (operativita) o entrambi.</p>
+                <p style="color:#4A5252">Consegna della Mappa di Maturita Digitale personalizzata. Presentazione del percorso Noscite consigliato: INTERFERENZA (strategia), SEGNALE (operativita) o entrambi.</p>
             </div>
         </div>
     </div>
@@ -103,7 +103,7 @@
         <p class="text-xs font-bold uppercase mb-2" style="color:white;opacity:0.8;letter-spacing:0.1em">Al termine ricevi</p>
         <div class="flex flex-col gap-2 text-base font-semibold">
             <div class="flex items-center gap-2">&#10003; Mappa di Maturita Digitale personalizzata</div>
-            <div class="flex items-center gap-2">&#10003; Percorso Noscite consigliato (CONSILIUM, INITIUM o entrambi)</div>
+            <div class="flex items-center gap-2">&#10003; Percorso Noscite consigliato (INTERFERENZA, SEGNALE o entrambi)</div>
             <div class="flex items-center gap-2">&#10003; Attestato di partecipazione Noscite</div>
         </div>
     </div>
@@ -128,7 +128,7 @@
             </div>
             <div class="p-4 rounded-lg" style="background:white;border:1px solid #C8D0D0">
                 <p class="text-xs font-bold uppercase mb-1" style="color:#55B1AE">Propedeutico a</p>
-                <p style="color:#1A1F1F">CONSILIUM e INITIUM</p>
+                <p style="color:#1A1F1F">INTERFERENZA e SEGNALE</p>
             </div>
         </div>
     </div>
@@ -136,7 +136,7 @@
 
 <!-- CTA FINALE -->
 <section class="py-16 px-4 text-center" style="background:#55B1AE;color:white">
-    <h2 class="text-3xl font-bold mb-4">Partecipa al prossimo PRIMUS</h2>
+    <h2 class="text-3xl font-bold mb-4">Partecipa al prossimo RUMORE DI FONDO</h2>
     <p class="mb-8 max-w-xl mx-auto" style="opacity:0.9">Scrivici per sapere le prossime date disponibili, oppure richiedi una sessione aziendale dedicata.</p>
     <a href="/contatti" class="btn-primary" style="background:white;color:#55B1AE">Contattaci &rarr;</a>
 </section>

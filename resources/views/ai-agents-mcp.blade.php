@@ -1,13 +1,13 @@
 @extends('layouts.app')
-@section('title', 'AI AGENTS & MCP — Agenti AI in Azienda')
-@section('description', 'AI AGENTS & MCP — Governance degli agenti AI per PMI. Livello 1 asincrono + workshop in presenza. Protocollo MCP, canvas architetto agente. Certified AI Agent Governance Practitioner.')
+@section('title', 'FREQUENZA — Agenti AI in Azienda')
+@section('description', 'FREQUENZA — Governance degli agenti AI per PMI. Livello 1 asincrono + workshop in presenza. Protocollo MCP, canvas architetto agente. Certified AI Agent Governance Practitioner.')
 
 @section('content')
 <div class="max-w-4xl mx-auto px-4 py-16">
     <span class="badge-teal mb-4 inline-block">Per Manager &middot; PM &middot; Responsabili Innovazione &middot; IT</span>
-    <h1 class="text-4xl font-bold mb-2" style="color:#1A1F1F">AI AGENTS & MCP — Agenti AI in Azienda</h1>
+    <h1 class="text-4xl font-bold mb-2" style="color:#1A1F1F">FREQUENZA — Agenti AI in Azienda</h1>
     <p class="text-lg mb-2" style="color:#4A5252">L'unico corso del portfolio dedicato alla governance degli agenti AI e del protocollo MCP.</p>
-    <p class="text-sm mb-6 italic" style="color:#E28A53">Prerequisito: INITIUM o equivalente &middot; Max 12 partecipanti L2</p>
+    <p class="text-sm mb-6 italic" style="color:#E28A53">Prerequisito: SEGNALE o equivalente &middot; Max 12 partecipanti L2</p>
     <div class="flex flex-wrap gap-3 mb-8">
         <span class="badge-orange">~9 ore &middot; L1 asincrono + L2 workshop</span>
         <span class="badge-teal">Certified AI Agent Governance Practitioner</span>
@@ -50,6 +50,6 @@
         </div>
     </div>
 
-    <a href="/contatti" class="btn-orange">Richiedi informazioni su AI AGENTS & MCP</a>
+    <a href="/contatti" class="btn-orange">Richiedi informazioni su FREQUENZA</a>
 </div>
 @endsection

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Formazione AI per PMI — Conformi EU AI Act')
-@section('description', 'Portfolio formativo AI per PMI: CONSILIUM strategia, INITIUM operativita, STRUCTURA second brain, AI AGENTS governance. Certificazioni conformi EU AI Act Art. 4.')
+@section('description', 'Portfolio formativo AI per PMI: INTERFERENZA strategia, SEGNALE operativita, CIRCUITO second brain, AI AGENTS governance. Certificazioni conformi EU AI Act Art. 4.')
 
 @section('content')
 <!-- HERO -->
@@ -86,7 +86,7 @@
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom:40px;">
 
-            {{-- PRIMUS --}}
+            {{-- RUMORE DI FONDO --}}
             <a href="{{ url('/primus') }}" style="text-decoration:none; color:inherit;">
                 <div style="background:white; border:2px solid #E8F5F5; border-radius:16px;
                             padding:28px 22px; transition:all 0.2s; height:100%;
@@ -99,7 +99,7 @@
                         <div style="font-size:0.7rem; color:#8A9696; font-style:italic;">perché farlo</div>
                     </div>
 
-                    <h3 style="font-size:1.4rem; color:#1A1F1F; margin:0 0 8px; font-weight:700; letter-spacing:1px;">PRIMUS</h3>
+                    <h3 style="font-size:1.4rem; color:#1A1F1F; margin:0 0 8px; font-weight:700; letter-spacing:1px;">RUMORE DI FONDO</h3>
                     <p style="font-size:0.85rem; color:#5A6464; margin:0 0 4px; font-style:italic;">
                         Il risveglio consapevole
                     </p>
@@ -119,7 +119,7 @@
                 </div>
             </a>
 
-            {{-- CONSILIUM --}}
+            {{-- INTERFERENZA --}}
             <a href="{{ url('/consilium') }}" style="text-decoration:none; color:inherit;">
                 <div style="background:white; border:2px solid #E8F5F5; border-radius:16px;
                             padding:28px 22px; transition:all 0.2s; height:100%;
@@ -132,7 +132,7 @@
                         <div style="font-size:0.7rem; color:#8A9696; font-style:italic;">cosa fare</div>
                     </div>
 
-                    <h3 style="font-size:1.4rem; color:#1A1F1F; margin:0 0 8px; font-weight:700; letter-spacing:1px;">CONSILIUM</h3>
+                    <h3 style="font-size:1.4rem; color:#1A1F1F; margin:0 0 8px; font-weight:700; letter-spacing:1px;">INTERFERENZA</h3>
                     <p style="font-size:0.85rem; color:#5A6464; margin:0 0 4px; font-style:italic;">
                         La bussola strategica
                     </p>
@@ -152,7 +152,7 @@
                 </div>
             </a>
 
-            {{-- INITIUM --}}
+            {{-- SEGNALE --}}
             <a href="{{ url('/initium') }}" style="text-decoration:none; color:inherit;">
                 <div style="background:white; border:2px solid #E8F5F5; border-radius:16px;
                             padding:28px 22px; transition:all 0.2s; height:100%;
@@ -165,7 +165,7 @@
                         <div style="font-size:0.7rem; color:#8A9696; font-style:italic;">come farlo</div>
                     </div>
 
-                    <h3 style="font-size:1.4rem; color:#1A1F1F; margin:0 0 8px; font-weight:700; letter-spacing:1px;">INITIUM</h3>
+                    <h3 style="font-size:1.4rem; color:#1A1F1F; margin:0 0 8px; font-weight:700; letter-spacing:1px;">SEGNALE</h3>
                     <p style="font-size:0.85rem; color:#5A6464; margin:0 0 4px; font-style:italic;">
                         Le fondamenta operative
                     </p>
@@ -190,12 +190,12 @@
         <div style="text-align:center; padding:20px 20px 30px; font-size:0.85rem; color:#5A6464;
                     border-top:1px solid rgba(138,150,150,0.2); max-width:800px; margin:0 auto;">
             <strong style="color:#3A8C89;">✓ Conformità EU AI Act</strong> — Reg. UE 2024/1689 Art. 4 (AI literacy).
-            INITIUM è il corso di compliance primaria, CONSILIUM copre l'area direzionale, PRIMUS prepara al percorso.
+            SEGNALE è il corso di compliance primaria, INTERFERENZA copre l'area direzionale, RUMORE DI FONDO prepara al percorso.
         </div>
 
         {{-- CTA finale --}}
         <div style="text-align:center; margin-top:20px;">
-            <a href="{{ url('/contatti') }}?msg={{ urlencode('Vorrei ricevere informazioni sul Percorso AI di Noscite (PRIMUS, CONSILIUM, INITIUM).') }}"
+            <a href="{{ url('/contatti') }}?msg={{ urlencode('Vorrei ricevere informazioni sul Percorso AI di Noscite (RUMORE DI FONDO, INTERFERENZA, SEGNALE).') }}"
                style="display:inline-block; padding:14px 32px; background:#E28A53; color:white;
                       border-radius:10px; text-decoration:none; font-weight:700; font-size:0.95rem;
                       box-shadow:0 4px 12px rgba(226,138,83,0.25); transition:all 0.2s;"
@@ -228,7 +228,7 @@
                 <tbody>
                     <tr style="background:#F5F7F7">
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">
-                            <div class="font-bold" style="color:#8A9696">PRIMUS</div>
+                            <div class="font-bold" style="color:#8A9696">RUMORE DI FONDO</div>
                             <div class="text-xs mt-1" style="color:#8A9696">Prima di tutto il perché &mdash; evento di consapevolezza AI</div>
                         </td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">4h &middot; mezza giornata</td>
@@ -238,7 +238,7 @@
                     </tr>
                     <tr>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">
-                            <div class="font-bold" style="color:#55B1AE">CONSILIUM</div>
+                            <div class="font-bold" style="color:#55B1AE">INTERFERENZA</div>
                             <div class="text-xs mt-1" style="color:#8A9696">Workshop direzionale o consulenza strategica facilitata</div>
                         </td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">7h &middot; 1 giornata</td>
@@ -248,7 +248,7 @@
                     </tr>
                     <tr style="background:#F5F7F7">
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">
-                            <div class="font-bold" style="color:#55B1AE">INITIUM</div>
+                            <div class="font-bold" style="color:#55B1AE">SEGNALE</div>
                             <div class="text-xs mt-1" style="color:#8A9696">Fondamenta AI Operativa con certificazione</div>
                         </td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">20h + 3h esame</td>
@@ -258,7 +258,7 @@
                     </tr>
                     <tr>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">
-                            <div class="font-bold" style="color:#55B1AE">STRUCTURA</div>
+                            <div class="font-bold" style="color:#55B1AE">CIRCUITO</div>
                             <div class="text-xs mt-1" style="color:#8A9696">Second Brain Aziendale &mdash; vault Obsidian incluso</div>
                         </td>
                         <td class="p-3 border" style="border-color:#C8D0D0;color:#4A5252">24h &middot; 6 moduli</td>
@@ -283,22 +283,22 @@
         <!-- DIAGRAMMA PERCORSO -->
         <div class="flex flex-wrap items-center justify-center gap-2 mb-10 text-sm">
             <div class="px-3 py-2 rounded text-center" style="background:#F5F7F7;border:1px dashed #C8D0D0;min-width:120px">
-                <div class="font-bold" style="color:#8A9696">PRIMUS</div>
+                <div class="font-bold" style="color:#8A9696">RUMORE DI FONDO</div>
                 <div style="color:#8A9696;font-size:0.7rem">Propedeutico</div>
             </div>
             <div style="color:#C8D0D0;font-size:1.2rem">&rarr;</div>
             <div class="px-3 py-2 rounded text-center" style="background:#E8F5F5;min-width:120px">
-                <div class="font-bold" style="color:#55B1AE">CONSILIUM</div>
+                <div class="font-bold" style="color:#55B1AE">INTERFERENZA</div>
                 <div style="color:#8A9696;font-size:0.7rem">Visione strategica</div>
             </div>
             <div style="color:#C8D0D0;font-size:1.2rem">&rarr;</div>
             <div class="px-3 py-2 rounded text-center" style="background:#E8F5F5;min-width:120px">
-                <div class="font-bold" style="color:#55B1AE">INITIUM</div>
+                <div class="font-bold" style="color:#55B1AE">SEGNALE</div>
                 <div style="color:#8A9696;font-size:0.7rem">Uso quotidiano AI</div>
             </div>
             <div style="color:#C8D0D0;font-size:1.2rem">&rarr;</div>
             <div class="px-3 py-2 rounded text-center" style="background:#E8F5F5;min-width:120px">
-                <div class="font-bold" style="color:#55B1AE">STRUCTURA</div>
+                <div class="font-bold" style="color:#55B1AE">CIRCUITO</div>
                 <div style="color:#8A9696;font-size:0.7rem">Infrastruttura conoscenza</div>
             </div>
             <div style="color:#C8D0D0;font-size:1.2rem">&rarr;</div>
@@ -309,14 +309,14 @@
         </div>
 
         <div class="flex flex-col gap-8">
-            <!-- PRIMUS -->
+            <!-- RUMORE DI FONDO -->
             <div class="corso-card" style="border:2px dashed #C8D0D0;background:#F5F7F7">
                 <div class="flex flex-wrap gap-2 mb-3">
                     <span class="badge-teal" style="background:#F5F7F7;color:#8A9696;border:1px solid #C8D0D0">Propedeutico &middot; Nessun prerequisito</span>
                     <span style="background:#F5F7F7;color:#8A9696;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:700">4 ore &middot; mezza giornata</span>
                     <span style="background:#F5F7F7;color:#8A9696;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:700">Attestato di partecipazione</span>
                 </div>
-                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">PRIMUS — Prima di tutto il perche</h3>
+                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">RUMORE DI FONDO — Prima di tutto il perche</h3>
                 <p class="mb-1" style="color:#4A5252">Il punto zero del percorso Noscite. Per imprenditori e dirigenti che vogliono capire se e perche l'AI riguarda davvero la loro PMI, prima di investire in formazione.</p>
                 <p class="text-sm mb-4 italic" style="color:#8A9696">Output: Mappa di Maturita Digitale personalizzata + percorso Noscite consigliato.</p>
                 <div class="grid md:grid-cols-2 gap-2 mb-4">
@@ -325,17 +325,17 @@
                     <div class="text-sm p-2 rounded" style="background:white"><strong>M3</strong> La tua azienda nell'AI <span style="color:#8A9696">(60')</span></div>
                     <div class="text-sm p-2 rounded" style="background:white"><strong>M4</strong> La tua mappa e il tuo percorso <span style="color:#8A9696">(35')</span></div>
                 </div>
-                <a href="/contatti" class="btn-primary" style="background:#8A9696">Richiedi informazioni su PRIMUS</a>
+                <a href="/contatti" class="btn-primary" style="background:#8A9696">Richiedi informazioni su RUMORE DI FONDO</a>
             </div>
 
-            <!-- CONSILIUM -->
+            <!-- INTERFERENZA -->
             <div class="corso-card">
                 <div class="flex flex-wrap gap-2 mb-3">
                     <span class="badge-teal">Per Board &middot; Direzione &middot; Imprenditori</span>
                     <span class="badge-orange">7 ore &middot; 1 giornata</span>
                     <span class="badge-teal">Certified AI Strategist</span>
                 </div>
-                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">CONSILIUM — Strategia AI per PMI</h3>
+                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">INTERFERENZA — Strategia AI per PMI</h3>
                 <p class="mb-4" style="color:#4A5252">Il laboratorio direzionale Noscite. Dedicato a imprenditori e vertici aziendali che vogliono costruire una visione strategica sull'AI: non seguire la moda, ma guidare una trasformazione con metodo e consapevolezza. Formato 25% teoria, 75% lavoro laboratoriale su canvas. Ogni modulo produce un deliverable operativo.</p>
                 <div class="grid md:grid-cols-2 gap-2 mb-4">
                     <div class="text-sm p-2 rounded" style="background:#E8F5F5"><strong>M1</strong> Scenario AI per PMI — opportunita, rischi e casi d'uso <span style="color:#8A9696">(1h 30')</span></div>
@@ -346,14 +346,14 @@
                 <a href="/contatti" class="btn-orange">Richiedi informazioni</a>
             </div>
 
-            <!-- INITIUM -->
+            <!-- SEGNALE -->
             <div class="corso-card">
                 <div class="flex flex-wrap gap-2 mb-3">
                     <span class="badge-teal">Per Manager &middot; Professionisti &middot; Team operativi</span>
                     <span class="badge-orange">20h + 3h esame</span>
                     <span class="badge-teal">Certified AI Productivity User</span>
                 </div>
-                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">INITIUM — Fondamenta AI Operativa</h3>
+                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">SEGNALE — Fondamenta AI Operativa</h3>
                 <p class="mb-4" style="color:#4A5252">Il punto di partenza per chi vuole capire davvero l'AI generativa. Corso di compliance primaria AI Act: soddisfa i requisiti dell'Art. 4 Reg. UE 2024/1689 per tutto il personale che usa sistemi AI. Formato 70% pratico, 30% teoria.</p>
                 <div class="grid md:grid-cols-2 gap-2 mb-4">
                     <div class="text-sm p-2 rounded" style="background:#E8F5F5"><strong>M1</strong> Capire l'AI — logica, dati e limiti <span style="color:#8A9696">(4h)</span></div>
@@ -366,16 +366,16 @@
                 <a href="/contatti" class="btn-orange">Richiedi informazioni</a>
             </div>
 
-            <!-- STRUCTURA -->
+            <!-- CIRCUITO -->
             <div class="corso-card">
                 <div class="flex flex-wrap gap-2 mb-3">
                     <span class="badge-teal">Per Manager &middot; Knowledge Worker &middot; PM</span>
                     <span class="badge-orange">24 ore &middot; 6 moduli</span>
                     <span class="badge-teal">Certified Second Brain Implementer</span>
                 </div>
-                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">STRUCTURA — Second Brain Aziendale</h3>
+                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">CIRCUITO — Second Brain Aziendale</h3>
                 <p class="mb-1" style="color:#4A5252">Percorso avanzato per implementare sistemi di knowledge management con approccio AI-driven. Produce documentazione audit-ready: vault Obsidian, Playbook di governance, roadmap 90 giorni.</p>
-                <p class="text-sm mb-4 italic" style="color:#E28A53">Prerequisito consigliato: INITIUM</p>
+                <p class="text-sm mb-4 italic" style="color:#E28A53">Prerequisito consigliato: SEGNALE</p>
                 <div class="grid md:grid-cols-2 gap-2 mb-4">
                     <div class="text-sm p-2 rounded" style="background:#E8F5F5"><strong>M1</strong> Metodo CODE e fondamenti del Second Brain <span style="color:#8A9696">(4h)</span></div>
                     <div class="text-sm p-2 rounded" style="background:#E8F5F5"><strong>M2</strong> Setup Obsidian e Vault Aziendale <span style="color:#8A9696">(4h)</span></div>
@@ -387,16 +387,16 @@
                 <a href="/contatti" class="btn-orange">Richiedi informazioni</a>
             </div>
 
-            <!-- AI AGENTS & MCP -->
+            <!-- FREQUENZA -->
             <div class="corso-card">
                 <div class="flex flex-wrap gap-2 mb-3">
                     <span class="badge-teal">Per Manager &middot; PM &middot; Responsabili Innovazione &middot; IT</span>
                     <span class="badge-orange">~9 ore &middot; L1 asincrono + L2 workshop</span>
                     <span class="badge-teal">Certified AI Agent Governance Practitioner</span>
                 </div>
-                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">AI AGENTS & MCP — Agenti AI in Azienda</h3>
+                <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">FREQUENZA — Agenti AI in Azienda</h3>
                 <p class="mb-1" style="color:#4A5252">L'unico corso del portfolio dedicato alla governance degli agenti AI e del protocollo MCP. Livello 1 asincrono fruibile da qualsiasi dispositivo. Livello 2 workshop in presenza su casi reali con demo live MCPHub Noscite.</p>
-                <p class="text-sm mb-4 italic" style="color:#E28A53">Prerequisito: INITIUM o equivalente &middot; Max 12 partecipanti L2</p>
+                <p class="text-sm mb-4 italic" style="color:#E28A53">Prerequisito: SEGNALE o equivalente &middot; Max 12 partecipanti L2</p>
                 <div class="grid md:grid-cols-2 gap-2 mb-4">
                     <div class="text-sm p-2 rounded" style="background:#E8F5F5"><strong>L1</strong> Asincrono ~3h: paradigma agenti, MCP, casi PMI, governance</div>
                     <div class="text-sm p-2 rounded" style="background:#E8F5F5"><strong>L2 A</strong> Fondamenta MCP e demo live MCPHub <span style="color:#8A9696">(2h)</span></div>
