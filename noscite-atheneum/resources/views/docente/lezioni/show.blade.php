@@ -104,7 +104,8 @@
 
             <div x-show="tab==='preview'" style="display:none;" x-data="docenteLessonNotes()">
                 <p style="font-size:0.78rem; color:#8A9696; margin:0 0 10px;">Passa il mouse su un paragrafo e clicca &#9998; per aggiungere una <strong>nota del docente</strong>: la vedranno tutti gli studenti della classe.</p>
-                <div class="md-body lesson-body" style="font-size:0.9rem; line-height:1.65; color:#1A1F1F;">{!! $bodyHtml !!}</div>
+                {{-- Stesso layout/rendering della vista studente (partials condivisi). --}}
+                <div class="lesson-card"><div class="lesson-body">{!! $bodyHtml !!}</div></div>
             </div>
         </div>
 
@@ -232,13 +233,10 @@
     @endif
 </div>
 
-@push('styles')<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.lesson-body [data-note-anchor]{position:relative}
-.lesson-body .note-tab{position:absolute; left:-24px; top:2px; border:none; background:none; cursor:pointer; color:#C8D0D0; font-size:0.9rem;}
-.lesson-body .note-tab.has-note{color:#3A8C89;}
-.lesson-body [data-note-anchor]:hover .note-tab{color:#55B1AE;}
-.note-teacher{background:#EEF7F6; border-left:3px solid #55B1AE; padding:6px 10px; margin:6px 0; font-size:0.85rem; color:#1A1F1F; border-radius:0 6px 6px 0;}
-.note-teacher-label{display:block; font-size:0.7rem; font-weight:700; color:#3A8C89; text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px;}</style>@endpush
+@push('styles')<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}</style>@endpush
+{{-- Stessa tipografia + KaTeX della vista studente: l'anteprima è IDENTICA. --}}
+@include('schola.partials.lesson-typography')
+@include('schola.partials.lesson-katex')
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
