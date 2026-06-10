@@ -10,6 +10,9 @@ class Settings:
     def __init__(self):
         self.ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
         self.GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+        # Token interno condiviso con i client server-side (Atheneum). Se vuoto,
+        # gli endpoint /api/* rispondono 503 (fail-closed): vedi require_internal_token.
+        self.INTERNAL_API_TOKEN: str = os.getenv("INTERNAL_API_TOKEN", "")
         self.FRAMES_PER_SECOND: float = float(os.getenv("FRAMES_PER_SECOND", "0.5"))
         self.CHUNK_WINDOW_SECONDS: int = int(os.getenv("CHUNK_WINDOW_SECONDS", "30"))
         self.CHUNK_OVERLAP_SECONDS: int = int(os.getenv("CHUNK_OVERLAP_SECONDS", "8"))

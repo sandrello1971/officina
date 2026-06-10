@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
 class VideoAIService
@@ -13,9 +14,21 @@ class VideoAIService
         $this->baseUrl = config('services.videoai.url');
     }
 
+    /**
+     * Client HTTP pre-configurato con l'header di autenticazione interna. OGNI
+     * chiamata a videoai passa da qui, così il token è inviato sempre (anche se
+     * videoai per ora lo ignora: rollout sicuro in due fasi).
+     */
+    private function client(): PendingRequest
+    {
+        return Http::withHeaders([
+            'X-Internal-Token' => (string) config('services.videoai.token'),
+        ]);
+    }
+
     public function ingestVideo(string $filePath, string $filename): array
     {
-        $response = Http::timeout(300)
+        $response = $this->client()->timeout(300)
             ->attach('file', file_get_contents($filePath), $filename)
             ->post("{$this->baseUrl}/api/videos/ingest");
 
@@ -28,7 +41,7 @@ class VideoAIService
 
     public function getStatus(string $videoId): array
     {
-        $response = Http::timeout(10)
+        $response = $this->client()->timeout(10)
             ->get("{$this->baseUrl}/api/videos/{$videoId}/status");
 
         if ($response->failed()) {
@@ -40,7 +53,7 @@ class VideoAIService
 
     public function chat(string $videoId, string $question, array $history = []): array
     {
-        $response = Http::timeout(60)
+        $response = $this->client()->timeout(60)
             ->post("{$this->baseUrl}/api/videos/{$videoId}/chat", [
                 'question' => $question,
                 'history' => $history,
@@ -55,7 +68,7 @@ class VideoAIService
 
     public function getTranscript(string $videoId): array
     {
-        $response = Http::timeout(30)
+        $response = $this->client()->timeout(30)
             ->get("{$this->baseUrl}/api/videos/{$videoId}/transcript");
 
         if ($response->failed()) return ['segments' => []];
@@ -74,7 +87,7 @@ class VideoAIService
 
     public function deleteVideo(string $videoId): bool
     {
-        $response = Http::timeout(30)
+        $response = $this->client()->timeout(30)
             ->delete("{$this->baseUrl}/api/videos/{$videoId}");
         return $response->successful();
     }
@@ -83,7 +96,7 @@ class VideoAIService
     {
         if (empty($videoIds)) return [];
 
-        $response = Http::timeout(15)
+        $response = $this->client()->timeout(15)
             ->post("{$this->baseUrl}/api/search", [
                 'question' => $query,
                 'video_ids' => array_values(array_unique($videoIds)),
@@ -99,7 +112,7 @@ class VideoAIService
 
     public function transcribeAudio(string $filePath, string $filename): array
     {
-        $response = Http::timeout(120)
+        $response = $this->client()->timeout(120)
             ->attach('file', file_get_contents($filePath), $filename)
             ->post("{$this->baseUrl}/api/audio/transcribe");
 
@@ -117,7 +130,7 @@ class VideoAIService
 
     public function transcribeYouTube(string $url): array
     {
-        $response = Http::timeout(60)
+        $response = $this->client()->timeout(60)
             ->post("{$this->baseUrl}/api/youtube/transcribe", ['url' => $url]);
 
         if ($response->failed()) {
@@ -139,7 +152,7 @@ class VideoAIService
         $maxAttempts = (int) config('services.videoai.poll_max_attempts', 200);
 
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-            $res = Http::timeout(15)->get("{$this->baseUrl}{$statusPath}");
+            $res = $this->client()->timeout(15)->get("{$this->baseUrl}{$statusPath}");
             if ($res->failed()) {
                 throw new \RuntimeException('VideoAI status check failed: ' . $res->status());
             }
