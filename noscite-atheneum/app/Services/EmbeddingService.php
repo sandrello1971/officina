@@ -74,6 +74,7 @@ class EmbeddingService
     private function embedBatch(array $texts): array
     {
         $response = Http::timeout($this->timeout)
+            ->withHeaders(['X-Internal-Token' => (string) config('services.videoai.token')])
             ->acceptJson()
             ->post("{$this->baseUrl}/api/embeddings", ['texts' => $texts]);
 

@@ -5,9 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\KbDocument;
 use App\Services\KbSyncService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Process;
 
 class IntranetKbController extends Controller
 {
+    /**
+     * Esegue un comando git SENZA shell (array di argomenti), con working dir
+     * esplicita. Niente interpolazione di variabili in stringhe di comando →
+     * nessun rischio di command injection. Ritorna il Process eseguito.
+     */
+    private function runGit(array $args, string $cwd): Process
+    {
+        $process = new Process(array_merge(['git'], $args), $cwd);
+        $process->run();
+
+        return $process;
+    }
+
     public function index(Request $request)
     {
         $user = session('intranet_user');
@@ -88,12 +103,13 @@ class IntranetKbController extends Controller
         if (!($user['is_admin'] ?? false)) abort(403);
 
         $vaultPath = config('kb.vault_path');
-        exec("cd " . escapeshellarg($vaultPath) . " && git pull origin main 2>&1", $output);
+        $pull = $this->runGit(['pull', 'origin', 'main'], $vaultPath);
+        $gitOutput = trim($pull->getOutput() . $pull->getErrorOutput());
 
         $stats = app(KbSyncService::class)->sync();
 
         return back()->with('success',
-            "Sync completato: {$stats['created']} nuovi, {$stats['updated']} aggiornati. Git: " . implode(' ', $output)
+            "Sync completato: {$stats['created']} nuovi, {$stats['updated']} aggiornati. Git: " . $gitOutput
         );
     }
 
@@ -146,20 +162,35 @@ class IntranetKbController extends Controller
 
         $document->delete();
 
-        $vault = escapeshellarg($vaultPath);
+        // Validazione difensiva dello stem: solo caratteri sicuri per nomi file.
+        // Se non matcha, salta SOLO le operazioni git (record DB e file locali
+        // sono già stati cancellati sopra, come da comportamento attuale).
+        if (!preg_match('/^[A-Za-z0-9._-]+$/', $stem)) {
+            Log::warning("KB destroy: file_stem non valido, operazioni git saltate: {$stem}");
 
-        // Rimuovi esplicitamente dal git index
-        exec("cd {$vault} && git rm --ignore-unmatch _metadata/{$document->file_stem}.md 2>&1");
-        exec("cd {$vault} && git rm --ignore-unmatch _archive/{$document->file_stem}.* 2>&1");
+            return back()->with('success', 'Documento eliminato.');
+        }
+
+        // Rimozione dal git index SENZA shell (Process con array di argomenti).
+        $this->runGit(['rm', '--ignore-unmatch', "_metadata/{$stem}.md"], $vaultPath);
+
+        // Glob risolto lato PHP su path assoluto: niente espansione wildcard via
+        // shell. I file trovati sono passati come argomenti espliciti a `git rm`.
+        $archiveFiles = glob($vaultPath . '/_archive/' . $stem . '.*') ?: [];
+        if ($archiveFiles) {
+            $archiveRelPaths = array_map(fn ($f) => '_archive/' . basename($f), $archiveFiles);
+            $this->runGit(array_merge(['rm', '--ignore-unmatch'], $archiveRelPaths), $vaultPath);
+        }
 
         // Commit + sync con remote + push
-        $msg = escapeshellarg("kb: eliminato {$document->file_stem}");
-        exec("cd {$vault} && git add -A && git commit -m {$msg} 2>&1", $commitOut, $commitRc);
-        exec("cd {$vault} && git pull --rebase origin main 2>&1", $pullOut, $pullRc);
-        exec("cd {$vault} && git push origin main 2>&1", $pushOut, $pushRc);
+        $this->runGit(['add', '-A'], $vaultPath);
+        $this->runGit(['commit', '-m', "kb: eliminato {$stem}"], $vaultPath);
+        $this->runGit(['pull', '--rebase', 'origin', 'main'], $vaultPath);
+        $push = $this->runGit(['push', 'origin', 'main'], $vaultPath);
 
-        if ($pushRc !== 0) {
-            \Illuminate\Support\Facades\Log::warning("KB destroy: push fallito rc={$pushRc}: " . implode(' ', $pushOut));
+        if (!$push->isSuccessful()) {
+            Log::warning("KB destroy: push fallito rc={$push->getExitCode()}: "
+                . trim($push->getOutput() . $push->getErrorOutput()));
         }
 
         return back()->with('success', 'Documento eliminato.');

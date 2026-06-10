@@ -1,5 +1,7 @@
 import hashlib
+import hmac
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -7,7 +9,7 @@ import aiofiles
 import chromadb
 import mimetypes
 
-from fastapi import FastAPI, Request, UploadFile, File, BackgroundTasks, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, BackgroundTasks, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
@@ -34,14 +36,33 @@ from backend.transcription.audio import run_audio_job, ALLOWED_AUDIO_EXTENSIONS
 from backend.transcription.youtube import run_youtube_job
 
 
-app = FastAPI(title="Video Chatbot API", version="1.0.0")
+def require_internal_token(x_internal_token: str = Header(default="")):
+    """Autenticazione interna server-to-server per TUTTI gli endpoint /api/*.
+
+    Fail-closed: se INTERNAL_API_TOKEN non è configurato → 503 (mai aperto).
+    Confronto a tempo costante (hmac.compare_digest) per evitare timing attack.
+    """
+    expected = settings.INTERNAL_API_TOKEN
+    if not expected:
+        raise HTTPException(status_code=503, detail="INTERNAL_API_TOKEN non configurato")
+    if not hmac.compare_digest(x_internal_token or "", expected):
+        raise HTTPException(status_code=401, detail="Token interno non valido")
+
+
+# Dependency applicata a livello di APPLICAZIONE: vale per ogni route, così non
+# se ne dimentica nessuna. Tutti gli endpoint esposti sono /api/*.
+app = FastAPI(
+    title="Video Chatbot API",
+    version="1.0.0",
+    dependencies=[Depends(require_internal_token)],
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:5174", "https://atheneum.noscite.it", "http://127.0.0.1"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Internal-Token"],
 )
 
 
@@ -79,6 +100,17 @@ class EmbeddingsRequest(BaseModel):
 def _compute_video_id(content: bytes) -> str:
     """Calcola video_id deterministico basato su hash MD5 del file."""
     return hashlib.md5(content).hexdigest()
+
+
+def _validate_video_id(video_id: str) -> None:
+    """Valida il video_id ricevuto come path param: deve essere un MD5 (32 hex).
+
+    Difesa contro path traversal: il video_id viene usato per comporre percorsi
+    sotto DATA_DIR/videos/. Senza validazione, valori come '../..' permetterebbero
+    di uscire dalla directory dei dati.
+    """
+    if not re.fullmatch(r"[a-f0-9]{32}", video_id or ""):
+        raise HTTPException(status_code=400, detail="video_id non valido")
 
 
 def _save_metadata(video_id: str, metadata: dict):
@@ -207,10 +239,16 @@ async def ingest_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
             "skipped": True,
         }
 
+    # Sanifica il nome file del client: solo il basename, niente componenti di
+    # percorso. Rifiuta se vuoto o se contiene ancora separatori dopo la sanificazione.
+    safe_name = Path(file.filename or "").name
+    if not safe_name or "/" in safe_name or "\\" in safe_name:
+        raise HTTPException(status_code=400, detail="Nome file non valido")
+
     # Salva file video
     video_dir = settings.DATA_DIR / "videos" / video_id
     video_dir.mkdir(parents=True, exist_ok=True)
-    video_path = video_dir / file.filename
+    video_path = video_dir / safe_name
     async with aiofiles.open(str(video_path), "wb") as f:
         await f.write(content)
 
@@ -233,6 +271,7 @@ async def ingest_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
 @app.get("/api/videos/{video_id}/status")
 async def get_status(video_id: str):
     """Ritorna lo stato del processing da progress.json."""
+    _validate_video_id(video_id)
     tracker = ProgressTracker(video_id)
     progress = tracker.get()
 
@@ -263,6 +302,7 @@ async def get_status(video_id: str):
 @app.get("/api/videos/{video_id}/thumbnail")
 async def get_thumbnail(video_id: str):
     """Serve la thumbnail del video."""
+    _validate_video_id(video_id)
     thumb_path = settings.DATA_DIR / "videos" / video_id / "thumbnail.jpg"
     if not thumb_path.exists():
         raise HTTPException(status_code=404, detail="Thumbnail non trovata")
@@ -272,6 +312,7 @@ async def get_thumbnail(video_id: str):
 @app.get("/api/videos/{video_id}/stream")
 async def stream_video(video_id: str, request: Request):
     """Serve il file video con supporto HTTP Range Requests per seek."""
+    _validate_video_id(video_id)
     video_dir = settings.DATA_DIR / "videos" / video_id
     if not video_dir.exists():
         raise HTTPException(status_code=404, detail="Video non trovato")
@@ -340,6 +381,7 @@ async def stream_video(video_id: str, request: Request):
 @app.post("/api/videos/{video_id}/chat", response_model=ChatResponse)
 async def chat_endpoint(video_id: str, request: ChatRequest):
     """Chat con il video indicizzato."""
+    _validate_video_id(video_id)
     # Controlla progress
     tracker = ProgressTracker(video_id)
     progress = tracker.get()
@@ -424,6 +466,7 @@ async def list_videos(
 @app.patch("/api/videos/{video_id}/metadata")
 async def update_video_metadata(video_id: str, body: MetadataUpdate):
     """Aggiorna metadati editabili di un video."""
+    _validate_video_id(video_id)
     db = get_db()
     updated = db.update_metadata(
         video_id,
@@ -440,6 +483,7 @@ async def update_video_metadata(video_id: str, body: MetadataUpdate):
 @app.get("/api/videos/{video_id}/transcript")
 async def get_transcript(video_id: str):
     """Ritorna la trascrizione del video."""
+    _validate_video_id(video_id)
     meta_path = settings.DATA_DIR / "videos" / video_id / "metadata.json"
     if not meta_path.exists():
         raise HTTPException(status_code=404, detail="Video non trovato")
@@ -543,6 +587,7 @@ async def auto_organize():
 @app.post("/api/videos/{video_id}/regenerate-tags")
 async def regenerate_tags(video_id: str):
     """Rigenera i tag AI per un video."""
+    _validate_video_id(video_id)
     db = get_db()
     if not db.get(video_id):
         raise HTTPException(status_code=404, detail="Video non trovato")
@@ -648,6 +693,7 @@ async def get_graph(min_score: float = 0.15, video_id: str = "", mode: str = "se
 @app.delete("/api/videos/{video_id}")
 async def delete_video(video_id: str):
     """Elimina un video: file, ChromaDB e SQLite."""
+    _validate_video_id(video_id)
     video_dir = settings.DATA_DIR / "videos" / video_id
     if not video_dir.exists():
         raise HTTPException(status_code=404, detail="Video non trovato")

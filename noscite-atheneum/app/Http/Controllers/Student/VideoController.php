@@ -63,7 +63,8 @@ class VideoController extends Controller
         if (!$this->checkVideoAccess($videoId)) abort(403);
 
         $url = config('services.videoai.url') . "/api/videos/{$videoId}/stream";
-        $headers = [];
+        // Proxy server-side: inoltra l'auth interna a videoai (header X-Internal-Token).
+        $headers = ['X-Internal-Token' => (string) config('services.videoai.token')];
         if ($request->header('Range')) {
             $headers['Range'] = $request->header('Range');
         }
@@ -100,7 +101,10 @@ class VideoController extends Controller
         if (!$this->checkVideoAccess($videoId)) abort(403);
 
         $url = config('services.videoai.url') . "/api/videos/{$videoId}/thumbnail";
-        $response = Http::timeout(10)->get($url);
+        // Proxy server-side: inoltra l'auth interna a videoai (header X-Internal-Token).
+        $response = Http::timeout(10)
+            ->withHeaders(['X-Internal-Token' => (string) config('services.videoai.token')])
+            ->get($url);
 
         return response($response->body(), $response->status())
             ->header('Content-Type', 'image/jpeg');
