@@ -60,11 +60,11 @@
         <div class="mt-10 text-sm" style="color:#8A9696;">
             <p class="mb-2">Nel frattempo, dai un'occhiata ai percorsi:</p>
             <div class="flex flex-wrap justify-center gap-x-4 gap-y-2">
-                <a href="{{ route('primus') }}" class="hover:text-teal-dark underline">PRIMUS</a>
-                <a href="{{ route('consilium') }}" class="hover:text-teal-dark underline">CONSILIUM</a>
-                <a href="{{ route('initium') }}" class="hover:text-teal-dark underline">INITIUM</a>
-                <a href="{{ route('structura') }}" class="hover:text-teal-dark underline">STRUCTURA</a>
-                <a href="{{ route('ai-agents-mcp') }}" class="hover:text-teal-dark underline">AI Agents & MCP</a>
+                <a href="{{ route('primus') }}" class="hover:text-teal-dark underline">RUMORE DI FONDO</a>
+                <a href="{{ route('consilium') }}" class="hover:text-teal-dark underline">INTERFERENZA</a>
+                <a href="{{ route('initium') }}" class="hover:text-teal-dark underline">SEGNALE</a>
+                <a href="{{ route('structura') }}" class="hover:text-teal-dark underline">CIRCUITO</a>
+                <a href="{{ route('ai-agents-mcp') }}" class="hover:text-teal-dark underline">Frequenza</a>
             </div>
         </div>
 

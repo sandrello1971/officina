@@ -1,13 +1,13 @@
 @extends('layouts.app')
-@section('title', 'STRUCTURA — Second Brain Aziendale')
-@section('description', 'STRUCTURA — 24 ore per costruire il Second Brain aziendale con Obsidian. Knowledge management AI-driven per PMI. Certified Second Brain Implementer.')
+@section('title', 'CIRCUITO — Second Brain Aziendale')
+@section('description', 'CIRCUITO — 24 ore per costruire il Second Brain aziendale con Obsidian. Knowledge management AI-driven per PMI. Certified Second Brain Implementer.')
 
 @section('content')
 <div class="max-w-4xl mx-auto px-4 py-16">
     <span class="badge-teal mb-4 inline-block">Per Manager &middot; Knowledge Worker &middot; PM</span>
-    <h1 class="text-4xl font-bold mb-2" style="color:#1A1F1F">STRUCTURA — Second Brain Aziendale</h1>
+    <h1 class="text-4xl font-bold mb-2" style="color:#1A1F1F">CIRCUITO — Second Brain Aziendale</h1>
     <p class="text-lg mb-2" style="color:#4A5252">Percorso avanzato per implementare sistemi di knowledge management con approccio AI-driven.</p>
-    <p class="text-sm mb-6 italic" style="color:#E28A53">Prerequisito consigliato: INITIUM</p>
+    <p class="text-sm mb-6 italic" style="color:#E28A53">Prerequisito consigliato: SEGNALE</p>
     <div class="flex flex-wrap gap-3 mb-8">
         <span class="badge-orange">24 ore &middot; 6 moduli</span>
         <span class="badge-teal">Certified Second Brain Implementer</span>
@@ -52,6 +52,6 @@
         </div>
     </div>
 
-    <a href="/contatti" class="btn-orange">Richiedi informazioni su STRUCTURA</a>
+    <a href="/contatti" class="btn-orange">Richiedi informazioni su CIRCUITO</a>
 </div>
 @endsection

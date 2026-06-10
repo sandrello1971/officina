@@ -17,9 +17,9 @@
             <div>
                 <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-300 mb-4">Programmi</h3>
                 <ul class="space-y-2">
-                    <li><a href="{{ route('consilium') }}" class="text-gray-400 hover:text-white text-sm transition-colors">Consilium</a></li>
-                    <li><a href="{{ route('initium') }}" class="text-gray-400 hover:text-white text-sm transition-colors">Initium</a></li>
-                    <li><a href="{{ route('structura') }}" class="text-gray-400 hover:text-white text-sm transition-colors">Structura</a></li>
+                    <li><a href="{{ route('consilium') }}" class="text-gray-400 hover:text-white text-sm transition-colors">Interferenza</a></li>
+                    <li><a href="{{ route('initium') }}" class="text-gray-400 hover:text-white text-sm transition-colors">Segnale</a></li>
+                    <li><a href="{{ route('structura') }}" class="text-gray-400 hover:text-white text-sm transition-colors">Circuito</a></li>
                     <li><a href="{{ route('ai-demystified') }}" class="text-gray-400 hover:text-white text-sm transition-colors">AI Demystified</a></li>
                     <li><a href="{{ route('second-brain') }}" class="text-gray-400 hover:text-white text-sm transition-colors">Second Brain</a></li>
                 </ul>

@@ -10,16 +10,16 @@ class FaqAccordion extends Component
 
     public array $faqs = [
         [
-            'question' => 'Cos\'e il programma Consilium?',
-            'answer' => 'Consilium e un laboratorio strategico di 1 giornata (7 ore) dedicato a CEO, fondatori e membri del CdA. Attraverso sessioni guidate, esploriamo come l\'intelligenza artificiale puo integrarsi nella visione e nella strategia della tua impresa, producendo una AI Policy e una Roadmap a 90 giorni.',
+            'question' => 'Cos\'e il programma Interferenza?',
+            'answer' => 'Interferenza e un laboratorio strategico di 1 giornata (7 ore) dedicato a CEO, fondatori e membri del CdA. Attraverso sessioni guidate, esploriamo come l\'intelligenza artificiale puo integrarsi nella visione e nella strategia della tua impresa, producendo una AI Policy e una Roadmap a 90 giorni.',
         ],
         [
-            'question' => 'A chi e rivolto Initium?',
-            'answer' => 'Initium e un percorso intensivo di 3 giornate rivolto a manager operativi e responsabili di funzione. Il programma fornisce competenze pratiche sull\'uso dell\'AI nei processi quotidiani, dalla comprensione degli strumenti alla loro applicazione concreta nel contesto aziendale.',
+            'question' => 'A chi e rivolto Segnale?',
+            'answer' => 'Segnale e un percorso intensivo di 3 giornate rivolto a manager operativi e responsabili di funzione. Il programma fornisce competenze pratiche sull\'uso dell\'AI nei processi quotidiani, dalla comprensione degli strumenti alla loro applicazione concreta nel contesto aziendale.',
         ],
         [
-            'question' => 'Cosa include Structura?',
-            'answer' => 'Structura e un programma avanzato incentrato sulla costruzione del Second Brain aziendale con Obsidian. Include la progettazione dell\'architettura informativa, la configurazione degli strumenti di knowledge management e la formazione del team per la gestione autonoma del sistema.',
+            'question' => 'Cosa include Circuito?',
+            'answer' => 'Circuito e un programma avanzato incentrato sulla costruzione del Second Brain aziendale con Obsidian. Include la progettazione dell\'architettura informativa, la configurazione degli strumenti di knowledge management e la formazione del team per la gestione autonoma del sistema.',
         ],
         [
             'question' => 'Cos\'e AI Demystified?',
@@ -39,7 +39,7 @@ class FaqAccordion extends Component
         ],
         [
             'question' => 'Quanto durano i programmi?',
-            'answer' => 'Le durate variano: Consilium e un laboratorio di 1 giorno (7h), Initium si sviluppa in 3 giornate intensive, Structura e un percorso di 4-8 settimane, AI Demystified e un modulo di mezza giornata, e il corso Second Brain prevede 2 giornate di formazione pratica.',
+            'answer' => 'Le durate variano: Interferenza e un laboratorio di 1 giorno (7h), Segnale si sviluppa in 3 giornate intensive, Circuito e un percorso di 4-8 settimane, AI Demystified e un modulo di mezza giornata, e il corso Second Brain prevede 2 giornate di formazione pratica.',
         ],
     ];
 

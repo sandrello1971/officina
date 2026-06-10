@@ -105,7 +105,7 @@
                         <li>Faccia <code>PATCH /learn/canvas/{material_id}/data</code> con header <code>X-XSRF-TOKEN</code> (dal cookie <code>XSRF-TOKEN</code>) e body <code>{"data": {...}}</code> a ogni modifica (con debounce).</li>
                     </ol>
                     Esempio funzionante: <code>storage/app/private/materials/consilium/canvas-1-mappa-processi.html</code>.<br>
-                    I canvas statici (senza persistenza, come quelli di Primus) sono comunque accettati: vengono mostrati ma le risposte non vengono salvate.
+                    I canvas statici (senza persistenza, come quelli di Rumore di fondo) sono comunque accettati: vengono mostrati ma le risposte non vengono salvate.
                 </div>
             </div>
 

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Mappa Percorso AI — Scarica la guida gratuita')
-@section('description', 'Scarica la mappa che ti aiuta a scegliere il percorso AI più adatto alla tua azienda: PRIMUS, CONSILIUM o INITIUM. Aggiornata all\'EU AI Act.')
+@section('description', 'Scarica la mappa che ti aiuta a scegliere il percorso AI più adatto alla tua azienda: RUMORE DI FONDO, INTERFERENZA o SEGNALE. Aggiornata all\'EU AI Act.')
 
 @section('content')
 
@@ -16,9 +16,9 @@
         </h1>
         <p class="text-lg sm:text-xl mb-2" style="color:#4A5252;">
             Scarica la mappa gratuita per orientarti tra
-            <strong style="color:#3A8C89;">PRIMUS</strong>,
-            <strong style="color:#3A8C89;">CONSILIUM</strong> e
-            <strong style="color:#3A8C89;">INITIUM</strong>
+            <strong style="color:#3A8C89;">RUMORE DI FONDO</strong>,
+            <strong style="color:#3A8C89;">INTERFERENZA</strong> e
+            <strong style="color:#3A8C89;">SEGNALE</strong>
             — e capire da dove partire.
         </p>
     </div>

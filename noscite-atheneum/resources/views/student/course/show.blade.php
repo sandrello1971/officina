@@ -16,7 +16,7 @@
                 @if(!$isDemoView)
                 <p style="opacity:0.85; font-size:0.875rem;">{{ $course->description }}</p>
                 @else
-                <p style="opacity:0.85; font-size:0.8rem;">Demo del corso Primus — esplora liberamente</p>
+                <p style="opacity:0.85; font-size:0.8rem;">Demo del corso Rumore di fondo — esplora liberamente</p>
                 @endif
             </div>
         </div>
@@ -96,7 +96,7 @@
         <div style="display:flex; gap:8px;">
             <input type="text" x-model="query"
                    @keydown.enter="runSearch()"
-                   placeholder="Es: come si configura Primus?"
+                   placeholder="Es: come si configura Rumore di fondo?"
                    style="flex:1; padding:8px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.85rem; outline:none;">
             <button @click="runSearch()"
                     :disabled="searching"
