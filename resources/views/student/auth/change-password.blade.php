@@ -9,7 +9,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body style="font-family:Calibri,system-ui,sans-serif;background:#1A1F1F;color:white;min-height:100vh;position:relative;overflow:hidden">
-    <div style="position:absolute;inset:0;background-image:url('/images/atheneum_new.png');background-size:cover;background-position:center;opacity:0.08;z-index:0" aria-hidden="true"></div>
 
     <div style="position:relative;z-index:1" class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-sm">
