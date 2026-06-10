@@ -29,6 +29,9 @@ EXCLUDES=(
   --exclude='/storage/'        # file caricati (certificati, materiali), logs
   --exclude='/vendor/'         # dipendenze PHP installate in prod
   --exclude='/node_modules/'   # dipendenze node installate in prod
+  --exclude='/bootstrap/cache/' # config/route/view cache di prod: senza questo
+                               # --delete la cancella → app senza config → 500
+                               # (.env non è leggibile da www-data)
   --exclude='.git/'
 )
 
@@ -59,8 +62,12 @@ if [[ "$MODE" == "DRY-RUN" ]]; then
   exit 0
 fi
 
+# artisan gira come utente del deploy (noscite), NON come www-data: www-data non
+# può leggere .env (640 noscite) né scrivere bootstrap/cache → config:cache
+# bakerebbe i default (DB_CONNECTION→sqlite) e l'app andrebbe in 500. noscite
+# legge .env e possiede l'albero; i file generati restano leggibili da www-data.
 echo "==> manutenzione ON"
-sudo -u www-data php "$DEST/artisan" down || true
+php "$DEST/artisan" down || true
 
 echo "==> rsync codice (preserva .env, storage/, vendor/, node_modules/)"
 rsync -a --delete --itemize-changes "${EXCLUDES[@]}" "$SRC/" "$DEST/"
@@ -72,21 +79,21 @@ echo "==> npm ci && build"
 ( cd "$DEST" && npm ci && npm run build )
 
 echo "==> migrazioni (additive; se una fallisce, lo script si ferma)"
-sudo -u www-data php "$DEST/artisan" migrate --force
+php "$DEST/artisan" migrate --force
 
 echo "==> seed materie standard (idempotente: firstOrCreate, non tocca le custom)"
-sudo -u www-data php "$DEST/artisan" db:seed --class=SubjectSeeder --force
+php "$DEST/artisan" db:seed --class=SubjectSeeder --force
 
 echo "==> cache config/route/view"
-sudo -u www-data php "$DEST/artisan" config:cache
-sudo -u www-data php "$DEST/artisan" route:cache
-sudo -u www-data php "$DEST/artisan" view:cache
+php "$DEST/artisan" config:cache
+php "$DEST/artisan" route:cache
+php "$DEST/artisan" view:cache
 
 echo "==> reload php-fpm + restart queue worker"
 sudo systemctl reload "$FPM_SERVICE"
 sudo systemctl restart "$QUEUE_SERVICE"
 
 echo "==> manutenzione OFF"
-sudo -u www-data php "$DEST/artisan" up
+php "$DEST/artisan" up
 
 echo "=== deploy completato ==="
