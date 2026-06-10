@@ -70,7 +70,7 @@
          Documenti discenti) le ultime finiscono coperte dal bottone Esci. --}}
     <div class="sidebar-scroll">
     <div style="padding: 24px 20px; border-bottom: 1px solid rgba(85,177,174,0.2);">
-        <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" style="height:36px; filter:brightness(0) invert(1); margin-bottom:8px;">
+        <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; letter-spacing:0.2em; line-height:1; color:#f2efe9; font-size:1.3rem; margin-bottom:8px;">GLITCH</div>
         <div style="color:#55B1AE; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;">{{ atheneum_setting('instance_name', 'Officina') }}</div>
         <div style="color:#8A9696; font-size:0.7rem; font-style:italic;">{{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}</div>
     </div>

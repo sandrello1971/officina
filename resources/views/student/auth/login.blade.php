@@ -14,7 +14,7 @@
     <div style="position:relative;z-index:1" class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-sm">
             <div class="text-center mb-8">
-                <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" class="h-12 w-auto mx-auto mb-4 brightness-0 invert">
+                <div class="mb-4" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; letter-spacing:0.2em; line-height:1; color:#f2efe9; font-size:1.7rem;">GLITCH</div>
                 <h1 class="text-2xl font-bold" style="color:#55B1AE">{{ atheneum_setting('instance_name', 'Officina') }}</h1>
                 <p class="text-sm mt-1" style="color:#8A9696">Area studenti — accesso riservato</p>
             </div>
