@@ -157,7 +157,7 @@ class ChatController extends Controller
         // off-topic). Vedi Fase 1 §5.
         $assistantName = atheneum_setting('assistant_name', 'Minerva');
         $assistantRole = atheneum_setting('assistant_role_label', "l'assistente AI di formazione");
-        $platformName  = atheneum_setting('instance_name', 'Atheneum');
+        $platformName  = atheneum_setting('instance_name', 'Officina');
         $domainContext = atheneum_setting('assistant_domain_context', '');
         $identity = "Sei {$assistantName}, {$assistantRole} di {$platformName}.";
         if ($domainContext !== '') {
@@ -348,7 +348,7 @@ TXT;
     {
         $assistantName = atheneum_setting('assistant_name', 'Minerva');
         $assistantRole = atheneum_setting('assistant_role_label', "l'assistente AI di formazione");
-        $platformName  = atheneum_setting('instance_name', 'Atheneum');
+        $platformName  = atheneum_setting('instance_name', 'Officina');
         $domainContext = atheneum_setting('assistant_domain_context', '');
         $identity = "Sei {$assistantName}, {$assistantRole} per il corso {$courseName} di {$platformName}.";
 
@@ -387,7 +387,7 @@ TXT;
 
         $history[] = ['role' => 'user', 'content' => $userMessage];
 
-        $platformName = atheneum_setting('instance_name', 'Atheneum');
+        $platformName = atheneum_setting('instance_name', 'Officina');
         $courseName = $conversation->course?->name ?? $platformName;
 
         $systemPrompt = $this->buildCourseChatSystemPrompt($courseName, $context);
@@ -591,7 +591,7 @@ TXT;
     public function buildScholaSystemPrompt(bool $asDocente, string $context = ''): string
     {
         $assistantName = atheneum_setting('assistant_name', 'Minerva');
-        $platformName = atheneum_setting('instance_name', 'Atheneum');
+        $platformName = atheneum_setting('instance_name', 'Officina');
 
         $audience = $asDocente
             ? "Stai assistendo un DOCENTE sui materiali della sua classe."

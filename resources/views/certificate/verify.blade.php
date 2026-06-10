@@ -17,7 +17,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>Verifica certificato — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
+    <title>Verifica certificato — {{ atheneum_setting('instance_name', 'Officina') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet">
     <style>
@@ -220,7 +220,7 @@
             <h1>Certificato non trovato</h1>
             <p class="subtitle">
                 Il codice <strong>{{ $code }}</strong> non corrisponde ad alcun certificato
-                emesso da {{ atheneum_setting('instance_name', 'Atheneum') }}. Verifica di averlo digitato correttamente.
+                emesso da {{ atheneum_setting('instance_name', 'Officina') }}. Verifica di averlo digitato correttamente.
             </p>
         @endif
     </div>

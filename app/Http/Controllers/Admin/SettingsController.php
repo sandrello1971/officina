@@ -136,9 +136,9 @@ class SettingsController extends Controller
 
         try {
             Mail::raw(
-                "Questa è una mail di prova inviata da Atheneum a " . now()->format('d/m/Y H:i') . ".",
+                "Questa è una mail di prova inviata da Officina a " . now()->format('d/m/Y H:i') . ".",
                 function ($m) use ($adminEmail) {
-                    $m->to($adminEmail)->subject('Atheneum — test mail');
+                    $m->to($adminEmail)->subject('Officina — test mail');
                 }
             );
             return back()->with('success', "Mail di prova inviata a {$adminEmail}. Verifica la casella.");

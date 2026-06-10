@@ -1,4 +1,4 @@
-# Atheneum Schola — Fetta 1: schema dati e mappa rotte
+# Officina Schola — Fetta 1: schema dati e mappa rotte
 
 > Bozza di progettazione, allineata alle convenzioni del codebase esistente:
 > PK UUID con `gen_random_uuid()`, pgvector 1536 su `documents_rag`,
@@ -66,7 +66,7 @@ Fino ad allora, ogni riferimento dello SPEC a embedding/soglia va letto come **t
 ## 1. Decisioni di fondo recepite
 
 - Onboarding **senza ente scuola**: il docente crea le classi, gli studenti entrano con codice invito (con approvazione opzionale). Le colonne `school_id` nascono nullable per la fase 2.
-- **Ruolo nuovo `professor`** sul campo `students.role` (non si riusa `instructor`): interfacce, scope Minerva e permessi distinti dai formatori Atheneum.
+- **Ruolo nuovo `professor`** sul campo `students.role` (non si riusa `instructor`): interfacce, scope Minerva e permessi distinti dai formatori Officina.
 - Ingestion fetta 1: **audio, YouTube, foto multiple (anche manoscritti), PDF scansionati**. OCR via Claude vision (nessuna dipendenza tesseract).
 - Pipeline: `teaching_documents` (grezzo) → `teaching_artifacts` (lavorato) → `artifact_publications` (per classe) → indicizzazione RAG con scope classe.
 - Le foto di pagine di libri restano confinate al perimetro docente→classe (nessuna condivisione tra docenti in fetta 1, anche per ragioni di copyright).
@@ -85,7 +85,7 @@ DB::statement("ALTER TABLE students ADD CONSTRAINT students_role_check
     CHECK (role IS NULL OR role IN ('student', 'instructor', 'admin', 'professor'))");
 ```
 Nota: gli **studenti delle scuole** restano `role = 'student'` (o NULL) come gli studenti
-Atheneum; la distinzione di contesto la dà l'appartenenza a `class_students`,
+Officina; la distinzione di contesto la dà l'appartenenza a `class_students`,
 non il ruolo. Evitiamo un ruolo `school_student` finché non serve davvero.
 
 #### `documents_rag` — scope di classe
@@ -381,7 +381,7 @@ docente** per le classi/lezioni pertinenti. Nessun fallback sulla conoscenza del
 |---|---|
 | Studente di classe | solo chunk `scope='class'` delle sue classi con enrollment `active` |
 | Docente | `scope='teacher_private'` (suoi materiali, anche non pubblicati) + `scope='class'` delle sue classi |
-| Studente/formatore Atheneum | invariato (`platform` / `instructor_only`) — i due mondi non si toccano |
+| Studente/formatore Officina | invariato (`platform` / `instructor_only`) — i due mondi non si toccano |
 
 **Meccanica del vincolo (3 livelli):**
 1. **Retrieval gate**: filtro SQL duro sullo scope + soglia minima di similarità coseno

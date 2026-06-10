@@ -5,11 +5,11 @@
             {{-- Col 1: Brand --}}
             <div>
                 <a href="{{ route('home') }}" class="inline-block mb-4">
-                    <img src="/images/logo.png" alt="{{ atheneum_setting('instance_name', 'Atheneum') }}" class="h-10 w-auto brightness-0 invert">
+                    <img src="/images/logo.png" alt="{{ atheneum_setting('instance_name', 'Officina') }}" class="h-10 w-auto brightness-0 invert">
                 </a>
                 <p class="text-accent-400 text-sm font-medium mb-2">Formazione AI per le PMI italiane</p>
                 <p class="text-gray-400 text-sm leading-relaxed">
-                    L'Atheneum Noscite offre programmi formativi su intelligenza artificiale, knowledge management e trasformazione digitale. Percorsi pratici per imprenditori, manager e team operativi.
+                    L'Officina Noscite offre programmi formativi su intelligenza artificiale, knowledge management e trasformazione digitale. Percorsi pratici per imprenditori, manager e team operativi.
                 </p>
             </div>
 

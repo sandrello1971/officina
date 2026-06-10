@@ -106,7 +106,7 @@ mutato), quindi fuori dal perimetro CSRF.
 
 ---
 
-## Regressione mondo Atheneum (corsi/formatori/admin)
+## Regressione mondo Officina (corsi/formatori/admin)
 Confermata: vedi sezione dedicata nel report di chiusura del pacchetto. Suite
 completa verde; i percorsi corsi (chat/quiz/certificati) e admin invariati — gli
 inserti Schola in `ChatController`/`QuizController` sono rami additivi che

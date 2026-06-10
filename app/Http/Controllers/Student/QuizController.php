@@ -461,7 +461,7 @@ class QuizController extends Controller
                     'score' => $score,
                     'issued_at' => now(),
                     'certification_name' => $course->certification_name
-                        ?: ($course->name ?: 'Certificato Atheneum'),
+                        ?: ($course->name ?: 'Certificato Officina'),
                 ]
             );
         } catch (UniqueConstraintViolationException $e) {

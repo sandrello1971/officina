@@ -1,6 +1,6 @@
-# Atheneum — Operations runbook
+# Officina — Operations runbook
 
-Disciplina operativa per Atheneum-prod. Aggiornata: 2026-05-22.
+Disciplina operativa per Officina-prod. Aggiornata: 2026-05-22.
 
 ## Sync prod
 

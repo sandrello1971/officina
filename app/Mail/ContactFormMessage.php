@@ -20,7 +20,7 @@ class ContactFormMessage extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Nuovo messaggio da ' . $this->contact->name . ' — ' . atheneum_setting('instance_name', 'Atheneum'),
+            subject: 'Nuovo messaggio da ' . $this->contact->name . ' — ' . atheneum_setting('instance_name', 'Officina'),
         );
     }
 

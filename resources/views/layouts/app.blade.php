@@ -5,25 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
-    <title>@yield('title', atheneum_setting('instance_name', 'Atheneum')) — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
-    <meta name="description" content="@yield('description', 'Atheneum Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: CONSILIUM, INITIUM, STRUCTURA, AI AGENTS & MCP.')">
+    <title>@yield('title', atheneum_setting('instance_name', 'Officina')) — {{ atheneum_setting('instance_name', 'Officina') }}</title>
+    <meta name="description" content="@yield('description', 'Officina Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: CONSILIUM, INITIUM, STRUCTURA, AI AGENTS & MCP.')">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="{{ atheneum_setting('instance_name', 'Atheneum') }}">
+    <meta property="og:site_name" content="{{ atheneum_setting('instance_name', 'Officina') }}">
     <meta property="og:locale" content="it_IT">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:title" content="@yield('og_title', View::getSection('title') ?? 'Atheneum Noscite — Formazione AI per PMI')">
-    <meta property="og:description" content="@yield('og_description', View::getSection('description') ?? 'Atheneum Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: CONSILIUM, INITIUM, STRUCTURA, AI AGENTS & MCP.')">
+    <meta property="og:title" content="@yield('og_title', View::getSection('title') ?? 'Officina Noscite — Formazione AI per PMI')">
+    <meta property="og:description" content="@yield('og_description', View::getSection('description') ?? 'Officina Noscite: formazione AI certificata per PMI italiane. 4 corsi conformi EU AI Act Art. 4: CONSILIUM, INITIUM, STRUCTURA, AI AGENTS & MCP.')">
     <meta property="og:image" content="@yield('og_image', url('/images/atheneum_new.png'))">
     <meta property="og:image:width" content="1536">
     <meta property="og:image:height" content="1024">
-    <meta property="og:image:alt" content="Atheneum Noscite — Formazione AI per PMI">
+    <meta property="og:image:alt" content="Officina Noscite — Formazione AI per PMI">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="@yield('og_title', View::getSection('title') ?? 'Atheneum Noscite — Formazione AI per PMI')">
-    <meta name="twitter:description" content="@yield('og_description', View::getSection('description') ?? 'Atheneum Noscite: formazione AI certificata per PMI italiane.')">
+    <meta name="twitter:title" content="@yield('og_title', View::getSection('title') ?? 'Officina Noscite — Formazione AI per PMI')">
+    <meta name="twitter:description" content="@yield('og_description', View::getSection('description') ?? 'Officina Noscite: formazione AI certificata per PMI italiane.')">
     <meta name="twitter:image" content="@yield('og_image', url('/images/atheneum_new.png'))">
 
     {{-- Meta extra per pagine che ne hanno bisogno (es. noindex sulle thank you) --}}
@@ -38,7 +38,7 @@
     {
       "@context": "https://schema.org",
       "@type": "EducationalOrganization",
-      "name": "Atheneum Noscite",
+      "name": "Officina Noscite",
       "url": "https://atheneum.noscite.it",
       "logo": "https://atheneum.noscite.it/images/logo.png",
       "description": "Divisione formativa di Noscite. Corsi certificati su AI, Second Brain e governance agenti AI per PMI italiane. Conformi EU AI Act.",
@@ -120,7 +120,7 @@
         <a href="/" class="flex items-center gap-3">
             <img src="/images/logo.png" alt="Noscite" class="h-10 w-auto" onerror="this.style.display='none'">
             <div>
-                <div class="font-bold text-teal text-lg leading-none">ATHENEUM</div>
+                <div class="font-bold text-teal text-lg leading-none">OFFICINA</div>
                 <div class="text-xs italic" style="color:#E28A53">In digit&#x101;l&#x12B; nova virt&#x16B;s</div>
             </div>
         </a>
@@ -172,7 +172,7 @@
 <footer style="background:#1A1F1F; color:white;" class="mt-16">
     <div class="max-w-6xl mx-auto px-4 py-12 grid md:grid-cols-3 gap-8">
         <div>
-            <div class="font-bold text-xl mb-1" style="color:#55B1AE">ATHENEUM NOSCITE</div>
+            <div class="font-bold text-xl mb-1" style="color:#55B1AE">OFFICINA NOSCITE</div>
             <div class="text-sm italic mb-3" style="color:#E28A53">In digit&#x101;l&#x12B; nova virt&#x16B;s</div>
             <p class="text-sm" style="color:#8A9696">Formazione AI per le PMI italiane. Metodo, pratica e cultura per un'innovazione sostenibile.</p>
         </div>

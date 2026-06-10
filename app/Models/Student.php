@@ -76,7 +76,7 @@ class Student extends Authenticatable
         return $this->role === 'admin';
     }
 
-    // Docente Schola — distinto da instructor (formatore corsi Atheneum).
+    // Docente Schola — distinto da instructor (formatore corsi Officina).
     public function isProfessor(): bool
     {
         return $this->role === 'professor';

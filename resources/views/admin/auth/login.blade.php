@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
+    <title>Admin — {{ atheneum_setting('instance_name', 'Officina') }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
 </head>
@@ -11,7 +11,7 @@
     <div style="background:#252B2B; border-radius:12px; padding:40px; width:100%; max-width:400px; border:1px solid rgba(85,177,174,0.2);">
         <div style="text-align:center; margin-bottom:32px;">
             <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" style="height:40px; filter:brightness(0) invert(1); margin:0 auto 12px;">
-            <div style="color:#55B1AE; font-weight:700; font-size:1.1rem;">{{ atheneum_setting('instance_name', 'Atheneum') }} Admin</div>
+            <div style="color:#55B1AE; font-weight:700; font-size:1.1rem;">{{ atheneum_setting('instance_name', 'Officina') }} Admin</div>
             <div style="color:#8A9696; font-size:0.8rem;">Accesso riservato</div>
         </div>
 

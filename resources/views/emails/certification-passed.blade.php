@@ -17,7 +17,7 @@ Chiunque può verificare l'autenticità del tuo certificato a questo indirizzo:
 Scarica il certificato PDF
 @endcomponent
 
-Il PDF è disponibile dopo aver effettuato l'accesso ad {{ atheneum_setting('instance_name', 'Atheneum') }}.
+Il PDF è disponibile dopo aver effettuato l'accesso ad {{ atheneum_setting('instance_name', 'Officina') }}.
 
 *{{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}*
 

@@ -8,7 +8,7 @@ Codice in inglese, commenti e UI in italiano.
 ## Modulo Schola
 
 ### Cos'è
-Verticale per **scuole superiori** dentro Atheneum. Attori:
+Verticale per **scuole superiori** dentro Officina. Attori:
 - **professor** — nuovo `role` su `students` (distinto da `instructor` dei corsi).
 - **studenti di classe** — iscritti a una classe tramite codice invito.
 
@@ -101,7 +101,7 @@ vanno in **service dedicati riusabili** (es. `app/Services/Schola/...`), non inl
 nei controller.
 
 ### Separazione dei mondi
-Corsi/formatori Atheneum e Schola **non condividono** scope RAG né interfacce. Non
+Corsi/formatori Officina e Schola **non condividono** scope RAG né interfacce. Non
 modificare i comportamenti esistenti di `/learn` per gli studenti dei corsi e di
 `/admin`, se non dove esplicitamente richiesto.
 

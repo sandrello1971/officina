@@ -1,6 +1,6 @@
-# Atheneum — Documentazione del prodotto
+# Officina — Documentazione del prodotto
 
-Atheneum (Laravel 12 / PostgreSQL 17) ospita due mondi separati che condividono
+Officina (Laravel 12 / PostgreSQL 17) ospita due mondi separati che condividono
 auth e infrastruttura ma **non** scope dati né interfacce:
 
 - **Corsi / formazione** (`/learn`, `/admin`): corsi, moduli, quiz, certificati,

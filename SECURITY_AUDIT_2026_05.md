@@ -1,6 +1,6 @@
-# Atheneum — Security Audit 2026-05
+# Officina — Security Audit 2026-05
 
-Riepilogo cumulativo dei 4 step di hardening sicurezza dell'area studente/formatore di Atheneum, eseguiti il 2026-05-05. Le fix sono prerequisito per l'integrazione European Digital Credentials + sigillo qualificato eIDAS.
+Riepilogo cumulativo dei 4 step di hardening sicurezza dell'area studente/formatore di Officina, eseguiti il 2026-05-05. Le fix sono prerequisito per l'integrazione European Digital Credentials + sigillo qualificato eIDAS.
 
 ## Sintesi degli step
 

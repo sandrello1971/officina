@@ -18,7 +18,7 @@ class BrandingAndAssistantIdentityTest extends TestCase
 
     public function test_default_values_when_settings_are_empty(): void
     {
-        $this->assertSame('Atheneum', atheneum_setting('instance_name', 'Atheneum'));
+        $this->assertSame('Officina', atheneum_setting('instance_name', 'Officina'));
         $this->assertSame('In digitālī nova virtūs', atheneum_setting('platform_tagline', 'In digitālī nova virtūs'));
         $this->assertSame('Noscite Srl', atheneum_setting('platform_owner', 'Noscite Srl'));
         $this->assertSame('Minerva', atheneum_setting('assistant_name', 'Minerva'));
@@ -33,20 +33,20 @@ class BrandingAndAssistantIdentityTest extends TestCase
         // Caso critico Fase 1: svuotare un campo nel pannello deve
         // tornare al default cablato, NON propagare stringa vuota.
         atheneum_setting_put('instance_name', '');
-        $this->assertSame('Atheneum', atheneum_setting('instance_name', 'Atheneum'));
+        $this->assertSame('Officina', atheneum_setting('instance_name', 'Officina'));
 
         atheneum_setting_put('instance_name', null);
-        $this->assertSame('Atheneum', atheneum_setting('instance_name', 'Atheneum'));
+        $this->assertSame('Officina', atheneum_setting('instance_name', 'Officina'));
     }
 
     public function test_setting_put_then_resolve_returns_new_value(): void
     {
         atheneum_setting_put('instance_name', 'Accademia X');
-        $this->assertSame('Accademia X', atheneum_setting('instance_name', 'Atheneum'));
+        $this->assertSame('Accademia X', atheneum_setting('instance_name', 'Officina'));
 
         // cache bust su put: cambio + rilettura immediata vede il nuovo valore
         atheneum_setting_put('instance_name', 'Accademia Y');
-        $this->assertSame('Accademia Y', atheneum_setting('instance_name', 'Atheneum'));
+        $this->assertSame('Accademia Y', atheneum_setting('instance_name', 'Officina'));
     }
 
     // ============================================================
@@ -60,10 +60,10 @@ class BrandingAndAssistantIdentityTest extends TestCase
         $html = $this->get('/admin/login')->getContent();
 
         $this->assertStringContainsString('Accademia Rossi', $html);
-        // Non deve contenere 'Atheneum' come brand a schermo
+        // Non deve contenere 'Officina' come brand a schermo
         // (URL come /admin/login non c'entrano: cerco il marker visivo)
-        $this->assertStringNotContainsString('Atheneum Admin', $html);
-        $this->assertStringNotContainsString('Atheneum Noscite', $html);
+        $this->assertStringNotContainsString('Officina Admin', $html);
+        $this->assertStringNotContainsString('Officina Noscite', $html);
     }
 
     public function test_admin_login_falls_back_to_default_when_setting_empty(): void
@@ -71,7 +71,7 @@ class BrandingAndAssistantIdentityTest extends TestCase
         atheneum_setting_put('instance_name', '');
 
         $html = $this->get('/admin/login')->getContent();
-        $this->assertStringContainsString('Atheneum Admin', $html);
+        $this->assertStringContainsString('Officina Admin', $html);
     }
 
     // ============================================================
@@ -116,7 +116,7 @@ class BrandingAndAssistantIdentityTest extends TestCase
         );
 
         $this->assertStringStartsWith(
-            "Sei Minerva, l'assistente AI di formazione di Atheneum.",
+            "Sei Minerva, l'assistente AI di formazione di Officina.",
             $prompt
         );
     }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Unisciti a una classe — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
+    <title>Unisciti a una classe — {{ atheneum_setting('instance_name', 'Officina') }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>

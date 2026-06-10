@@ -26,7 +26,7 @@ class ConversationCreatedNotification extends Notification implements ShouldQueu
     public function toMail($notifiable): MailMessage
     {
         $sender = $this->firstMessage->sender;
-        $platformName = atheneum_setting('instance_name', 'Atheneum');
+        $platformName = atheneum_setting('instance_name', 'Officina');
         $platformOwner = atheneum_setting('platform_owner', 'Noscite SRLS');
 
         $bodyPreview = mb_strlen($this->firstMessage->body) > 200

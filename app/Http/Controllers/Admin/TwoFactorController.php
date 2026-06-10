@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
 
 /**
- * Gestione 2FA admin. Atheneum usa session-auth (admin_logged_in + admin_email),
+ * Gestione 2FA admin. Officina usa session-auth (admin_logged_in + admin_email),
  * NON Laravel guard, quindi qui recuperiamo l'admin dalla session manualmente.
  */
 class TwoFactorController extends Controller
@@ -62,7 +62,7 @@ class TwoFactorController extends Controller
         $admin->two_factor_confirmed_at = null;
         $admin->save();
 
-        $appName = atheneum_setting('instance_name', 'Atheneum');
+        $appName = atheneum_setting('instance_name', 'Officina');
         $qrUrl = $this->google2fa->getQRCodeUrl($appName, $admin->email, $secret);
 
         $qrSvg = Builder::create()

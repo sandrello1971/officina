@@ -64,6 +64,6 @@ accetta un `school_id` da input. **Nessun finding** → nessun commit di fix.
 - **Audit import**: gli `import_batches` (chi/quando/cosa) restano consultabili
   in `/scuola/privacy` come traccia degli inserimenti di anagrafiche di minori.
 
-## 3. Regressione mondo Atheneum + fetta 1
+## 3. Regressione mondo Officina + fetta 1
 Confermata: suite completa verde; corsi/formatori/admin invariati; pubblicazione
 e flussi dei docenti liberi (`school_id` NULL) byte-identici a fetta 1.

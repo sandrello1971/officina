@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-// Fase 3 — Lezioni. Unità che lo studente fruisce (UX Atheneum: appunti per
+// Fase 3 — Lezioni. Unità che lo studente fruisce (UX Officina: appunti per
 // paragrafo, ricerca video, Minerva). Una lezione è composta da N materiali
 // (teaching_documents) dai quali, in P19, il sistema genererà `content`.
 // generation_status descrive lo stato di quella generazione (qui sempre 'draft').
