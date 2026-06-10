@@ -13,6 +13,18 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                // GLITCH landing (P24) — self-hosted via @fontsource, vedi
+                // resources/css/glitch-landing.css. Usate solo dalla landing.
+                display: ['"Playfair Display"', ...defaultTheme.fontFamily.serif],
+                mono: ['"JetBrains Mono"', ...defaultTheme.fontFamily.mono],
+            },
+            colors: {
+                // Palette brand GLITCH (theglitchworld.it) per la landing pubblica.
+                glitch: {
+                    black: '#0a0a0a',
+                    ivory: '#f2efe9',
+                    red: '#ef2d56',
+                },
             },
         },
     },
