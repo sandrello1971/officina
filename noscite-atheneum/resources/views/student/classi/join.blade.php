@@ -11,7 +11,7 @@
 <body style="font-family:Calibri,system-ui,sans-serif; background:#1A1F1F; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;">
     <div style="width:100%; max-width:440px; background:white; border-radius:14px; padding:32px;">
         <div style="text-align:center; margin-bottom:24px;">
-            <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" style="height:38px; margin:0 auto 10px;">
+            <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; letter-spacing:0.2em; line-height:1; color:#0a0a0a; font-size:1.35rem; margin:0 auto 10px;">GLITCH</div>
             <h1 style="font-size:1.2rem; font-weight:700; color:#1A1F1F;">Unisciti a una classe</h1>
             <p style="color:#8A9696; font-size:0.85rem;">
                 @if($loggedIn) Inserisci il codice invito ricevuto dal docente. @else Inserisci il codice e crea il tuo account studente. @endif

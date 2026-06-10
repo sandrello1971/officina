@@ -10,7 +10,7 @@
 <body style="background:#1A1F1F; min-height:100vh; display:flex; align-items:center; justify-content:center;">
     <div style="background:#252B2B; border-radius:12px; padding:40px; width:100%; max-width:400px; border:1px solid rgba(85,177,174,0.2);">
         <div style="text-align:center; margin-bottom:32px;">
-            <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" style="height:40px; filter:brightness(0) invert(1); margin:0 auto 12px;">
+            <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; letter-spacing:0.2em; line-height:1; color:#f2efe9; font-size:1.5rem; margin:0 auto 12px;">GLITCH</div>
             <div style="color:#55B1AE; font-weight:700; font-size:1.1rem;">{{ atheneum_setting('instance_name', 'Officina') }} Admin</div>
             <div style="color:#8A9696; font-size:0.8rem;">Accesso riservato</div>
         </div>
