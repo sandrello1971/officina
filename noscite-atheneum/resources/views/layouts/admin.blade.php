@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin') — {{ atheneum_setting('instance_name', 'Atheneum') }} Admin</title>
+    <title>@yield('title', 'Admin') — {{ atheneum_setting('instance_name', 'Officina') }} Admin</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
@@ -55,7 +55,7 @@
 <div class="main-content">
     <div style="background:white; padding:12px 24px; border-bottom:1px solid #C8D0D0; display:flex; align-items:center; justify-content:space-between;">
         <div style="font-size:0.9rem; font-weight:600; color:#1A1F1F;">@yield('title', 'Dashboard')</div>
-        <div style="font-size:0.8rem; color:#8A9696;">{{ atheneum_setting('instance_name', 'Atheneum') }} — Area Admin</div>
+        <div style="font-size:0.8rem; color:#8A9696;">{{ atheneum_setting('instance_name', 'Officina') }} — Area Admin</div>
     </div>
 
     @if(session('success'))

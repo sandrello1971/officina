@@ -25,7 +25,7 @@ class MicrosoftAuthController extends Controller
                 ->redirectUrl(url('/admin/auth/microsoft/callback'))
                 ->user();
         } catch (\Exception $e) {
-            Log::error('Atheneum Admin Microsoft OAuth error: ' . $e->getMessage());
+            Log::error('Officina Admin Microsoft OAuth error: ' . $e->getMessage());
             return redirect()->route('admin.login')
                 ->with('error', 'Autenticazione Microsoft non riuscita. Riprova o usa email/password.');
         }
@@ -38,7 +38,7 @@ class MicrosoftAuthController extends Controller
         $admin = Admin::where('email', $email)->where('is_active', true)->first();
 
         if (!$admin) {
-            Log::warning('Atheneum Admin SSO: email non autorizzata', [
+            Log::warning('Officina Admin SSO: email non autorizzata', [
                 'email' => $email,
                 'microsoft_id' => $azureUser->getId(),
                 'ip' => $request->ip(),
@@ -47,7 +47,7 @@ class MicrosoftAuthController extends Controller
                 ->with('error', 'Accesso amministratore non autorizzato per ' . $email);
         }
 
-        Log::info('Atheneum Admin SSO: login autorizzato', [
+        Log::info('Officina Admin SSO: login autorizzato', [
             'email' => $email,
             'admin_id' => $admin->id,
             'microsoft_id' => $azureUser->getId(),

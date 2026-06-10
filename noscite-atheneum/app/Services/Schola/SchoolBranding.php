@@ -37,7 +37,7 @@ class SchoolBranding
 
     public function instanceName(): string
     {
-        return (string) $this->get('instance_name', 'Atheneum');
+        return (string) $this->get('instance_name', 'Officina');
     }
 
     public function assistantName(): string

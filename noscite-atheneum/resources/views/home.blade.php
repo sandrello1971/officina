@@ -9,10 +9,10 @@
     <div class="max-w-4xl mx-auto text-center" style="position:relative;z-index:1;">
         <span class="badge-orange mb-4 inline-block">4 certificazioni &middot; ~60 ore &middot; Conformi EU AI Act</span>
         <p class="text-sm mb-3" style="color:#55B1AE;font-weight:600;letter-spacing:0.05em;text-transform:uppercase">
-            Atheneum e la parte formativa dell'umanesimo digitale di Noscite
+            Officina e la parte formativa dell'umanesimo digitale di Noscite
         </p>
         <h1 class="text-4xl md:text-6xl font-bold mt-4 mb-4" style="color:#1A1F1F">
-            Atheneum <span style="color:#55B1AE">Noscite</span>
+            Officina <span style="color:#55B1AE">Noscite</span>
         </h1>
         <p class="text-base mb-4" style="color:#4A5252">Per imprenditori, manager e team operativi che vogliono usare l'AI ogni giorno in azienda, senza improvvisare.</p>
         <p class="text-xl font-semibold mb-3" style="color:#1A1F1F">Formazione AI per le PMI che vogliono crescere davvero.</p>

@@ -1,9 +1,9 @@
-# Atheneum Schola — Fase 3: le Lezioni
+# Officina Schola — Fase 3: le Lezioni
 
 > Estende la fase 2 (scuole/tenancy, completa) con l'unità didattica **Lezione**.
 > Gerarchia: **Materia → Argomento → Lezione → Materiali**. Una lezione è composta
 > da N materiali; dal loro contenuto il sistema compone il corpo della lezione, che
-> lo studente fruisce con la UX Atheneum (appunti per paragrafo, ricerca video,
+> lo studente fruisce con la UX Officina (appunti per paragrafo, ricerca video,
 > Minerva), più presentazioni e messaggistica di classe.
 >
 > **Documento AS-BUILT** (redatto a posteriori in P23): riflette ciò che è stato

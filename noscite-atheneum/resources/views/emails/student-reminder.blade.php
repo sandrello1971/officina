@@ -1,7 +1,7 @@
 @component('mail::message')
 # Ciao {{ $student->name }}!
 
-Sono passati alcuni giorni dall'ultima volta che hai visitato **{{ atheneum_setting('instance_name', 'Atheneum') }}**.
+Sono passati alcuni giorni dall'ultima volta che hai visitato **{{ atheneum_setting('instance_name', 'Officina') }}**.
 
 Il tuo percorso formativo ti aspetta. Ogni modulo che completi è un passo concreto verso una gestione più efficace dell'AI nella tua azienda.
 

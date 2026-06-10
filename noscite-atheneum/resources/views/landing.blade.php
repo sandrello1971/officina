@@ -9,8 +9,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Atheneum trasforma appunti, lezioni e documenti in materiale di studio vivo. Per chi studia, per chi insegna, per chi manda avanti una scuola.">
-    <title>GLITCH / Atheneum — L'officina di chi impara</title>
+    <meta name="description" content="Officina trasforma appunti, lezioni e documenti in materiale di studio vivo. Per chi studia, per chi insegna, per chi manda avanti una scuola.">
+    <title>GLITCH / Officina — L'officina di chi impara</title>
     @vite(['resources/css/glitch-landing.css'])
 </head>
 <body class="bg-glitch-black text-glitch-ivory font-mono antialiased selection:bg-glitch-red selection:text-glitch-black">
@@ -25,7 +25,7 @@
         <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8"
              aria-label="Navigazione principale">
             <a href="/" class="glitch-navlink text-glitch-ivory">
-                GLITCH <span class="text-glitch-red">/</span> ATHENEUM
+                GLITCH <span class="text-glitch-red">/</span> OFFICINA
             </a>
             <div class="flex items-center gap-5 sm:gap-8">
                 <a href="#studenti" class="glitch-navlink text-glitch-ivory hidden sm:inline">Studenti</a>
@@ -46,7 +46,7 @@
                 L'officina di chi impara<span class="text-glitch-red">.</span>
             </h1>
             <p class="glitch-body mt-10 max-w-2xl text-glitch-ivory/80">
-                Atheneum trasforma appunti, lezioni e documenti in materiale di studio
+                Officina trasforma appunti, lezioni e documenti in materiale di studio
                 vivo. Per chi studia, per chi insegna, per chi manda avanti una scuola.
             </p>
         </section>
@@ -59,7 +59,7 @@
                     <p class="glitch-tag mb-4">Studenti</p>
                     <h2 id="studenti-titolo" class="glitch-section-title text-glitch-ivory">Per chi studia.</h2>
                     <p class="glitch-body mt-6 text-glitch-ivory/80">
-                        Carichi appunti, registrazioni, PDF. Atheneum li riorganizza in
+                        Carichi appunti, registrazioni, PDF. Officina li riorganizza in
                         sintesi, mappe e quiz, e risponde alle tue domande restando dentro
                         i materiali della tua classe. Niente risposte inventate: solo ciò
                         che è stato pubblicato per te.
@@ -107,7 +107,7 @@
                 </p>
                 <div class="mt-12 flex flex-wrap items-center gap-6">
                     <a href="{{ route('student.login') }}" class="glitch-cta inline-block px-8 py-4">
-                        Entra in Atheneum
+                        Entra in Officina
                     </a>
                     <span class="glitch-body text-sm text-glitch-ivory/60">
                         Hai già un accesso? Vai alla piattaforma.

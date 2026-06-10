@@ -10,7 +10,7 @@ use PragmaRX\Google2FA\Google2FA;
 
 /**
  * 2FA challenge step: dopo password OK, prima del session admin_logged_in.
- * Atheneum usa session-based auth (no Laravel guard).
+ * Officina usa session-based auth (no Laravel guard).
  *
  * Pre-condizione: session('admin_2fa_pending_id') deve essere settato da
  * AdminAuthController (login email+password OK ma 2FA attivo).
@@ -85,7 +85,7 @@ class TwoFactorChallengeController extends Controller
             return back()->with('error', 'Codice non valido.');
         }
 
-        // 2FA OK → login completo (pattern session-based Atheneum)
+        // 2FA OK → login completo (pattern session-based Officina)
         $request->session()->forget('admin_2fa_pending_id');
         $request->session()->put([
             'admin_logged_in' => true,

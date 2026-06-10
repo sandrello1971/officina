@@ -3,7 +3,7 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Atheneum Admin Whitelist — DEPRECATO (P1.2)
+    | Officina Admin Whitelist — DEPRECATO (P1.2)
     |--------------------------------------------------------------------------
     | La whitelist e' ora gestita via DB nella tabella admins, modificabile
     | dalla UI /admin/admins (AdminAccountController). Questo array vuoto

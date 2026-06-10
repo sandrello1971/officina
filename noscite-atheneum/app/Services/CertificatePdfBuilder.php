@@ -55,7 +55,7 @@ class CertificatePdfBuilder
         $tplId = $pdf->importPage(1);
         $size = $pdf->getTemplateSize($tplId);
 
-        $pdf->SetCreator('Atheneum');
+        $pdf->SetCreator('Officina');
         $pdf->SetAuthor(atheneum_setting('platform_owner', 'Noscite SRLS'));
         $pdf->SetTitle("Certificato {$cert->code}");
         $pdf->setPrintHeader(false);

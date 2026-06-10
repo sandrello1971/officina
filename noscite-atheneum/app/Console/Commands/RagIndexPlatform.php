@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 class RagIndexPlatform extends Command
 {
     protected $signature = 'rag:index-platform {--base=https://atheneum.noscite.it}';
-    protected $description = 'Indicizza le pagine pubbliche di Atheneum (home + corsi + contatti) per Minerva';
+    protected $description = 'Indicizza le pagine pubbliche di Officina (home + corsi + contatti) per Minerva';
 
     private array $pages = [
         'home' => '/',
@@ -28,7 +28,7 @@ class RagIndexPlatform extends Command
         $base = rtrim($this->option('base'), '/');
 
         DocumentRag::whereNull('course_id')
-            ->where('title', 'LIKE', 'Atheneum Page: %')
+            ->where('title', 'LIKE', 'Officina Page: %')
             ->delete();
 
         foreach ($this->pages as $key => $path) {
@@ -46,7 +46,7 @@ class RagIndexPlatform extends Command
                     $this->warn("  skip {$key}: testo troppo corto");
                     continue;
                 }
-                $title = 'Atheneum Page: ' . ucfirst($key);
+                $title = 'Officina Page: ' . ucfirst($key);
                 $rag->indexDocument($text, $title, null, null, null);
                 $this->info("  ✓ {$key} (" . mb_strlen($text) . " char)");
             } catch (\Exception $e) {

@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Http\Request;
 
 /**
- * Atheneum auth è session-based (session('student_id')) e non usa Laravel guards.
+ * Officina auth è session-based (session('student_id')) e non usa Laravel guards.
  * Il broadcast auth endpoint /broadcasting/auth pero richiede $request->user()
  * non-null per autorizzare i channel privati. Risolviamo qui: leggiamo lo
  * studente dalla session e lo settiamo come user resolver scoped a questa

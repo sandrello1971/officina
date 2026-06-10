@@ -25,7 +25,7 @@ class TeacherInviteMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $brand = $this->school->setting('instance_name') ?: atheneum_setting('instance_name', 'Atheneum');
+        $brand = $this->school->setting('instance_name') ?: atheneum_setting('instance_name', 'Officina');
 
         return new Envelope(subject: 'Accesso docente — ' . $brand);
     }

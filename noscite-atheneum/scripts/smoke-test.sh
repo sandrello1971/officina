@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# smoke-test.sh — verifica flussi critici Atheneum post-deploy.
+# smoke-test.sh — verifica flussi critici Officina post-deploy.
 # Esegue 6 check tinker + 2 check HTTP. Exit code 0 = OK, 1 = FAIL.
 
 set +e  # NON exit on first fail (vogliamo girare tutti i check)
@@ -26,7 +26,7 @@ check() {
     fi
 }
 
-echo "=== Atheneum Smoke Test === ($(date))"
+echo "=== Officina Smoke Test === ($(date))"
 echo ""
 
 # 1. DB connectivity
@@ -37,7 +37,7 @@ check "DB connection" \
 # 2. Settings model resolve (instance_name popolata)
 check "Setting::resolve instance_name" \
     "php artisan tinker --execute=\"echo atheneum_setting('instance_name', 'EMPTY');\"" \
-    "Atheneum"
+    "Officina"
 
 # 3. Setting empty fallback (lezione P0)
 check "Setting fallback when empty" \

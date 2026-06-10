@@ -25,10 +25,10 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div>
                     <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Nome della piattaforma</label>
-                    <input type="text" name="instance_name" value="{{ old('instance_name', $settings['instance_name']) }}" maxlength="120" placeholder="Atheneum"
+                    <input type="text" name="instance_name" value="{{ old('instance_name', $settings['instance_name']) }}" maxlength="120" placeholder="Officina"
                            style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
                     <p style="font-size:0.7rem; color:#8A9696; margin-top:4px;">
-                        Es. "Atheneum Acme S.r.l.". Usato in header, title, email.
+                        Es. "Officina Acme S.r.l.". Usato in header, title, email.
                     </p>
                 </div>
                 <div>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Verifica 2FA — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
+    <title>Verifica 2FA — {{ atheneum_setting('instance_name', 'Officina') }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <style>[x-cloak]{display:none!important}</style>

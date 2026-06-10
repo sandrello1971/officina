@@ -31,7 +31,7 @@ class ClassConversationCreatedNotification extends Notification implements Shoul
     public function toMail($notifiable): MailMessage
     {
         $sender = $this->firstMessage->sender;
-        $platformName = atheneum_setting('instance_name', 'Atheneum');
+        $platformName = atheneum_setting('instance_name', 'Officina');
         $platformOwner = atheneum_setting('platform_owner', 'Noscite SRLS');
 
         $preview = mb_strlen($this->firstMessage->body) > 200

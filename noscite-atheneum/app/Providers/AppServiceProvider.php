@@ -53,7 +53,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Broadcasting: registra /broadcasting/auth con il nostro middleware
-        // session-based (Atheneum non usa guard Laravel), poi carica channels.php.
+        // session-based (Officina non usa guard Laravel), poi carica channels.php.
         Broadcast::routes(['middleware' => ['web', StudentBroadcastAuth::class]]);
         require base_path('routes/channels.php');
 
@@ -241,7 +241,7 @@ class AppServiceProvider extends ServiceProvider
 
     private function shareInstanceName(): void
     {
-        $instanceName = Setting::resolve('instance_name', 'Atheneum');
+        $instanceName = Setting::resolve('instance_name', 'Officina');
         View::share('instanceName', $instanceName);
     }
 }

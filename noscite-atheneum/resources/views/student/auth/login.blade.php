@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Accedi — {{ atheneum_setting('instance_name', 'Atheneum') }}</title>
+    <title>Accedi — {{ atheneum_setting('instance_name', 'Officina') }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -15,7 +15,7 @@
         <div class="w-full max-w-sm">
             <div class="text-center mb-8">
                 <img src="/images/logo.png" alt="{{ atheneum_setting('platform_owner', 'Noscite Srl') }}" class="h-12 w-auto mx-auto mb-4 brightness-0 invert">
-                <h1 class="text-2xl font-bold" style="color:#55B1AE">{{ atheneum_setting('instance_name', 'Atheneum') }}</h1>
+                <h1 class="text-2xl font-bold" style="color:#55B1AE">{{ atheneum_setting('instance_name', 'Officina') }}</h1>
                 <p class="text-sm mt-1" style="color:#8A9696">Area studenti — accesso riservato</p>
             </div>
 
@@ -105,7 +105,7 @@
             @php
                 $supportEmail = atheneum_setting('mail_from_address', 'info@noscite.it');
                 $ownerUrl = atheneum_setting('platform_owner_url', 'https://atheneum.noscite.it');
-                $ownerName = atheneum_setting('platform_owner', 'Atheneum');
+                $ownerName = atheneum_setting('platform_owner', 'Officina');
             @endphp
             <p class="text-center mt-6 text-xs" style="color:#8A9696">
                 Problemi? Scrivi a <a href="mailto:{{ $supportEmail }}" style="color:#55B1AE">{{ $supportEmail }}</a>

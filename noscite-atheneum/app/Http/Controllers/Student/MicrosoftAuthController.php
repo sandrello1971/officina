@@ -26,7 +26,7 @@ class MicrosoftAuthController extends Controller
                 ->redirectUrl(url('/auth/microsoft/callback'))
                 ->user();
         } catch (\Exception $e) {
-            Log::error('Atheneum Microsoft OAuth error: ' . $e->getMessage());
+            Log::error('Officina Microsoft OAuth error: ' . $e->getMessage());
             return redirect()->route('student.login')
                 ->with('error', 'Autenticazione Microsoft non riuscita. Riprova o accedi con email.');
         }

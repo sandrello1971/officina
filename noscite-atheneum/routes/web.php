@@ -353,7 +353,7 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
 Route::get('/branding/scuola/{school}/logo', [App\Http\Controllers\Scuola\BrandingController::class, 'logo'])
     ->middleware('student.auth')->name('scuola.logo');
 
-// ===== AREA ADMIN ATHENEUM =====
+// ===== AREA ADMIN OFFICINA =====
 Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
 

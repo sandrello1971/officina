@@ -1,4 +1,4 @@
-# Atheneum Schola — Fase 2: Scuole, segreteria e tenancy
+# Officina Schola — Fase 2: Scuole, segreteria e tenancy
 
 > Estende la fetta 1 (completa) con lo strato multi-tenant.
 > **Decisione fondante (07/06): modello scolastico PURO** — la segreteria

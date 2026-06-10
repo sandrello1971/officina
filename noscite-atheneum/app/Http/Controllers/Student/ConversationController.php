@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 class ConversationController extends Controller
 {
     /**
-     * Atheneum non usa il guard Laravel: l'utente loggato è recuperato dalla
+     * Officina non usa il guard Laravel: l'utente loggato è recuperato dalla
      * session('student_id') (vedi student.auth middleware). Helper centralizzato.
      */
     private function currentUser(): Student

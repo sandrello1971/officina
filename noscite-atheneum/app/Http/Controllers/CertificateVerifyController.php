@@ -28,7 +28,7 @@ class CertificateVerifyController extends Controller
      *
      * Necessario per consentire a chi verifica un certificato (datore di
      * lavoro, ente di controllo) di scaricare la versione "ufficiale" del
-     * PDF firmato direttamente da Atheneum, senza affidarsi al file
+     * PDF firmato direttamente da Officina, senza affidarsi al file
      * eventualmente fornito dal candidato (che potrebbe essere stato
      * manomesso).
      *

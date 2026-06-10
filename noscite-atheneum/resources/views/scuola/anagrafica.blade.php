@@ -35,7 +35,7 @@
         <p style="font-size:0.78rem; color:#8A9696; margin-bottom:12px;">Lascia vuoto per ereditare il default della piattaforma.</p>
 
         <label style="display:block; font-size:0.82rem; font-weight:600; color:#4A5252; margin-bottom:4px;">Nome istanza (mostrato nel layout)</label>
-        <input type="text" name="instance_name" value="{{ old('instance_name', $school->setting('instance_name')) }}" placeholder="es. Liceo Galilei — Atheneum" style="width:100%; padding:9px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.9rem; margin-bottom:14px;">
+        <input type="text" name="instance_name" value="{{ old('instance_name', $school->setting('instance_name')) }}" placeholder="es. Liceo Galilei — Officina" style="width:100%; padding:9px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.9rem; margin-bottom:14px;">
 
         <label style="display:block; font-size:0.82rem; font-weight:600; color:#4A5252; margin-bottom:4px;">Nome assistente (Minerva)</label>
         <input type="text" name="assistant_name" value="{{ old('assistant_name', $school->setting('assistant_name')) }}" placeholder="es. Minerva" style="width:100%; padding:9px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.9rem; margin-bottom:14px;">
