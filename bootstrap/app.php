@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Header di sicurezza su tutte le risposte del gruppo web.
+        $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
         $middleware->alias([
             'student.auth' => \App\Http\Middleware\StudentAuth::class,
             'student.password' => \App\Http\Middleware\StudentMustChangePassword::class,

@@ -37,6 +37,9 @@ return [
 
     'videoai' => [
         'url' => env('VIDEO_AI_URL', 'http://127.0.0.1:8001'),
+        // Token interno inviato su OGNI chiamata a videoai (header X-Internal-Token).
+        // Deve combaciare con INTERNAL_API_TOKEN lato videoai.
+        'token' => env('VIDEOAI_INTERNAL_TOKEN', ''),
         // Polling trascrizione audio/youtube (Schola pacchetto 4a/4b)
         'poll_interval' => (int) env('VIDEOAI_POLL_INTERVAL', 3),
         'poll_max_attempts' => (int) env('VIDEOAI_POLL_MAX_ATTEMPTS', 200),
