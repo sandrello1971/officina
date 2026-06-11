@@ -102,8 +102,8 @@
             </form>
 
             @php
-                $supportEmail = atheneum_setting('mail_from_address', 'info@noscite.it');
-                $ownerUrl = atheneum_setting('platform_owner_url', 'https://atheneum.noscite.it');
+                $supportEmail = atheneum_setting('mail_from_address', 'theglitch@theglitchworld.it');
+                $ownerUrl = atheneum_setting('platform_owner_url', 'https://theglitchworld.it');
                 $ownerName = atheneum_setting('platform_owner', 'Officina');
             @endphp
             <p class="text-center mt-6 text-xs" style="color:#8A9696">
