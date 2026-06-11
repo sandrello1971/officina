@@ -102,7 +102,7 @@
             </form>
 
             @php
-                $supportEmail = atheneum_setting('mail_from_address', 'theglitch@theglitchworld.it');
+                $supportEmail = 'theglitch@theglitchworld.it';
                 $ownerUrl = atheneum_setting('platform_owner_url', 'https://theglitchworld.it');
                 $ownerName = atheneum_setting('platform_owner', 'Officina');
             @endphp
