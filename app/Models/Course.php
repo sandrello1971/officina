@@ -77,6 +77,17 @@ class Course extends Model
         return $this->hasMany(CourseSource::class)->orderByDesc('created_at');
     }
 
+    // P25.2 — esecuzioni dell'agente e config per corso (Course Freshness Agent).
+    public function freshnessRuns()
+    {
+        return $this->hasMany(FreshnessRun::class)->orderByDesc('started_at');
+    }
+
+    public function freshnessConfig()
+    {
+        return $this->hasOne(CourseFreshnessConfig::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
