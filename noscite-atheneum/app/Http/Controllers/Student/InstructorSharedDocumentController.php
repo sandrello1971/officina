@@ -17,7 +17,7 @@ class InstructorSharedDocumentController extends Controller
         abort_unless($studentId, 403);
 
         $s = Student::findOrFail($studentId);
-        abort_unless($s->role === 'instructor', 403, 'Riservato ai formatori');
+        abort_unless($s->isInstructor(), 403, 'Riservato ai formatori');
         return $s;
     }
 

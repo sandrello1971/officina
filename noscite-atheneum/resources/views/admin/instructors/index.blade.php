@@ -4,8 +4,12 @@
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Gestione Formatori</h2>
-    <a href="{{ route('admin.students.index') }}"
-       style="font-size:0.8rem; color:#8A9696; text-decoration:none;">→ Vai a Discenti</a>
+    <div style="display:flex; align-items:center; gap:16px;">
+        <a href="{{ route('admin.students.index') }}"
+           style="font-size:0.8rem; color:#8A9696; text-decoration:none;">→ Vai a Discenti</a>
+        <a href="{{ route('admin.instructors.create') }}"
+           style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">+ Aggiungi formatore</a>
+    </div>
 </div>
 
 <form method="GET" style="background:white; border-radius:10px; padding:14px; margin-bottom:16px;
@@ -79,7 +83,7 @@
             <tr>
                 <td colspan="6" style="padding:40px; text-align:center; color:#8A9696; font-size:0.875rem;">
                     Nessun formatore.
-                    Promuovi uno studente al ruolo "Formatore" da <a href="{{ route('admin.students.index') }}" style="color:#55B1AE;">Discenti → Modifica → Permessi sistema</a>.
+                    Usa <a href="{{ route('admin.instructors.create') }}" style="color:#55B1AE;">+ Aggiungi formatore</a> (crea un nuovo account o promuove un'email esistente), oppure dai la capacità da <a href="{{ route('admin.students.index') }}" style="color:#55B1AE;">Discenti → Modifica → Permessi sistema</a>.
                 </td>
             </tr>
             @endforelse

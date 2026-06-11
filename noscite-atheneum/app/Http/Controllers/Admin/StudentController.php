@@ -275,10 +275,12 @@ class StudentController extends Controller
         $data = $request->validate([
             'role' => 'nullable|in:' . implode(',', $validRoles),
             'auto_enroll_all_courses' => 'sometimes|boolean',
+            'is_instructor' => 'sometimes|boolean',
         ]);
 
         $newRole = empty($data['role']) ? null : $data['role'];
         $newAutoEnroll = $request->boolean('auto_enroll_all_courses');
+        $newIsInstructor = $request->boolean('is_instructor');
 
         $currentAdminEmail = session('admin_email');
         if ($currentAdminEmail && $student->email === $currentAdminEmail
@@ -290,15 +292,20 @@ class StudentController extends Controller
         $oldRole = $student->role;
         $oldAutoEnroll = $student->auto_enroll_all_courses;
 
+        $oldIsInstructor = (bool) $student->is_instructor;
+
         $student->update([
             'role' => $newRole,
             'auto_enroll_all_courses' => $newAutoEnroll,
+            'is_instructor' => $newIsInstructor,
         ]);
 
         Log::info('Admin updated student system role', [
             'admin' => $currentAdminEmail ?? 'unknown',
             'student' => $student->email,
             'role_change' => "$oldRole → $newRole",
+            'is_instructor_change' => ($oldIsInstructor ? 'true' : 'false') . ' → '
+                . ($newIsInstructor ? 'true' : 'false'),
             'auto_enroll_change' => ($oldAutoEnroll ? 'true' : 'false') . ' → '
                 . ($newAutoEnroll ? 'true' : 'false'),
         ]);

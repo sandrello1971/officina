@@ -24,6 +24,7 @@ class Student extends Authenticatable
         'avatar_url', 'is_active', 'is_demo', 'must_change_password',
         'microsoft_id', 'auto_enroll_all_courses', 'birth_date',
         'library_rights_ack_at', 'school_id', 'username', 'is_secretary',
+        'is_instructor',
     ];
 
     protected $hidden = [
@@ -41,6 +42,7 @@ class Student extends Authenticatable
         'birth_date' => 'date',
         'library_rights_ack_at' => 'datetime',
         'is_secretary' => 'boolean',
+        'is_instructor' => 'boolean',
     ];
 
     public function courses()
@@ -61,9 +63,12 @@ class Student extends Authenticatable
         return $this->hasMany(StudentCourse::class, 'instructor_id');
     }
 
+    // Formatore corsi Officina = CAPACITÀ (flag is_instructor), come la segreteria
+    // (is_secretary): così un account può essere docente Schola (role='professor')
+    // E formatore insieme. Resta vero anche per il role legacy 'instructor'.
     public function isInstructor(): bool
     {
-        return $this->role === 'instructor';
+        return $this->role === 'instructor' || (bool) $this->is_instructor;
     }
 
     public function isStudent(): bool

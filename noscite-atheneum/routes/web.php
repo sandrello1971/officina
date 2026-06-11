@@ -417,6 +417,9 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::patch('students/{student}/system-role', [App\Http\Controllers\Admin\StudentController::class, 'updateSystemRole'])->name('students.update-system-role');
 
     Route::get('instructors',                                  [App\Http\Controllers\Admin\InstructorController::class, 'index'])->name('instructors.index');
+    // create/store PRIMA del wildcard {instructor} per non far matchare "create" come id.
+    Route::get('instructors/create',                           [App\Http\Controllers\Admin\InstructorController::class, 'create'])->name('instructors.create');
+    Route::post('instructors',                                 [App\Http\Controllers\Admin\InstructorController::class, 'store'])->name('instructors.store');
     Route::get('instructors/{instructor}',                     [App\Http\Controllers\Admin\InstructorController::class, 'show'])->name('instructors.show');
     Route::get('instructors/{instructor}/edit',                [App\Http\Controllers\Admin\InstructorController::class, 'edit'])->name('instructors.edit');
     Route::put('instructors/{instructor}',                     [App\Http\Controllers\Admin\InstructorController::class, 'update'])->name('instructors.update');

@@ -158,7 +158,7 @@
         </a>
         @endif
 
-        @if($sidebarStudent && $sidebarStudent->role === 'instructor')
+        @if($sidebarStudent && $sidebarStudent->isInstructor())
         <a href="{{ route('student.knowledge_base.index') }}"
            class="nav-item {{ request()->routeIs('student.knowledge_base.*') ? 'active' : '' }}">
             <span>📓</span> Knowledge Base

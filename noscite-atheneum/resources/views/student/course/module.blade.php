@@ -273,7 +273,7 @@
         @php
             $loggedStudent = \App\Models\Student::find(session('student_id'));
         @endphp
-        @if($loggedStudent && $loggedStudent->role === 'instructor')
+        @if($loggedStudent && $loggedStudent->isInstructor())
         <div style="background:white; border:1px solid #E8F5F5; border-radius:12px; padding:20px; margin:20px 0;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
                 <div style="font-size:1.3rem;">📓</div>

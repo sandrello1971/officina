@@ -11,7 +11,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Officina trasforma appunti, lezioni e documenti in materiale di studio vivo. Per chi studia, per chi insegna, per chi manda avanti una scuola.">
     <title>GLITCH / Officina — L'officina di chi impara</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" href="/favicon.png">
     @vite(['resources/css/glitch-landing.css'])
 </head>

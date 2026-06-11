@@ -23,7 +23,7 @@ class InstructorMaterialController extends Controller
         $student = Student::findOrFail(session('student_id'));
 
         $sectionsWithNotes = [];
-        if ($student->role === 'instructor') {
+        if ($student->isInstructor()) {
             $counts = \App\Models\InstructorNote::visibleTo($student->id)
                 ->where('course_id', $course->id)
                 ->whereNotNull('instructor_manual_section_id')
@@ -60,7 +60,7 @@ class InstructorMaterialController extends Controller
     {
         $student = Student::findOrFail(session('student_id'));
 
-        if ($student->role !== 'instructor') {
+        if (!$student->isInstructor()) {
             abort(403, 'Accesso riservato ai docenti.');
         }
 
