@@ -71,6 +71,12 @@ class Course extends Model
         return $this->hasMany(CourseConceptMap::class)->orderBy('sort_order')->orderBy('created_at');
     }
 
+    // P25.1 — sorgenti strutturati versionati (Course Freshness Agent).
+    public function sources()
+    {
+        return $this->hasMany(CourseSource::class)->orderByDesc('created_at');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
