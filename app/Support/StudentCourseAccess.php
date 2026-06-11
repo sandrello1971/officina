@@ -36,7 +36,7 @@ class StudentCourseAccess
 
         $result = $enrolled;
 
-        if ($student->role === 'instructor' && !$student->auto_enroll_all_courses) {
+        if ($student->isInstructor() && !$student->auto_enroll_all_courses) {
             $enrolledIds = $enrolled->pluck('id')->all();
 
             $taught = $student->taughtCourses()

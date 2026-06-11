@@ -3,18 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\StudentWelcomeMail;
 use App\Models\Course;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class InstructorController extends Controller
 {
     public function index(Request $request)
     {
         $query = Student::query()
-            ->where('role', 'instructor')
+            ->where(fn ($q) => $q->where('role', 'instructor')->orWhere('is_instructor', true))
             ->with('taughtCourses:id,name,icon')
             ->withCount('taughtCourses')
             ->orderBy('name');
@@ -35,9 +38,85 @@ class InstructorController extends Controller
         return view('admin.instructors.index', compact('instructors', 'courses', 'mentoredCounts'));
     }
 
+    public function create()
+    {
+        return view('admin.instructors.create');
+    }
+
+    /**
+     * Aggiungi formatore = "promuovi-o-crea". Se l'email esiste già (studente,
+     * docente, ecc.) NON duplica: aggiunge la capacità is_instructor preservando
+     * gli altri ruoli. Altrimenti crea un nuovo account role='instructor'.
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name'       => 'required|string|max:255',
+            'email'      => 'required|email|max:255',
+            'phone'      => 'nullable|string|max:50',
+            'company'    => 'nullable|string|max:255',
+            'job_title'  => 'nullable|string|max:100',
+            'send_email' => 'sometimes|boolean',
+        ]);
+
+        $email = strtolower(trim($data['email']));
+        $existing = Student::withTrashed()->where('email', $email)->first();
+
+        // Promozione di un account esistente: aggiunge la capacità formatore.
+        if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
+            $existing->update([
+                'is_instructor' => true,
+                'is_active'     => true,
+            ]);
+            Log::info('Admin: account esistente promosso a Formatore', [
+                'student_id'  => $existing->id,
+                'email'       => $existing->email,
+                'role'        => $existing->role,
+                'by_admin_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('admin.instructors.show', $existing)
+                ->with('success', "Account esistente «{$existing->email}» promosso a Formatore (gli altri ruoli sono preservati).");
+        }
+
+        // Nuovo formatore: crea l'account con password temporanea.
+        $tempPassword = 'Nsc' . now()->format('y') . '!' . Str::upper(Str::random(5));
+
+        $instructor = Student::create([
+            'name'                 => $data['name'],
+            'email'                => $email,
+            'password'             => $tempPassword,
+            'phone'                => $data['phone'] ?? null,
+            'company'              => $data['company'] ?? null,
+            'job_title'            => $data['job_title'] ?? null,
+            'role'                 => 'instructor',
+            'is_instructor'        => true,
+            'is_active'            => true,
+            'must_change_password' => true,
+        ]);
+
+        if ($request->boolean('send_email')) {
+            try {
+                Mail::to($instructor->email)->send(
+                    new StudentWelcomeMail($instructor, $tempPassword, [], request()->getSchemeAndHttpHost())
+                );
+            } catch (\Throwable $e) {
+                session()->flash('warning', 'Formatore creato, ma invio email fallito: ' . $e->getMessage());
+            }
+        }
+
+        return redirect()->route('admin.instructors.show', $instructor)
+            ->with('success', "Formatore «{$instructor->name}» creato.")
+            ->with('temp_password', $tempPassword)
+            ->with('temp_password_for', $instructor->email);
+    }
+
     public function show(Student $instructor)
     {
-        abort_unless($instructor->role === 'instructor', 404);
+        abort_unless($instructor->isInstructor(), 404);
 
         $instructor->load('taughtCourses:id,name,icon,short_description');
 
@@ -68,13 +147,13 @@ class InstructorController extends Controller
 
     public function edit(Student $instructor)
     {
-        abort_unless($instructor->role === 'instructor', 404);
+        abort_unless($instructor->isInstructor(), 404);
         return view('admin.instructors.edit', compact('instructor'));
     }
 
     public function update(Request $request, Student $instructor)
     {
-        abort_unless($instructor->role === 'instructor', 404);
+        abort_unless($instructor->isInstructor(), 404);
 
         $data = $request->validate([
             'name'      => 'required|string|max:255',
@@ -95,7 +174,7 @@ class InstructorController extends Controller
 
     public function attachCourse(Request $request, Student $instructor)
     {
-        abort_unless($instructor->role === 'instructor', 403, 'Solo gli utenti con ruolo formatore possono insegnare corsi');
+        abort_unless($instructor->isInstructor(), 403, 'Solo gli utenti con ruolo formatore possono insegnare corsi');
 
         $data = $request->validate([
             'course_id' => 'required|uuid|exists:courses,id',
@@ -114,7 +193,7 @@ class InstructorController extends Controller
 
     public function detachCourse(Student $instructor, Course $course)
     {
-        abort_unless($instructor->role === 'instructor', 404);
+        abort_unless($instructor->isInstructor(), 404);
 
         DB::transaction(function () use ($instructor, $course) {
             $instructor->taughtCourses()->detach($course->id);

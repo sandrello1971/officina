@@ -36,7 +36,7 @@ class KnowledgeBaseController extends Controller
         }
         ksort($allTags);
 
-        $instructors = Student::where('role', 'instructor')
+        $instructors = Student::where(fn ($q) => $q->where('role', 'instructor')->orWhere('is_instructor', true))
             ->whereHas('instructorNotes')->orderBy('email')->get(['id', 'email']);
 
         return view('admin.knowledge_base.index', [

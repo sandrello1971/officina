@@ -74,7 +74,7 @@ class ChatController extends Controller
         ]);
 
         $student = Student::findOrFail($studentId);
-        $isInstructor = ($student->role === 'instructor');
+        $isInstructor = ($student->isInstructor());
 
         // Scoping unico via StudentCourseAccess: i corsi navigabili sono
         // quelli a cui l'utente è iscritto + (per i formatori) quelli che

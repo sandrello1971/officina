@@ -123,6 +123,13 @@
                 </div>
             </div>
 
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; margin-bottom:14px;
+                          background:#FFF4E8; border:1px solid rgba(226,138,83,0.3); border-radius:6px; padding:10px 14px;">
+                <input type="checkbox" name="is_instructor" value="1"
+                       {{ $student->is_instructor ? 'checked' : '' }}>
+                <span><strong>Formatore corsi</strong> — capacità <em>cumulabile</em> col ruolo qui sopra (es. Docente Schola <em>e</em> Formatore insieme). Dà accesso all'area formatore e all'insegnamento dei corsi Officina.</span>
+            </label>
+
             <div style="font-size:0.75rem; color:#5A6464; background:#FFFBEB;
                         padding:10px 14px; border-radius:6px; margin-bottom:14px;
                         border:1px solid rgba(226,138,83,0.3);">

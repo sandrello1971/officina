@@ -48,7 +48,7 @@
                 <td style="padding:12px 16px;">
                     @if($student->role === 'admin')
                         <span style="padding:3px 10px; background:rgba(197,42,42,0.15); color:#C52A2A; border-radius:10px; font-size:0.7rem; font-weight:700;">ADMIN</span>
-                    @elseif($student->role === 'instructor')
+                    @elseif($student->isInstructor())
                         <span style="padding:3px 10px; background:rgba(226,138,83,0.15); color:#D87840; border-radius:10px; font-size:0.7rem; font-weight:700;">FORMATORE</span>
                     @else
                         <span style="color:#8A9696; font-size:0.75rem;">Studente</span>

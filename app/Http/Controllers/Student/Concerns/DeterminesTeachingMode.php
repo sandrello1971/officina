@@ -13,7 +13,7 @@ trait DeterminesTeachingMode
      */
     protected function isTeachingMode(Student $student, Course $course): bool
     {
-        if ($student->role !== 'instructor') {
+        if (!$student->isInstructor()) {
             return false;
         }
 
@@ -38,7 +38,7 @@ trait DeterminesTeachingMode
     /** True se il formatore insegna il corso (a prescindere dall'iscrizione). */
     protected function teaches(Student $student, Course $course): bool
     {
-        return $student->role === 'instructor'
+        return $student->isInstructor()
             && $student->taughtCourses()->where('courses.id', $course->id)->exists();
     }
 }

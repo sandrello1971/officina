@@ -52,7 +52,7 @@ class CourseController extends Controller
         $hasAnyVideo = (bool) $course->video_ai_id
             || $modules->contains(fn($m) => !empty($m->video_ai_id));
 
-        $instructorMaterials = $student->role === 'instructor'
+        $instructorMaterials = $student->isInstructor()
             ? $course->instructorMaterials
             : collect();
 
@@ -175,7 +175,7 @@ class CourseController extends Controller
 
         $instructorManualSections = collect();
         $instructorNotes = collect();
-        if ($student->role === 'instructor') {
+        if ($student->isInstructor()) {
             $instructorManualSections = \App\Models\InstructorManualSection::where('module_id', $module->id)
                 ->with('material')
                 ->orderBy('sort_order')->get();
