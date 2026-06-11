@@ -318,6 +318,12 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
     Route::post('/docenti/import/preview', [App\Http\Controllers\Scuola\TeacherImportController::class, 'preview'])->name('docenti.import.preview');
     Route::post('/docenti/import/commit', [App\Http\Controllers\Scuola\TeacherImportController::class, 'commit'])->name('docenti.import.commit');
     Route::post('/docenti/import/{batch}/discard', [App\Http\Controllers\Scuola\TeacherImportController::class, 'discard'])->name('docenti.import.discard');
+    // Modifica docente (P-segreteria): edit/update + reset password + attiva/disattiva,
+    // scoped sulla propria scuola via ownTeacher()/assertSameSchool().
+    Route::get('/docenti/{teacher}/modifica', [App\Http\Controllers\Scuola\TeacherController::class, 'edit'])->name('docenti.edit');
+    Route::patch('/docenti/{teacher}', [App\Http\Controllers\Scuola\TeacherController::class, 'update'])->name('docenti.update');
+    Route::post('/docenti/{teacher}/reset-password', [App\Http\Controllers\Scuola\TeacherController::class, 'resetPassword'])->name('docenti.reset-password');
+    Route::patch('/docenti/{teacher}/stato', [App\Http\Controllers\Scuola\TeacherController::class, 'toggleActive'])->name('docenti.toggle');
 
     // Studenti (P14): elenco + import CSV a gate con credenziali duali
     Route::get('/studenti', [App\Http\Controllers\Scuola\StudentController::class, 'index'])->name('studenti.index');
