@@ -7,6 +7,8 @@ use App\Models\CourseChangelog;
 use App\Models\CourseSource;
 use App\Models\FormatoreSnapshot;
 use App\Models\InstructorManualSection;
+use App\Models\Module;
+use App\Models\StudentSourceVersion;
 use App\Models\UpdateProposal;
 use App\Services\CourseSourcePdfBuilder;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +58,10 @@ class ProposalApplicator
                 throw new RuntimeException("Nessun course_sources per il corso {$course->id}: niente da applicare.");
             }
 
+            // Solo proposte FORMATORE: lo studente ha un percorso dedicato (applyStudent),
+            // così i due lati restano indipendenti (D2).
             $approved = UpdateProposal::where('course_id', $course->id)
+                ->where('content_source', 'instructor')
                 ->where('status', 'approved')
                 ->orderBy('created_at')
                 ->get();
@@ -239,6 +244,171 @@ class ProposalApplicator
 
             return ['rolled_back' => true, 'version_from' => $latest->version, 'version_to' => $newVersion, 'restored_to' => $preVersion];
         });
+    }
+
+    // ===================== LATO STUDENTE (P25.B-a.3) =====================
+    //
+    // NOTA: approccio verbatim-su-stringa che assume HTML PULITO, senza markup inline né
+    // entità DENTRO le frasi (verificato sul contenuto reale). Se in futuro comparissero,
+    // passare a parsing DOM (sostituzione sul text-node, non sulla stringa grezza).
+
+    /**
+     * Applica le proposte approved con content_source='student' al contenuto live degli
+     * studenti (modules.content), in-place. Replace verbatim "unico o niente" sulla stringa
+     * HTML del modulo. Versioning su student_source_versions (snapshot completo), rollback
+     * possibile. Tocca SOLO modules.content: mai materials, mai student_canvas_data, mai
+     * DELETE di moduli. Gate minori e HITL (solo approved) come il lato formatore.
+     *
+     * @return array{applied:int, failed:array, version_from:?string, version_to:?string, blocked:?string}
+     */
+    public function applyStudent(Course $course, bool $minorConfirmed = false): array
+    {
+        return DB::transaction(function () use ($course, $minorConfirmed) {
+            $audience = optional($course->freshnessConfig)->audience ?? 'adult';
+            if ($audience === 'minor' && !$minorConfirmed) {
+                return ['applied' => 0, 'failed' => [], 'blocked' => 'minor_confirmation_required',
+                    'version_from' => optional($this->latestStudentVersion($course))->version, 'version_to' => null];
+            }
+
+            $approved = UpdateProposal::where('course_id', $course->id)
+                ->where('content_source', 'student')
+                ->where('status', 'approved')
+                ->orderBy('created_at')
+                ->get();
+
+            $currentVersion = optional($this->latestStudentVersion($course))->version;
+            if ($approved->isEmpty()) {
+                return ['applied' => 0, 'failed' => [], 'version_from' => $currentVersion, 'version_to' => null, 'blocked' => null];
+            }
+
+            $modules = $course->modules()->get()->keyBy('id');
+            $original = $modules->map(fn ($m) => (string) $m->content)->all(); // id → HTML pre-applicazione
+            $live = $original; // copia di lavoro
+
+            $appliedProposals = [];
+            $failed = [];
+            foreach ($approved as $p) {
+                $mid = $p->module_id;
+                if ($mid === null || !array_key_exists($mid, $live)) {
+                    $this->fail($p, 'studente: modulo non trovato nel corso');
+                    $failed[] = ['id' => $p->id, 'error' => $p->apply_error];
+                    continue;
+                }
+                $res = VerbatimReplacer::replaceUnique($live[$mid], $p->before, $p->after);
+                if (!$res['ok']) {
+                    $this->fail($p, 'studente: ' . $res['reason']);
+                    $failed[] = ['id' => $p->id, 'error' => $p->apply_error];
+                    continue;
+                }
+                $live[$mid] = $res['result'];
+                $appliedProposals[] = $p;
+            }
+
+            if (empty($appliedProposals)) {
+                return ['applied' => 0, 'failed' => $failed, 'version_from' => $currentVersion, 'version_to' => null, 'blocked' => null];
+            }
+
+            // Baseline: se non esiste ancora una versione studente, la live attuale è "1.0".
+            $current = $this->latestStudentVersion($course);
+            if ($current === null) {
+                $current = StudentSourceVersion::create([
+                    'course_id' => $course->id, 'version' => '1.0', 'content' => $this->studentSnapshot($original),
+                ]);
+            }
+            $versionFrom = $current->version;
+            $newVersion = $this->nextVersion($versionFrom);
+
+            // Nuova versione = snapshot COMPLETO post-applicazione (la precedente resta intatta).
+            StudentSourceVersion::create([
+                'course_id' => $course->id, 'version' => $newVersion, 'content' => $this->studentSnapshot($live),
+            ]);
+
+            // UPDATE IN-PLACE dei soli moduli modificati. MAI delete.
+            foreach ($live as $mid => $html) {
+                if ($html !== $original[$mid]) {
+                    Module::where('id', $mid)->update(['content' => $html]);
+                }
+            }
+
+            foreach ($appliedProposals as $p) {
+                $p->update(['status' => 'applied', 'applied_at' => now(), 'apply_error' => null]);
+                CourseChangelog::create([
+                    'course_id' => $course->id, 'proposal_id' => $p->id, 'content_source' => 'student',
+                    'version_from' => $versionFrom, 'version_to' => $newVersion, 'kind' => 'apply',
+                    'summary' => mb_substr($p->before, 0, 120) . ' → ' . mb_substr($p->after, 0, 120),
+                    'approved_by' => $p->reviewed_by, 'approved_at' => $p->reviewed_at,
+                ]);
+            }
+
+            return ['applied' => count($appliedProposals), 'failed' => $failed, 'version_from' => $versionFrom, 'version_to' => $newVersion, 'blocked' => null];
+        });
+    }
+
+    /**
+     * Rollback dell'ultima applicazione studente: ripristina modules.content (in-place
+     * UPDATE, mai delete) dalla versione precedente; nuova versione = copia della precedente.
+     *
+     * @return array{rolled_back:bool, version_from:?string, version_to:?string, restored_to:?string}
+     */
+    public function rollbackStudent(Course $course): array
+    {
+        return DB::transaction(function () use ($course) {
+            $latest = $this->latestStudentVersion($course);
+            if (!$latest) {
+                throw new RuntimeException('Nessuna versione studente da cui fare rollback.');
+            }
+
+            $entry = CourseChangelog::where('course_id', $course->id)
+                ->where('content_source', 'student')
+                ->where('version_to', $latest->version)
+                ->where('kind', 'apply')
+                ->orderByDesc('created_at')
+                ->first();
+            if (!$entry) {
+                throw new RuntimeException("Nessuna applicazione studente da annullare per la versione {$latest->version}.");
+            }
+
+            $preVersion = $entry->version_from;
+            $pre = StudentSourceVersion::where('course_id', $course->id)->where('version', $preVersion)->first();
+            if (!$pre) {
+                throw new RuntimeException("Versione studente precedente {$preVersion} non disponibile per il rollback.");
+            }
+
+            // Ripristina i moduli in-place dalla versione precedente.
+            foreach ($pre->content as $item) {
+                Module::where('id', $item['module_id'])->update(['content' => $item['content_html']]);
+            }
+
+            $newVersion = $this->nextVersion($latest->version);
+            StudentSourceVersion::create([
+                'course_id' => $course->id, 'version' => $newVersion, 'content' => $pre->content,
+            ]);
+            CourseChangelog::create([
+                'course_id' => $course->id, 'proposal_id' => null, 'content_source' => 'student',
+                'version_from' => $latest->version, 'version_to' => $newVersion, 'kind' => 'rollback',
+                'summary' => "Rollback studente dalla versione {$latest->version} (ripristino contenuti di {$preVersion})",
+                'approved_by' => null, 'approved_at' => now(),
+            ]);
+
+            return ['rolled_back' => true, 'version_from' => $latest->version, 'version_to' => $newVersion, 'restored_to' => $preVersion];
+        });
+    }
+
+    /** Versione studente più recente (deterministica: created_at desc, id desc). */
+    private function latestStudentVersion(Course $course): ?StudentSourceVersion
+    {
+        return StudentSourceVersion::where('course_id', $course->id)
+            ->orderByDesc('created_at')->orderByDesc('id')->first();
+    }
+
+    /** @param array<string,string> $contentById  @return list<array{module_id:string, content_html:string}> */
+    private function studentSnapshot(array $contentById): array
+    {
+        $out = [];
+        foreach ($contentById as $moduleId => $html) {
+            $out[] = ['module_id' => $moduleId, 'content_html' => $html];
+        }
+        return $out;
     }
 
     /** Registra il fallimento pulito di una proposta (resta 'approved', non applicata). */

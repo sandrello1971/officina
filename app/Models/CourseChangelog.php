@@ -15,7 +15,7 @@ class CourseChangelog extends Model
     protected $table = 'course_changelog';
 
     protected $fillable = [
-        'course_id', 'proposal_id', 'version_from', 'version_to',
+        'course_id', 'proposal_id', 'content_source', 'version_from', 'version_to',
         'kind', 'summary', 'approved_by', 'approved_at',
     ];
 

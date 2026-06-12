@@ -28,6 +28,7 @@ class FreshnessAgent
         private FreshnessClaimExtractor $extractor,
         private FreshnessVerifier $verifier,
         private FreshnessProposalGenerator $generator,
+        private StudentClaimExtractor $studentExtractor,
     ) {}
 
     public function run(Course $course, ?string $version = null): FreshnessRun
@@ -45,9 +46,10 @@ class FreshnessAgent
                 'primary_sources' => [],
                 'audience' => 'adult',
                 'proposals_enabled' => true,
+                'student_proposals_enabled' => false,
             ]);
 
-            // Fase 1 — estrazione + persistenza dei claim.
+            // ===== Lato FORMATORE (instructor): Fase 1 sul sorgente strutturato. =====
             $extracted = $this->extractor->extract($source->blocks ?? []);
 
             $obsolete = [];
@@ -55,45 +57,53 @@ class FreshnessAgent
                 $claim = FreshnessClaim::create([
                     'run_id' => $run->id,
                     'course_id' => $course->id,
+                    'content_source' => 'instructor',
                     'block_id' => $c['block_id'],
                     'sentence_ref' => $c['sentence_ref'],
                     'claim_text' => $c['claim_text'],
                     'category' => $c['category'],
                 ]);
-
-                // Fase 2 — verifica. Resiliente: un errore su un claim non ferma la run.
-                try {
-                    $v = $this->verifier->verify($claim->claim_text, $claim->category, $config);
-                    $claim->update([
-                        'verdict' => $v['verdict'],
-                        'source_url' => $v['source_url'],
-                        'source_type' => $v['source_type'],
-                        'source_date' => $v['source_date'],
-                        'confidence' => $v['confidence'],
-                        'verified_at' => now(),
-                    ]);
-                    if ($v['verdict'] === 'obsoleto') {
-                        $obsolete[] = $claim->refresh();
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('[FreshnessAgent] verifica claim fallita, lascio non verificato', [
-                        'claim_id' => $claim->id,
-                        'error' => $e->getMessage(),
-                    ]);
+                if ($this->verifyClaim($claim, $config)) {
+                    $obsolete[] = $claim;
                 }
             }
 
-            // Fase 3 (P25.3) — generazione proposte per i claim obsoleti. Disattivabile
-            // per corso (proposals_enabled): l'agente può girare in modalità solo-claim.
+            // ===== Lato STUDENTE (modules.content): solo se opt-in (student_proposals_enabled). =====
+            // È contenuto utente-finale: niente analisi finché non è esplicitamente attivata.
+            $studentObsolete = [];
+            $studentClaimsFound = 0;
+            if ($config->student_proposals_enabled) {
+                $studentExtracted = $this->studentExtractor->extract($course->modules()->get());
+                $studentClaimsFound = count($studentExtracted['claims']);
+                foreach ($studentExtracted['claims'] as $c) {
+                    $claim = FreshnessClaim::create([
+                        'run_id' => $run->id,
+                        'course_id' => $course->id,
+                        'content_source' => 'student',
+                        'module_id' => $c['module_id'],
+                        'sentence_ref' => $c['sentence_ref'],
+                        'claim_text' => $c['claim_text'],
+                        'category' => $c['category'],
+                    ]);
+                    if ($this->verifyClaim($claim, $config)) {
+                        $studentObsolete[] = $claim;
+                    }
+                }
+            }
+
+            // ===== Fase 3 — proposte (D2: formatore e studente indipendenti per toggle). =====
             $proposalsCreated = 0;
             if ($config->proposals_enabled) {
-                $proposalsCreated = $this->generateProposals($run, $course, $config, $obsolete);
+                $proposalsCreated += $this->generateProposals($run, $course, $config, $obsolete);
+            }
+            if ($config->student_proposals_enabled) {
+                $proposalsCreated += $this->generateProposals($run, $course, $config, $studentObsolete);
             }
 
             $run->update([
                 'status' => 'completed',
                 'finished_at' => now(),
-                'claims_found' => count($extracted['claims']),
+                'claims_found' => count($extracted['claims']) + $studentClaimsFound,
                 'proposals_created' => $proposalsCreated,
             ]);
         } catch (\Throwable $e) {
@@ -128,7 +138,9 @@ class FreshnessAgent
                     'run_id' => $run->id,
                     'freshness_claim_id' => $claim->id,
                     'course_id' => $course->id,
-                    'block_id' => $claim->block_id,
+                    'content_source' => $claim->content_source, // instructor | student
+                    'block_id' => $claim->block_id,   // valorizzato solo per instructor
+                    'module_id' => $claim->module_id, // valorizzato solo per student
                     'sentence_ref' => $claim->sentence_ref,
                     'before' => $claim->claim_text, // verbatim: ancora del diff
                     'after' => $gen['after'],
@@ -149,6 +161,32 @@ class FreshnessAgent
         }
 
         return $created;
+    }
+
+    /**
+     * Fase 2 — verifica un claim (formatore o studente, stesso verificatore). Aggiorna il
+     * claim col verdetto. Resiliente: un errore non ferma la run. Ritorna true se obsoleto.
+     */
+    private function verifyClaim(FreshnessClaim $claim, CourseFreshnessConfig $config): bool
+    {
+        try {
+            $v = $this->verifier->verify($claim->claim_text, $claim->category, $config);
+            $claim->update([
+                'verdict' => $v['verdict'],
+                'source_url' => $v['source_url'],
+                'source_type' => $v['source_type'],
+                'source_date' => $v['source_date'],
+                'confidence' => $v['confidence'],
+                'verified_at' => now(),
+            ]);
+            return $v['verdict'] === 'obsoleto';
+        } catch (\Throwable $e) {
+            Log::warning('[FreshnessAgent] verifica claim fallita, lascio non verificato', [
+                'claim_id' => $claim->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     /** Ultimo sorgente (o versione richiesta). Fail pulito se assente. */

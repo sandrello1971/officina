@@ -20,6 +20,7 @@ class CourseFreshnessConfig extends Model
         'audience',
         'audience_overridden',
         'proposals_enabled',
+        'student_proposals_enabled',
         'cadence',
         'last_run_at',
     ];
@@ -28,6 +29,7 @@ class CourseFreshnessConfig extends Model
         'web_search_enabled' => 'boolean',
         'primary_sources' => 'array',
         'proposals_enabled' => 'boolean',
+        'student_proposals_enabled' => 'boolean',
         'audience_overridden' => 'boolean',
         'last_run_at' => 'datetime',
     ];

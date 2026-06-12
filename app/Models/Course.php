@@ -77,6 +77,12 @@ class Course extends Model
         return $this->hasMany(CourseSource::class)->orderByDesc('created_at');
     }
 
+    // P25.B-a — sorgente studente versionato (modules.content), per versioning/rollback.
+    public function studentSourceVersions()
+    {
+        return $this->hasMany(StudentSourceVersion::class)->orderByDesc('created_at');
+    }
+
     // P25.2 — esecuzioni dell'agente e config per corso (Course Freshness Agent).
     public function freshnessRuns()
     {
