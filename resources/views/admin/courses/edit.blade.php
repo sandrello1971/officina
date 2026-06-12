@@ -210,6 +210,8 @@
                     </div>
                 </div>
 
+                @include('admin.courses.partials.source-overwrite-warning')
+
                 <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
                     <button type="submit"
                             style="padding:8px 16px; background:#55B1AE; color:white; border:none; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">
@@ -274,6 +276,7 @@
                        style="width:100%; padding:8px; border:1px solid #E8F5F5; border-radius:6px; font-size:0.85rem;">
                 <input type="file" name="docx" accept=".docx,.doc" required
                        style="font-size:0.8rem;">
+                @include('admin.courses.partials.source-overwrite-warning')
                 <div style="display:flex; justify-content:flex-end;">
                     <button type="submit"
                             style="padding:8px 16px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">

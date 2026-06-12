@@ -64,7 +64,21 @@ class CourseController extends Controller
     public function edit(string $id)
     {
         $course = Course::findOrFail($id);
-        return view('admin.courses.edit', compact('course'));
+
+        // F-c — se il corso ha aggiornamenti applicati dall'agente, ricaricare il manuale
+        // rigenererebbe il sorgente dal docx invalidandoli: la view mostra un avviso + conferma.
+        $applyHistory = \App\Models\CourseChangelog::where('course_id', $course->id)
+            ->where('kind', 'apply')
+            ->where('content_source', 'instructor')
+            ->orderByDesc('created_at')
+            ->get();
+        $sourceOverwrite = [
+            'hasHistory' => $applyHistory->isNotEmpty(),
+            'count' => $applyHistory->count(),
+            'last' => optional($applyHistory->first())->summary,
+        ];
+
+        return view('admin.courses.edit', compact('course', 'sourceOverwrite'));
     }
 
     public function update(Request $request, string $id)

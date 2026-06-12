@@ -29,7 +29,9 @@ class InstructorMaterialController extends Controller
                 $request->file('docx'),
                 $course,
                 $data['title'],
-                $data['description'] ?? null
+                $data['description'] ?? null,
+                null,
+                $request->boolean('confirm_overwrite')
             );
         } catch (\Throwable $e) {
             return back()
@@ -39,7 +41,7 @@ class InstructorMaterialController extends Controller
 
         return redirect()
             ->route('admin.courses.edit', $course)
-            ->with('success', 'Manuale formatore caricato correttamente.');
+            ->with('success', 'Manuale formatore caricato correttamente.' . $this->sourceFeedback());
     }
 
     public function update(Request $request, Course $course, Material $material)
@@ -60,7 +62,8 @@ class InstructorMaterialController extends Controller
                     $course,
                     $data['title'],
                     $data['description'] ?? null,
-                    $material
+                    $material,
+                    $request->boolean('confirm_overwrite')
                 );
             } else {
                 $material->update([
@@ -76,23 +79,46 @@ class InstructorMaterialController extends Controller
 
         return redirect()
             ->route('admin.courses.edit', $course)
-            ->with('success', 'Manuale formatore aggiornato.');
+            ->with('success', 'Manuale formatore aggiornato.' . $this->sourceFeedback());
     }
 
-    public function regenerate(Course $course, Material $material)
+    public function regenerate(Request $request, Course $course, Material $material)
     {
         abort_unless($material->course_id === $course->id, 404);
         abort_unless($material->is_instructor_only, 404);
 
         try {
-            $this->service->regenerateHtml($material);
+            $this->service->regenerateHtml($material, $request->boolean('confirm_overwrite'));
         } catch (\Throwable $e) {
             return back()->with('error', 'Rigenerazione fallita: ' . $e->getMessage());
         }
 
         return redirect()
             ->route('admin.courses.edit', $course)
-            ->with('success', 'HTML rigenerato dal file .docx esistente.');
+            ->with('success', 'HTML rigenerato dal file .docx esistente.' . $this->sourceFeedback());
+    }
+
+    /**
+     * F-c — Feedback testuale sull'esito dell'estrazione del sorgente strutturato, da appendere
+     * al messaggio di successo. Vuoto se l'estrazione non è stata eseguita.
+     */
+    private function sourceFeedback(): string
+    {
+        $s = $this->service->lastSourceSync;
+        if (!$s) {
+            return '';
+        }
+
+        return match ($s['status']) {
+            'generated' => " Sorgente strutturato generato (v{$s['version']}, {$s['blocks']} blocchi) — il corso è freshness-ready."
+                . (($s['invalidated'] ?? 0) > 0
+                    ? " {$s['invalidated']} proposte in coda sono state invalidate dalla rigenerazione del sorgente."
+                    : ''),
+            'empty' => ' Sorgente non generato: heading non riconosciuti nel manuale (0 blocchi).',
+            'awaiting_confirmation' => ' Sorgente non rigenerato: in attesa di conferma sovrascrittura (spunta la conferma e ricarica).',
+            'failed' => ' Sorgente non generato: errore durante l\'estrazione.',
+            default => '',
+        };
     }
 
     public function destroy(Course $course, Material $material)
