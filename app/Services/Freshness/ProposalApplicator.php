@@ -97,7 +97,9 @@ class ProposalApplicator
                     continue;
                 }
                 $idx = $blockIndex[$p->block_id];
-                $srcRes = VerbatimReplacer::replaceUnique($blocks[$idx]['text'] ?? '', $p->before, $p->after);
+                // Replace verbatim sul blocco: gestisce sia i blocchi con `text` sia le liste
+                // BUL/NUM con `items` (dove `text` è vuoto). Simmetrico a searchableText (Fase 1).
+                $srcRes = $this->replaceInSourceBlock($blocks[$idx], $p->before, $p->after);
                 if (!$srcRes['ok']) {
                     $this->fail($p, 'sorgente: ' . $srcRes['reason']);
                     $failed[] = ['id' => $p->id, 'error' => $p->apply_error];
@@ -127,7 +129,7 @@ class ProposalApplicator
                 }
 
                 // 3) Entrambi ok → applica alle copie di lavoro.
-                $blocks[$idx]['text'] = $srcRes['result'];
+                $blocks[$idx] = $srcRes['block'];
                 if (!array_key_exists($hitSection, $preSnapshot)) {
                     $preSnapshot[$hitSection] = $sections->firstWhere('id', $hitSection)->content_html; // PRE-batch
                 }
@@ -421,6 +423,59 @@ class ProposalApplicator
         Log::warning('[ProposalApplicator] proposta non applicata (verbatim)', [
             'proposal_id' => $proposal->id, 'reason' => $reason,
         ]);
+    }
+
+    /**
+     * Replace verbatim "unico o niente" su un blocco del sorgente strutturato, gestendo
+     * SIA i blocchi con `text` SIA le liste (BUL/NUM) con `items` — dove `text` è vuoto e il
+     * contenuto vive negli item. È il complemento speculare di searchableText (Fase 1, che già
+     * legge gli item delle liste): senza questo, le proposte nate da un blocco lista falliscono
+     * sempre il match sorgente ("before non trovato").
+     *
+     * Per le liste il `before` deve comparire in ESATTAMENTE un item su tutta la lista (stesso
+     * criterio "unico o niente"). Ritorna ['ok'=>bool, 'block'=>array, 'reason'=>?string]: `block`
+     * è il blocco con la sostituzione già applicata (assegnato alle copie di lavoro solo se ok).
+     *
+     * @param  array<string,mixed>  $block
+     * @return array{ok:bool, block:array<string,mixed>, reason:?string}
+     */
+    private function replaceInSourceBlock(array $block, string $before, string $after): array
+    {
+        // Blocco testuale (P/H*/BOX/EX/ESE…): replace diretto su `text`.
+        if (isset($block['text']) && is_string($block['text']) && $block['text'] !== '') {
+            $res = VerbatimReplacer::replaceUnique($block['text'], $before, $after);
+            if ($res['ok']) {
+                $block['text'] = $res['result'];
+            }
+            return ['ok' => $res['ok'], 'block' => $block, 'reason' => $res['reason']];
+        }
+
+        // Lista (BUL/NUM): il before deve essere in ESATTAMENTE un item.
+        if (isset($block['items']) && is_array($block['items'])) {
+            $items = $block['items'];
+            $totalHits = 0;
+            $hitIndex = null;
+            foreach ($items as $i => $item) {
+                $count = VerbatimReplacer::countOccurrences((string) $item, $before);
+                if ($count > 0) {
+                    $totalHits += $count;
+                    $hitIndex = $i;
+                }
+            }
+            if ($totalHits !== 1) {
+                return ['ok' => false, 'block' => $block,
+                    'reason' => "before non trovato o non unico negli item della lista ({$totalHits} occorrenze)"];
+            }
+            $res = VerbatimReplacer::replaceUnique((string) $items[$hitIndex], $before, $after);
+            if (!$res['ok']) {
+                return ['ok' => false, 'block' => $block, 'reason' => $res['reason']];
+            }
+            $items[$hitIndex] = $res['result'];
+            $block['items'] = $items;
+            return ['ok' => true, 'block' => $block, 'reason' => null];
+        }
+
+        return ['ok' => false, 'block' => $block, 'reason' => 'blocco senza text né items'];
     }
 
     /**

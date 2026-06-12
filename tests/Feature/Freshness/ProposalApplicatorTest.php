@@ -222,4 +222,60 @@ class ProposalApplicatorTest extends TestCase
         $this->assertSame(1, CourseSource::where('course_id', $course->id)->count());
         $this->assertStringContainsString(self::BEFORE, $section->refresh()->content_html); // live intatto
     }
+
+    // ---- Blocchi LISTA (BUL/NUM): il contenuto vive in `items`, non in `text` ----
+
+    public function test_apply_su_blocco_lista_aggiorna_item_giusto(): void
+    {
+        $course = $this->course();
+        // Sorgente con un blocco LISTA (BUL): nessun `text`, il contenuto è negli `items`.
+        CourseSource::create(['course_id' => $course->id, 'version' => '2.0', 'blocks' => [
+            ['id' => 'bul1', 'type' => 'BUL', 'items' => [
+                'Prima voce generica.',
+                self::BEFORE,
+                'Terza voce generica.',
+            ]],
+        ]]);
+        // Live: il before compare come <li> una sola volta.
+        $section = $this->section($course, '<ul><li>Prima voce generica.</li><li>' . self::BEFORE . '</li><li>Terza voce generica.</li></ul>');
+        $this->approved($course, ['block_id' => 'bul1']);
+
+        $res = app(ProposalApplicator::class)->apply($course);
+
+        $this->assertSame(1, $res['applied']);
+        // Nuova versione: SOLO l'item bersaglio aggiornato, gli altri intatti.
+        $v21 = CourseSource::where('course_id', $course->id)->where('version', '2.1')->first();
+        $this->assertSame(self::AFTER, $v21->blocks[0]['items'][1]);
+        $this->assertSame('Prima voce generica.', $v21->blocks[0]['items'][0]);
+        $this->assertSame('Terza voce generica.', $v21->blocks[0]['items'][2]);
+        // Vecchia versione INTATTA.
+        $v20 = CourseSource::where('course_id', $course->id)->where('version', '2.0')->first();
+        $this->assertSame(self::BEFORE, $v20->blocks[0]['items'][1]);
+        // Formatore live aggiornato.
+        $this->assertStringContainsString(self::AFTER, $section->refresh()->content_html);
+        $this->assertStringNotContainsString(self::BEFORE, $section->content_html);
+        $this->assertSame('applied', UpdateProposal::where('course_id', $course->id)->first()->status);
+    }
+
+    public function test_apply_lista_before_non_unico_negli_item_fallisce_pulito(): void
+    {
+        $course = $this->course();
+        // Il before è in DUE item → non univoco sulla lista → fallimento pulito (niente scelta a caso).
+        CourseSource::create(['course_id' => $course->id, 'version' => '2.0', 'blocks' => [
+            ['id' => 'bul1', 'type' => 'BUL', 'items' => [
+                self::BEFORE,
+                'Voce intermedia.',
+                self::BEFORE,
+            ]],
+        ]]);
+        $this->section($course, '<ul><li>' . self::BEFORE . '</li></ul>');
+        $p = $this->approved($course, ['block_id' => 'bul1']);
+
+        $res = app(ProposalApplicator::class)->apply($course);
+
+        $this->assertSame(0, $res['applied']);
+        $this->assertSame('approved', $p->refresh()->status);
+        $this->assertStringContainsString('item della lista', $p->apply_error);
+        $this->assertSame(1, CourseSource::where('course_id', $course->id)->count()); // niente v2.1
+    }
 }
