@@ -7,6 +7,8 @@ use App\Models\CourseChangelog;
 use App\Models\CourseSource;
 use App\Models\DocumentRag;
 use App\Models\Material;
+use App\Models\UpdateProposal;
+use App\Services\Freshness\CoordinatedMatchService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +20,8 @@ class InstructorManualService
     public function __construct(
         protected RagService $rag,
         protected InstructorManualSplitterService $splitter,
-        protected CourseSourceExtractor $sourceExtractor
+        protected CourseSourceExtractor $sourceExtractor,
+        protected CoordinatedMatchService $coordinatedMatch
     ) {}
 
     public function import(
@@ -26,7 +29,8 @@ class InstructorManualService
         Course $course,
         string $title,
         ?string $description = null,
-        ?Material $existing = null
+        ?Material $existing = null,
+        bool $confirmOverwrite = false
     ): Material {
         if (!file_exists($sourcePath)) {
             throw new \InvalidArgumentException("File non trovato: {$sourcePath}");
@@ -74,15 +78,16 @@ class InstructorManualService
         $this->reindexInRag($material);
         $this->splitter->split($material);
 
-        // F-a — il corso diventa "freshness-ready": dallo STESSO docx appena persistito
+        // F-a/F-b — il corso diventa "freshness-ready": dallo STESSO docx appena persistito
         // si genera il sorgente strutturato (course_sources), accanto alle sezioni del
-        // formatore. Additivo e non bloccante: vedi syncStructuredSource().
-        $this->syncStructuredSource($course, Storage::disk('local')->path($storedPath));
+        // formatore. Additivo e non bloccante: vedi syncStructuredSource(). Su un corso con
+        // storia di apply serve $confirmOverwrite (barriera strutturale, non solo UI).
+        $this->syncStructuredSource($course, Storage::disk('local')->path($storedPath), $confirmOverwrite);
 
         return $material;
     }
 
-    public function regenerateHtml(Material $material): Material
+    public function regenerateHtml(Material $material, bool $confirmOverwrite = false): Material
     {
         if (!$material->file_path || !Storage::disk('local')->exists($material->file_path)) {
             throw new \RuntimeException('File .docx non presente su disco: ' . $material->file_path);
@@ -100,8 +105,8 @@ class InstructorManualService
         $this->reindexInRag($material);
         $this->splitter->split($material);
 
-        // F-a — ri-genera anche il sorgente strutturato dallo stesso .docx esistente.
-        $this->syncStructuredSource($material->course, $absolutePath);
+        // F-a/F-b — ri-genera anche il sorgente strutturato dallo stesso .docx esistente.
+        $this->syncStructuredSource($material->course, $absolutePath, $confirmOverwrite);
 
         return $material;
     }
@@ -155,7 +160,8 @@ class InstructorManualService
         Course $course,
         string $title,
         ?string $description = null,
-        ?Material $existing = null
+        ?Material $existing = null,
+        bool $confirmOverwrite = false
     ): Material {
         $ext = strtolower($file->getClientOriginalExtension());
         if (!in_array($ext, ['docx', 'doc'])) {
@@ -164,34 +170,41 @@ class InstructorManualService
 
         $tempPath = $file->getRealPath();
 
-        return $this->import($tempPath, $course, $title, $description, $existing);
+        return $this->import($tempPath, $course, $title, $description, $existing, $confirmOverwrite);
     }
 
     /**
-     * F-a — Genera il sorgente strutturato (course_sources) dal .docx del manuale formatore.
+     * F-a/F-b — Genera il sorgente strutturato (course_sources) dal .docx del manuale formatore.
      *
-     * Append-only e non distruttivo:
+     * Append-only e non distruttivo (mai DELETE: vecchie versioni e formatore_snapshots restano):
      *  - corso senza course_sources         → crea v1.0;
      *  - corso PRISTINO (con sorgente, ma   → bump MAGGIORE (es. "1.0"→"2.0", "2.2"→"3.0"):
      *    senza storia di apply dell'agente)    nuova riga che diventa corrente, le vecchie restano.
-     *  - corso CON storia di apply          → NON tocca nulla in F-a: è il caso F-b (richiede
-     *    (course_changelog kind=apply,         conferma esplicita + gestione proposte orfane).
-     *    content_source=instructor)            Qui logga e rinvia.
+     *  - corso CON storia di apply          → BARRIERA conferma (F-b): senza $confirmOverwrite
+     *    (course_changelog kind=apply,         NON estrae e NON sovrascrive (il manuale si carica
+     *    content_source=instructor)            comunque); con conferma, estrae + bump maggiore.
+     *
+     * Invalidazione ancore (F-a e F-b): ogni volta che la ri-estrazione SOSTITUISCE una versione
+     * esistente (bump, non primo v1.0), i block_id cambiano → le proposte instructor aperte
+     * (pending/approved) vengono rifiutate, propagando la cascata B-b sulle figlie studente.
      *
      * 0 blocchi (heading non riconosciuti) → non genera il sorgente, segnala soltanto.
      * Additività assoluta: qualsiasi errore è catturato e loggato — l'import del manuale
      * (Material + sezioni) NON deve mai fallire per colpa dell'estrazione.
      */
-    private function syncStructuredSource(Course $course, string $docxAbsolutePath): void
+    private function syncStructuredSource(Course $course, string $docxAbsolutePath, bool $confirmOverwrite = false): void
     {
         try {
-            // Gate F-a: mai su un corso con aggiornamenti dell'agente già applicati.
+            // Storia di apply dell'agente = segnale affidabile (changelog instructor).
             $hasApplyHistory = CourseChangelog::where('course_id', $course->id)
                 ->where('kind', 'apply')
                 ->where('content_source', 'instructor')
                 ->exists();
-            if ($hasApplyHistory) {
-                Log::info('[freshness-ready] corso con aggiornamenti agente, estrazione rinviata a conferma (F-b)', [
+
+            // F-b — barriera strutturale: su un corso con storia serve conferma esplicita,
+            // perché la nuova versione (dal docx) NON contiene gli aggiornamenti applicati.
+            if ($hasApplyHistory && !$confirmOverwrite) {
+                Log::warning('[freshness-ready] corso con aggiornamenti agente: estrazione in attesa di conferma (F-b)', [
                     'course_id' => $course->id,
                 ]);
                 return;
@@ -220,10 +233,46 @@ class InstructorManualService
             Log::info('[freshness-ready] course_sources generato dall\'import del manuale', [
                 'course_id' => $course->id, 'version' => $version, 'blocks' => count($blocks),
             ]);
+
+            // Invalidazione delle ancore: la ri-estrazione RIGENERA i block_id. Ogni volta che
+            // SOSTITUISCE una versione precedente (cioè non al primo v1.0), le proposte instructor
+            // ancora aperte sono ancorate a block_id che non esistono più → rifiutate + cascata B-b.
+            // Il trigger è il rimpiazzo della versione (block_id nuovi), NON la storia di apply:
+            // vale sia per il bump pristino (F-a, 1.0→2.0) sia per la sovrascrittura confermata (F-b).
+            // Al primo import ($current === null) non c'erano ancore da invalidare.
+            if ($current !== null) {
+                $this->rejectProposalsOrphanedByReextraction($course, $version);
+            }
         } catch (\Throwable $e) {
             Log::warning('[freshness-ready] estrazione course_sources fallita (non bloccante per l\'import)', [
                 'course_id' => $course->id, 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * F-b — Rifiuta le proposte instructor APERTE (pending/approved) di un corso il cui sorgente
+     * è stato ri-estratto dal docx: i nuovi block_id invalidano le ancore. Motivo tracciato in
+     * apply_error. Per ogni proposta padre, riusa la gestione orfani B-b (orphanChildrenOf):
+     * figlie studente pending/matched → rejected+orphaned; figlie applied → restano+orphaned+segnalate.
+     */
+    private function rejectProposalsOrphanedByReextraction(Course $course, string $newVersion): void
+    {
+        $reason = "ancora invalidata da ri-estrazione manuale v{$newVersion}";
+
+        $open = UpdateProposal::where('course_id', $course->id)
+            ->where('content_source', 'instructor')
+            ->whereIn('status', ['pending', 'approved'])
+            ->get();
+
+        foreach ($open as $proposal) {
+            $proposal->update([
+                'status' => 'rejected',
+                'apply_error' => $reason,
+                'reviewed_at' => $proposal->reviewed_at ?? now(),
+            ]);
+            // Cascata B-b: gestione orfani delle figlie studente coordinate (riuso, non duplico).
+            $this->coordinatedMatch->orphanChildrenOf($proposal, $reason);
         }
     }
 
