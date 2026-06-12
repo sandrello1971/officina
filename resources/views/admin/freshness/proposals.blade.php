@@ -16,6 +16,85 @@
         {{ session('success') }}
     </div>
 @endif
+@if (session('error'))
+    <div style="background:#FBEDEC; border:1px solid #C0392B; color:#7B1E1E; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:0.85rem;">
+        {{ session('error') }}
+    </div>
+@endif
+
+{{-- P25.3d — Controlli manuali (async) + cadenza scheduler per corso --}}
+<div style="background:white; border-radius:10px; padding:16px 18px; margin-bottom:20px;">
+    <div style="font-weight:700; color:#1A1F1F; margin-bottom:4px;">&#9881; Controlli & cadenze</div>
+    <p style="color:#8A9696; font-size:0.78rem; margin:0 0 12px;">
+        "Lancia ora" avvia un controllo in background (può richiedere qualche minuto: genera solo proposte, non applica nulla).
+        La cadenza pianifica i controlli automatici. Default <strong>off</strong> per contenere i costi — abilitala dove serve.
+    </p>
+    <table style="width:100%; border-collapse:collapse; font-size:0.82rem;">
+        <thead>
+            <tr style="text-align:left; color:#8A9696; border-bottom:1px solid #E6EBEB;">
+                <th style="padding:6px 8px;">Corso</th>
+                <th style="padding:6px 8px;">Audience</th>
+                <th style="padding:6px 8px;">Cadenza</th>
+                <th style="padding:6px 8px;">Ultimo controllo</th>
+                <th style="padding:6px 8px; text-align:right;">Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($allCourses as $c)
+                @php($cfg = $c->freshnessConfig)
+                @php($aud = optional($cfg)->audience ?? 'adult')
+                <tr style="border-bottom:1px solid #F0F4F4; {{ $aud === 'minor' ? 'background:#FCF4F3;' : '' }}">
+                    <td style="padding:6px 8px; color:#1A1F1F;">{{ $c->name }}</td>
+                    <td style="padding:6px 8px;">
+                        <form method="POST" action="{{ route('admin.freshness.proposals.audience', $c) }}" style="margin:0; display:flex; gap:6px; align-items:center;">
+                            @csrf
+                            @include('admin.freshness._audience_badge', ['audience' => $aud])
+                            <select name="audience" style="padding:4px 8px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.78rem;">
+                                <option value="adult" @selected($aud === 'adult')>adulti</option>
+                                <option value="minor" @selected($aud === 'minor')>minori</option>
+                            </select>
+                            <button type="submit" style="padding:4px 10px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:6px; font-size:0.75rem; cursor:pointer;">Salva</button>
+                        </form>
+                    </td>
+                    <td style="padding:6px 8px;">
+                        <form method="POST" action="{{ route('admin.freshness.proposals.cadence', $c) }}" style="margin:0; display:flex; gap:6px;">
+                            @csrf
+                            <select name="cadence" style="padding:4px 8px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.78rem;">
+                                @foreach (['off' => 'off', 'weekly' => 'settimanale', 'monthly' => 'mensile', 'quarterly' => 'trimestrale'] as $val => $label)
+                                    <option value="{{ $val }}" @selected(optional($cfg)->cadence === $val || (is_null(optional($cfg)->cadence) && $val === 'off'))>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" style="padding:4px 10px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:6px; font-size:0.75rem; cursor:pointer;">Salva</button>
+                        </form>
+                    </td>
+                    <td style="padding:6px 8px; color:#8A9696;">{{ optional(optional($cfg)->last_run_at)->format('d/m/Y H:i') ?? 'mai' }}</td>
+                    <td style="padding:6px 8px; text-align:right; white-space:nowrap;">
+                        <form method="POST" action="{{ route('admin.freshness.proposals.run') }}" style="margin:0 0 4px; display:inline-block;">
+                            @csrf
+                            <input type="hidden" name="course_id" value="{{ $c->id }}">
+                            <button type="submit" style="padding:5px 12px; background:#55B1AE; color:white; border:none; border-radius:6px; font-size:0.78rem; cursor:pointer;">&#9658; Lancia ora</button>
+                        </form>
+                        @if ($c->approved_count > 0)
+                            <form method="POST" action="{{ route('admin.freshness.proposals.apply', $c) }}" style="margin:0; display:inline-block;"
+                                  onsubmit="return {{ $aud === 'minor' ? 'confirm(\'Stai per applicare modifiche a un corso per MINORI. Confermi?\')' : 'true' }};">
+                                @csrf
+                                @if ($aud === 'minor')
+                                    {{-- Gate 2 (minori): conferma esplicita aggiuntiva richiesta. --}}
+                                    <label style="font-size:0.7rem; color:#7B1E1E; display:block; margin-bottom:3px;">
+                                        <input type="checkbox" name="confirm_minor" value="1" required> ⚠ Confermo l'applicazione a un corso per MINORI
+                                    </label>
+                                @endif
+                                <button type="submit" style="padding:5px 12px; background:{{ $aud === 'minor' ? '#7B1E1E' : '#1E8449' }}; color:white; border:none; border-radius:6px; font-size:0.78rem; cursor:pointer;">
+                                    &#10003; Applica ({{ $c->approved_count }})
+                                </button>
+                            </form>
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
 
 @php($flatCount = $proposals->flatten()->count())
 

@@ -171,11 +171,13 @@ class FreshnessProposalQueueTest extends TestCase
         $this->assertSame('rejected', $p->refresh()->status);
     }
 
-    public function test_hitl_nessuna_route_applica_al_contenuto(): void
+    public function test_hitl_approve_reject_non_applicano_al_contenuto(): void
     {
-        // Struttura: in 3b NON esiste alcun endpoint di applicazione al corso.
-        $this->assertFalse(Route::has('admin.freshness.proposals.apply'));
+        // approve/reject cambiano SOLO lo status (provato altrove che non toccano il corso).
         $this->assertTrue(Route::has('admin.freshness.proposals.approve'));
         $this->assertTrue(Route::has('admin.freshness.proposals.reject'));
+        // L'applicazione esiste (P25.3c/3e) ma è un passo SEPARATO, gated, che consuma solo
+        // 'approved' (mai 'pending') — vedi ProposalApplicatorTest e MinorGateTest.
+        $this->assertTrue(Route::has('admin.freshness.proposals.apply'));
     }
 }

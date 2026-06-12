@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RunFreshnessAgentJob;
 use App\Models\Admin;
 use App\Models\Course;
+use App\Models\CourseFreshnessConfig;
 use App\Models\UpdateProposal;
+use App\Services\Freshness\ProposalApplicator;
 use Illuminate\Http\Request;
 
 /**
@@ -42,7 +45,86 @@ class FreshnessProposalController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.freshness.proposals', compact('proposals', 'courses', 'courseFilter'));
+        // Tutti i corsi attivi (per il pannello "Controlli & cadenze": lancio manuale +
+        // gestione cadenza/audience + applicazione delle approvate).
+        $allCourses = Course::active()
+            ->with('freshnessConfig')
+            ->withCount(['updateProposals as approved_count' => fn ($q) => $q->where('status', 'approved')])
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.freshness.proposals', compact('proposals', 'courses', 'courseFilter', 'allCourses'));
+    }
+
+    /**
+     * P25.3d — Lancia un controllo (freshness-run) ASINCRONO su un corso. Solo dispatch:
+     * il run gira sulla queue (chiamate AI lente). NON applica nulla.
+     */
+    public function run(Request $request)
+    {
+        $validated = $request->validate(['course_id' => 'required|uuid|exists:courses,id']);
+        $course = Course::find($validated['course_id']);
+
+        RunFreshnessAgentJob::dispatch($course->id);
+
+        return back()->with('success', "Controllo avviato per «{$course->name}». L'estrazione fa chiamate AI e può richiedere qualche minuto: le proposte appariranno qui a breve.");
+    }
+
+    /** P25.3d — Imposta la cadenza dello scheduler per un corso. */
+    public function setCadence(Request $request, Course $course)
+    {
+        $validated = $request->validate(['cadence' => 'required|in:off,weekly,monthly,quarterly']);
+
+        CourseFreshnessConfig::updateOrCreate(
+            ['course_id' => $course->id],
+            ['cadence' => $validated['cadence']]
+        );
+
+        return back()->with('success', "Cadenza aggiornata per «{$course->name}»: {$validated['cadence']}.");
+    }
+
+    /** P25.3e — Override manuale (autorevole) dell'audience: marca audience_overridden. */
+    public function setAudience(Request $request, Course $course)
+    {
+        $validated = $request->validate(['audience' => 'required|in:adult,minor']);
+
+        CourseFreshnessConfig::updateOrCreate(
+            ['course_id' => $course->id],
+            ['audience' => $validated['audience'], 'audience_overridden' => true]
+        );
+
+        return back()->with('success', "Audience aggiornato per «{$course->name}»: {$validated['audience']} (override manuale).");
+    }
+
+    /**
+     * P25.3e — Applica le proposte APPROVED al lato formatore (versioning + rollback in 3c).
+     * Doppio gate per i corsi MINORI: serve la conferma esplicita aggiuntiva (confirm_minor).
+     */
+    public function apply(Request $request, Course $course, ProposalApplicator $applicator)
+    {
+        $audience = optional($course->freshnessConfig)->audience ?? 'adult';
+        $confirmed = $request->boolean('confirm_minor');
+
+        // Gate 2 (umano) per i minori: senza conferma esplicita → bloccato, nessuna modifica.
+        if ($audience === 'minor' && !$confirmed) {
+            return back()->with('error', "⚠ Corso per MINORI: serve la conferma esplicita di applicazione. Nessuna modifica applicata a «{$course->name}».");
+        }
+
+        $res = $applicator->apply($course, minorConfirmed: $confirmed);
+
+        if (($res['blocked'] ?? null) === 'minor_confirmation_required') {
+            return back()->with('error', "⚠ Conferma minori richiesta: nessuna modifica applicata a «{$course->name}».");
+        }
+
+        $msg = "Applicate {$res['applied']} proposte su «{$course->name}»";
+        if ($res['version_to']) {
+            $msg .= " (v{$res['version_from']} → v{$res['version_to']})";
+        }
+        if (!empty($res['failed'])) {
+            $msg .= '. ' . count($res['failed']) . ' non applicate (before non trovato/non unico).';
+        }
+
+        return back()->with('success', $msg . '.');
     }
 
     /**

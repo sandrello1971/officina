@@ -32,6 +32,7 @@ class UpdateProposal extends Model
         'reviewed_by',
         'reviewed_at',
         'applied_at',
+        'apply_error',
     ];
 
     protected $casts = [
