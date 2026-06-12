@@ -15,7 +15,7 @@ class CourseChangelog extends Model
     protected $table = 'course_changelog';
 
     protected $fillable = [
-        'course_id', 'proposal_id', 'content_source', 'version_from', 'version_to',
+        'course_id', 'proposal_id', 'parent_proposal_id', 'content_source', 'version_from', 'version_to',
         'kind', 'summary', 'approved_by', 'approved_at',
     ];
 
@@ -31,5 +31,11 @@ class CourseChangelog extends Model
     public function proposal(): BelongsTo
     {
         return $this->belongsTo(UpdateProposal::class, 'proposal_id');
+    }
+
+    // P25.B-b — proposta formatore da cui nasce questa modifica discente coordinata.
+    public function parentProposal(): BelongsTo
+    {
+        return $this->belongsTo(UpdateProposal::class, 'parent_proposal_id');
     }
 }

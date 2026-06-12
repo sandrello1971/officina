@@ -121,6 +121,56 @@
     </table>
 </div>
 
+{{-- P25.B-b.3 — Alert orfani: modifiche discente già LIVE il cui padre formatore è stato annullato. --}}
+@if ($orphanAlerts->isNotEmpty())
+    <div style="background:#FBEDEC; border:1px solid #C0392B; border-radius:10px; padding:14px 18px; margin-bottom:20px;">
+        <div style="font-weight:700; color:#7B1E1E; margin-bottom:6px;">⚠ {{ $orphanAlerts->count() }} modifiche discente LIVE con padre formatore annullato</div>
+        <p style="color:#7B1E1E; font-size:0.8rem; margin:0 0 8px;">Queste modifiche sono già applicate sul materiale studente, ma l'aggiornamento formatore da cui nascevano è stato rifiutato o rollbackato. Valuta il <strong>rollback studente</strong>.</p>
+        @foreach ($orphanAlerts as $o)
+            <div style="font-size:0.8rem; color:#1A1F1F; padding:4px 0; border-top:1px solid #F2C9C4;">
+                «{{ \Illuminate\Support\Str::limit($o->before, 80) }}» → «{{ \Illuminate\Support\Str::limit($o->after, 80) }}» <span style="color:#8A9696;">({{ optional($o->course)->name }} · {{ optional($o->orphan_reason) }})</span>
+            </div>
+        @endforeach
+    </div>
+@endif
+
+{{-- P25.B-b.3 — Candidate coordinate da confermare (status='matched', generate dal matching). --}}
+@if ($candidates->isNotEmpty())
+    <div style="background:white; border-radius:10px; padding:16px 18px; margin-bottom:20px; border:1px solid #C9A227;">
+        <div style="font-weight:700; color:#1A1F1F; margin-bottom:4px;">🔗 Candidate coordinate — da confermare</div>
+        <p style="color:#8A9696; font-size:0.78rem; margin:0 0 14px;">Porzioni discente trovate dal matching su un aggiornamento formatore approvato. <strong>Conferma</strong> per avviare la riscrittura conservativa (→ diventa proposta da approvare), o <strong>Scarta</strong>.</p>
+        @foreach ($candidates as $courseId => $items)
+            <div style="margin-bottom:10px;">
+                <div style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#1A1F1F; font-size:0.85rem; margin-bottom:8px;">{{ optional($items->first()->course)->name }}</div>
+                @foreach ($items as $cand)
+                    <div style="border:1px solid #E6EBEB; border-radius:8px; padding:12px 14px; margin-bottom:10px;">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+                            <span style="background:#3B2E5A; color:#EDE7F6; font-size:0.66rem; font-weight:700; padding:2px 9px; border-radius:10px;">↳ DA AGGIORNAMENTO FORMATORE</span>
+                            <span style="color:#8A9696; font-size:0.75rem;">confidenza match: <strong style="color:#1A1F1F;">{{ is_null($cand->match_confidence) ? '—' : round($cand->match_confidence * 100) . '%' }}</strong></span>
+                            <span style="font-size:0.66rem; font-weight:700; padding:2px 8px; border-radius:10px; {{ $cand->match_trust === 'low' ? 'background:#F4E1C1; color:#8A6D1B;' : 'background:#EEF3F3; color:#5A6666;' }}">trust: {{ $cand->match_trust ?? 'n/d' }}</span>
+                        </div>
+                        @if (optional($cand->parentProposal))
+                            <div style="font-size:0.78rem; color:#5A6666; margin-bottom:8px;">Fatto aggiornato (formatore): «{{ \Illuminate\Support\Str::limit(optional($cand->parentProposal)->after, 110) }}»</div>
+                        @endif
+                        <div style="font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:#5A6666; margin-bottom:4px;">Porzione discente (da riscrivere)</div>
+                        <div style="background:#F5F7F7; border:1px solid #E6EBEB; border-radius:6px; padding:10px; font-size:0.85rem; color:#1A1F1F; white-space:pre-wrap;">{{ $cand->before }}</div>
+                        <div style="margin-top:10px; display:flex; gap:8px;">
+                            <form method="POST" action="{{ route('admin.freshness.proposals.confirm', $cand) }}" style="margin:0;">
+                                @csrf @method('PATCH')
+                                <button type="submit" style="padding:7px 14px; background:#1E8449; color:white; border:none; border-radius:6px; font-size:0.8rem; cursor:pointer;">&#10003; Conferma (riscrivi)</button>
+                            </form>
+                            <form method="POST" action="{{ route('admin.freshness.proposals.reject', $cand) }}" style="margin:0;">
+                                @csrf @method('PATCH')
+                                <button type="submit" style="padding:7px 14px; background:white; color:#C0392B; border:1px solid #C0392B; border-radius:6px; font-size:0.8rem; cursor:pointer;">&#10007; Scarta</button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endforeach
+    </div>
+@endif
+
 @php($flatCount = $proposals->flatten()->count())
 
 @if ($flatCount === 0)

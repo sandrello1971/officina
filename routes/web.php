@@ -405,6 +405,7 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::post('aggiornamenti/{course}/rollback', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'rollback'])->name('freshness.proposals.rollback');
     Route::patch('aggiornamenti/{proposal}/approva', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'approve'])->name('freshness.proposals.approve');
     Route::patch('aggiornamenti/{proposal}/rifiuta', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'reject'])->name('freshness.proposals.reject');
+    Route::patch('aggiornamenti/{proposal}/conferma', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'confirm'])->name('freshness.proposals.confirm');
 
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')

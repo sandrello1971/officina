@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // P25.3 — Proposta di aggiornamento nella coda HITL. Nasce da un freshness_claim
 // 'obsoleto'. `before` (verbatim) è l'ancora per l'applicazione; nulla viene applicato
@@ -35,6 +36,13 @@ class UpdateProposal extends Model
         'reviewed_at',
         'applied_at',
         'apply_error',
+        // P25.B-b — coordinamento formatore→discente
+        'parent_proposal_id',
+        'origin',
+        'match_confidence',
+        'match_trust',
+        'orphaned_at',
+        'orphan_reason',
     ];
 
     protected $casts = [
@@ -43,6 +51,8 @@ class UpdateProposal extends Model
         'after_edited_by_human' => 'boolean',
         'reviewed_at' => 'datetime',
         'applied_at' => 'datetime',
+        'match_confidence' => 'float',
+        'orphaned_at' => 'datetime',
     ];
 
     public function course(): BelongsTo
@@ -71,8 +81,32 @@ class UpdateProposal extends Model
         return $this->belongsTo(Admin::class, 'reviewed_by');
     }
 
+    // P25.B-b — la proposta formatore che ha generato questa proposta discente coordinata.
+    public function parentProposal(): BelongsTo
+    {
+        return $this->belongsTo(UpdateProposal::class, 'parent_proposal_id');
+    }
+
+    // P25.B-b — le proposte discente coordinate generate da questa proposta formatore.
+    public function childProposals(): HasMany
+    {
+        return $this->hasMany(UpdateProposal::class, 'parent_proposal_id');
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
+    }
+
+    /** Coordinate (figlie di un'approvazione formatore) vs autonome. */
+    public function scopeCoordinated($query)
+    {
+        return $query->where('origin', 'coordinated');
+    }
+
+    /** Orfane: il padre è stato rollbackato/rifiutato dopo la generazione/applicazione. */
+    public function scopeOrphaned($query)
+    {
+        return $query->whereNotNull('orphaned_at');
     }
 }
