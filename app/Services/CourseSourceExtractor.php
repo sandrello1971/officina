@@ -133,6 +133,9 @@ class CourseSourceExtractor
         // dentro un Div deve restare un P, non diventare un BOX. Difensivo verso
         // entrambe le modalità pandoc (docx e docx+styles).
         $astBlocks = $this->flattenBlocks($ast['blocks'] ?? []);
+        // Promuove i paragrafi-titolo in GRASSETTO (es. "**PARTE PRIMA — …**") a heading:
+        // alcuni manuali non usano gli stili Word ma il grassetto come titolo.
+        $astBlocks = $this->promoteBoldHeadings($astBlocks);
 
         // Contatori gerarchici: incrementano SOLO sui blocchi emessi → niente buchi.
         $part = 0;
@@ -231,6 +234,13 @@ class CourseSourceExtractor
                 $this->warn("Sezione profonda \"{$m[1]}\" (X.Y.Z) degradata a H2: \"{$text}\"");
             }
             return 'H2';
+        }
+
+        // Titolo numerato "flat" (es. "1. Introduzione", "4. Modulo 1 — ...") — NON è X.Y
+        // (già gestito sopra). Manuali a numerazione progressiva: trattati uniformemente
+        // come H1 (sezione di primo livello).
+        if (preg_match('/^\d+[.)]\s+\S/u', $text)) {
+            return 'H1';
         }
 
         return null;
@@ -350,6 +360,69 @@ class CourseSourceExtractor
         }
 
         return $out;
+    }
+
+    /**
+     * Promuove i paragrafi interamente in GRASSETTO che hanno l'aspetto di un titolo
+     * (PARTE/MODULO/Capitolo/X.Y o numerato) in nodi Header. Alcuni manuali non usano gli
+     * stili Word ma il grassetto come titolo: senza questo, pandoc li emette come Para e
+     * l'estrattore non riconoscerebbe alcuna struttura. Solo i Para bold-only che matchano
+     * un pattern di titolo vengono promossi (il grassetto in mezzo alla prosa resta P).
+     *
+     * @param  list<array>  $astBlocks
+     * @return list<array>
+     */
+    private function promoteBoldHeadings(array $astBlocks): array
+    {
+        $out = [];
+        foreach ($astBlocks as $node) {
+            if (($node['t'] ?? null) === 'Para') {
+                $boldText = $this->boldOnlyText($node['c'] ?? []);
+                if ($boldText !== null && $this->looksLikeHeading($boldText)) {
+                    // Header c = [level, attr, inlines]. Il livello è indicativo: la
+                    // classificazione PART/H1/H2 avviene per TESTO in classifyHeading.
+                    $out[] = ['t' => 'Header', 'c' => [1, ['', [], []], $node['c']]];
+                    continue;
+                }
+            }
+            $out[] = $node;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Se il paragrafo è composto SOLO da testo in grassetto (Strong, a parte spazi/break),
+     * ritorna quel testo; altrimenti null (c'è contenuto non-bold → non è un titolo).
+     */
+    private function boldOnlyText(array $inlines): ?string
+    {
+        $parts = [];
+        foreach ($inlines as $inl) {
+            $t = $inl['t'] ?? null;
+            if (in_array($t, ['Space', 'SoftBreak', 'LineBreak'], true)) {
+                continue;
+            }
+            if ($t === 'Strong') {
+                $parts[] = $this->inlineText($inl['c'] ?? []);
+                continue;
+            }
+            return null; // contenuto non in grassetto → non è un titolo-paragrafo
+        }
+
+        if (empty($parts)) {
+            return null;
+        }
+        return trim(preg_replace('/[ \t]+/u', ' ', implode(' ', $parts)));
+    }
+
+    /** Il testo ha l'aspetto di un titolo (uno dei pattern riconosciuti)? */
+    private function looksLikeHeading(string $text): bool
+    {
+        return (bool) (preg_match(self::RE_PART, $text)
+            || preg_match(self::RE_CHAPTER, $text)
+            || preg_match(self::RE_SECTION, $text)
+            || preg_match('/^\d+[.)]\s+\S/u', $text));
     }
 
     /** Estrae il valore di custom-style da un nodo Div pandoc, se presente. */

@@ -45,6 +45,22 @@ class CourseSourceExtractorMapTest extends TestCase
         return ['t' => 'BlockQuote', 'c' => [$this->para($text)]];
     }
 
+    /** Paragrafo interamente in grassetto (pseudo-titolo di alcuni manuali). */
+    private function boldPara(string $text): array
+    {
+        return ['t' => 'Para', 'c' => [['t' => 'Strong', 'c' => $this->inlines($text)]]];
+    }
+
+    /** Paragrafo con grassetto SOLO all'inizio + prosa (NON è un titolo). */
+    private function mixedBoldPara(string $boldStart, string $rest): array
+    {
+        return ['t' => 'Para', 'c' => [
+            ['t' => 'Strong', 'c' => $this->inlines($boldStart)],
+            ['t' => 'Space'],
+            ['t' => 'Str', 'c' => $rest],
+        ]];
+    }
+
     private function divStyle(string $style, array $children): array
     {
         return ['t' => 'Div', 'c' => [['', [], [['custom-style', $style]]], $children]];
@@ -300,5 +316,52 @@ class CourseSourceExtractorMapTest extends TestCase
             'p2-cap1-sec1',
             'p2-cap1-sec1-p1',
         ], $ids);
+    }
+
+    // ------------------------------- Titoli numerati (manuali Licei/Istituti) -------------------------------
+
+    public function test_titoli_numerati_flat_diventano_h1(): void
+    {
+        $r = $this->map([
+            $this->header(2, 'Manuale del Formatore — Edizione Licei'), // frontmatter (non riconosciuto)
+            $this->header(1, '1. Introduzione al manuale del formatore'),
+            $this->para('Testo introduttivo.'),
+            $this->header(1, '3. Capitolo 0 — I due pilastri (1 ora)'),
+            $this->header(1, '4. Modulo 1 — Capire l’AI (3 ore)'),
+            $this->para('Contenuto del modulo.'),
+        ]);
+
+        $this->assertSame([
+            ['H1', 'cap1'],
+            ['P', 'cap1-p1'],
+            ['H1', 'cap2'],
+            ['H1', 'cap3'],
+            ['P', 'cap3-p1'],
+        ], $this->typeIdPairs($r));
+        // Il sottotitolo iniziale resta frontmatter (escluso).
+        $this->assertSame(['Manuale del Formatore — Edizione Licei'], $r['frontmatter']);
+    }
+
+    // ------------------------------- Titoli in grassetto (manuali FREQUENZA/RUMORE) -------------------------------
+
+    public function test_paragrafi_grassetto_promossi_a_heading(): void
+    {
+        $r = $this->map([
+            $this->boldPara('MANUALE PER IL FORMATORE'),          // frontmatter (non matcha pattern)
+            $this->boldPara('PARTE PRIMA — FONDAMENTI'),          // → PART
+            $this->boldPara('Capitolo 1 — Filosofia'),            // → H1
+            $this->boldPara('1.1 Chi siete voi'),                 // → H2
+            $this->para('Prosa normale del paragrafo.'),          // → P
+            $this->mixedBoldPara('Nota importante:', 'questo grassetto è in mezzo alla prosa, NON un titolo.'),
+        ]);
+
+        $this->assertSame([
+            ['PART', 'p1'],
+            ['H1', 'p1-cap1'],
+            ['H2', 'p1-cap1-sec1'],
+            ['P', 'p1-cap1-sec1-p1'],
+            ['P', 'p1-cap1-sec1-p2'], // il grassetto-in-prosa resta P
+        ], $this->typeIdPairs($r));
+        $this->assertStringContainsString('MANUALE PER IL FORMATORE', $r['frontmatter'][0]);
     }
 }
