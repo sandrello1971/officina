@@ -57,7 +57,7 @@ class FreshnessVerifier
         ])->timeout(180)->post(self::CLAUDE_API_URL, $payload);
 
         if (!$response->successful()) {
-            throw new RuntimeException('Anthropic API errore Fase 2: HTTP ' . $response->status());
+            throw new RuntimeException(AnthropicError::message($response, 'Fase 2'));
         }
 
         // SOLO i blocchi `text` (giudizio finale del modello): i blocchi tool-result

@@ -240,7 +240,7 @@ class FreshnessClaimExtractor
         ]);
 
         if (!$response->successful()) {
-            throw new RuntimeException('Anthropic API errore Fase 1: HTTP ' . $response->status());
+            throw new RuntimeException(AnthropicError::message($response, 'Fase 1'));
         }
 
         $text = $response->json('content.0.text');

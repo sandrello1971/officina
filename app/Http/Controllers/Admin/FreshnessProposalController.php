@@ -10,6 +10,7 @@ use App\Models\Admin;
 use App\Models\Course;
 use App\Models\CourseChangelog;
 use App\Models\CourseFreshnessConfig;
+use App\Models\FreshnessRun;
 use App\Models\UpdateProposal;
 use App\Services\Freshness\CoordinatedMatchService;
 use App\Services\Freshness\ProposalApplicator;
@@ -77,7 +78,14 @@ class FreshnessProposalController extends Controller
                 ->orderByDesc('orphaned_at')->get();
         }
 
-        return view('admin.freshness.proposals', compact('proposals', 'allCourses', 'courseFilter', 'source', 'pendingCounts', 'candidates', 'orphanAlerts'));
+        // P25 — esito degli ultimi controlli (async): l'utente deve vedere a schermo se un run
+        // è fallito e PERCHÉ, non solo l'ottimistico "avviato" del dispatch.
+        $recentRuns = FreshnessRun::with('course')
+            ->orderByDesc('created_at')
+            ->limit(8)
+            ->get();
+
+        return view('admin.freshness.proposals', compact('proposals', 'allCourses', 'courseFilter', 'source', 'pendingCounts', 'candidates', 'orphanAlerts', 'recentRuns'));
     }
 
     /**

@@ -67,7 +67,7 @@ class FreshnessProposalGenerator
         ]);
 
         if (!$response->successful()) {
-            throw new RuntimeException('Anthropic API errore Fase 3: HTTP ' . $response->status());
+            throw new RuntimeException(AnthropicError::message($response, 'Fase 3'));
         }
 
         $text = $response->json('content.0.text');

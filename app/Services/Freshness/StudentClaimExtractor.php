@@ -173,7 +173,7 @@ class StudentClaimExtractor
         ]);
 
         if (!$response->successful()) {
-            throw new RuntimeException('Anthropic API errore Fase 1 (studente): HTTP ' . $response->status());
+            throw new RuntimeException(AnthropicError::message($response, 'Fase 1 (studente)'));
         }
 
         $text = $response->json('content.0.text');

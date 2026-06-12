@@ -63,7 +63,7 @@ class StudentRewriter
         ]);
 
         if (!$response->successful()) {
-            throw new RuntimeException('Anthropic API errore riscrittura: HTTP ' . $response->status());
+            throw new RuntimeException(AnthropicError::message($response, 'riscrittura'));
         }
 
         $text = $response->json('content.0.text');

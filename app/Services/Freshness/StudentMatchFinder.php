@@ -129,7 +129,7 @@ class StudentMatchFinder
         ]);
 
         if (!$response->successful()) {
-            throw new RuntimeException('Anthropic API errore matching: HTTP ' . $response->status());
+            throw new RuntimeException(AnthropicError::message($response, 'matching'));
         }
 
         $text = $response->json('content.0.text');
