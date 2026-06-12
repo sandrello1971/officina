@@ -17,6 +17,16 @@ use Symfony\Component\Process\Process;
 
 class InstructorManualService
 {
+    /**
+     * Esito dell'ultima sincronizzazione di course_sources, per il feedback UI (F-c). Forme:
+     *  ['status'=>'generated','version'=>'2.0','blocks'=>9,'invalidated'=>N]
+     *  ['status'=>'empty']                    — 0 blocchi estratti
+     *  ['status'=>'awaiting_confirmation']     — corso con storia, sovrascrittura non confermata
+     *  ['status'=>'failed','error'=>'...']     — eccezione (import comunque riuscito)
+     * null = estrazione non eseguita in questa chiamata.
+     */
+    public ?array $lastSourceSync = null;
+
     public function __construct(
         protected RagService $rag,
         protected InstructorManualSplitterService $splitter,
@@ -194,6 +204,7 @@ class InstructorManualService
      */
     private function syncStructuredSource(Course $course, string $docxAbsolutePath, bool $confirmOverwrite = false): void
     {
+        $this->lastSourceSync = null;
         try {
             // Storia di apply dell'agente = segnale affidabile (changelog instructor).
             $hasApplyHistory = CourseChangelog::where('course_id', $course->id)
@@ -204,6 +215,7 @@ class InstructorManualService
             // F-b — barriera strutturale: su un corso con storia serve conferma esplicita,
             // perché la nuova versione (dal docx) NON contiene gli aggiornamenti applicati.
             if ($hasApplyHistory && !$confirmOverwrite) {
+                $this->lastSourceSync = ['status' => 'awaiting_confirmation'];
                 Log::warning('[freshness-ready] corso con aggiornamenti agente: estrazione in attesa di conferma (F-b)', [
                     'course_id' => $course->id,
                 ]);
@@ -213,6 +225,7 @@ class InstructorManualService
             $result = $this->sourceExtractor->extractFromDocx($docxAbsolutePath);
             $blocks = $result['blocks'] ?? [];
             if (empty($blocks)) {
+                $this->lastSourceSync = ['status' => 'empty'];
                 Log::warning('[freshness-ready] sorgente strutturato non generato (0 blocchi estratti)', [
                     'course_id' => $course->id,
                 ]);
@@ -240,10 +253,16 @@ class InstructorManualService
             // Il trigger è il rimpiazzo della versione (block_id nuovi), NON la storia di apply:
             // vale sia per il bump pristino (F-a, 1.0→2.0) sia per la sovrascrittura confermata (F-b).
             // Al primo import ($current === null) non c'erano ancore da invalidare.
-            if ($current !== null) {
-                $this->rejectProposalsOrphanedByReextraction($course, $version);
-            }
+            $invalidated = $current !== null
+                ? $this->rejectProposalsOrphanedByReextraction($course, $version)
+                : 0;
+
+            $this->lastSourceSync = [
+                'status' => 'generated', 'version' => $version,
+                'blocks' => count($blocks), 'invalidated' => $invalidated,
+            ];
         } catch (\Throwable $e) {
+            $this->lastSourceSync = ['status' => 'failed', 'error' => $e->getMessage()];
             Log::warning('[freshness-ready] estrazione course_sources fallita (non bloccante per l\'import)', [
                 'course_id' => $course->id, 'error' => $e->getMessage(),
             ]);
@@ -256,7 +275,7 @@ class InstructorManualService
      * apply_error. Per ogni proposta padre, riusa la gestione orfani B-b (orphanChildrenOf):
      * figlie studente pending/matched → rejected+orphaned; figlie applied → restano+orphaned+segnalate.
      */
-    private function rejectProposalsOrphanedByReextraction(Course $course, string $newVersion): void
+    private function rejectProposalsOrphanedByReextraction(Course $course, string $newVersion): int
     {
         $reason = "ancora invalidata da ri-estrazione manuale v{$newVersion}";
 
@@ -274,6 +293,8 @@ class InstructorManualService
             // Cascata B-b: gestione orfani delle figlie studente coordinate (riuso, non duplico).
             $this->coordinatedMatch->orphanChildrenOf($proposal, $reason);
         }
+
+        return $open->count();
     }
 
     /** Bump MAGGIORE come stringa: "1.0"→"2.0", "2.2"→"3.0", "2"→"3.0". */
