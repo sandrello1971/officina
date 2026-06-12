@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Course;
+use App\Models\CourseChangelog;
+use App\Models\CourseSource;
 use App\Models\DocumentRag;
 use App\Models\Material;
 use Illuminate\Http\UploadedFile;
@@ -15,7 +17,8 @@ class InstructorManualService
 {
     public function __construct(
         protected RagService $rag,
-        protected InstructorManualSplitterService $splitter
+        protected InstructorManualSplitterService $splitter,
+        protected CourseSourceExtractor $sourceExtractor
     ) {}
 
     public function import(
@@ -71,6 +74,11 @@ class InstructorManualService
         $this->reindexInRag($material);
         $this->splitter->split($material);
 
+        // F-a — il corso diventa "freshness-ready": dallo STESSO docx appena persistito
+        // si genera il sorgente strutturato (course_sources), accanto alle sezioni del
+        // formatore. Additivo e non bloccante: vedi syncStructuredSource().
+        $this->syncStructuredSource($course, Storage::disk('local')->path($storedPath));
+
         return $material;
     }
 
@@ -91,6 +99,9 @@ class InstructorManualService
 
         $this->reindexInRag($material);
         $this->splitter->split($material);
+
+        // F-a — ri-genera anche il sorgente strutturato dallo stesso .docx esistente.
+        $this->syncStructuredSource($material->course, $absolutePath);
 
         return $material;
     }
@@ -154,6 +165,75 @@ class InstructorManualService
         $tempPath = $file->getRealPath();
 
         return $this->import($tempPath, $course, $title, $description, $existing);
+    }
+
+    /**
+     * F-a — Genera il sorgente strutturato (course_sources) dal .docx del manuale formatore.
+     *
+     * Append-only e non distruttivo:
+     *  - corso senza course_sources         → crea v1.0;
+     *  - corso PRISTINO (con sorgente, ma   → bump MAGGIORE (es. "1.0"→"2.0", "2.2"→"3.0"):
+     *    senza storia di apply dell'agente)    nuova riga che diventa corrente, le vecchie restano.
+     *  - corso CON storia di apply          → NON tocca nulla in F-a: è il caso F-b (richiede
+     *    (course_changelog kind=apply,         conferma esplicita + gestione proposte orfane).
+     *    content_source=instructor)            Qui logga e rinvia.
+     *
+     * 0 blocchi (heading non riconosciuti) → non genera il sorgente, segnala soltanto.
+     * Additività assoluta: qualsiasi errore è catturato e loggato — l'import del manuale
+     * (Material + sezioni) NON deve mai fallire per colpa dell'estrazione.
+     */
+    private function syncStructuredSource(Course $course, string $docxAbsolutePath): void
+    {
+        try {
+            // Gate F-a: mai su un corso con aggiornamenti dell'agente già applicati.
+            $hasApplyHistory = CourseChangelog::where('course_id', $course->id)
+                ->where('kind', 'apply')
+                ->where('content_source', 'instructor')
+                ->exists();
+            if ($hasApplyHistory) {
+                Log::info('[freshness-ready] corso con aggiornamenti agente, estrazione rinviata a conferma (F-b)', [
+                    'course_id' => $course->id,
+                ]);
+                return;
+            }
+
+            $result = $this->sourceExtractor->extractFromDocx($docxAbsolutePath);
+            $blocks = $result['blocks'] ?? [];
+            if (empty($blocks)) {
+                Log::warning('[freshness-ready] sorgente strutturato non generato (0 blocchi estratti)', [
+                    'course_id' => $course->id,
+                ]);
+                return;
+            }
+
+            // Versione corrente = ultima riga per created_at (tie-break id), come il resto del codice.
+            $current = CourseSource::where('course_id', $course->id)
+                ->orderByDesc('created_at')->orderByDesc('id')->first();
+            $version = $current === null ? '1.0' : $this->nextMajorVersion($current->version);
+
+            CourseSource::create([
+                'course_id' => $course->id,
+                'version' => $version,
+                'blocks' => $blocks,
+            ]);
+
+            Log::info('[freshness-ready] course_sources generato dall\'import del manuale', [
+                'course_id' => $course->id, 'version' => $version, 'blocks' => count($blocks),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('[freshness-ready] estrazione course_sources fallita (non bloccante per l\'import)', [
+                'course_id' => $course->id, 'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /** Bump MAGGIORE come stringa: "1.0"→"2.0", "2.2"→"3.0", "2"→"3.0". */
+    private function nextMajorVersion(string $v): string
+    {
+        if (preg_match('/^(\d+)(?:\.\d+)?$/', $v, $m)) {
+            return ((int) $m[1] + 1) . '.0';
+        }
+        throw new \RuntimeException("Versione non incrementabile in modo deterministico: {$v}");
     }
 
     private function convertDocxToHtml(string $docxPath): ?string
