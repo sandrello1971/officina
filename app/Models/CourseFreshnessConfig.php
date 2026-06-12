@@ -17,11 +17,14 @@ class CourseFreshnessConfig extends Model
         'course_id',
         'web_search_enabled',
         'primary_sources',
+        'audience',
+        'proposals_enabled',
     ];
 
     protected $casts = [
         'web_search_enabled' => 'boolean',
         'primary_sources' => 'array',
+        'proposals_enabled' => 'boolean',
     ];
 
     public function course(): BelongsTo

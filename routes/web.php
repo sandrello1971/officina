@@ -395,6 +395,12 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::post('courses/{course}/concept-maps/{concept_map}/generate', [App\Http\Controllers\Admin\CourseConceptMapController::class, 'generate'])->name('courses.concept-maps.generate');
     Route::post('courses/{course}/concept-maps/auto-create', [App\Http\Controllers\Admin\CourseConceptMapController::class, 'autoCreate'])->name('courses.concept-maps.auto-create');
 
+    // P25.3b — Coda HITL proposte di aggiornamento corsi (additivo: non tocca i corsi).
+    Route::get('aggiornamenti', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'index'])->name('freshness.proposals.index');
+    Route::post('aggiornamenti/bulk', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'bulk'])->name('freshness.proposals.bulk');
+    Route::patch('aggiornamenti/{proposal}/approva', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'approve'])->name('freshness.proposals.approve');
+    Route::patch('aggiornamenti/{proposal}/rifiuta', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'reject'])->name('freshness.proposals.reject');
+
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')
         ->group(function () {

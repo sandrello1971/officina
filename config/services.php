@@ -61,6 +61,11 @@ return [
         // Vision (OCR/trascrizione foto e PDF scansionati) — Schola pacchetto 4a
         'vision_model' => env('ANTHROPIC_VISION_MODEL', 'claude-sonnet-4-5'),
         'vision_max_tokens' => (int) env('ANTHROPIC_VISION_MAX_TOKENS', 4000),
+        // P25 Course Freshness Agent — modelli configurabili da .env.
+        // Estrazione affermazioni (Fase 1) + generazione proposte (Fase 3): Sonnet.
+        'freshness_extract_model' => env('FRESHNESS_EXTRACT_MODEL', 'claude-sonnet-4-6'),
+        // Verifica con web_search (Fase 2): Opus, qualità sui verdetti (costo superiore).
+        'freshness_verify_model' => env('FRESHNESS_VERIFY_MODEL', 'claude-opus-4-8'),
     ],
 
     'azure' => [

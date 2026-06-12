@@ -24,7 +24,6 @@ use RuntimeException;
 class FreshnessVerifier
 {
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-    private const CLAUDE_MODEL = 'claude-sonnet-4-5';
     private const MAX_TOKENS = 1500;
     private const WEB_SEARCH_TOOL = 'web_search_20250305';
 
@@ -36,7 +35,7 @@ class FreshnessVerifier
     public function verify(string $claimText, string $category, CourseFreshnessConfig $config): array
     {
         $payload = [
-            'model' => self::CLAUDE_MODEL,
+            'model' => config('services.anthropic.freshness_verify_model'),
             'max_tokens' => self::MAX_TOKENS,
             'system' => $this->systemPrompt($config),
             'messages' => [

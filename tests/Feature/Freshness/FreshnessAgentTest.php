@@ -5,6 +5,7 @@ namespace Tests\Feature\Freshness;
 use App\Models\Course;
 use App\Models\CourseSource;
 use App\Models\FreshnessClaim;
+use App\Models\UpdateProposal;
 use App\Services\Freshness\FreshnessAgent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -51,6 +52,12 @@ class FreshnessAgentTest extends TestCase
                 return Http::response(['content' => [['type' => 'text', 'text' => json_encode($claims, JSON_UNESCAPED_UNICODE)]]], 200);
             }
 
+            // Fase 3 (proposta): editor didattico → after aggiornato.
+            if (str_contains($system, 'editor didattico')) {
+                $proposal = ['after' => 'Il mercato AI italiano vale 2,3 miliardi di euro nel 2026', 'reason' => 'Dato di mercato aggiornato al 2026'];
+                return Http::response(['content' => [['type' => 'text', 'text' => json_encode($proposal, JSON_UNESCAPED_UNICODE)]]], 200);
+            }
+
             // Fase 2: distingui per il contenuto del messaggio utente (il claim).
             $userMsg = $request['messages'][0]['content'] ?? '';
             $verdict = str_contains($userMsg, '1,8 miliardi')
@@ -69,10 +76,10 @@ class FreshnessAgentTest extends TestCase
 
         $run = app(FreshnessAgent::class)->run($course);
 
-        // Run registrata correttamente
+        // Run registrata correttamente — 1 proposta dal claim obsoleto (Fase 3).
         $this->assertSame('completed', $run->status);
         $this->assertSame(2, $run->claims_found);
-        $this->assertSame(0, $run->proposals_created); // P25.2
+        $this->assertSame(1, $run->proposals_created);
         $this->assertNotNull($run->started_at);
         $this->assertNotNull($run->finished_at);
 
@@ -86,8 +93,43 @@ class FreshnessAgentTest extends TestCase
         $attuale = FreshnessClaim::where('run_id', $run->id)->where('block_id', 'p1-cap3')->first();
         $this->assertSame('attuale', $attuale->verdict);
 
+        // La proposta nasce SOLO dal claim obsoleto, status pending, before verbatim.
+        $proposals = UpdateProposal::where('course_id', $course->id)->get();
+        $this->assertCount(1, $proposals);
+        $p = $proposals->first();
+        $this->assertSame('pending', $p->status);
+        $this->assertSame($obsoleto->id, $p->freshness_claim_id);
+        $this->assertSame('Il mercato AI italiano vale 1,8 miliardi di euro nel 2025', $p->before); // = claim_text verbatim
+        $this->assertStringContainsString('2026', $p->after);
+        $this->assertSame('adult', $p->audience);
+        $this->assertFalse($p->after_edited_by_human);
+        $this->assertNull($p->reviewed_at);
+
         // Il sorgente non è stato toccato.
         $this->assertDatabaseCount('course_sources', 1);
+    }
+
+    public function test_proposals_disabilitate_non_generano_proposte(): void
+    {
+        $course = $this->makeCourse();
+        $this->makeSource($course);
+        \App\Models\CourseFreshnessConfig::create([
+            'course_id' => $course->id,
+            'web_search_enabled' => true,
+            'primary_sources' => [],
+            'audience' => 'adult',
+            'proposals_enabled' => false, // modalità solo-claim
+        ]);
+        $this->fakeAgent();
+
+        $run = app(FreshnessAgent::class)->run($course);
+
+        // Claim estratti e verificati, ma NESSUNA proposta generata.
+        $this->assertSame(2, $run->claims_found);
+        $this->assertSame(0, $run->proposals_created);
+        $this->assertDatabaseCount('update_proposals', 0);
+        // L'obsoleto è comunque verificato come tale.
+        $this->assertSame('obsoleto', FreshnessClaim::where('run_id', $run->id)->where('block_id', 'p1-cap3-sec1-p2')->first()->verdict);
     }
 
     public function test_run_fallisce_pulita_senza_sorgente(): void
@@ -130,7 +172,11 @@ class FreshnessAgentTest extends TestCase
             'course_id' => $course->id,
             'status' => 'completed',
             'claims_found' => 2,
-            'proposals_created' => 0,
+            'proposals_created' => 1,
+        ]);
+        $this->assertDatabaseHas('update_proposals', [
+            'course_id' => $course->id,
+            'status' => 'pending',
         ]);
     }
 }

@@ -88,6 +88,12 @@ class Course extends Model
         return $this->hasOne(CourseFreshnessConfig::class);
     }
 
+    // P25.3 — proposte di aggiornamento (coda HITL).
+    public function updateProposals()
+    {
+        return $this->hasMany(UpdateProposal::class)->orderByDesc('created_at');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
