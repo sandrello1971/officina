@@ -7,22 +7,27 @@ use App\Models\CourseFreshnessConfig;
 use App\Models\CourseSource;
 use App\Models\FreshnessClaim;
 use App\Models\FreshnessRun;
+use App\Models\UpdateProposal;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * P25.2 — Orchestratore dell'agente (fasi 1-2).
+ * P25.2/P25.3 — Orchestratore dell'agente.
  *
  * Crea una run → carica l'ULTIMO course_sources del corso (o la versione richiesta) →
- * Fase 1 estrae e PERSISTE i claim → Fase 2 verifica e aggiorna ogni claim → chiude la
- * run. LEGGE il sorgente, non lo modifica MAI. `proposals_created` resta 0 (le proposte
- * sono P25.3). Aggancio per course_id interno.
+ * Fase 1 estrae e PERSISTE i claim → Fase 2 verifica e aggiorna ogni claim → Fase 3
+ * (P25.3, disattivabile) genera le proposte per i claim obsoleti → chiude la run.
+ * LEGGE il sorgente, non lo modifica MAI. Aggancio per course_id interno.
+ *
+ * HITL: la Fase 3 scrive solo proposte `pending`; nulla viene applicato (l'applicazione
+ * è P25.3c e consuma solo `approved`).
  */
 class FreshnessAgent
 {
     public function __construct(
         private FreshnessClaimExtractor $extractor,
         private FreshnessVerifier $verifier,
+        private FreshnessProposalGenerator $generator,
     ) {}
 
     public function run(Course $course, ?string $version = null): FreshnessRun
@@ -38,11 +43,14 @@ class FreshnessAgent
             $config = $course->freshnessConfig ?? new CourseFreshnessConfig([
                 'web_search_enabled' => true,
                 'primary_sources' => [],
+                'audience' => 'adult',
+                'proposals_enabled' => true,
             ]);
 
             // Fase 1 — estrazione + persistenza dei claim.
             $extracted = $this->extractor->extract($source->blocks ?? []);
 
+            $obsolete = [];
             foreach ($extracted['claims'] as $c) {
                 $claim = FreshnessClaim::create([
                     'run_id' => $run->id,
@@ -64,6 +72,9 @@ class FreshnessAgent
                         'confidence' => $v['confidence'],
                         'verified_at' => now(),
                     ]);
+                    if ($v['verdict'] === 'obsoleto') {
+                        $obsolete[] = $claim->refresh();
+                    }
                 } catch (\Throwable $e) {
                     Log::warning('[FreshnessAgent] verifica claim fallita, lascio non verificato', [
                         'claim_id' => $claim->id,
@@ -72,11 +83,18 @@ class FreshnessAgent
                 }
             }
 
+            // Fase 3 (P25.3) — generazione proposte per i claim obsoleti. Disattivabile
+            // per corso (proposals_enabled): l'agente può girare in modalità solo-claim.
+            $proposalsCreated = 0;
+            if ($config->proposals_enabled) {
+                $proposalsCreated = $this->generateProposals($run, $course, $config, $obsolete);
+            }
+
             $run->update([
                 'status' => 'completed',
                 'finished_at' => now(),
                 'claims_found' => count($extracted['claims']),
-                'proposals_created' => 0, // P25.2 non genera proposte
+                'proposals_created' => $proposalsCreated,
             ]);
         } catch (\Throwable $e) {
             $run->update([
@@ -88,6 +106,49 @@ class FreshnessAgent
         }
 
         return $run->refresh();
+    }
+
+    /**
+     * Fase 3 — per ogni claim obsoleto genera l'`after` e scrive una proposta `pending`.
+     * Resiliente: una generazione fallita su un claim non ferma la run. Ritorna il numero
+     * di proposte create. NULLA viene applicato qui (solo pending; HITL non negoziabile).
+     *
+     * @param  list<FreshnessClaim>  $obsoleteClaims
+     */
+    private function generateProposals(FreshnessRun $run, Course $course, CourseFreshnessConfig $config, array $obsoleteClaims): int
+    {
+        $created = 0;
+        foreach ($obsoleteClaims as $claim) {
+            try {
+                $gen = $this->generator->generate($claim->claim_text, $claim->category, [
+                    'source_url' => $claim->source_url,
+                ]);
+
+                UpdateProposal::create([
+                    'run_id' => $run->id,
+                    'freshness_claim_id' => $claim->id,
+                    'course_id' => $course->id,
+                    'block_id' => $claim->block_id,
+                    'sentence_ref' => $claim->sentence_ref,
+                    'before' => $claim->claim_text, // verbatim: ancora del diff
+                    'after' => $gen['after'],
+                    'reason' => $gen['reason'],
+                    'source' => $claim->source_url,
+                    'source_type' => $claim->source_type,
+                    'confidence' => $claim->confidence,
+                    'audience' => $config->audience ?? 'adult',
+                    'status' => 'pending',
+                ]);
+                $created++;
+            } catch (\Throwable $e) {
+                Log::warning('[FreshnessAgent] generazione proposta fallita, claim saltato', [
+                    'claim_id' => $claim->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $created;
     }
 
     /** Ultimo sorgente (o versione richiesta). Fail pulito se assente. */

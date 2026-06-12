@@ -22,7 +22,6 @@ use RuntimeException;
 class FreshnessClaimExtractor
 {
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-    private const CLAUDE_MODEL = 'claude-sonnet-4-5';
     private const MAX_TOKENS = 4000;
 
     /** Categorie ammesse (allineate al CHECK di freshness_claims.category). */
@@ -232,7 +231,7 @@ class FreshnessClaimExtractor
             'anthropic-version' => '2023-06-01',
             'content-type' => 'application/json',
         ])->timeout(120)->post(self::CLAUDE_API_URL, [
-            'model' => self::CLAUDE_MODEL,
+            'model' => config('services.anthropic.freshness_extract_model'),
             'max_tokens' => self::MAX_TOKENS,
             'system' => self::SYSTEM_PROMPT,
             'messages' => [

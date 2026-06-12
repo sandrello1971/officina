@@ -106,4 +106,13 @@ class FreshnessVerifierTest extends TestCase
         Http::assertSent(fn ($request) => str_contains($request['system'] ?? '', 'DATI NON FIDATI')
             && str_contains(mb_strtolower($request['system'] ?? ''), 'ignora'));
     }
+
+    public function test_usa_il_model_di_verifica_da_config(): void
+    {
+        $this->fakeVerdict(['verdict' => 'incerto', 'confidence' => 0.3]);
+        app(FreshnessVerifier::class)->verify('un claim', 'data', $this->config(true));
+
+        Http::assertSent(fn ($request) => $request['model'] === config('services.anthropic.freshness_verify_model'));
+        $this->assertSame('claude-opus-4-8', config('services.anthropic.freshness_verify_model'));
+    }
 }

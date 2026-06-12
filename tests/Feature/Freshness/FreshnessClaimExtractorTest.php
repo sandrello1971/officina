@@ -103,4 +103,13 @@ class FreshnessClaimExtractorTest extends TestCase
         $this->assertCount(1, $res['claims']);
         $this->assertSame('data', $res['claims'][0]['category']);
     }
+
+    public function test_usa_il_model_di_estrazione_da_config(): void
+    {
+        $this->fakeLlmClaims([]);
+        app(FreshnessClaimExtractor::class)->extract($this->blocks());
+
+        Http::assertSent(fn ($request) => $request['model'] === config('services.anthropic.freshness_extract_model'));
+        $this->assertSame('claude-sonnet-4-6', config('services.anthropic.freshness_extract_model'));
+    }
 }
