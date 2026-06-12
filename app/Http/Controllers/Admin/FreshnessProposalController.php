@@ -23,13 +23,19 @@ use Illuminate\Http\Request;
  */
 class FreshnessProposalController extends Controller
 {
-    /** Coda: proposte PENDING raggruppate per corso (il diff è sempre mostrato). */
+    /**
+     * Coda HITL a DUE TAB per sorgente (P25.B-a): 'instructor' (formatore) e 'student'
+     * (materiale studente). Default 'instructor' (flusso esistente, retrocompatibile).
+     * Ogni tab mostra solo le proposte PENDING della sua sorgente.
+     */
     public function index(Request $request)
     {
+        $source = $request->query('source') === 'student' ? 'student' : 'instructor';
         $courseFilter = $request->query('course');
 
         $query = UpdateProposal::with(['course', 'claim'])
             ->pending()
+            ->where('content_source', $source)
             ->orderBy('course_id')
             ->orderByDesc('created_at');
 
@@ -39,21 +45,22 @@ class FreshnessProposalController extends Controller
 
         $proposals = $query->get()->groupBy('course_id');
 
-        // Corsi che hanno almeno una proposta pending (per il filtro) + audience dalla config.
-        $courses = Course::whereHas('updateProposals', fn ($q) => $q->where('status', 'pending'))
-            ->with('freshnessConfig')
-            ->orderBy('name')
-            ->get();
+        // Conteggi pending per tab.
+        $pendingCounts = [
+            'instructor' => UpdateProposal::pending()->where('content_source', 'instructor')->count(),
+            'student' => UpdateProposal::pending()->where('content_source', 'student')->count(),
+        ];
 
-        // Tutti i corsi attivi (per il pannello "Controlli & cadenze": lancio manuale +
-        // gestione cadenza/audience + applicazione delle approvate).
+        // Corsi attivi (pannello controlli) con conteggio approvate DELLA SORGENTE ATTIVA
+        // (apply/rollback sono per-sorgente: mai mescolare i due flussi).
         $allCourses = Course::active()
             ->with('freshnessConfig')
-            ->withCount(['updateProposals as approved_count' => fn ($q) => $q->where('status', 'approved')])
+            ->withCount(['updateProposals as approved_count' => fn ($q) => $q
+                ->where('status', 'approved')->where('content_source', $source)])
             ->orderBy('name')
             ->get();
 
-        return view('admin.freshness.proposals', compact('proposals', 'courses', 'courseFilter', 'allCourses'));
+        return view('admin.freshness.proposals', compact('proposals', 'allCourses', 'courseFilter', 'source', 'pendingCounts'));
     }
 
     /**
@@ -97,26 +104,32 @@ class FreshnessProposalController extends Controller
     }
 
     /**
-     * P25.3e — Applica le proposte APPROVED al lato formatore (versioning + rollback in 3c).
-     * Doppio gate per i corsi MINORI: serve la conferma esplicita aggiuntiva (confirm_minor).
+     * P25.3e/B-a — Applica le proposte APPROVED di UNA sorgente. Instrada ad apply()
+     * (formatore: course_sources + instructor_manual_sections) o applyStudent()
+     * (studente: modules.content) in base a content_source. Mai mescolare i due flussi.
+     * Doppio gate MINORI (confirm_minor) su entrambe le sorgenti.
      */
     public function apply(Request $request, Course $course, ProposalApplicator $applicator)
     {
+        $source = $this->resolveSource($request);
+        $label = $source === 'student' ? 'studente' : 'formatore';
         $audience = optional($course->freshnessConfig)->audience ?? 'adult';
         $confirmed = $request->boolean('confirm_minor');
 
         // Gate 2 (umano) per i minori: senza conferma esplicita → bloccato, nessuna modifica.
         if ($audience === 'minor' && !$confirmed) {
-            return back()->with('error', "⚠ Corso per MINORI: serve la conferma esplicita di applicazione. Nessuna modifica applicata a «{$course->name}».");
+            return back()->with('error', "⚠ Corso per MINORI: serve la conferma esplicita di applicazione ({$label}). Nessuna modifica applicata a «{$course->name}».");
         }
 
-        $res = $applicator->apply($course, minorConfirmed: $confirmed);
+        $res = $source === 'student'
+            ? $applicator->applyStudent($course, minorConfirmed: $confirmed)
+            : $applicator->apply($course, minorConfirmed: $confirmed);
 
         if (($res['blocked'] ?? null) === 'minor_confirmation_required') {
             return back()->with('error', "⚠ Conferma minori richiesta: nessuna modifica applicata a «{$course->name}».");
         }
 
-        $msg = "Applicate {$res['applied']} proposte su «{$course->name}»";
+        $msg = "[{$label}] Applicate {$res['applied']} proposte su «{$course->name}»";
         if ($res['version_to']) {
             $msg .= " (v{$res['version_from']} → v{$res['version_to']})";
         }
@@ -125,6 +138,31 @@ class FreshnessProposalController extends Controller
         }
 
         return back()->with('success', $msg . '.');
+    }
+
+    /**
+     * P25.B-a — Rollback per-sorgente: formatore → course_sources/instructor_manual_sections;
+     * studente → modules.content da student_source_versions. Torna alla versione precedente.
+     */
+    public function rollback(Request $request, Course $course, ProposalApplicator $applicator)
+    {
+        $source = $this->resolveSource($request);
+        $label = $source === 'student' ? 'studente' : 'formatore';
+
+        try {
+            $res = $source === 'student'
+                ? $applicator->rollbackStudent($course)
+                : $applicator->rollback($course);
+        } catch (\Throwable $e) {
+            return back()->with('error', "Rollback {$label} non possibile su «{$course->name}»: " . $e->getMessage());
+        }
+
+        return back()->with('success', "[{$label}] Rollback su «{$course->name}»: v{$res['version_from']} → v{$res['version_to']} (ripristino contenuti di v{$res['restored_to']}).");
+    }
+
+    private function resolveSource(Request $request): string
+    {
+        return $request->input('content_source') === 'student' ? 'student' : 'instructor';
     }
 
     /**

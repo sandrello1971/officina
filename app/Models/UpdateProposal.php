@@ -18,6 +18,8 @@ class UpdateProposal extends Model
         'run_id',
         'freshness_claim_id',
         'course_id',
+        'content_source',
+        'module_id',
         'block_id',
         'sentence_ref',
         'before',
@@ -46,6 +48,12 @@ class UpdateProposal extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    // P25.B-a — modulo studente ancorato (solo per content_source='student').
+    public function module(): BelongsTo
+    {
+        return $this->belongsTo(Module::class);
     }
 
     public function claim(): BelongsTo
