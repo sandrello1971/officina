@@ -334,8 +334,11 @@ class ProposalApplicator
                 $p->update(['status' => 'applied', 'applied_at' => now(), 'apply_error' => null]);
                 CourseChangelog::create([
                     'course_id' => $course->id, 'proposal_id' => $p->id, 'content_source' => 'student',
+                    // P25.B-b — tracciabilità: la modifica discente coordinata nasce dalla
+                    // proposta formatore parent_proposal_id.
+                    'parent_proposal_id' => $p->parent_proposal_id,
                     'version_from' => $versionFrom, 'version_to' => $newVersion, 'kind' => 'apply',
-                    'summary' => mb_substr($p->before, 0, 120) . ' → ' . mb_substr($p->after, 0, 120),
+                    'summary' => mb_substr($p->before, 0, 120) . ' → ' . mb_substr((string) $p->after, 0, 120),
                     'approved_by' => $p->reviewed_by, 'approved_at' => $p->reviewed_at,
                 ]);
             }

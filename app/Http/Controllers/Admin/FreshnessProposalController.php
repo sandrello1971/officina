@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\FindStudentMatchesJob;
+use App\Jobs\RewriteStudentProposalJob;
 use App\Jobs\RunFreshnessAgentJob;
 use App\Models\Admin;
 use App\Models\Course;
+use App\Models\CourseChangelog;
 use App\Models\CourseFreshnessConfig;
 use App\Models\UpdateProposal;
+use App\Services\Freshness\CoordinatedMatchService;
 use App\Services\Freshness\ProposalApplicator;
 use Illuminate\Http\Request;
 
@@ -60,7 +64,20 @@ class FreshnessProposalController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.freshness.proposals', compact('proposals', 'allCourses', 'courseFilter', 'source', 'pendingCounts'));
+        // P25.B-b.3 — sul tab Studente: candidate coordinate da confermare (status='matched')
+        // + alert per le modifiche già LIVE il cui padre formatore è stato annullato (orfane).
+        $candidates = collect();
+        $orphanAlerts = collect();
+        if ($source === 'student') {
+            $candidates = UpdateProposal::with(['course', 'parentProposal'])
+                ->where('content_source', 'student')->where('status', 'matched')->whereNull('orphaned_at')
+                ->orderByDesc('created_at')->get()->groupBy('course_id');
+            $orphanAlerts = UpdateProposal::with('course')
+                ->where('content_source', 'student')->where('status', 'applied')->whereNotNull('orphaned_at')
+                ->orderByDesc('orphaned_at')->get();
+        }
+
+        return view('admin.freshness.proposals', compact('proposals', 'allCourses', 'courseFilter', 'source', 'pendingCounts', 'candidates', 'orphanAlerts'));
     }
 
     /**
@@ -144,7 +161,7 @@ class FreshnessProposalController extends Controller
      * P25.B-a — Rollback per-sorgente: formatore → course_sources/instructor_manual_sections;
      * studente → modules.content da student_source_versions. Torna alla versione precedente.
      */
-    public function rollback(Request $request, Course $course, ProposalApplicator $applicator)
+    public function rollback(Request $request, Course $course, ProposalApplicator $applicator, CoordinatedMatchService $coord)
     {
         $source = $this->resolveSource($request);
         $label = $source === 'student' ? 'studente' : 'formatore';
@@ -155,6 +172,19 @@ class FreshnessProposalController extends Controller
                 : $applicator->rollback($course);
         } catch (\Throwable $e) {
             return back()->with('error', "Rollback {$label} non possibile su «{$course->name}»: " . $e->getMessage());
+        }
+
+        // P25.B-b.3 — orfananza: rollback FORMATORE → le figlie dei padri applicati nella
+        // versione annullata vanno orfanate (pending→rejected; applied→flagged).
+        if ($source === 'instructor') {
+            $parentIds = CourseChangelog::where('course_id', $course->id)
+                ->where('content_source', 'instructor')
+                ->where('version_to', $res['version_from'])
+                ->where('kind', 'apply')
+                ->whereNotNull('proposal_id')
+                ->pluck('proposal_id');
+            UpdateProposal::whereIn('id', $parentIds)->get()
+                ->each(fn ($parent) => $coord->orphanChildrenOf($parent, 'Padre formatore rollbackato'));
         }
 
         return back()->with('success', "[{$label}] Rollback su «{$course->name}»: v{$res['version_from']} → v{$res['version_to']} (ripristino contenuti di v{$res['restored_to']}).");
@@ -187,13 +217,20 @@ class FreshnessProposalController extends Controller
 
         $proposal->update($data);
 
+        // P25.B-b — se è una proposta FORMATORE approvata, scatta il matching coordinato
+        // (async) sul materiale discente. Non riscrive/applica nulla: crea candidate 'matched'.
+        $this->maybeCoordinate($proposal);
+
         return back()->with('success', 'Proposta approvata. Verrà applicata in fase di applicazione (P25.3c).');
     }
 
-    /** Rifiuta una proposta. Solo su proposte 'pending'. */
-    public function reject(UpdateProposal $proposal)
+    /**
+     * Rifiuta una proposta 'pending', o SCARTA una candidate coordinata 'matched' (B-b.3).
+     * Se è una proposta FORMATORE con figlie coordinate → le orfana (D1).
+     */
+    public function reject(UpdateProposal $proposal, CoordinatedMatchService $coord)
     {
-        abort_unless($proposal->status === 'pending', 422, 'La proposta non è più in attesa.');
+        abort_unless(in_array($proposal->status, ['pending', 'matched'], true), 422, 'La proposta non è in uno stato rifiutabile.');
 
         $proposal->update([
             'status' => 'rejected',
@@ -201,7 +238,24 @@ class FreshnessProposalController extends Controller
             'reviewed_at' => now(),
         ]);
 
-        return back()->with('success', 'Proposta rifiutata.');
+        if ($proposal->content_source === 'instructor') {
+            $coord->orphanChildrenOf($proposal, 'Padre formatore rifiutato');
+        }
+
+        return back()->with('success', $proposal->wasChanged() ? 'Proposta scartata.' : 'Proposta scartata.');
+    }
+
+    /**
+     * P25.B-b.3 — Conferma una candidate coordinata (status='matched'): avvia la riscrittura
+     * conservativa (async). NON applica nulla; la proposta diventerà 'pending' con l'after.
+     */
+    public function confirm(UpdateProposal $proposal)
+    {
+        abort_unless($proposal->status === 'matched', 422, 'Non è una candidate da confermare.');
+
+        RewriteStudentProposalJob::dispatch($proposal->id);
+
+        return back()->with('success', 'Candidate confermata: riscrittura conservativa in corso. Comparirà tra le proposte da approvare a breve.');
     }
 
     /** Azione massiva sulle proposte selezionate (solo cambio status, mai applicazione). */
@@ -223,7 +277,31 @@ class FreshnessProposalController extends Controller
                 'reviewed_at' => now(),
             ]);
 
+        // P25.B-b — coordinamento per le approvazioni FORMATORE del batch.
+        if ($status === 'approved') {
+            UpdateProposal::whereIn('id', $validated['ids'])
+                ->where('status', 'approved')
+                ->where('content_source', 'instructor')
+                ->get()
+                ->each(fn ($p) => $this->maybeCoordinate($p));
+        }
+
         return back()->with('success', "{$count} proposte aggiornate ({$status}).");
+    }
+
+    /**
+     * P25.B-b — Dispatcha il matching coordinato (async) per una proposta FORMATORE
+     * approvata, solo se il corso ha attivato il lato studente (student_proposals_enabled).
+     */
+    private function maybeCoordinate(UpdateProposal $proposal): void
+    {
+        if ($proposal->content_source !== 'instructor' || $proposal->status !== 'approved') {
+            return;
+        }
+        if (!optional(optional($proposal->course)->freshnessConfig)->student_proposals_enabled) {
+            return;
+        }
+        FindStudentMatchesJob::dispatch($proposal->id);
     }
 
     /** Admin loggato (sessione custom) → uuid per l'audit. Null se non risolvibile. */
