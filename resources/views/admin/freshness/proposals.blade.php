@@ -22,6 +22,23 @@
     </div>
 @endif
 
+{{-- P25.B-a — Due tab per sorgente: Formatore (instructor) / Studente (student). --}}
+@php($tabBase = 'display:inline-block; padding:9px 18px; border-radius:8px 8px 0 0; font-size:0.85rem; font-weight:700; text-decoration:none; border:1px solid #E6EBEB; border-bottom:none; margin-right:4px;')
+<div style="margin-bottom:0; border-bottom:1px solid #E6EBEB;">
+    <a href="{{ route('admin.freshness.proposals.index', ['source' => 'instructor']) }}"
+       style="{{ $tabBase }} {{ $source === 'instructor' ? 'background:#0E3F3D; color:#D6F0EE;' : 'background:#F5F7F7; color:#5A6666;' }}">
+        📘 Formatore <span style="opacity:.8;">({{ $pendingCounts['instructor'] }})</span>
+    </a>
+    <a href="{{ route('admin.freshness.proposals.index', ['source' => 'student']) }}"
+       style="{{ $tabBase }} {{ $source === 'student' ? 'background:#3B2E5A; color:#EDE7F6;' : 'background:#F5F7F7; color:#5A6666;' }}">
+        🎓 Studente <span style="opacity:.8;">({{ $pendingCounts['student'] }})</span>
+    </a>
+</div>
+<p style="color:#8A9696; font-size:0.78rem; margin:8px 0 16px;">
+    Stai vedendo la sorgente <strong>{{ $source === 'student' ? 'STUDENTE (materiale fruito dagli studenti)' : 'FORMATORE (manuale del docente)' }}</strong>.
+    Apply e rollback agiscono <strong>solo</strong> su questa sorgente — i due flussi non si mescolano mai.
+</p>
+
 {{-- P25.3d — Controlli manuali (async) + cadenza scheduler per corso --}}
 <div style="background:white; border-radius:10px; padding:16px 18px; margin-bottom:20px;">
     <div style="font-weight:700; color:#1A1F1F; margin-bottom:4px;">&#9881; Controlli & cadenze</div>
@@ -74,21 +91,29 @@
                             <input type="hidden" name="course_id" value="{{ $c->id }}">
                             <button type="submit" style="padding:5px 12px; background:#55B1AE; color:white; border:none; border-radius:6px; font-size:0.78rem; cursor:pointer;">&#9658; Lancia ora</button>
                         </form>
+                        {{-- Apply/rollback PER-SORGENTE (la sorgente è quella del tab attivo). --}}
                         @if ($c->approved_count > 0)
-                            <form method="POST" action="{{ route('admin.freshness.proposals.apply', $c) }}" style="margin:0; display:inline-block;"
-                                  onsubmit="return {{ $aud === 'minor' ? 'confirm(\'Stai per applicare modifiche a un corso per MINORI. Confermi?\')' : 'true' }};">
+                            <form method="POST" action="{{ route('admin.freshness.proposals.apply', $c) }}" style="margin:0 0 4px; display:inline-block;"
+                                  onsubmit="return {{ $aud === 'minor' ? 'confirm(\'Stai per applicare modifiche (' . $source . ') a un corso per MINORI. Confermi?\')' : 'true' }};">
                                 @csrf
+                                <input type="hidden" name="content_source" value="{{ $source }}">
                                 @if ($aud === 'minor')
                                     {{-- Gate 2 (minori): conferma esplicita aggiuntiva richiesta. --}}
                                     <label style="font-size:0.7rem; color:#7B1E1E; display:block; margin-bottom:3px;">
-                                        <input type="checkbox" name="confirm_minor" value="1" required> ⚠ Confermo l'applicazione a un corso per MINORI
+                                        <input type="checkbox" name="confirm_minor" value="1" required> ⚠ Confermo l'applicazione ({{ $source === 'student' ? 'STUDENTE' : 'formatore' }}) a un corso per MINORI
                                     </label>
                                 @endif
                                 <button type="submit" style="padding:5px 12px; background:{{ $aud === 'minor' ? '#7B1E1E' : '#1E8449' }}; color:white; border:none; border-radius:6px; font-size:0.78rem; cursor:pointer;">
-                                    &#10003; Applica ({{ $c->approved_count }})
+                                    &#10003; Applica {{ $source === 'student' ? 'STUDENTE' : 'formatore' }} ({{ $c->approved_count }})
                                 </button>
                             </form>
                         @endif
+                        <form method="POST" action="{{ route('admin.freshness.proposals.rollback', $c) }}" style="margin:0; display:inline-block;"
+                              onsubmit="return confirm('Rollback alla versione precedente ({{ $source }}) di «{{ $c->name }}»?');">
+                            @csrf
+                            <input type="hidden" name="content_source" value="{{ $source }}">
+                            <button type="submit" style="padding:5px 12px; background:white; color:#8A6D1B; border:1px solid #C9A227; border-radius:6px; font-size:0.75rem; cursor:pointer;">&#8617; Rollback {{ $source === 'student' ? 'studente' : 'formatore' }}</button>
+                        </form>
                     </td>
                 </tr>
             @endforeach
@@ -133,8 +158,9 @@
                     {{-- Intestazione riga: selezione + meta + fonte --}}
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
                         <input type="checkbox" name="ids[]" value="{{ $p->id }}" form="bulkForm" style="width:16px; height:16px;">
+                        @include('admin.freshness._source_badge', ['source' => $p->content_source])
                         <span style="background:#EEF3F3; color:#1A1F1F; font-size:0.7rem; padding:2px 8px; border-radius:10px; text-transform:uppercase; letter-spacing:0.05em;">{{ optional($p->claim)->category ?? '—' }}</span>
-                        <code style="color:#8A9696; font-size:0.75rem;">{{ $p->block_id }}@if(!is_null($p->sentence_ref)) · frase {{ $p->sentence_ref }}@endif</code>
+                        <code style="color:#8A9696; font-size:0.75rem;">{{ $p->content_source === 'student' ? 'modulo' : $p->block_id }}@if(!is_null($p->sentence_ref)) · frase {{ $p->sentence_ref }}@endif</code>
                         @include('admin.freshness._audience_badge', ['audience' => $p->audience])
                         <span style="color:#8A9696; font-size:0.75rem;">confidenza: <strong style="color:#1A1F1F;">{{ is_null($p->confidence) ? '—' : round($p->confidence * 100) . '%' }}</strong></span>
                         @if ($p->source)
