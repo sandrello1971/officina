@@ -397,6 +397,7 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
 
     // P25.3b — Coda HITL proposte di aggiornamento corsi (additivo: non tocca i corsi).
     Route::get('aggiornamenti', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'index'])->name('freshness.proposals.index');
+    Route::get('aggiornamenti/stato-run', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'runsStatus'])->name('freshness.proposals.runs-status');
     Route::post('aggiornamenti/run', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'run'])->name('freshness.proposals.run');
     Route::post('aggiornamenti/bulk', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'bulk'])->name('freshness.proposals.bulk');
     Route::post('aggiornamenti/{course}/cadenza', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'setCadence'])->name('freshness.proposals.cadence');

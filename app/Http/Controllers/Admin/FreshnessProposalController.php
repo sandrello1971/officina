@@ -89,6 +89,28 @@ class FreshnessProposalController extends Controller
     }
 
     /**
+     * Stato dei controlli per il polling live: dice se un'analisi è in corso e ri-renderizza
+     * lo storico. Permette alla UI di mostrare "Analisi in corso…" e aggiornarsi senza reload.
+     */
+    public function runsStatus()
+    {
+        $recentRuns = FreshnessRun::with('course')
+            ->orderByDesc('created_at')
+            ->limit(8)
+            ->get();
+
+        $running = $recentRuns->where('status', 'running');
+
+        return response()->json([
+            'running' => $running->isNotEmpty(),
+            'banner' => $running->isNotEmpty()
+                ? $running->map(fn ($r) => optional($r->course)->name ?? '—')->unique()->implode(', ')
+                : null,
+            'html' => view('admin.freshness._runs_history', ['recentRuns' => $recentRuns])->render(),
+        ]);
+    }
+
+    /**
      * P25.3d — Lancia un controllo (freshness-run) ASINCRONO su un corso. Solo dispatch:
      * il run gira sulla queue (chiamate AI lente). NON applica nulla.
      */
