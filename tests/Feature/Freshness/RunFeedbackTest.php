@@ -64,7 +64,7 @@ class RunFeedbackTest extends TestCase
         $this->withSession($this->admin())
             ->get(route('admin.freshness.proposals.index'))
             ->assertOk()
-            ->assertSee('Ultimi controlli')
+            ->assertSee('Storico analisi')
             ->assertSee('Fallito')
             ->assertSee('credit balance is too low'); // il motivo è visibile a schermo
     }
@@ -84,11 +84,56 @@ class RunFeedbackTest extends TestCase
             ->assertSee('3 claim, 2 proposte');
     }
 
-    public function test_nessun_pannello_senza_run(): void
+    public function test_storico_mostra_empty_state_senza_run(): void
     {
+        // Lo storico è uno spazio DEDICATO sempre presente: senza run mostra l'empty-state.
         $this->withSession($this->admin())
             ->get(route('admin.freshness.proposals.index'))
             ->assertOk()
-            ->assertDontSee('Ultimi controlli');
+            ->assertSee('Storico analisi')
+            ->assertSee('Nessuna analisi ancora');
+    }
+
+    // ---- C) notifiche dismissibili + indicatore live ----
+
+    public function test_notifiche_sono_dismissibili_e_banner_live_presente(): void
+    {
+        $this->withSession($this->admin() + ['success' => 'Controllo avviato.'])
+            ->get(route('admin.freshness.proposals.index'))
+            ->assertOk()
+            ->assertSee('data-dismiss-flash', false)   // X di chiusura sulle notifiche
+            ->assertSee('id="run-live-banner"', false) // banner "analisi in corso"
+            ->assertSee('stato-run', false);            // endpoint di polling cablato
+    }
+
+    public function test_endpoint_stato_run_segnala_analisi_in_corso(): void
+    {
+        $course = $this->makeCourse();
+        FreshnessRun::create([
+            'course_id' => $course->id, 'status' => 'running', 'started_at' => now(),
+            'claims_found' => 0, 'proposals_created' => 0,
+        ]);
+
+        $res = $this->withSession($this->admin())
+            ->getJson(route('admin.freshness.proposals.runs-status'))
+            ->assertOk()
+            ->assertJson(['running' => true]);
+
+        $this->assertStringContainsString('INTERFERENZA', $res->json('banner'));
+        $this->assertStringContainsString('In corso', $res->json('html'));
+    }
+
+    public function test_endpoint_stato_run_nessuna_analisi_in_corso(): void
+    {
+        $course = $this->makeCourse();
+        FreshnessRun::create([
+            'course_id' => $course->id, 'status' => 'completed', 'started_at' => now(), 'finished_at' => now(),
+            'claims_found' => 1, 'proposals_created' => 0,
+        ]);
+
+        $this->withSession($this->admin())
+            ->getJson(route('admin.freshness.proposals.runs-status'))
+            ->assertOk()
+            ->assertJson(['running' => false, 'banner' => null]);
     }
 }

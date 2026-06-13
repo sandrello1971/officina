@@ -11,60 +11,34 @@
     al contenuto avviene in un passo separato.
 </p>
 
+{{-- Notifiche transitorie: DISMISSIBILI (X). Lo storico durevole delle analisi è il pannello sotto. --}}
 @if (session('success'))
-    <div style="background:rgba(85,177,174,0.12); border:1px solid #55B1AE; color:#1A1F1F; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:0.85rem;">
-        {{ session('success') }}
+    <div data-flash style="display:flex; align-items:flex-start; gap:10px; background:rgba(85,177,174,0.12); border:1px solid #55B1AE; color:#1A1F1F; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:0.85rem;">
+        <span style="flex:1;">{{ session('success') }}</span>
+        <button type="button" data-dismiss-flash aria-label="Chiudi" style="background:none; border:none; color:#3A8C89; cursor:pointer; font-size:1rem; line-height:1; padding:0;">&times;</button>
     </div>
 @endif
 @if (session('error'))
-    <div style="background:#FBEDEC; border:1px solid #C0392B; color:#7B1E1E; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:0.85rem;">
-        {{ session('error') }}
+    <div data-flash style="display:flex; align-items:flex-start; gap:10px; background:#FBEDEC; border:1px solid #C0392B; color:#7B1E1E; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:0.85rem;">
+        <span style="flex:1;">{{ session('error') }}</span>
+        <button type="button" data-dismiss-flash aria-label="Chiudi" style="background:none; border:none; color:#C0392B; cursor:pointer; font-size:1rem; line-height:1; padding:0;">&times;</button>
     </div>
 @endif
 
-{{-- Esito degli ultimi controlli (async): se un run è fallito, qui si vede COSA è andato storto. --}}
-@php($recentRuns = $recentRuns ?? collect())
-@php($failedRuns = $recentRuns->where('status', 'failed'))
-@if ($recentRuns->isNotEmpty())
+{{-- Banner LIVE: mostrato dal polling JS finché un'analisi è in corso (auto-aggiornato). --}}
+<div id="run-live-banner" style="display:none; align-items:center; gap:10px; background:#FFF8EE; border:1px solid rgba(226,138,83,0.45); color:#C26A2E; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:0.85rem; font-weight:700;">
+    <span class="run-live-spinner" style="display:inline-block; width:12px; height:12px; border:2px solid rgba(226,138,83,0.35); border-top-color:#C26A2E; border-radius:50%; animation:run-spin 0.8s linear infinite;"></span>
+    <span id="run-live-text">Analisi in corso…</span>
+</div>
+<style>@keyframes run-spin { to { transform: rotate(360deg); } }</style>
+
+{{-- Storico analisi: spazio DEDICATO e durevole (run dell'agente). Si auto-aggiorna col polling. --}}
 <div style="background:white; border-radius:10px; padding:14px 16px; margin-bottom:18px; border:1px solid #E6EBEB;">
-    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-        <span style="font-weight:700; color:#1A1F1F;">&#128202; Ultimi controlli</span>
-        @if ($failedRuns->isNotEmpty())
-        <span style="padding:2px 9px; background:#FBEDEC; color:#7B1E1E; border:1px solid #C0392B;
-                     border-radius:12px; font-size:0.72rem; font-weight:700;">
-            {{ $failedRuns->count() }} fallit{{ $failedRuns->count() == 1 ? 'o' : 'i' }}
-        </span>
-        @endif
-    </div>
-    <div style="display:flex; flex-direction:column; gap:6px;">
-        @foreach ($recentRuns as $run)
-        @php($st = $run->status)
-        @php($isFail = $st === 'failed')
-        @php($isDone = $st === 'completed')
-        <div style="display:flex; align-items:flex-start; gap:10px; padding:8px 10px; border-radius:8px;
-                    font-size:0.8rem; line-height:1.45;
-                    background:{{ $isFail ? '#FBEDEC' : ($isDone ? 'rgba(85,177,174,0.08)' : '#FFF8EE') }};
-                    border:1px solid {{ $isFail ? 'rgba(192,57,43,0.35)' : ($isDone ? 'rgba(85,177,174,0.3)' : 'rgba(226,138,83,0.35)') }};">
-            <span style="font-weight:700; white-space:nowrap;
-                         color:{{ $isFail ? '#C0392B' : ($isDone ? '#3A8C89' : '#C26A2E') }};">
-                {{ $isFail ? '✗ Fallito' : ($isDone ? '✓ Completato' : '⏳ In corso') }}
-            </span>
-            <div style="flex:1; min-width:0;">
-                <strong style="color:#1A1F1F;">{{ optional($run->course)->name ?? '—' }}</strong>
-                <span style="color:#8A9696;">· {{ optional($run->created_at)->format('d/m H:i') }}</span>
-                @if ($isFail)
-                    <div style="color:#7B1E1E; margin-top:2px; font-family:'JetBrains Mono','SF Mono',monospace; font-size:0.74rem;">
-                        {{ $run->failure_reason ?: 'Errore non specificato.' }}
-                    </div>
-                @elseif ($isDone)
-                    <span style="color:#8A9696;">· {{ $run->claims_found ?? 0 }} claim, {{ $run->proposals_created ?? 0 }} proposte</span>
-                @endif
-            </div>
-        </div>
-        @endforeach
+    <div style="font-weight:700; color:#1A1F1F; margin-bottom:10px;">&#128202; Storico analisi</div>
+    <div id="runs-history">
+        @include('admin.freshness._runs_history', ['recentRuns' => $recentRuns ?? collect()])
     </div>
 </div>
-@endif
 
 {{-- P25.B-a — Due tab per sorgente: Formatore (instructor) / Studente (student). --}}
 @php($tabBase = 'display:inline-block; padding:9px 18px; border-radius:8px 8px 0 0; font-size:0.85rem; font-weight:700; text-decoration:none; border:1px solid #E6EBEB; border-bottom:none; margin-right:4px;')
@@ -300,5 +274,46 @@
         </div>
     @endforeach
 @endif
+
+<script>
+(function () {
+    // Notifiche dismissibili (X).
+    document.querySelectorAll('[data-dismiss-flash]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var box = btn.closest('[data-flash]');
+            if (box) box.remove();
+        });
+    });
+
+    // Indicatore LIVE: polling dello stato run, auto-aggiorna storico + banner senza reload.
+    var statusUrl = "{{ route('admin.freshness.proposals.runs-status') }}";
+    var banner = document.getElementById('run-live-banner');
+    var bannerText = document.getElementById('run-live-text');
+    var history = document.getElementById('runs-history');
+    var timer = null;
+
+    function schedule(ms) { clearTimeout(timer); timer = setTimeout(poll, ms); }
+
+    function poll() {
+        fetch(statusUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data) { schedule(20000); return; }
+                if (history && typeof data.html === 'string') history.innerHTML = data.html;
+                if (data.running) {
+                    bannerText.textContent = 'Analisi in corso' + (data.banner ? ' per ' + data.banner : '') + '…';
+                    banner.style.display = 'flex';
+                    schedule(4000);   // poll veloce mentre lavora
+                } else {
+                    banner.style.display = 'none';
+                    schedule(20000);  // idle: poll lento
+                }
+            })
+            .catch(function () { schedule(20000); });
+    }
+
+    schedule(1500); // primo controllo poco dopo il caricamento
+})();
+</script>
 
 @endsection
