@@ -44,6 +44,11 @@ class CoverageGap extends Model
         return $this->belongsTo(Admin::class, 'reviewed_by');
     }
 
+    public function draft(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(GapDraft::class, 'coverage_gap_id');
+    }
+
     public function scopeSuggested(Builder $q): Builder
     {
         return $q->where('status', 'suggested');

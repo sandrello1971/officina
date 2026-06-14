@@ -98,6 +98,42 @@
 </div>
 @endforelse
 
+{{-- Fase B — gap accettati: generazione/revisione bozze (NESSUN inserimento nel corso) --}}
+@if ($accepted->count() > 0)
+<div style="font-weight:700; color:#1A1F1F; margin:22px 0 8px;">Gap accettati — bozze ({{ $accepted->count() }})</div>
+<p style="color:#8A9696; font-size:0.76rem; margin:0 0 10px;">Le bozze restano qui per la revisione: <strong>non vengono inserite nel corso</strong> (l'inserimento è una fase successiva).</p>
+@php($dbadge = ['generating' => ['#C26A2E','⏳ in generazione'], 'draft' => ['#3A8C89','bozza pronta'], 'approved' => ['#1A7F5A','✓ approvata (pronta per inserimento)'], 'discarded' => ['#8A9696','scartata'], 'failed' => ['#C0392B','✗ generazione fallita']])
+@foreach ($accepted as $g)
+@php($d = $g->draft)
+<div style="background:white; border:1px solid #E6EBEB; border-radius:8px; padding:12px 14px; margin-bottom:8px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <div style="flex:1; min-width:200px;">
+        <strong style="color:#1A1F1F;">{{ $g->title }}</strong>
+        @if ($d)
+            @php($db = $dbadge[$d->status] ?? ['#8A9696', $d->status])
+            <span style="margin-left:8px; padding:1px 9px; border-radius:10px; font-size:0.7rem; font-weight:700; color:{{ $db[0] }}; background:#F5F7F7;">{{ $db[1] }}</span>
+            @if ($d->status === 'failed')<div style="font-family:'JetBrains Mono',monospace; color:#7B1E1E; font-size:0.72rem; margin-top:3px;">{{ $d->error }}</div>@endif
+        @endif
+    </div>
+    <div style="display:flex; gap:6px;">
+        @if (!$d)
+            <form method="POST" action="{{ route('admin.coverage.generate', $g) }}">@csrf
+                <button type="submit" style="padding:6px 12px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">&#9998; Genera bozza</button>
+            </form>
+        @else
+            @if (in_array($d->status, ['draft', 'approved', 'failed']))
+            <a href="{{ route('admin.coverage.draft', $g) }}" style="padding:6px 12px; background:#55B1AE; color:white; border-radius:6px; text-decoration:none; font-size:0.75rem; font-weight:600;">Vedi bozza</a>
+            @endif
+            @if ($d->status !== 'generating')
+            <form method="POST" action="{{ route('admin.coverage.generate', $g) }}">@csrf
+                <button type="submit" style="padding:6px 12px; background:white; color:#C26A2E; border:1px solid #E28A53; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer;">↻ Rigenera</button>
+            </form>
+            @endif
+        @endif
+    </div>
+</div>
+@endforeach
+@endif
+
 <script>
 document.querySelectorAll('[data-dismiss-flash]').forEach(function (b) { b.addEventListener('click', function () { b.closest('[data-flash]').remove(); }); });
 </script>

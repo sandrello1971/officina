@@ -8,6 +8,7 @@ use App\Models\Admin;
 use App\Models\Course;
 use App\Models\CourseFreshnessConfig;
 use App\Models\CoverageGap;
+use App\Models\GapDraft;
 use App\Models\GapScoutRun;
 use App\Models\TrustedSource;
 use Illuminate\Http\Request;
@@ -40,10 +41,14 @@ class CoverageGapController extends Controller
         $gaps = CoverageGap::forCourse($course->id)->where('status', 'suggested')
             ->orderByDesc('confidence')->orderByDesc('created_at')->get();
 
+        // Gap ACCETTATI (Fase B): ognuno con la sua bozza (se generata).
+        $accepted = CoverageGap::forCourse($course->id)->where('status', 'accepted')
+            ->with('draft')->orderByDesc('updated_at')->get();
+
         $lastRun = GapScoutRun::where('course_id', $course->id)->orderByDesc('created_at')->first();
         $sourceTopics = TrustedSource::query()->distinct()->orderBy('topic')->pluck('topic');
 
-        return view('admin.coverage.show', compact('course', 'topic', 'hasApprovedSources', 'gaps', 'lastRun', 'sourceTopics'));
+        return view('admin.coverage.show', compact('course', 'topic', 'hasApprovedSources', 'gaps', 'accepted', 'lastRun', 'sourceTopics'));
     }
 
     /** Imposta il topic del corso SCEGLIENDO tra i topic esistenti nelle fonti (no drift). */
@@ -84,6 +89,56 @@ class CoverageGapController extends Controller
         $gap->update(['status' => 'dismissed', 'reviewed_by' => $this->adminId(), 'reviewed_at' => now()]);
 
         return back()->with('success', 'Gap scartato.');
+    }
+
+    // ===================== Fase B — Compose bozze =====================
+
+    /** Genera (o rigenera) la bozza per un gap ACCETTATO. Async. NON inserisce nulla. */
+    public function generate(CoverageGap $gap)
+    {
+        abort_unless($gap->status === 'accepted', 422, 'La bozza si genera solo su un gap accettato.');
+
+        \App\Jobs\RunGapComposeJob::dispatch($gap->id);
+
+        return back()->with('success', "Generazione bozza avviata per «{$gap->title}» (formatore + studente). Ricarica tra poco.");
+    }
+
+    public function draftView(CoverageGap $gap)
+    {
+        abort_unless($gap->status === 'accepted', 404);
+        $draft = $gap->draft;
+
+        return view('admin.coverage.draft', compact('gap', 'draft'));
+    }
+
+    /** Salva le modifiche dell'admin al testo della bozza (resta editabile prima dell'approvazione). */
+    public function updateDraft(Request $request, GapDraft $draft)
+    {
+        $data = $request->validate([
+            'formatore_html' => 'nullable|string',
+            'studente_html' => 'nullable|string',
+        ]);
+        $draft->update([
+            'formatore_html' => $data['formatore_html'] ?? $draft->formatore_html,
+            'studente_html' => $data['studente_html'] ?? $draft->studente_html,
+        ]);
+
+        return back()->with('success', 'Bozza salvata.');
+    }
+
+    /** Approva la bozza: pronta per la Fase D (inserimento). NON inserisce nulla ora. */
+    public function approveDraft(GapDraft $draft)
+    {
+        $draft->update(['status' => 'approved', 'reviewed_by' => $this->adminId(), 'reviewed_at' => now()]);
+
+        return back()->with('success', 'Bozza approvata: pronta per l\'inserimento (Fase D). Nessuna modifica al corso è stata fatta.');
+    }
+
+    public function discardDraft(GapDraft $draft)
+    {
+        $draft->update(['status' => 'discarded', 'reviewed_by' => $this->adminId(), 'reviewed_at' => now()]);
+
+        return back()->with('success', 'Bozza scartata.');
     }
 
     private function adminId(): ?string

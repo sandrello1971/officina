@@ -424,6 +424,13 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::patch('copertura/gap/{gap}/accetta', [App\Http\Controllers\Admin\CoverageGapController::class, 'accept'])->name('coverage.accept');
     Route::patch('copertura/gap/{gap}/scarta', [App\Http\Controllers\Admin\CoverageGapController::class, 'dismiss'])->name('coverage.dismiss');
 
+    // P26 Fase B — Compose bozze (gated). NON inserisce nulla nei corsi.
+    Route::post('copertura/gap/{gap}/genera', [App\Http\Controllers\Admin\CoverageGapController::class, 'generate'])->name('coverage.generate');
+    Route::get('copertura/gap/{gap}/bozza', [App\Http\Controllers\Admin\CoverageGapController::class, 'draftView'])->name('coverage.draft');
+    Route::put('copertura/bozza/{draft}', [App\Http\Controllers\Admin\CoverageGapController::class, 'updateDraft'])->name('coverage.draft.update');
+    Route::patch('copertura/bozza/{draft}/approva', [App\Http\Controllers\Admin\CoverageGapController::class, 'approveDraft'])->name('coverage.draft.approve');
+    Route::patch('copertura/bozza/{draft}/scarta', [App\Http\Controllers\Admin\CoverageGapController::class, 'discardDraft'])->name('coverage.draft.discard');
+
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')
         ->group(function () {
