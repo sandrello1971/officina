@@ -140,4 +140,78 @@ class TopicSuggesterTest extends TestCase
         config(['services.p26.enabled' => false]);
         $this->actingAdmin()->post(route('admin.coverage.topic.suggest', $course))->assertNotFound();
     }
+
+    // ===================== P26.2 — multi-topic pesato =====================
+
+    private function fakeMulti(array $topics): void
+    {
+        Http::fake(['api.anthropic.com/*' => Http::response([
+            'content' => [['type' => 'text', 'text' => json_encode(['topics' => $topics])]],
+        ], 200)]);
+    }
+
+    public function test_suggest_topics_lista_pesata_un_solo_primary(): void
+    {
+        $this->fakeMulti([
+            ['topic' => 'Gestione Conoscenza', 'weight' => 'primary'],
+            ['topic' => 'Agenti AI', 'weight' => 'secondary'],
+            ['topic' => 'produttività', 'weight' => 'secondary'],
+        ]);
+
+        $res = app(\App\Services\TopicSuggester::class)->suggestTopics($this->course('CIRCUITO'));
+
+        $this->assertCount(3, $res['topics']);
+        $primary = collect($res['topics'])->where('weight', 'primary');
+        $this->assertCount(1, $primary); // esattamente un primary
+        $this->assertSame('gestione-conoscenza', $primary->first()['topic']); // slug normalizzato
+    }
+
+    public function test_suggest_topics_corregge_due_primary(): void
+    {
+        $this->fakeMulti([
+            ['topic' => 'a', 'weight' => 'primary'],
+            ['topic' => 'b', 'weight' => 'primary'],
+        ]);
+
+        $res = app(\App\Services\TopicSuggester::class)->suggestTopics($this->course());
+
+        $this->assertSame('primary', $res['topics'][0]['weight']);
+        $this->assertSame('secondary', $res['topics'][1]['weight']); // il secondo declassato
+    }
+
+    public function test_suggest_topics_zero_primary_il_primo_diventa_primary(): void
+    {
+        $this->fakeMulti([
+            ['topic' => 'a', 'weight' => 'secondary'],
+            ['topic' => 'b', 'weight' => 'secondary'],
+        ]);
+
+        $res = app(\App\Services\TopicSuggester::class)->suggestTopics($this->course());
+
+        $this->assertSame('primary', $res['topics'][0]['weight']);
+    }
+
+    public function test_suggest_topics_anti_drift_per_topic(): void
+    {
+        TrustedSource::create(['label' => 'arXiv', 'url_or_domain' => 'arxiv.org', 'mode' => 'search',
+            'topic' => 'agenti-ai', 'status' => 'approved', 'proposed_by' => 'admin']);
+        $this->fakeMulti([
+            ['topic' => 'agenti-ai', 'weight' => 'secondary'],     // esistente → riuso
+            ['topic' => 'dominio-nuovo', 'weight' => 'primary'],   // nuovo
+        ]);
+
+        $res = app(\App\Services\TopicSuggester::class)->suggestTopics($this->course());
+
+        $byTopic = collect($res['topics'])->keyBy('topic');
+        $this->assertTrue($byTopic['agenti-ai']['is_existing']);
+        $this->assertFalse($byTopic['dominio-nuovo']['is_existing']);
+    }
+
+    public function test_suggest_topics_errore_llm(): void
+    {
+        Http::fake(['api.anthropic.com/*' => Http::response(['error' => ['message' => 'boom']], 400)]);
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('suggerimento topic');
+        app(\App\Services\TopicSuggester::class)->suggestTopics($this->course());
+    }
 }

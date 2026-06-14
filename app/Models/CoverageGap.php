@@ -23,6 +23,8 @@ class CoverageGap extends Model
         'rationale',
         'source_url',
         'source_label',
+        'source_topic',   // P26.2 — topic di provenienza
+        'source_weight',  // P26.2 — primary | secondary
         'confidence',
         'status',       // suggested | accepted | dismissed
         'reviewed_by',
