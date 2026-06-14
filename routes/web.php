@@ -408,6 +408,14 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::patch('aggiornamenti/{proposal}/rifiuta', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'reject'])->name('freshness.proposals.reject');
     Route::patch('aggiornamenti/{proposal}/conferma', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'confirm'])->name('freshness.proposals.confirm');
 
+    // P26 Fase 0 — Registro fonti attendibili (gated da config services.p26.enabled nel controller).
+    Route::get('fonti', [App\Http\Controllers\Admin\TrustedSourceController::class, 'index'])->name('sources.index');
+    Route::post('fonti', [App\Http\Controllers\Admin\TrustedSourceController::class, 'store'])->name('sources.store');
+    Route::post('fonti/proponi', [App\Http\Controllers\Admin\TrustedSourceController::class, 'suggest'])->name('sources.suggest');
+    Route::patch('fonti/{source}/approva', [App\Http\Controllers\Admin\TrustedSourceController::class, 'approve'])->name('sources.approve');
+    Route::patch('fonti/{source}/rifiuta', [App\Http\Controllers\Admin\TrustedSourceController::class, 'reject'])->name('sources.reject');
+    Route::delete('fonti/{source}', [App\Http\Controllers\Admin\TrustedSourceController::class, 'destroy'])->name('sources.destroy');
+
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')
         ->group(function () {

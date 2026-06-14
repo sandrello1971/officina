@@ -82,4 +82,9 @@ return [
         'model'  => env('PPTX_MODEL', 'claude-sonnet-4-5'),
     ],
 
+    // P26 "Gap & Compose": opt-in finché non è pronto. Nasconde /admin/fonti + endpoint.
+    'p26' => [
+        'enabled' => env('P26_ENABLED', false),
+    ],
+
 ];

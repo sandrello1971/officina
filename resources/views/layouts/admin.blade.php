@@ -34,6 +34,9 @@
         <a href="/admin/certificates/signatures" class="nav-item {{ request()->routeIs('admin.certificates.signatures.*') ? 'active' : '' }}">&#9997; Firma Certificati</a>
         <a href="/admin/courses" class="nav-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">&#128218; Corsi</a>
         <a href="{{ route('admin.freshness.proposals.index') }}" class="nav-item {{ request()->routeIs('admin.freshness.*') ? 'active' : '' }}">&#128260; Aggiornamenti corsi</a>
+        @if(config('services.p26.enabled'))
+        <a href="{{ route('admin.sources.index') }}" class="nav-item {{ request()->routeIs('admin.sources.*') ? 'active' : '' }}">&#128218; Fonti attendibili</a>
+        @endif
         <a href="/admin/quizzes" class="nav-item {{ request()->routeIs('admin.quizzes.*') ? 'active' : '' }}">&#128221; Quiz</a>
         <a href="/admin/rag" class="nav-item {{ request()->routeIs('admin.rag.*') ? 'active' : '' }}">&#129504; Documenti AI</a>
         <a href="/admin/knowledge-base" class="nav-item {{ request()->routeIs('admin.knowledge-base.*') ? 'active' : '' }}">📓 Knowledge Base</a>
