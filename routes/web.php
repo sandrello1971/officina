@@ -408,6 +408,35 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::patch('aggiornamenti/{proposal}/rifiuta', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'reject'])->name('freshness.proposals.reject');
     Route::patch('aggiornamenti/{proposal}/conferma', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'confirm'])->name('freshness.proposals.confirm');
 
+    // P26 Fase 0 — Registro fonti attendibili (gated da config services.p26.enabled nel controller).
+    Route::get('fonti', [App\Http\Controllers\Admin\TrustedSourceController::class, 'index'])->name('sources.index');
+    Route::post('fonti', [App\Http\Controllers\Admin\TrustedSourceController::class, 'store'])->name('sources.store');
+    Route::post('fonti/proponi', [App\Http\Controllers\Admin\TrustedSourceController::class, 'suggest'])->name('sources.suggest');
+    Route::patch('fonti/{source}/approva', [App\Http\Controllers\Admin\TrustedSourceController::class, 'approve'])->name('sources.approve');
+    Route::patch('fonti/{source}/rifiuta', [App\Http\Controllers\Admin\TrustedSourceController::class, 'reject'])->name('sources.reject');
+    Route::delete('fonti/{source}', [App\Http\Controllers\Admin\TrustedSourceController::class, 'destroy'])->name('sources.destroy');
+
+    // P26 Fase A — Scout di copertura (gated da config services.p26.enabled nel controller).
+    Route::get('copertura', [App\Http\Controllers\Admin\CoverageGapController::class, 'index'])->name('coverage.index');
+    Route::get('copertura/{course}', [App\Http\Controllers\Admin\CoverageGapController::class, 'show'])->name('coverage.show');
+    Route::post('copertura/{course}/topic', [App\Http\Controllers\Admin\CoverageGapController::class, 'setTopic'])->name('coverage.topic');
+    Route::post('copertura/{course}/analizza', [App\Http\Controllers\Admin\CoverageGapController::class, 'analyze'])->name('coverage.analyze');
+    Route::patch('copertura/gap/{gap}/accetta', [App\Http\Controllers\Admin\CoverageGapController::class, 'accept'])->name('coverage.accept');
+    Route::patch('copertura/gap/{gap}/scarta', [App\Http\Controllers\Admin\CoverageGapController::class, 'dismiss'])->name('coverage.dismiss');
+
+    // P26 Fase B — Compose bozze (gated). NON inserisce nulla nei corsi.
+    Route::post('copertura/gap/{gap}/genera', [App\Http\Controllers\Admin\CoverageGapController::class, 'generate'])->name('coverage.generate');
+    Route::get('copertura/gap/{gap}/bozza', [App\Http\Controllers\Admin\CoverageGapController::class, 'draftView'])->name('coverage.draft');
+    Route::put('copertura/bozza/{draft}', [App\Http\Controllers\Admin\CoverageGapController::class, 'updateDraft'])->name('coverage.draft.update');
+    Route::patch('copertura/bozza/{draft}/approva', [App\Http\Controllers\Admin\CoverageGapController::class, 'approveDraft'])->name('coverage.draft.approve');
+    Route::patch('copertura/bozza/{draft}/scarta', [App\Http\Controllers\Admin\CoverageGapController::class, 'discardDraft'])->name('coverage.draft.discard');
+
+    // P26 Fasi C+D — Place (posizione, HITL) + Insert/Revert (append-only, reversibile).
+    Route::post('copertura/gap/{gap}/posizione/proponi', [App\Http\Controllers\Admin\CoverageGapController::class, 'proposePlace'])->name('coverage.place.propose');
+    Route::put('copertura/gap/{gap}/posizione', [App\Http\Controllers\Admin\CoverageGapController::class, 'confirmPlace'])->name('coverage.place.confirm');
+    Route::post('copertura/gap/{gap}/inserisci', [App\Http\Controllers\Admin\CoverageGapController::class, 'insert'])->name('coverage.insert');
+    Route::post('copertura/inserimento/{insertion}/annulla', [App\Http\Controllers\Admin\CoverageGapController::class, 'revert'])->name('coverage.revert');
+
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')
         ->group(function () {
