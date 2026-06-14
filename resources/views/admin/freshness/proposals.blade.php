@@ -291,6 +291,7 @@
     var bannerText = document.getElementById('run-live-text');
     var history = document.getElementById('runs-history');
     var timer = null;
+    var wasRunning = false; // un'analisi è stata in corso durante questa sessione di polling?
 
     function schedule(ms) { clearTimeout(timer); timer = setTimeout(poll, ms); }
 
@@ -301,10 +302,14 @@
                 if (!data) { schedule(20000); return; }
                 if (history && typeof data.html === 'string') history.innerHTML = data.html;
                 if (data.running) {
+                    wasRunning = true;
                     bannerText.textContent = 'Analisi in corso' + (data.banner ? ' per ' + data.banner : '') + '…';
                     banner.style.display = 'flex';
                     schedule(4000);   // poll veloce mentre lavora
                 } else {
+                    // Un'analisi era in corso e ora è finita → ricarica UNA volta per mostrare
+                    // le proposte appena generate (niente refresh manuale).
+                    if (wasRunning) { window.location.reload(); return; }
                     banner.style.display = 'none';
                     schedule(20000);  // idle: poll lento
                 }

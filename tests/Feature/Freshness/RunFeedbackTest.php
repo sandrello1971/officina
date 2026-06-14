@@ -156,6 +156,15 @@ class RunFeedbackTest extends TestCase
         $this->assertStringNotContainsString('MARKER_DISMISS_TEST', $after->json('html'));
     }
 
+    public function test_pagina_si_autoaggiorna_a_fine_analisi(): void
+    {
+        // A fine analisi la pagina si ricarica da sola → le proposte compaiono senza refresh manuale.
+        $this->withSession($this->admin())
+            ->get(route('admin.freshness.proposals.index'))
+            ->assertOk()
+            ->assertSee('window.location.reload', false);
+    }
+
     public function test_run_in_corso_non_archiviabile(): void
     {
         $run = FreshnessRun::create(['course_id' => $this->makeCourse()->id, 'status' => 'running', 'started_at' => now()]);
