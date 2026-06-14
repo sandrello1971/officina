@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\TrustedSource;
 use App\Services\Freshness\AnthropicError;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -40,7 +41,8 @@ class SourceSuggester
      */
     public function suggest(string $topic, int $n = 5): array
     {
-        $topic = trim($topic);
+        // Topic SEMPRE slugificato (coerente coi topic dei corsi → lo Scout li fa combaciare).
+        $topic = Str::slug($topic);
 
         $response = Http::withHeaders([
             'x-api-key' => config('services.anthropic.key'),

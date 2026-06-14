@@ -7,6 +7,7 @@ use App\Models\Admin;
 use App\Models\TrustedSource;
 use App\Services\SourceSuggester;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * P26 Fase 0 — Registro delle fonti attendibili (CRUD admin) + proposta-fonti assistita.
@@ -57,8 +58,14 @@ class TrustedSourceController extends Controller
             return back()->withInput()->with('error', $norm['error']);
         }
 
+        // Topic SEMPRE slugificato → coerente coi topic dei corsi (altrimenti lo Scout non li trova).
+        $topic = Str::slug($data['topic']);
+        if ($topic === '') {
+            return back()->withInput()->with('error', 'Topic non valido.');
+        }
+
         // UNIQUE(topic,url_or_domain,mode): evita doppioni con un messaggio chiaro.
-        $dup = TrustedSource::where('topic', $data['topic'])
+        $dup = TrustedSource::where('topic', $topic)
             ->where('url_or_domain', $norm['value'])->where('mode', $data['mode'])->exists();
         if ($dup) {
             return back()->withInput()->with('error', 'Esiste già una fonte con questo dominio/URL per il topic.');
@@ -69,7 +76,7 @@ class TrustedSourceController extends Controller
             'label' => $data['label'],
             'url_or_domain' => $norm['value'],
             'mode' => $data['mode'],
-            'topic' => trim($data['topic']),
+            'topic' => $topic,
             'notes' => $data['notes'] ?? null,
             'status' => 'approved',
             'proposed_by' => 'admin',
@@ -82,7 +89,7 @@ class TrustedSourceController extends Controller
 
     public function suggest(Request $request, SourceSuggester $suggester)
     {
-        $topic = trim((string) $request->input('topic', ''));
+        $topic = Str::slug((string) $request->input('topic', ''));
         if ($topic === '') {
             return back()->with('error', 'Indica un topic per cui proporre fonti.');
         }
