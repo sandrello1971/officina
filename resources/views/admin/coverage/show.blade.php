@@ -22,19 +22,25 @@
 
 {{-- Topic + Analizza --}}
 <div style="background:white; border-radius:10px; padding:16px; border:1px solid #E6EBEB; margin:14px 0;">
-    <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+    @php($sugg = session('topic_suggestion'))
+    @php($topicValue = $sugg['suggested_topic'] ?? $topic)
+    <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
         <form method="POST" action="{{ route('admin.coverage.topic', $course) }}" style="display:flex; gap:8px; align-items:flex-end;">
             @csrf
             <div>
-                <label style="font-size:0.72rem; color:#8A9696; font-weight:700; display:block;">Topic del corso (dai topic delle fonti)</label>
-                <select name="topic" required style="padding:8px; border:1px solid #E8F5F5; border-radius:6px; font-size:0.82rem;">
-                    <option value="">— scegli —</option>
-                    @foreach ($sourceTopics as $t)
-                        <option value="{{ $t }}" @selected($topic === $t)>{{ $t }}</option>
-                    @endforeach
-                </select>
+                <label style="font-size:0.72rem; color:#8A9696; font-weight:700; display:block;">Topic del corso (riusa un esistente o creane uno)</label>
+                <input list="topic-list" name="topic" value="{{ $topicValue }}" required placeholder="es. agenti-ai"
+                       style="padding:8px; border:1px solid #E8F5F5; border-radius:6px; font-size:0.82rem; min-width:220px;">
+                <datalist id="topic-list">
+                    @foreach ($sourceTopics as $t)<option value="{{ $t }}">@endforeach
+                </datalist>
             </div>
             <button type="submit" style="padding:8px 14px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer;">Salva topic</button>
+        </form>
+
+        <form method="POST" action="{{ route('admin.coverage.topic.suggest', $course) }}">
+            @csrf
+            <button type="submit" style="padding:8px 12px; background:#FFF8EE; color:#C26A2E; border:1px solid rgba(226,138,83,0.45); border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer;">✨ Suggerisci topic</button>
         </form>
 
         <div style="flex:1;"></div>
@@ -46,6 +52,23 @@
         </form>
         @endif
     </div>
+
+    @if ($sugg)
+    <div style="margin-top:10px; padding:10px 12px; border-radius:8px; font-size:0.8rem;
+                background:{{ $sugg['is_existing'] ? 'rgba(85,177,174,0.10)' : '#FFF8EE' }};
+                border:1px solid {{ $sugg['is_existing'] ? 'rgba(85,177,174,0.4)' : 'rgba(226,138,83,0.45)' }};">
+        @if ($sugg['is_existing'])
+            ♻️ <strong>Riusa un topic esistente:</strong> <code>{{ $sugg['suggested_topic'] }}</code>
+        @else
+            🆕 <strong>Topic nuovo proposto:</strong> <code>{{ $sugg['suggested_topic'] }}</code>
+            <span style="color:#8A9696;">(non esisteva: salvandolo entra nel vocabolario per i corsi futuri)</span>
+        @endif
+        @if (!empty($sugg['alternatives']))
+            <span style="color:#8A9696;">· alternative: {{ implode(', ', $sugg['alternatives']) }}</span>
+        @endif
+        <span style="color:#8A9696;"> — precompilato nel campo: conferma con «Salva topic».</span>
+    </div>
+    @endif
 
     @if (!$topic)
         <p style="color:#C26A2E; font-size:0.8rem; margin:12px 0 0;">⚠ Imposta un <strong>topic</strong> per questo corso (scelto tra i topic delle fonti) prima di analizzare.</p>

@@ -153,14 +153,12 @@ class CoverageScoutTest extends TestCase
 
     // ---- set topic solo da select esistente (anti-drift) ----
 
-    public function test_set_topic_accetta_solo_topic_esistenti_nelle_fonti(): void
+    public function test_set_topic_normalizza_a_slug_e_accetta_anche_nuovi(): void
     {
+        // P26.1: il topic è uno slug normalizzato e può essere NUOVO (anti-drift è nel suggeritore).
         $course = $this->course(null);
-        TrustedSource::create(['label' => 'x', 'url_or_domain' => 'arxiv.org', 'mode' => 'search', 'topic' => 'agenti-ai', 'status' => 'approved', 'proposed_by' => 'admin']);
-
-        $this->actingAdmin()->post(route('admin.coverage.topic', $course), ['topic' => 'inventato'])->assertSessionHasErrors('topic');
-        $this->actingAdmin()->post(route('admin.coverage.topic', $course), ['topic' => 'agenti-ai'])->assertRedirect();
-        $this->assertSame('agenti-ai', $course->fresh()->freshnessConfig->topic);
+        $this->actingAdmin()->post(route('admin.coverage.topic', $course), ['topic' => 'Elettronica Industriale'])->assertRedirect();
+        $this->assertSame('elettronica-industriale', $course->fresh()->freshnessConfig->topic);
     }
 
     // ---- prompt: considera il taglio/pubblico ----
