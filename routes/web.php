@@ -431,6 +431,12 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::patch('copertura/bozza/{draft}/approva', [App\Http\Controllers\Admin\CoverageGapController::class, 'approveDraft'])->name('coverage.draft.approve');
     Route::patch('copertura/bozza/{draft}/scarta', [App\Http\Controllers\Admin\CoverageGapController::class, 'discardDraft'])->name('coverage.draft.discard');
 
+    // P26 Fasi C+D — Place (posizione, HITL) + Insert/Revert (append-only, reversibile).
+    Route::post('copertura/gap/{gap}/posizione/proponi', [App\Http\Controllers\Admin\CoverageGapController::class, 'proposePlace'])->name('coverage.place.propose');
+    Route::put('copertura/gap/{gap}/posizione', [App\Http\Controllers\Admin\CoverageGapController::class, 'confirmPlace'])->name('coverage.place.confirm');
+    Route::post('copertura/gap/{gap}/inserisci', [App\Http\Controllers\Admin\CoverageGapController::class, 'insert'])->name('coverage.insert');
+    Route::post('copertura/inserimento/{insertion}/annulla', [App\Http\Controllers\Admin\CoverageGapController::class, 'revert'])->name('coverage.revert');
+
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')
         ->group(function () {

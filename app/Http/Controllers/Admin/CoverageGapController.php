@@ -7,10 +7,15 @@ use App\Jobs\RunGapScoutJob;
 use App\Models\Admin;
 use App\Models\Course;
 use App\Models\CourseFreshnessConfig;
+use App\Models\CourseSource;
 use App\Models\CoverageGap;
 use App\Models\GapDraft;
+use App\Models\GapInsertion;
 use App\Models\GapScoutRun;
+use App\Models\Module;
 use App\Models\TrustedSource;
+use App\Services\GapInserter;
+use App\Services\GapPlacer;
 use Illuminate\Http\Request;
 
 /**
@@ -107,8 +112,18 @@ class CoverageGapController extends Controller
     {
         abort_unless($gap->status === 'accepted', 404);
         $draft = $gap->draft;
+        $course = $gap->course;
 
-        return view('admin.coverage.draft', compact('gap', 'draft'));
+        // Per la UI di Posizione (Fase C): heading formatore + moduli studente.
+        $source = CourseSource::where('course_id', $course->id)->orderByDesc('created_at')->orderByDesc('id')->first();
+        $headings = collect($source?->blocks ?? [])
+            ->filter(fn ($b) => in_array(($b['type'] ?? ''), ['PART', 'H1', 'H2'], true) && trim((string) ($b['text'] ?? '')) !== '')
+            ->map(fn ($b) => ['id' => $b['id'], 'text' => $b['text']])->values();
+        $modules = $course->modules()->get(['id', 'title']);
+        $insertion = $draft ? GapInsertion::where('gap_draft_id', $draft->id)->where('status', 'inserted')->latest()->first() : null;
+        $isMinor = optional($course->freshnessConfig)->audience === 'minor';
+
+        return view('admin.coverage.draft', compact('gap', 'draft', 'headings', 'modules', 'insertion', 'isMinor'));
     }
 
     /** Salva le modifiche dell'admin al testo della bozza (resta editabile prima dell'approvazione). */
@@ -139,6 +154,93 @@ class CoverageGapController extends Controller
         $draft->update(['status' => 'discarded', 'reviewed_by' => $this->adminId(), 'reviewed_at' => now()]);
 
         return back()->with('success', 'Bozza scartata.');
+    }
+
+    // ===================== Fase C — Place (posizione) =====================
+
+    /** L'agente PROPONE una posizione (formatore + studente). L'admin poi conferma/sposta. Isolato. */
+    public function proposePlace(CoverageGap $gap)
+    {
+        $draft = $gap->draft;
+        abort_unless($draft, 404);
+
+        try {
+            $p = app(GapPlacer::class)->propose($draft);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Proposta posizione non riuscita: ' . $e->getMessage());
+        }
+
+        $moduleId = Module::where('course_id', $gap->course_id)->whereKey($p['student_module_id'])->value('id');
+        $draft->update([
+            'place_formatore_block_id' => $p['formatore_after_block_id'],
+            'place_student_module_id' => $moduleId,
+            'place_student_anchor' => $p['student_anchor'],
+            'placement_confirmed' => false, // è una proposta: va confermata a mano
+        ]);
+
+        return back()->with('success', 'Posizione proposta — rivedi e conferma. ' . $p['reason']);
+    }
+
+    /** L'admin CONFERMA (o corregge) la posizione: solo da qui l'inserimento è abilitato. */
+    public function confirmPlace(Request $request, CoverageGap $gap)
+    {
+        $draft = $gap->draft;
+        abort_unless($draft, 404);
+
+        $data = $request->validate([
+            'place_formatore_block_id' => 'required|string',
+            'place_student_module_id' => 'nullable|string',
+            'place_student_anchor' => 'nullable|string',
+        ]);
+
+        // Lo studente è opzionale; se indicato, il modulo dev'essere del corso e l'ancora presente.
+        $moduleId = null;
+        if (!empty($data['place_student_module_id'])) {
+            $module = Module::where('course_id', $gap->course_id)->find($data['place_student_module_id']);
+            if (!$module) {
+                return back()->with('error', 'Modulo studente non valido per questo corso.');
+            }
+            $anchor = trim((string) ($data['place_student_anchor'] ?? ''));
+            if ($anchor === '' || mb_strpos(strip_tags((string) $module->content), $anchor) === false) {
+                return back()->with('error', 'Ancora studente assente nel modulo scelto: copia una frase esatta dal modulo.');
+            }
+            $moduleId = $module->id;
+        }
+
+        $draft->update([
+            'place_formatore_block_id' => $data['place_formatore_block_id'],
+            'place_student_module_id' => $moduleId,
+            'place_student_anchor' => $moduleId ? $data['place_student_anchor'] : null,
+            'placement_confirmed' => true,
+        ]);
+
+        return back()->with('success', 'Posizione confermata: ora puoi inserire.');
+    }
+
+    // ===================== Fase D — Insert / Revert =====================
+
+    public function insert(Request $request, CoverageGap $gap)
+    {
+        $draft = $gap->draft;
+        abort_unless($draft, 404);
+
+        try {
+            app(GapInserter::class)->insert($draft, $request->boolean('minor_confirmed'));
+        } catch (\Throwable $e) {
+            if ($e->getMessage() === 'minor_confirmation_required') {
+                return back()->with('error', '⚠ Corso per MINORI: serve la conferma esplicita per inserire. Nessuna modifica fatta.');
+            }
+            return back()->with('error', 'Inserimento non riuscito: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Sezione inserita nel corso (formatore + studente). È reversibile: usa «Annulla inserimento».');
+    }
+
+    public function revert(GapInsertion $insertion)
+    {
+        app(GapInserter::class)->revert($insertion);
+
+        return back()->with('success', 'Inserimento annullato: il corso è tornato esattamente allo stato precedente.');
     }
 
     private function adminId(): ?string

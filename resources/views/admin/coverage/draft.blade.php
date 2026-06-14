@@ -74,6 +74,73 @@
             <button type="submit" style="padding:8px 16px; background:white; color:#C52A2A; border:1px solid #E28282; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">✗ Scarta</button>
         </form>
     </div>
+
+    {{-- Fasi C+D — Posizione (HITL) + Inserimento reversibile. Solo su bozza approvata. --}}
+    @if ($status === 'approved')
+    <div style="background:white; border:1px solid #E6EBEB; border-radius:10px; padding:16px; margin-top:18px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <span style="font-weight:700; color:#1A1F1F;">📍 Posizione &amp; inserimento</span>
+            <form method="POST" action="{{ route('admin.coverage.place.propose', $gap) }}" style="margin-left:auto;">@csrf
+                <button type="submit" style="padding:6px 12px; background:white; color:#3A8C89; border:1px solid #55B1AE; border-radius:6px; font-size:0.76rem; font-weight:600; cursor:pointer;">🤖 Proponi posizione</button>
+            </form>
+        </div>
+
+        @if ($insertion)
+            <div style="background:rgba(85,177,174,0.10); border:1px solid rgba(85,177,174,0.4); border-radius:8px; padding:12px;">
+                ✓ <strong>Inserito</strong> nel corso — formatore v{{ $insertion->formatore_version_from }} → v{{ $insertion->formatore_version_to }}@if($insertion->student_version_to), studente v{{ $insertion->student_version_from }} → v{{ $insertion->student_version_to }}@endif.
+                <form method="POST" action="{{ route('admin.coverage.revert', $insertion) }}" style="margin-top:10px;" onsubmit="return confirm('Annullare l\'inserimento? Il corso torna allo stato precedente.');">@csrf
+                    <button type="submit" style="padding:7px 14px; background:white; color:#C52A2A; border:1px solid #E28282; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer;">↩ Annulla inserimento</button>
+                </form>
+            </div>
+        @else
+            <form method="POST" action="{{ route('admin.coverage.place.confirm', $gap) }}" style="display:flex; flex-direction:column; gap:10px;">
+                @csrf @method('PUT')
+                <div>
+                    <label style="font-size:0.72rem; color:#8A9696; font-weight:700; display:block;">Formatore — inserisci DOPO il blocco</label>
+                    <select name="place_formatore_block_id" required style="width:100%; padding:8px; border:1px solid #E8F5F5; border-radius:6px; font-size:0.82rem;">
+                        <option value="">— scegli —</option>
+                        @foreach ($headings as $h)
+                            <option value="{{ $h['id'] }}" @selected($draft->place_formatore_block_id === $h['id'])>[{{ $h['id'] }}] {{ \Illuminate\Support\Str::limit($h['text'], 70) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:200px;">
+                        <label style="font-size:0.72rem; color:#8A9696; font-weight:700; display:block;">Studente — modulo (opzionale)</label>
+                        <select name="place_student_module_id" style="width:100%; padding:8px; border:1px solid #E8F5F5; border-radius:6px; font-size:0.82rem;">
+                            <option value="">— nessuno —</option>
+                            @foreach ($modules as $m)
+                                <option value="{{ $m->id }}" @selected($draft->place_student_module_id === $m->id)>{{ $m->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size:0.72rem; color:#8A9696; font-weight:700; display:block;">Studente — ancora (frase verbatim del modulo, dopo cui inserire)</label>
+                    <textarea name="place_student_anchor" rows="2" style="width:100%; font-size:0.8rem; padding:8px; border:1px solid #E8F5F5; border-radius:6px;">{{ $draft->place_student_anchor }}</textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end;">
+                    <button type="submit" style="padding:8px 14px; background:#55B1AE; color:white; border:none; border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer;">Conferma posizione</button>
+                </div>
+            </form>
+
+            @if ($draft->placement_confirmed)
+            <form method="POST" action="{{ route('admin.coverage.insert', $gap) }}" style="margin-top:12px; border-top:1px solid #F0F4F4; padding-top:12px;">
+                @csrf
+                @if ($isMinor)
+                <label style="display:flex; align-items:center; gap:8px; color:#C26A2E; font-weight:700; font-size:0.8rem; margin-bottom:8px;">
+                    <input type="checkbox" name="minor_confirmed" value="1"> ⚠ Corso per MINORI: confermo l'inserimento
+                </label>
+                @endif
+                <button type="submit" style="padding:9px 18px; background:#1A7F5A; color:white; border:none; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer;">⤵ Inserisci nel corso (reversibile)</button>
+                <span style="color:#8A9696; font-size:0.74rem; margin-left:8px;">append-only, annullabile in un click.</span>
+            </form>
+            @else
+            <p style="color:#8A9696; font-size:0.76rem; margin:10px 0 0;">Conferma la posizione per abilitare l'inserimento.</p>
+            @endif
+        @endif
+    </div>
+    @endif
 @endif
 
 <script>

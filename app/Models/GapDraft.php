@@ -24,10 +24,16 @@ class GapDraft extends Model
         'error',
         'reviewed_by',
         'reviewed_at',
+        // P26 Fase C — posizione scelta (HITL).
+        'place_formatore_block_id',
+        'place_student_module_id',
+        'place_student_anchor',
+        'placement_confirmed',
     ];
 
     protected $casts = [
         'reviewed_at' => 'datetime',
+        'placement_confirmed' => 'boolean',
     ];
 
     public function gap(): BelongsTo
