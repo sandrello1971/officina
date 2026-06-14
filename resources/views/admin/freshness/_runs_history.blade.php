@@ -5,14 +5,18 @@
 @if ($recentRuns->isEmpty())
     <div style="color:#8A9696; font-size:0.8rem;">Nessuna analisi ancora. Avvia un controllo con «Lancia ora».</div>
 @else
-    @if ($failedRuns->isNotEmpty())
-    <div style="margin-bottom:8px;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        @if ($failedRuns->isNotEmpty())
         <span style="padding:2px 9px; background:#FBEDEC; color:#7B1E1E; border:1px solid #C0392B;
                      border-radius:12px; font-size:0.72rem; font-weight:700;">
             {{ $failedRuns->count() }} fallit{{ $failedRuns->count() == 1 ? 'o' : 'i' }}
         </span>
+        @endif
+        <form method="POST" action="{{ route('admin.freshness.proposals.runs-clear') }}" style="margin-left:auto;">
+            @csrf
+            <button type="submit" style="background:none; border:1px solid #E6EBEB; color:#8A9696; border-radius:6px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer;">🧹 Pulisci storico</button>
+        </form>
     </div>
-    @endif
     <div style="display:flex; flex-direction:column; gap:6px;">
         @foreach ($recentRuns as $run)
         @php($st = $run->status)
@@ -37,6 +41,12 @@
                     <span style="color:#8A9696;">· {{ $run->claims_found ?? 0 }} claim, {{ $run->proposals_created ?? 0 }} proposte</span>
                 @endif
             </div>
+            @if ($st !== 'running')
+            <form method="POST" action="{{ route('admin.freshness.proposals.run-dismiss', $run) }}" style="margin:0;">
+                @csrf @method('PATCH')
+                <button type="submit" aria-label="Archivia" title="Archivia dallo storico" style="background:none; border:none; color:#8A9696; cursor:pointer; font-size:1.05rem; line-height:1; padding:0 2px;">&times;</button>
+            </form>
+            @endif
         </div>
         @endforeach
     </div>

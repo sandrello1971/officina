@@ -81,6 +81,7 @@ class FreshnessProposalController extends Controller
         // P25 — esito degli ultimi controlli (async): l'utente deve vedere a schermo se un run
         // è fallito e PERCHÉ, non solo l'ottimistico "avviato" del dispatch.
         $recentRuns = FreshnessRun::with('course')
+            ->whereNull('dismissed_at')
             ->orderByDesc('created_at')
             ->limit(8)
             ->get();
@@ -95,6 +96,7 @@ class FreshnessProposalController extends Controller
     public function runsStatus()
     {
         $recentRuns = FreshnessRun::with('course')
+            ->whereNull('dismissed_at')
             ->orderByDesc('created_at')
             ->limit(8)
             ->get();
@@ -108,6 +110,24 @@ class FreshnessProposalController extends Controller
                 : null,
             'html' => view('admin.freshness._runs_history', ['recentRuns' => $recentRuns])->render(),
         ]);
+    }
+
+    /** Archivia un run dallo storico (soft: non distrugge claim/proposte). Non sui run in corso. */
+    public function dismissRun(FreshnessRun $run)
+    {
+        if ($run->status !== 'running') {
+            $run->update(['dismissed_at' => now()]);
+        }
+
+        return back();
+    }
+
+    /** Pulisce lo storico: archivia tutti i run NON in corso. */
+    public function clearRuns()
+    {
+        FreshnessRun::whereNull('dismissed_at')->where('status', '!=', 'running')->update(['dismissed_at' => now()]);
+
+        return back()->with('success', 'Storico analisi pulito.');
     }
 
     /**
