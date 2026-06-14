@@ -36,6 +36,7 @@
         <a href="{{ route('admin.freshness.proposals.index') }}" class="nav-item {{ request()->routeIs('admin.freshness.*') ? 'active' : '' }}">&#128260; Aggiornamenti corsi</a>
         @if(config('services.p26.enabled'))
         <a href="{{ route('admin.sources.index') }}" class="nav-item {{ request()->routeIs('admin.sources.*') ? 'active' : '' }}">&#128218; Fonti attendibili</a>
+        <a href="{{ route('admin.coverage.index') }}" class="nav-item {{ request()->routeIs('admin.coverage.*') ? 'active' : '' }}">&#129517; Copertura corsi</a>
         @endif
         <a href="/admin/quizzes" class="nav-item {{ request()->routeIs('admin.quizzes.*') ? 'active' : '' }}">&#128221; Quiz</a>
         <a href="/admin/rag" class="nav-item {{ request()->routeIs('admin.rag.*') ? 'active' : '' }}">&#129504; Documenti AI</a>

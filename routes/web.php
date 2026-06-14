@@ -416,6 +416,14 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::patch('fonti/{source}/rifiuta', [App\Http\Controllers\Admin\TrustedSourceController::class, 'reject'])->name('sources.reject');
     Route::delete('fonti/{source}', [App\Http\Controllers\Admin\TrustedSourceController::class, 'destroy'])->name('sources.destroy');
 
+    // P26 Fase A — Scout di copertura (gated da config services.p26.enabled nel controller).
+    Route::get('copertura', [App\Http\Controllers\Admin\CoverageGapController::class, 'index'])->name('coverage.index');
+    Route::get('copertura/{course}', [App\Http\Controllers\Admin\CoverageGapController::class, 'show'])->name('coverage.show');
+    Route::post('copertura/{course}/topic', [App\Http\Controllers\Admin\CoverageGapController::class, 'setTopic'])->name('coverage.topic');
+    Route::post('copertura/{course}/analizza', [App\Http\Controllers\Admin\CoverageGapController::class, 'analyze'])->name('coverage.analyze');
+    Route::patch('copertura/gap/{gap}/accetta', [App\Http\Controllers\Admin\CoverageGapController::class, 'accept'])->name('coverage.accept');
+    Route::patch('copertura/gap/{gap}/scarta', [App\Http\Controllers\Admin\CoverageGapController::class, 'dismiss'])->name('coverage.dismiss');
+
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')
         ->group(function () {

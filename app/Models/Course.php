@@ -83,6 +83,12 @@ class Course extends Model
         return $this->hasMany(StudentSourceVersion::class)->orderByDesc('created_at');
     }
 
+    // P26 — gap di copertura candidati (Scout).
+    public function coverageGaps()
+    {
+        return $this->hasMany(CoverageGap::class);
+    }
+
     // P25.2 — esecuzioni dell'agente e config per corso (Course Freshness Agent).
     public function freshnessRuns()
     {

@@ -23,6 +23,7 @@ class CourseFreshnessConfig extends Model
         'student_proposals_enabled',
         'cadence',
         'last_run_at',
+        'topic', // P26 — dominio tematico del corso, per lo Scout di copertura
     ];
 
     protected $casts = [
