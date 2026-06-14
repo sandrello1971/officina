@@ -16,7 +16,9 @@ use App\Models\Module;
 use App\Models\TrustedSource;
 use App\Services\GapInserter;
 use App\Services\GapPlacer;
+use App\Services\TopicSuggester;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * P26 Fase A — UI dello Scout di copertura (gated P26_ENABLED). Lancia l'analisi async per corso
@@ -56,15 +58,35 @@ class CoverageGapController extends Controller
         return view('admin.coverage.show', compact('course', 'topic', 'hasApprovedSources', 'gaps', 'accepted', 'lastRun', 'sourceTopics'));
     }
 
-    /** Imposta il topic del corso SCEGLIENDO tra i topic esistenti nelle fonti (no drift). */
+    /**
+     * Imposta il topic del corso (HITL). P26.1: lo slug è normalizzato e può essere NUOVO; l'anti-drift
+     * è affidato al TopicSuggester (propone il riuso di un esistente) + alla lista visibile, non a un
+     * whitelist rigido. Resta possibile sceglierlo/digitarlo a mano.
+     */
     public function setTopic(Request $request, Course $course)
     {
-        $valid = TrustedSource::query()->distinct()->pluck('topic')->all();
-        $data = $request->validate(['topic' => ['required', 'string', 'in:' . implode(',', $valid ?: ['__none__'])]]);
+        $data = $request->validate(['topic' => 'required|string|max:120']);
+        $topic = Str::slug($data['topic']);
+        if ($topic === '') {
+            return back()->with('error', 'Topic non valido.');
+        }
 
-        CourseFreshnessConfig::updateOrCreate(['course_id' => $course->id], ['topic' => $data['topic']]);
+        CourseFreshnessConfig::updateOrCreate(['course_id' => $course->id], ['topic' => $topic]);
 
-        return back()->with('success', "Topic del corso impostato a «{$data['topic']}».");
+        return back()->with('success', "Topic del corso impostato a «{$topic}».");
+    }
+
+    /** P26.1 — L'agente legge il corso e PROPONE un topic (riuso di un esistente se affine). Isolato. */
+    public function suggestTopic(Course $course)
+    {
+        try {
+            $suggestion = app(TopicSuggester::class)->suggest($course);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Suggerimento topic non riuscito: ' . $e->getMessage() . ' Puoi impostarlo a mano.');
+        }
+
+        // Flash per precompilare il campo (l'admin conferma con "Salva topic": niente è automatico).
+        return back()->with('topic_suggestion', $suggestion);
     }
 
     public function analyze(Course $course)
