@@ -8,6 +8,7 @@ use App\Models\Admin;
 use App\Models\Course;
 use App\Models\CourseFreshnessConfig;
 use App\Models\CourseSource;
+use App\Models\CourseTopic;
 use App\Models\CoverageGap;
 use App\Models\GapDraft;
 use App\Models\GapInsertion;
@@ -18,6 +19,7 @@ use App\Services\GapInserter;
 use App\Services\GapPlacer;
 use App\Services\TopicSuggester;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -40,22 +42,35 @@ class CoverageGapController extends Controller
         return view('admin.coverage.index', compact('courses'));
     }
 
-    public function show(Course $course)
+    public function show(Request $request, Course $course)
     {
-        $topic = trim((string) optional($course->freshnessConfig)->topic);
-        $hasApprovedSources = $topic !== '' && TrustedSource::topic($topic)->approved()->exists();
+        // P26.2 — topic effettivi (pivot, o legacy singolo) con stato fonti per ciascuno.
+        $courseTopics = $course->effectiveTopics()->map(fn ($t) => [
+            'topic' => $t['topic'], 'weight' => $t['weight'],
+            'has_sources' => TrustedSource::topic($t['topic'])->approved()->exists(),
+        ])->values();
+        $topicsWithoutSources = $courseTopics->where('has_sources', false)->pluck('topic')->values();
+        $hasAnyApprovedSources = $courseTopics->where('has_sources', true)->isNotEmpty();
 
-        $gaps = CoverageGap::forCourse($course->id)->where('status', 'suggested')
+        // Gap suggeriti: filtro per topic + ordine (PRIMARY prima, poi confidenza).
+        $filterGapTopic = $request->query('gap_topic') ?: null;
+        $q = CoverageGap::forCourse($course->id)->where('status', 'suggested');
+        if ($filterGapTopic) {
+            $q->where('source_topic', $filterGapTopic);
+        }
+        $gaps = $q->orderByRaw("CASE WHEN source_weight = 'primary' THEN 0 ELSE 1 END")
             ->orderByDesc('confidence')->orderByDesc('created_at')->get();
+        $gapTopics = CoverageGap::forCourse($course->id)->where('status', 'suggested')
+            ->whereNotNull('source_topic')->distinct()->orderBy('source_topic')->pluck('source_topic');
 
-        // Gap ACCETTATI (Fase B): ognuno con la sua bozza (se generata).
         $accepted = CoverageGap::forCourse($course->id)->where('status', 'accepted')
             ->with('draft')->orderByDesc('updated_at')->get();
-
         $lastRun = GapScoutRun::where('course_id', $course->id)->orderByDesc('created_at')->first();
         $sourceTopics = TrustedSource::query()->distinct()->orderBy('topic')->pluck('topic');
+        $suggestion = session('topics_suggestion'); // proposta multi (flash)
 
-        return view('admin.coverage.show', compact('course', 'topic', 'hasApprovedSources', 'gaps', 'accepted', 'lastRun', 'sourceTopics'));
+        return view('admin.coverage.show', compact('course', 'courseTopics', 'topicsWithoutSources',
+            'hasAnyApprovedSources', 'gaps', 'gapTopics', 'filterGapTopic', 'accepted', 'lastRun', 'sourceTopics', 'suggestion'));
     }
 
     /**
@@ -91,17 +106,74 @@ class CoverageGapController extends Controller
 
     public function analyze(Course $course)
     {
-        $topic = trim((string) optional($course->freshnessConfig)->topic);
-        if ($topic === '') {
-            return back()->with('error', 'Imposta prima il topic del corso (in base alle fonti disponibili).');
+        $effective = $course->effectiveTopics();
+        if ($effective->isEmpty()) {
+            return back()->with('error', 'Imposta prima i topic del corso.');
         }
-        if (!TrustedSource::topic($topic)->approved()->exists()) {
-            return back()->with('error', "Nessuna fonte attendibile approvata per «{$topic}». Aggiungi/approva fonti per questo dominio prima di analizzare.");
+        $hasAny = $effective->contains(fn ($t) => TrustedSource::topic($t['topic'])->approved()->exists());
+        if (!$hasAny) {
+            return back()->with('error', 'Nessuna fonte attendibile approvata per i topic del corso. Aggiungi/approva fonti prima di analizzare.');
         }
 
         RunGapScoutJob::dispatch($course->id);
 
-        return back()->with('success', "Analisi di copertura avviata per «{$course->name}». Gira in background (cerca solo nelle fonti approvate): ricarica tra poco per vedere i gap candidati.");
+        return back()->with('success', "Analisi di copertura avviata per «{$course->name}». Cerca nelle fonti approvate di tutti i topic: ricarica tra poco per vedere i gap candidati.");
+    }
+
+    /** P26.2 — Imposta i topic del corso (multi, pesati) sostituendo la pivot. HITL. */
+    public function setTopics(Request $request, Course $course)
+    {
+        $data = $request->validate([
+            'topics' => 'required|array|min:1',
+            'topics.*' => 'nullable|string|max:120',
+            'weights' => 'nullable|array',
+            'weights.*' => 'nullable|in:primary,secondary',
+        ]);
+
+        $rows = [];
+        foreach ($data['topics'] as $i => $raw) {
+            $slug = Str::slug((string) $raw);
+            if ($slug === '' || isset($rows[$slug])) {
+                continue;
+            }
+            $rows[$slug] = (($data['weights'][$i] ?? 'secondary') === 'primary') ? 'primary' : 'secondary';
+        }
+        if ($rows === []) {
+            return back()->with('error', 'Indica almeno un topic valido.');
+        }
+        // Esattamente UN primary.
+        $primaries = array_keys($rows, 'primary', true);
+        if ($primaries === []) {
+            $rows[array_key_first($rows)] = 'primary';
+        } elseif (count($primaries) > 1) {
+            foreach (array_slice($primaries, 1) as $k) {
+                $rows[$k] = 'secondary';
+            }
+        }
+
+        DB::transaction(function () use ($course, $rows) {
+            CourseTopic::where('course_id', $course->id)->delete();
+            foreach ($rows as $slug => $weight) {
+                CourseTopic::create(['course_id' => $course->id, 'topic' => $slug, 'weight' => $weight]);
+            }
+        });
+        // Retrocompat: tieni il vecchio singolo allineato al primary.
+        $primary = array_search('primary', $rows, true);
+        CourseFreshnessConfig::updateOrCreate(['course_id' => $course->id], ['topic' => $primary]);
+
+        return back()->with('success', 'Topic del corso aggiornati.');
+    }
+
+    /** P26.2 — Propone la LISTA pesata di topic; l'admin conferma/edita (niente automatico). Isolato. */
+    public function suggestTopicsAction(Course $course)
+    {
+        try {
+            $suggestion = app(TopicSuggester::class)->suggestTopics($course);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Suggerimento topic non riuscito: ' . $e->getMessage() . ' Puoi impostarli a mano.');
+        }
+
+        return back()->with('topics_suggestion', $suggestion);
     }
 
     public function accept(CoverageGap $gap)

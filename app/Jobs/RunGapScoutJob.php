@@ -64,11 +64,13 @@ class RunGapScoutJob implements ShouldQueue
 
                 CoverageGap::create([
                     'course_id' => $course->id,
-                    'topic' => $res['topic'] ?? '',
+                    'topic' => $g['source_topic'] ?? ($res['topic'] ?? ''),
                     'title' => $g['title'],
                     'rationale' => $g['rationale'] ?? '',
                     'source_url' => $g['source_url'] ?? null,
                     'source_label' => $this->labelFor($g['source_url'] ?? null),
+                    'source_topic' => $g['source_topic'] ?? null,   // P26.2 — provenienza
+                    'source_weight' => $g['source_weight'] ?? null,
                     'confidence' => $g['confidence'] ?? null,
                     'status' => 'suggested',
                 ]);

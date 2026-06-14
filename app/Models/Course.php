@@ -89,6 +89,41 @@ class Course extends Model
         return $this->hasMany(CoverageGap::class);
     }
 
+    // P26.2 — topic pesati del corso (fonte di verità multi-topic).
+    public function courseTopics()
+    {
+        return $this->hasMany(CourseTopic::class);
+    }
+
+    /** @return list<string> tutti gli slug dei topic del corso */
+    public function topicSlugs(): array
+    {
+        return $this->courseTopics()->pluck('topic')->all();
+    }
+
+    /** Lo slug del topic primary, o null. */
+    public function primaryTopic(): ?string
+    {
+        return $this->courseTopics()->where('weight', 'primary')->value('topic');
+    }
+
+    /**
+     * Topic effettivi del corso per lo Scout: la pivot (verità). Retrocompat: se la pivot è vuota
+     * ma c'è il vecchio singolo course_freshness_configs.topic, lo tratta come unico 'primary'.
+     *
+     * @return \Illuminate\Support\Collection<int,array{topic:string,weight:string}>
+     */
+    public function effectiveTopics(): \Illuminate\Support\Collection
+    {
+        $pivot = $this->courseTopics()->get(['topic', 'weight']);
+        if ($pivot->isNotEmpty()) {
+            return $pivot->map(fn ($t) => ['topic' => $t->topic, 'weight' => $t->weight]);
+        }
+        $legacy = optional($this->freshnessConfig)->topic;
+
+        return $legacy ? collect([['topic' => $legacy, 'weight' => 'primary']]) : collect();
+    }
+
     // P25.2 — esecuzioni dell'agente e config per corso (Course Freshness Agent).
     public function freshnessRuns()
     {
