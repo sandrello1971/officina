@@ -22,11 +22,13 @@ class FreshnessRun extends Model
         'claims_found',
         'proposals_created',
         'failure_reason',
+        'dismissed_at',
     ];
 
     protected $casts = [
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
+        'dismissed_at' => 'datetime',
         'claims_found' => 'integer',
         'proposals_created' => 'integer',
     ];

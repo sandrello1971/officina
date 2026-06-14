@@ -136,4 +136,44 @@ class RunFeedbackTest extends TestCase
             ->assertOk()
             ->assertJson(['running' => false, 'banner' => null]);
     }
+
+    // ---- D) storico archiviabile (per non riempire lo schermo) ----
+
+    public function test_archivia_run_lo_rimuove_dallo_storico(): void
+    {
+        $run = FreshnessRun::create([
+            'course_id' => $this->makeCourse()->id, 'status' => 'failed', 'started_at' => now(), 'finished_at' => now(),
+            'failure_reason' => 'MARKER_DISMISS_TEST', 'claims_found' => 0, 'proposals_created' => 0,
+        ]);
+
+        $before = $this->withSession($this->admin())->getJson(route('admin.freshness.proposals.runs-status'));
+        $this->assertStringContainsString('MARKER_DISMISS_TEST', $before->json('html'));
+
+        $this->withSession($this->admin())->patch(route('admin.freshness.proposals.run-dismiss', $run))->assertRedirect();
+        $this->assertNotNull($run->refresh()->dismissed_at);
+
+        $after = $this->withSession($this->admin())->getJson(route('admin.freshness.proposals.runs-status'));
+        $this->assertStringNotContainsString('MARKER_DISMISS_TEST', $after->json('html'));
+    }
+
+    public function test_run_in_corso_non_archiviabile(): void
+    {
+        $run = FreshnessRun::create(['course_id' => $this->makeCourse()->id, 'status' => 'running', 'started_at' => now()]);
+
+        $this->withSession($this->admin())->patch(route('admin.freshness.proposals.run-dismiss', $run))->assertRedirect();
+        $this->assertNull($run->refresh()->dismissed_at); // un run in corso non si archivia
+    }
+
+    public function test_pulisci_storico_archivia_tutti_i_non_in_corso(): void
+    {
+        $cid = $this->makeCourse()->id;
+        FreshnessRun::create(['course_id' => $cid, 'status' => 'completed', 'started_at' => now(), 'finished_at' => now()]);
+        FreshnessRun::create(['course_id' => $cid, 'status' => 'failed', 'started_at' => now(), 'finished_at' => now()]);
+        $running = FreshnessRun::create(['course_id' => $cid, 'status' => 'running', 'started_at' => now()]);
+
+        $this->withSession($this->admin())->post(route('admin.freshness.proposals.runs-clear'))->assertRedirect();
+
+        $this->assertSame(2, FreshnessRun::whereNotNull('dismissed_at')->count());
+        $this->assertNull($running->refresh()->dismissed_at); // l'in-corso resta
+    }
 }
