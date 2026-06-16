@@ -32,8 +32,12 @@ class CourseDocumentParser
 
     public function normalizeHeadings(string $html): string
     {
+        // La cattura NON deve attraversare il confine </p>: con il flag /s un
+        // <strong> che è solo prefisso del paragrafo (es. "<strong>Sezione 1</strong>. testo")
+        // farebbe scavalcare al match i paragrafi e gli heading successivi fino al primo
+        // </strong></p>, inglobando interi capitoli in un unico falso heading.
         return preg_replace_callback(
-            '/<p[^>]*>\s*<strong[^>]*>(.*?)<\/strong>\s*<\/p>/is',
+            '/<p[^>]*>\s*<strong[^>]*>((?:(?!<\/p>).)*?)<\/strong>\s*<\/p>/is',
             function ($m) {
                 $text = trim(strip_tags($m[1]));
 
