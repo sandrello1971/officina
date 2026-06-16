@@ -390,6 +390,12 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::post('courses/{course}/modules/{module}/mindmap/generate', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'generate'])->name('courses.modules.mindmap.generate');
     Route::patch('courses/{course}/modules/{module}/mindmap', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'update'])->name('courses.modules.mindmap.update');
 
+    // Presentazione .pptx modulo (P28) — generatore condiviso, pattern async
+    Route::post('courses/{course}/modules/{module}/presentation/generate', [App\Http\Controllers\Admin\ModulePresentationController::class, 'generate'])->name('courses.modules.presentation.generate');
+    Route::post('courses/{course}/modules/{module}/presentation/regenerate', [App\Http\Controllers\Admin\ModulePresentationController::class, 'regenerate'])->name('courses.modules.presentation.regenerate');
+    Route::get('courses/{course}/modules/{module}/presentation/status', [App\Http\Controllers\Admin\ModulePresentationController::class, 'status'])->name('courses.modules.presentation.status');
+    Route::get('courses/{course}/modules/{module}/presentation/download', [App\Http\Controllers\Admin\ModulePresentationController::class, 'download'])->name('courses.modules.presentation.download');
+
     // Mappe concettuali (admin) — livello modulo (1 per modulo) + livello corso (1 globale opzionale)
     Route::resource('courses.concept-maps', App\Http\Controllers\Admin\CourseConceptMapController::class);
     Route::post('courses/{course}/concept-maps/{concept_map}/generate', [App\Http\Controllers\Admin\CourseConceptMapController::class, 'generate'])->name('courses.concept-maps.generate');

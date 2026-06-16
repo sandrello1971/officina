@@ -61,6 +61,12 @@ class Module extends Model
         return $this->hasMany(Material::class)->orderBy('sort_order');
     }
 
+    // P28 — presentazione .pptx generata del modulo (una per modulo).
+    public function presentation()
+    {
+        return $this->hasOne(ModulePresentation::class);
+    }
+
     public function quizzes()
     {
         return $this->hasMany(Quiz::class);
