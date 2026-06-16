@@ -5,6 +5,7 @@ namespace App\Services\Schola;
 use App\Models\BrandProfile;
 use App\Models\Lesson;
 use App\Models\LessonPresentation;
+use App\Models\ModulePresentation;
 use App\Support\Branding\ResolvedTheme;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -50,12 +51,6 @@ class LessonPresentationService
             throw new RuntimeException('La lezione non ha un corpo da trasformare in presentazione.');
         }
 
-        $generated = $this->generateSpec($content, $lesson->title, [
-            'topic' => $lesson->topic?->name,
-            'subject' => $lesson->topic?->subject?->name,
-            'log_context' => ['lesson_id' => $lesson->id, 'presentation_id' => $presentation->id],
-        ]);
-
         // Tema risolto (P27): profilo della scuola del docente, o default GLITCH
         // per i docenti "liberi" (school NULL). Branding white-label per il nome.
         $school = $lesson->teacher?->school;
@@ -66,25 +61,86 @@ class LessonPresentationService
             $lesson->topic?->name, $lesson->topic?->subject?->name,
         ])));
 
-        $spec = $this->buildSpec($lesson->title, $subtitle, $branding->instanceName(), $theme, $generated['slides']);
+        return $this->buildFrom(
+            $content,
+            $lesson->title,
+            $subtitle,
+            $branding->instanceName(),
+            $theme,
+            "lesson-presentations/{$lesson->id}/{$presentation->id}.pptx",
+            [
+                'subject' => $lesson->topic?->subject?->name,
+                'log_context' => ['lesson_id' => $lesson->id, 'presentation_id' => $presentation->id],
+            ],
+        );
+    }
+
+    /**
+     * Costruisce il .pptx per un MODULO di corso Officina (P28).
+     * Sorgente = module.content; brand = piattaforma (GLITCH), i corsi non hanno scuola.
+     *
+     * @return array{file_path: string, meta: array}
+     */
+    public function buildForModule(ModulePresentation $presentation): array
+    {
+        $module = $presentation->module()->with('course')->first();
+        if (!$module) {
+            throw new RuntimeException('Modulo della presentazione non trovato.');
+        }
+        $content = trim((string) $module->content);
+        if ($content === '') {
+            throw new RuntimeException('Il modulo non ha un corpo da trasformare in presentazione.');
+        }
+
+        // Corsi Officina: nessuna scuola → brand di piattaforma (GLITCH).
+        $theme = BrandProfile::forPlatform()->resolvedTheme();
+        $schoolName = SchoolBranding::for(null)->instanceName();
+        $subtitle = trim((string) ($module->course?->name ?? ''));
+
+        return $this->buildFrom(
+            $content,
+            (string) $module->title,
+            $subtitle,
+            $schoolName,
+            $theme,
+            "module-presentations/{$module->id}/{$presentation->id}.pptx",
+            [
+                'subject' => $module->course?->name,
+                'log_context' => ['module_id' => $module->id, 'module_presentation_id' => $presentation->id],
+            ],
+        );
+    }
+
+    /**
+     * Orchestratore CONDIVISO, agnostico alla sorgente: contenuto+meta → spec
+     * brandizzata → .pptx in storagePath. Usato da build(lesson) e buildForModule().
+     * Il cuore (generateSpec/buildSpec/normalizeSlides/renderPptx) non cambia.
+     *
+     * @param array<string, mixed> $specOptions opzioni per generateSpec (subject, log_context)
+     * @return array{file_path: string, meta: array}
+     */
+    public function buildFrom(string $content, string $title, ?string $subtitle, string $schoolName, ResolvedTheme $theme, string $storagePath, array $specOptions = []): array
+    {
+        $generated = $this->generateSpec($content, $title, $specOptions);
+
+        $spec = $this->buildSpec($title, (string) $subtitle, $schoolName, $theme, $generated['slides']);
         $spec['meta'] = $generated['meta'];
 
-        $relPath = "lesson-presentations/{$lesson->id}/{$presentation->id}.pptx";
-        $absPath = Storage::disk('local')->path($relPath);
-        Storage::disk('local')->makeDirectory("lesson-presentations/{$lesson->id}");
+        $absPath = Storage::disk('local')->path($storagePath);
+        Storage::disk('local')->makeDirectory(dirname($storagePath));
 
         $this->renderPptx($spec, $absPath);
 
-        if (!Storage::disk('local')->exists($relPath)) {
+        if (!Storage::disk('local')->exists($storagePath)) {
             throw new RuntimeException('Il file della presentazione non è stato creato.');
         }
 
         return [
-            'file_path' => $relPath,
+            'file_path' => $storagePath,
             'meta' => array_merge($spec['meta'] ?? [], [
                 'slides' => count($spec['slides'] ?? []), // include la cover
                 'prompt_version' => self::PROMPT_VERSION,
-                'filename' => Str::slug($lesson->title) . '.pptx',
+                'filename' => Str::slug($title) . '.pptx',
             ]),
         ];
     }
