@@ -1,8 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\MicrosoftAuthController as AdminMicrosoftAuthController;
 use App\Http\Controllers\PageController;
-use App\Http\Controllers\Student\MicrosoftAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PageController::class, 'index'])->name('home');
@@ -181,22 +179,6 @@ Route::prefix('learn')->name('student.')->group(function () {
             Route::post('/{conversation}/messaggi',  [App\Http\Controllers\Student\MessageController::class, 'store'])->name('messages.store');
         });
     });
-});
-
-// ===== MICROSOFT ENTRA ID SSO (pubbliche, fuori da student.auth) =====
-Route::prefix('auth/microsoft')->group(function () {
-    Route::get('/', [MicrosoftAuthController::class, 'redirect'])
-        ->name('student.microsoft.redirect');
-    Route::get('/callback', [MicrosoftAuthController::class, 'callback'])
-        ->name('student.microsoft.callback');
-});
-
-// ===== ADMIN MICROSOFT SSO (pubbliche, fuori da admin.auth) =====
-Route::prefix('admin/auth/microsoft')->group(function () {
-    Route::get('/', [AdminMicrosoftAuthController::class, 'redirect'])
-        ->name('admin.microsoft.redirect');
-    Route::get('/callback', [AdminMicrosoftAuthController::class, 'callback'])
-        ->name('admin.microsoft.callback');
 });
 
 // ===== AREA DOCENTE SCHOLA =====

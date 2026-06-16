@@ -97,19 +97,6 @@
                         Vuoto = nessun account demo evidenziato (il pulsante "demo" resta funzionante col fallback).
                     </p>
                 </div>
-
-                <div style="grid-column:1/3;">
-                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Domini email per auto-link Microsoft SSO</label>
-                    <input type="text" name="sso_email_domain" maxlength="500"
-                           value="{{ old('sso_email_domain', $settings['sso_email_domain'] ?? '') }}"
-                           placeholder="noscite.it,affiliate.com"
-                           style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
-                    <p style="font-size:0.7rem; color:#8A9696; margin-top:4px; font-style:italic;">
-                        Domini email "interni" (separati da virgola). Quando un utente fa login Microsoft SSO con un'email che termina con uno di questi domini, viene auto-creato come <strong>formatore</strong> e/o auto-linkato a uno Student esistente con la stessa email.
-                        Esempio: <code>noscite.it,subsidiary.it</code>.
-                        Vuoto = auto-link e signup automatici disabilitati (utenti devono essere creati manualmente prima del primo login Microsoft).
-                    </p>
-                </div>
             </div>
 
             <p style="font-size:0.75rem; color:#8A9696; margin-top:12px; font-style:italic;">

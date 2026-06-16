@@ -157,21 +157,4 @@ class AutoEnrollRestrictionTest extends TestCase
             ->get(route('student.course.show', $course))
             ->assertOk();
     }
-
-    public function test_sso_microsoft_noscite_user_does_not_get_auto_enroll(): void
-    {
-        // Verifica diretta del campo: il controller SSO non deve più
-        // assegnare auto_enroll_all_courses=true neanche per utenti Noscite.
-        // Test ispeziona la sorgente del controller per garantire l'assenza
-        // di tale assegnazione automatica nel ramo $isNoscite.
-        $source = file_get_contents(
-            base_path('app/Http/Controllers/Student/MicrosoftAuthController.php')
-        );
-
-        $this->assertStringNotContainsString(
-            '$student->auto_enroll_all_courses = true',
-            $source,
-            'MicrosoftAuthController must NOT set auto_enroll_all_courses=true'
-        );
-    }
 }

@@ -32,7 +32,6 @@ class SettingsController extends Controller
         'assistant_domain_context',
         'contact_email',
         'demo_user_email',
-        'sso_email_domain',
     ];
 
     public function index()
@@ -50,7 +49,6 @@ class SettingsController extends Controller
             'assistant_domain_context' => Setting::resolve('assistant_domain_context', ''),
             'contact_email'            => Setting::resolve('contact_email', ''),
             'demo_user_email'          => Setting::resolve('demo_user_email', ''),
-            'sso_email_domain'         => Setting::resolve('sso_email_domain', ''),
             // mail
             'mail_host'         => Setting::resolve('mail_host', ''),
             'mail_port'         => Setting::resolve('mail_port', ''),
@@ -78,7 +76,6 @@ class SettingsController extends Controller
             'assistant_domain_context' => 'nullable|string|max:1000',
             'contact_email'            => 'nullable|email|max:255',
             'demo_user_email'          => 'nullable|email|max:255',
-            'sso_email_domain'         => 'nullable|string|max:500|regex:/^[a-zA-Z0-9.,\-]*$/',
             'mail_host'          => 'nullable|string|max:255',
             'mail_port'          => 'nullable|integer|min:1|max:65535',
             'mail_username'      => 'nullable|string|max:255',

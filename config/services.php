@@ -68,14 +68,6 @@ return [
         'freshness_verify_model' => env('FRESHNESS_VERIFY_MODEL', 'claude-opus-4-8'),
     ],
 
-    'azure' => [
-        'client_id'     => env('AZURE_AD_CLIENT_ID'),
-        'client_secret' => env('AZURE_AD_CLIENT_SECRET'),
-        'redirect'      => env('AZURE_AD_REDIRECT_URI'),
-        'tenant'        => env('AZURE_AD_TENANT_ID'),
-        'proxy'         => env('HTTPS_PROXY', null),
-    ],
-
     // Generazione .pptx (Schola P21): python-pptx nel venv condiviso.
     'pptx' => [
         'python' => env('PPTX_PYTHON', '/home/noscite/venv/bin/python'),

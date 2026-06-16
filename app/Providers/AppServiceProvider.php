@@ -16,7 +16,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
@@ -33,10 +32,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->applyMailSettingsOverride();
-
-        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
-            $event->extendSocialite('azure', \SocialiteProviders\Azure\Provider::class);
-        });
 
         Certificate::observe(CertificateObserver::class);
 
