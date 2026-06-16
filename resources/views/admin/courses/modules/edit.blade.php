@@ -276,6 +276,59 @@
 </script>
 @endpush
 
+{{-- ==================== PRESENTAZIONE .pptx (P28) — generatore condiviso, pattern async ==================== --}}
+@php $modPres = $module->presentation; @endphp
+<div style="max-width:900px; margin:20px auto 0;">
+    <div style="background:white; border-radius:12px; padding:24px;"
+         x-data="modPresentationStatus('{{ $modPres?->status ?? 'none' }}')">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+            <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; flex:1;">📊 Presentazione (.pptx)</h3>
+            <template x-if="status==='generating'">
+                <span style="display:flex; align-items:center; gap:8px; color:#E28A53; font-size:0.85rem; font-weight:600;">
+                    <span style="width:10px;height:10px;border-radius:50%;background:#E28A53;display:inline-block;"></span>
+                    <span>Generazione in corso…</span>
+                </span>
+            </template>
+            <template x-if="status==='ready'"><span style="color:#3A8C89; font-weight:700; font-size:0.85rem;">&#10003; Pronta</span></template>
+            <template x-if="status==='failed'"><span style="color:#A8521F; font-weight:700; font-size:0.85rem;">&#10007; Generazione fallita</span></template>
+        </div>
+        <p style="font-size:0.78rem; color:#8A9696; margin-bottom:12px;">Slide 16:9 brandizzate (tema GLITCH di piattaforma) generate dal contenuto del modulo.</p>
+
+        @if(($modPres?->status ?? null) === 'failed' && ($modPres->generation_meta['failure_reason'] ?? null))
+            <p style="margin-bottom:10px; font-size:0.82rem; color:#A8521F;">{{ $modPres->generation_meta['failure_reason'] }}</p>
+        @endif
+        @if(($modPres?->status ?? null) === 'ready' && ($modPres->generation_meta['slides'] ?? null))
+            <div style="margin-bottom:10px; font-size:0.75rem; color:#8A9696;">{{ $modPres->generation_meta['slides'] }} slide @isset($modPres->generation_meta['model']) · {{ $modPres->generation_meta['model'] }} @endisset</div>
+        @endif
+
+        @if(empty($module->content))
+            <div style="background:#FBE9E7; border-left:4px solid #E28A53; padding:12px 14px; border-radius:6px; color:#7A4A20; font-size:0.85rem;">
+                Il modulo non ha contenuto. Salva prima il contenuto qui sopra, poi torna qui per generare la presentazione.
+            </div>
+        @else
+            {{-- x-show sul wrapper esterno; flex su div interno (riusa il fix bottoni: nessuna sovrapposizione) --}}
+            <div x-show="status!=='generating'">
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                @if(!$modPres || $modPres->status === 'pending' || $modPres->status === 'failed')
+                    <form method="POST" action="{{ route('admin.courses.modules.presentation.generate', [$course, $module]) }}"
+                          onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='⏳ Avvio…';">
+                        @csrf
+                        <button type="submit" style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">{{ ($modPres?->status ?? null) === 'failed' ? '↻ Riprova' : '✨ Genera presentazione' }}</button>
+                    </form>
+                @elseif($modPres->status === 'ready')
+                    <a href="{{ route('admin.courses.modules.presentation.download', [$course, $module]) }}" style="display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:#3A8C89; color:white; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none;">&#11015; Scarica .pptx</a>
+                    <form method="POST" action="{{ route('admin.courses.modules.presentation.regenerate', [$course, $module]) }}"
+                          onsubmit="return confirm('Rigenerare la presentazione? Il file attuale verrà sovrascritto.') && (this.querySelector('button').disabled=true || true);">
+                        @csrf
+                        <button type="submit" style="padding:9px 16px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Rigenera</button>
+                    </form>
+                @endif
+            </div>
+            </div>
+        @endif
+    </div>
+</div>
+
 {{-- ==================== MAPPA MENTALE (sezione separata, indipendente dal form principale) ==================== --}}
 <div style="max-width:900px; margin:20px auto 40px;">
     <div style="background:white; border-radius:12px; padding:24px;">
@@ -536,6 +589,28 @@ document.getElementById('toggle-source').addEventListener('click', () => {
 document.getElementById('source-editor').addEventListener('input', (e) => {
     document.getElementById('content-hidden').value = e.target.value;
 });
+</script>
+@endpush
+
+@push('scripts')
+<script>
+// P28 — polling stato presentazione modulo: generating → ready/failed (poi reload).
+function modPresentationStatus(initial) {
+    return {
+        status: initial,
+        init() { if (this.status === 'generating') this.poll(); },
+        poll() {
+            const timer = setInterval(async () => {
+                try {
+                    const r = await fetch('{{ route('admin.courses.modules.presentation.status', [$course, $module]) }}', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+                    const d = await r.json();
+                    this.status = d.status;
+                    if (d.status === 'ready' || d.status === 'failed') { clearInterval(timer); window.location.reload(); }
+                } catch(e) {}
+            }, 5000);
+        },
+    };
+}
 </script>
 @endpush
 @endsection
