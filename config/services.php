@@ -79,7 +79,7 @@ return [
     // Generazione .pptx (Schola P21): python-pptx nel venv condiviso.
     'pptx' => [
         'python' => env('PPTX_PYTHON', '/home/noscite/venv/bin/python'),
-        'model'  => env('PPTX_MODEL', 'claude-sonnet-4-5'),
+        'model'  => env('PPTX_MODEL', 'claude-sonnet-4-6'),
     ],
 
     // P26 "Gap & Compose": opt-in finché non è pronto. Nasconde /admin/fonti + endpoint.

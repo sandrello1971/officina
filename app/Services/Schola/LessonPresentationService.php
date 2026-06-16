@@ -2,8 +2,10 @@
 
 namespace App\Services\Schola;
 
+use App\Models\BrandProfile;
 use App\Models\Lesson;
 use App\Models\LessonPresentation;
+use App\Support\Branding\ResolvedTheme;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -27,7 +29,10 @@ class LessonPresentationService
     private const TEMPERATURE = 0.3;
     private const MAX_TOKENS = 4000;
     private const MAX_CONTENT_CHARS = 30000;
-    private const PROMPT_VERSION = 'pptx-2026-06';
+    private const PROMPT_VERSION = 'pptx-p27-2026-06';
+
+    /** Layout di CONTENUTO che l'LLM può scegliere (la cover è generata da noi). */
+    private const CONTENT_LAYOUTS = ['process_cards', 'columns', 'stat', 'bullets_clean'];
 
     /**
      * Costruisce il .pptx per una presentazione di lezione.
@@ -45,20 +50,24 @@ class LessonPresentationService
             throw new RuntimeException('La lezione non ha un corpo da trasformare in presentazione.');
         }
 
-        $spec = $this->generateSpec($content, $lesson->title, [
+        $generated = $this->generateSpec($content, $lesson->title, [
             'topic' => $lesson->topic?->name,
             'subject' => $lesson->topic?->subject?->name,
             'log_context' => ['lesson_id' => $lesson->id, 'presentation_id' => $presentation->id],
         ]);
 
-        // Branding scuola sulla slide di titolo (sopra il default piattaforma).
-        $branding = SchoolBranding::for($lesson->teacher?->school);
-        $spec['school'] = $branding->instanceName();
-        $spec['subtitle'] = trim(implode(' · ', array_filter([
+        // Tema risolto (P27): profilo della scuola del docente, o default GLITCH
+        // per i docenti "liberi" (school NULL). Branding white-label per il nome.
+        $school = $lesson->teacher?->school;
+        $theme = ($school ? BrandProfile::forSchool($school) : BrandProfile::forPlatform())->resolvedTheme();
+        $branding = SchoolBranding::for($school);
+
+        $subtitle = trim(implode(' · ', array_filter([
             $lesson->topic?->name, $lesson->topic?->subject?->name,
         ])));
-        $spec['title'] = $lesson->title;
-        $spec['accent'] = '55B1AE';
+
+        $spec = $this->buildSpec($lesson->title, $subtitle, $branding->instanceName(), $theme, $generated['slides']);
+        $spec['meta'] = $generated['meta'];
 
         $relPath = "lesson-presentations/{$lesson->id}/{$presentation->id}.pptx";
         $absPath = Storage::disk('local')->path($relPath);
@@ -73,7 +82,7 @@ class LessonPresentationService
         return [
             'file_path' => $relPath,
             'meta' => array_merge($spec['meta'] ?? [], [
-                'slides' => count($spec['slides'] ?? []) + 1, // + slide di titolo
+                'slides' => count($spec['slides'] ?? []), // include la cover
                 'prompt_version' => self::PROMPT_VERSION,
                 'filename' => Str::slug($lesson->title) . '.pptx',
             ]),
@@ -107,7 +116,7 @@ class LessonPresentationService
             'anthropic-version' => '2023-06-01',
             'content-type' => 'application/json',
         ])->timeout(120)->post(self::CLAUDE_API_URL, [
-            'model' => config('services.pptx.model', 'claude-sonnet-4-5'),
+            'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
             'max_tokens' => self::MAX_TOKENS,
             'temperature' => self::TEMPERATURE,
             'system' => $systemPrompt,
@@ -128,30 +137,197 @@ class LessonPresentationService
             throw new RuntimeException('Spec presentazione non valida (JSON slides mancante).');
         }
 
-        // Normalizza: ogni slide ha title + bullets[].
-        $slides = [];
-        foreach ($data['slides'] as $s) {
-            if (!is_array($s)) {
-                continue;
-            }
-            $slides[] = [
-                'title' => trim((string) ($s['title'] ?? '')),
-                'bullets' => array_values(array_filter(array_map(
-                    fn ($b) => trim((string) $b),
-                    is_array($s['bullets'] ?? null) ? $s['bullets'] : []
-                ))),
-                'notes' => isset($s['notes']) ? trim((string) $s['notes']) : null,
-            ];
-        }
-
         return [
-            'slides' => $slides,
+            'slides' => $this->normalizeSlides($data['slides']),
             'meta' => [
-                'model' => config('services.pptx.model', 'claude-sonnet-4-5'),
+                'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
                 'tokens_in' => (int) ($response->json('usage.input_tokens') ?? 0),
                 'tokens_out' => (int) ($response->json('usage.output_tokens') ?? 0),
             ],
         ];
+    }
+
+    /**
+     * Assembla la spec completa per il python: tema + cover brandizzata + slide di contenuto.
+     * Puro (niente API): la cover è generata da noi, non dall'LLM.
+     *
+     * @param array<int, array<string, mixed>> $contentSlides slide già normalizzate
+     * @return array<string, mixed>
+     */
+    public function buildSpec(string $title, string $subtitle, string $schoolName, ResolvedTheme $theme, array $contentSlides): array
+    {
+        $cover = [
+            'layout' => 'cover',
+            'title' => $title,
+            'subtitle' => $subtitle,
+            'school' => $schoolName,
+        ];
+
+        return [
+            'theme' => $this->themePayload($theme),
+            'slides' => array_merge([$cover], array_values($contentSlides)),
+        ];
+    }
+
+    /**
+     * Contratto layout CHIUSO: valida ogni slide dell'LLM contro il menù noto.
+     * Layout sconosciuto o campi mancanti → fallback pulito a bullets_clean.
+     *
+     * @param array<int, mixed> $rawSlides
+     * @return array<int, array<string, mixed>>
+     */
+    public function normalizeSlides(array $rawSlides): array
+    {
+        $out = [];
+        foreach ($rawSlides as $s) {
+            if (is_array($s)) {
+                $out[] = $this->normalizeSlide($s);
+            }
+        }
+
+        return $out;
+    }
+
+    /** @param array<string, mixed> $s @return array<string, mixed> */
+    private function normalizeSlide(array $s): array
+    {
+        $layout = is_string($s['layout'] ?? null) ? $s['layout'] : '';
+        $title = trim((string) ($s['title'] ?? ''));
+        $notes = isset($s['notes']) ? trim((string) $s['notes']) : null;
+
+        $clean = fn ($v) => trim((string) $v);
+
+        switch ($layout) {
+            case 'process_cards':
+                $steps = [];
+                foreach (is_array($s['steps'] ?? null) ? $s['steps'] : [] as $step) {
+                    if (!is_array($step)) {
+                        continue;
+                    }
+                    $st = ['title' => $clean($step['title'] ?? ''), 'text' => $clean($step['text'] ?? '')];
+                    if ($st['title'] !== '' || $st['text'] !== '') {
+                        $steps[] = $st;
+                    }
+                }
+                if ($steps === []) {
+                    return $this->fallbackBullets($s);
+                }
+
+                return ['layout' => 'process_cards', 'title' => $title, 'steps' => array_slice($steps, 0, 5), 'notes' => $notes];
+
+            case 'columns':
+                $cols = [];
+                foreach (is_array($s['columns'] ?? null) ? $s['columns'] : [] as $col) {
+                    if (!is_array($col)) {
+                        continue;
+                    }
+                    $c = ['icon' => $clean($col['icon'] ?? ''), 'title' => $clean($col['title'] ?? ''), 'text' => $clean($col['text'] ?? '')];
+                    if ($c['title'] !== '' || $c['text'] !== '') {
+                        $cols[] = $c;
+                    }
+                }
+                if (count($cols) < 2) {
+                    return $this->fallbackBullets($s);
+                }
+
+                return ['layout' => 'columns', 'title' => $title, 'columns' => array_slice($cols, 0, 3), 'notes' => $notes];
+
+            case 'stat':
+                $value = $clean($s['value'] ?? '');
+                if ($value === '') {
+                    return $this->fallbackBullets($s);
+                }
+
+                return ['layout' => 'stat', 'title' => $title, 'value' => $value, 'label' => $clean($s['label'] ?? ''), 'notes' => $notes];
+
+            case 'bullets_clean':
+                $bullets = $this->extractBullets($s);
+                if ($bullets === []) {
+                    return $this->fallbackBullets($s);
+                }
+
+                return ['layout' => 'bullets_clean', 'title' => $title, 'bullets' => $bullets, 'notes' => $notes];
+
+            default:
+                // Layout sconosciuto → fallback (mai una slide rotta).
+                return $this->fallbackBullets($s);
+        }
+    }
+
+    /**
+     * Ricava una slide bullets_clean da una slide qualsiasi (anche con layout
+     * ignoto): preserva il titolo e recupera testo da bullets/steps/columns.
+     *
+     * @param array<string, mixed> $s @return array<string, mixed>
+     */
+    private function fallbackBullets(array $s): array
+    {
+        $title = trim((string) ($s['title'] ?? '')) ?: 'Contenuto';
+        $bullets = $this->extractBullets($s);
+
+        if ($bullets === []) {
+            foreach (['steps', 'columns'] as $key) {
+                foreach (is_array($s[$key] ?? null) ? $s[$key] : [] as $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+                    $line = trim(implode(' — ', array_filter([
+                        trim((string) ($item['title'] ?? '')),
+                        trim((string) ($item['text'] ?? '')),
+                    ])));
+                    if ($line !== '') {
+                        $bullets[] = $line;
+                    }
+                }
+            }
+        }
+        if ($bullets === [] && ($v = trim((string) ($s['value'] ?? ''))) !== '') {
+            $bullets[] = trim($v . ' ' . trim((string) ($s['label'] ?? '')));
+        }
+        if ($bullets === []) {
+            $bullets = [$title];
+        }
+
+        return [
+            'layout' => 'bullets_clean',
+            'title' => $title,
+            'bullets' => array_slice($bullets, 0, 8),
+            'notes' => isset($s['notes']) ? trim((string) $s['notes']) : null,
+        ];
+    }
+
+    /** @param array<string, mixed> $s @return list<string> */
+    private function extractBullets(array $s): array
+    {
+        return array_values(array_filter(array_map(
+            fn ($b) => trim((string) $b),
+            is_array($s['bullets'] ?? null) ? $s['bullets'] : []
+        )));
+    }
+
+    /** @return array<string, mixed> payload tema per il python */
+    private function themePayload(ResolvedTheme $theme): array
+    {
+        return [
+            'ink' => $theme->ink,
+            'background' => $theme->background,
+            'accent' => $theme->accent,
+            'fonts' => $theme->fonts->toArray(),
+            'logo_path' => $this->resolveLogoAbsPath($theme),
+        ];
+    }
+
+    /** Path ASSOLUTO del logo per il python: logo scuola se presente, poi quello piattaforma. */
+    private function resolveLogoAbsPath(ResolvedTheme $theme): ?string
+    {
+        if ($theme->logoPath && Storage::disk('local')->exists($theme->logoPath)) {
+            return Storage::disk('local')->path($theme->logoPath);
+        }
+        if (is_file(public_path('images/logo.png'))) {
+            return public_path('images/logo.png');
+        }
+
+        return null;
     }
 
     /** Renderizza la spec in .pptx via python-pptx (Symfony Process, JSON su stdin). */
@@ -177,17 +353,37 @@ class LessonPresentationService
         return <<<TXT
 Sei un docente di scuola superiore che prepara le slide di una lezione. {$subjectLine}
 
-Trasforma il corpo della lezione in una presentazione efficace:
-- UNA slide per ogni SEZIONE principale della lezione (segui i titoli ## del markdown).
-- Ogni slide: un titolo breve e 3-6 bullet SINTETICI (frasi corte, non paragrafi).
-- Mantieni formule/espressioni matematiche in forma testuale leggibile (es. E = m·c²).
-- Registro adatto a studenti di scuola superiore: chiaro e ordinato.
-- Non inventare: usa solo i contenuti della lezione.
+Trasforma il corpo della lezione in una presentazione efficace ed elegante. Una
+slide per ogni SEZIONE principale (segui i titoli ## del markdown). Per OGNI slide
+SCEGLI il layout più adatto dal MENÙ qui sotto e compila i campi che richiede.
+NON generare la slide di copertina: viene creata automaticamente.
 
-Rispondi SOLO con JSON valido, senza testo extra, in questo formato:
+MENÙ DEI LAYOUT (usa esattamente queste stringhe in "layout"):
+
+1) "process_cards" — un PROCESSO o passi SEQUENZIALI (3-5 step, es. un ciclo).
+   Campi: "title", "steps": [{"title": "nome passo", "text": "1 frase breve"}].
+
+2) "columns" — 2-3 CONCETTI PARALLELI / categorie / componenti affiancati.
+   Campi: "title", "columns": [{"title": "nome", "text": "1-2 frasi"}].
+
+3) "stat" — UN SINGOLO DATO o numero chiave da enfatizzare.
+   Campi: "title" (opzionale), "value" (es. "70%", "3x"), "label" (cosa significa).
+
+4) "bullets_clean" — un ELENCO di punti (3-6). Default quando nessun altro calza.
+   Campi: "title", "bullets": ["punto 1", "punto 2"].
+
+Regole:
+- Frasi BREVI e sintetiche, mai muri di testo. Testo dei card/colonne molto conciso.
+- Scegli "process_cards" per sequenze/cicli; "columns" per confronti/elementi paralleli;
+  "stat" per un dato d'impatto; "bullets_clean" per il resto.
+- Matematica in forma testuale leggibile (es. E = m·c²).
+- Non inventare: usa solo i contenuti della lezione. Registro da scuola superiore.
+
+Rispondi SOLO con JSON valido, senza testo extra:
 {
   "slides": [
-    {"title": "Titolo sezione", "bullets": ["punto 1", "punto 2"], "notes": "nota per il docente (opzionale)"}
+    {"layout": "process_cards", "title": "...", "steps": [{"title": "...", "text": "..."}], "notes": "opzionale"},
+    {"layout": "bullets_clean", "title": "...", "bullets": ["...", "..."]}
   ]
 }
 TXT;
