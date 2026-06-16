@@ -166,20 +166,25 @@
             <div style="margin-top:6px; font-size:0.75rem; color:#8A9696;">{{ $presentation->generation_meta['slides'] }} slide @isset($presentation->generation_meta['model']) · {{ $presentation->generation_meta['model'] }} @endisset</div>
         @endif
 
-        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;" x-show="status!=='generating'">
+        {{-- x-show sul wrapper esterno: NON deve stare sul contenitore flex, perché
+             Alpine (x-show) rimuove la proprietà `display` inline quando mostra,
+             azzerando `display:flex` → i bottoni perdono il gap e si sovrappongono. --}}
+        <div style="margin-top:12px;" x-show="status!=='generating'">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
             @if(!$presentation || $presentation->status === 'pending' || $presentation->status === 'failed')
                 <form method="POST" action="{{ route('docente.lessons.presentation.generate', $lesson) }}" data-async>
                     @csrf
                     <button data-busy-label="Generazione…" style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">{{ ($presentation?->status ?? null) === 'failed' ? 'Riprova' : 'Genera presentazione' }}</button>
                 </form>
             @elseif($presentation->status === 'ready')
-                <a href="{{ route('docente.lessons.presentation.download', $lesson) }}" style="padding:9px 16px; background:#3A8C89; color:white; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none;">&#11015; Scarica .pptx</a>
+                <a href="{{ route('docente.lessons.presentation.download', $lesson) }}" style="display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:#3A8C89; color:white; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none;">&#11015; Scarica .pptx</a>
                 <form method="POST" action="{{ route('docente.lessons.presentation.regenerate', $lesson) }}" data-async
                       onsubmit="return confirm('Rigenerare la presentazione? Il file attuale verrà sovrascritto.');">
                     @csrf
                     <button data-busy-label="Rigenerazione…" style="padding:9px 16px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Rigenera</button>
                 </form>
             @endif
+        </div>
         </div>
     </div>
     @endif
