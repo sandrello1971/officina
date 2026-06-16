@@ -524,6 +524,7 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::patch('admins/{admin}',             [App\Http\Controllers\Admin\AdminAccountController::class, 'update'])->name('admins.update');
     Route::patch('admins/{admin}/password',    [App\Http\Controllers\Admin\AdminAccountController::class, 'password'])->name('admins.password');
     Route::patch('admins/{admin}/toggle',      [App\Http\Controllers\Admin\AdminAccountController::class, 'toggle'])->name('admins.toggle');
+    Route::patch('admins/{admin}/signature',   [App\Http\Controllers\Admin\AdminAccountController::class, 'signature'])->name('admins.signature');
 
     Route::get('settings',                     [App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::put('settings',                     [App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');

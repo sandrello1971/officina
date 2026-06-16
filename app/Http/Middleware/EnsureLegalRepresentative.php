@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Admin;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -9,9 +10,10 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureLegalRepresentative
 {
     /**
-     * Verifica che l'admin attualmente loggato corrisponda al legale
-     * rappresentante configurato (l'unico autorizzato a firmare i
-     * certificati emessi dalla piattaforma).
+     * Verifica che l'admin attualmente loggato sia abilitato alla firma dei
+     * certificati. L'abilitazione è ora un privilegio per-account
+     * (admins.can_sign_certificates), gestibile da più amministratori dalla
+     * UI /admin/admins; non più una singola email da env.
      *
      * Da applicare DOPO il middleware admin.auth, perché presume
      * che session('admin_email') sia già popolata.
@@ -19,10 +21,13 @@ class EnsureLegalRepresentative
     public function handle(Request $request, Closure $next): Response
     {
         $adminEmail = session('admin_email');
-        $legalRepEmail = config('atheneum.legal_representative_email');
 
-        if (!$adminEmail || strtolower($adminEmail) !== strtolower($legalRepEmail)) {
-            abort(403, 'Solo il legale rappresentante può firmare i certificati.');
+        $admin = $adminEmail
+            ? Admin::where('email', strtolower($adminEmail))->first()
+            : null;
+
+        if (!$admin || !$admin->can_sign_certificates) {
+            abort(403, 'Solo gli amministratori abilitati possono firmare i certificati.');
         }
 
         return $next($request);

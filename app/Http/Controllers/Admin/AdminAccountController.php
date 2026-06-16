@@ -90,4 +90,29 @@ class AdminAccountController extends Controller
         return back()->with('success',
             $admin->is_active ? 'Admin riattivato.' : 'Admin disattivato.');
     }
+
+    public function signature(Request $request, Admin $admin)
+    {
+        $signerCount = Admin::where('can_sign_certificates', true)->count();
+
+        // Anti-lockout: deve restare almeno un firmatario, altrimenti nessuno
+        // potrebbe più firmare i certificati emessi dalla piattaforma.
+        if ($admin->can_sign_certificates && $signerCount <= 1) {
+            return back()->with('error',
+                'Deve restare almeno un amministratore abilitato alla firma. Abilitane un altro prima di rimuovere questo.');
+        }
+
+        $admin->update(['can_sign_certificates' => !$admin->can_sign_certificates]);
+
+        Log::warning('[admin] can_sign_certificates toggled', [
+            'by'        => session('admin_email') ?? 'unknown',
+            'target'    => $admin->email,
+            'new_state' => $admin->can_sign_certificates ? 'can_sign' : 'cannot_sign',
+        ]);
+
+        return back()->with('success',
+            $admin->can_sign_certificates
+                ? "Firma certificati abilitata per {$admin->email}."
+                : "Firma certificati disabilitata per {$admin->email}.");
+    }
 }

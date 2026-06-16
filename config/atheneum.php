@@ -15,16 +15,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Legal Representative Email
+    | Legal Representative Email — SEED DI BACKFILL (storico)
     |--------------------------------------------------------------------------
-    | Email dell'amministratore autorizzato a firmare digitalmente i
-    | certificati emessi dalla piattaforma. Solo l'admin loggato con
-    | questa email può accedere all'admin UI di firma certificati.
+    | L'abilitazione alla firma dei certificati NON è più legata a questa
+    | singola email: è ora un privilegio per-account in DB
+    | (admins.can_sign_certificates), gestibile da più amministratori dalla
+    | UI /admin/admins (AdminAccountController::signature + middleware
+    | EnsureLegalRepresentative).
     |
-    | Sottoinsieme della whitelist 'admins': il legale rappresentante è
-    | un admin a tutti gli effetti, ma con il privilegio aggiuntivo di
-    | firmare. In futuro, se più admin dovranno poter firmare, sostituire
-    | con un array e aggiornare il middleware EnsureLegalRepresentative.
+    | Questo valore resta solo come seed: la migrazione che ha introdotto la
+    | colonna lo usa per marcare firmatario il legale rappresentante storico,
+    | evitando di lasciare la piattaforma senza nessun firmatario al deploy.
+    | A migrazione applicata in tutti gli ambienti, è rimovibile.
     */
     'legal_representative_email' => env('LEGAL_REPRESENTATIVE_EMAIL', 'sandrello@noscite.it'),
 ];

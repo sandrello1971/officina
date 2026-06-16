@@ -33,6 +33,7 @@
                     <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Nome</th>
                     <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Email</th>
                     <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Stato</th>
+                    <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Firma certificati</th>
                     <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Creato</th>
                     <th style="padding:12px 16px; text-align:right; font-size:0.75rem; color:#8A9696; text-transform:uppercase; font-weight:700;">Azioni</th>
                 </tr>
@@ -60,6 +61,13 @@
                             {{ $admin->is_active ? 'Attivo' : 'Disattivato' }}
                         </span>
                     </td>
+                    <td style="padding:12px 16px;">
+                        <span style="padding:3px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;
+                            background:{{ $admin->can_sign_certificates ? '#E8F5F5' : '#F5F7F7' }};
+                            color:{{ $admin->can_sign_certificates ? '#3A8C89' : '#8A9696' }};">
+                            {{ $admin->can_sign_certificates ? 'Abilitato' : 'No' }}
+                        </span>
+                    </td>
                     <td style="padding:12px 16px; color:#8A9696; font-size:0.8rem;">
                         {{ $admin->created_at?->format('d/m/Y') }}
                     </td>
@@ -77,6 +85,12 @@
                             Password
                         </button>
                         <button type="button"
+                                @click="panel = panel === 'signature' ? null : 'signature'"
+                                :style="panel === 'signature' ? 'background:#E8F5F5; color:#3A8C89;' : 'background:transparent; color:#55B1AE;'"
+                                style="padding:5px 10px; border:1px solid #55B1AE; border-radius:4px; font-size:0.75rem; cursor:pointer; margin-right:4px;">
+                            Firma
+                        </button>
+                        <button type="button"
                                 @click="panel = panel === 'toggle' ? null : 'toggle'"
                                 style="padding:5px 10px; border:1px solid {{ $admin->is_active ? '#E28A53' : '#55B1AE' }}; background:transparent; color:{{ $admin->is_active ? '#E28A53' : '#3A8C89' }}; border-radius:4px; font-size:0.75rem; cursor:pointer;">
                             {{ $admin->is_active ? 'Disattiva' : 'Riattiva' }}
@@ -88,7 +102,7 @@
                      I form sono renderizzati server-side con i valori di
                      QUESTO $admin: niente JS che ripopola i campi al click. --}}
                 <tr x-show="panel !== null" x-cloak>
-                    <td colspan="5" style="background:#FAFBFB; padding:16px 20px; border-top:1px dashed #E8F5F5;">
+                    <td colspan="6" style="background:#FAFBFB; padding:16px 20px; border-top:1px dashed #E8F5F5;">
 
                         {{-- Profilo --}}
                         <div x-show="panel === 'profile'" x-cloak>
@@ -146,6 +160,30 @@
                             </form>
                         </div>
 
+                        {{-- Toggle firma certificati --}}
+                        <div x-show="panel === 'signature'" x-cloak>
+                            <div style="font-size:0.8rem; color:#4A5252; margin-bottom:10px;">
+                                @if($admin->can_sign_certificates)
+                                    Revocare a <strong>{{ $admin->email }}</strong> l'abilitazione a firmare i certificati?
+                                    <br><span style="color:#c97a45; font-size:0.75rem;">⚠ Deve restare almeno un firmatario: se è l'unico, l'operazione viene bloccata server-side (anti-lockout).</span>
+                                @else
+                                    Abilitare <strong>{{ $admin->email }}</strong> alla firma dei certificati emessi dalla piattaforma?
+                                @endif
+                            </div>
+                            <form method="POST" action="{{ route('admin.admins.signature', $admin) }}"
+                                  style="display:flex; gap:10px;">
+                                @csrf @method('PATCH')
+                                <button type="button" @click="panel = null"
+                                        style="padding:7px 14px; background:transparent; color:#8A9696; border:1px solid #C8D0D0; border-radius:5px; font-size:0.8rem; cursor:pointer;">
+                                    Annulla
+                                </button>
+                                <button type="submit"
+                                        style="padding:7px 14px; background:{{ $admin->can_sign_certificates ? '#E28A53' : '#55B1AE' }}; color:white; border:none; border-radius:5px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                                    {{ $admin->can_sign_certificates ? 'Revoca firma' : 'Abilita firma' }}
+                                </button>
+                            </form>
+                        </div>
+
                         {{-- Toggle attivo/disattivo --}}
                         <div x-show="panel === 'toggle'" x-cloak>
                             <div style="font-size:0.8rem; color:#4A5252; margin-bottom:10px;">
@@ -177,7 +215,7 @@
             @empty
             <tbody>
                 <tr>
-                    <td colspan="5" style="padding:40px; text-align:center; color:#8A9696;">
+                    <td colspan="6" style="padding:40px; text-align:center; color:#8A9696;">
                         Nessun amministratore. Crea il primo con:
                         <code style="background:#F5F7F7; padding:2px 6px; border-radius:4px;">php artisan atheneum:admin-create</code>
                     </td>
