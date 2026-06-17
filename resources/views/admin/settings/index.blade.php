@@ -33,7 +33,7 @@
                 </div>
                 <div>
                     <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Sottotitolo / motto</label>
-                    <input type="text" name="platform_tagline" value="{{ old('platform_tagline', $settings['platform_tagline']) }}" maxlength="200" placeholder="In digitālī nova virtūs"
+                    <input type="text" name="platform_tagline" value="{{ old('platform_tagline', $settings['platform_tagline']) }}" maxlength="200" placeholder="Il Rumore Che Serve"
                            style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
                 </div>
                 <div>
