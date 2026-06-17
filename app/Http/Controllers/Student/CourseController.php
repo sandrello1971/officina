@@ -34,6 +34,9 @@ class CourseController extends Controller
         $completedModules = $modules->where('progress_status', 'completed')->count();
         $progressPercent = $totalModules > 0 ? round(($completedModules / $totalModules) * 100) : 0;
 
+        // P29 Fase 3 — dispensa PDF del corso intero: offerta se c'è almeno un modulo con contenuto.
+        $hasCourseDocument = $modules->contains(fn ($m) => trim(strip_tags((string) $m->content)) !== '');
+
         $finalQuiz = Quiz::where('course_id', $course->id)
             ->whereNull('module_id')
             ->where('is_active', true)
@@ -71,7 +74,7 @@ class CourseController extends Controller
             'course', 'modules', 'progressPercent',
             'completedModules', 'totalModules', 'finalQuiz', 'certificationPassed', 'progressByModule',
             'hasAnyVideo', 'instructorMaterials', 'teaching',
-            'courseConceptMap', 'courseConceptMapForked'
+            'courseConceptMap', 'courseConceptMapForked', 'hasCourseDocument'
         ));
     }
 
@@ -97,7 +100,12 @@ class CourseController extends Controller
             }
         }
 
-        $materials = $module->materials()->forStudents()->orderBy('sort_order')->get();
+        // P29 Fase 3 — il PDF generato sostituisce i materials DOCUMENTALI (pdf/docx);
+        // canvas/video/link restano nella lista. instructor-only già escluso da forStudents().
+        $materials = $module->materials()->forStudents()->orderBy('sort_order')->get()
+            ->reject(fn ($m) => in_array($m->file_type, ['pdf', 'docx'], true))
+            ->values();
+        $hasModuleDocument = trim(strip_tags((string) $module->content)) !== '';
         $prevModule = $course->modules()->where('sort_order', '<', $module->sort_order)->orderBy('sort_order', 'desc')->first();
         $nextModule = $course->modules()->where('sort_order', '>', $module->sort_order)->orderBy('sort_order')->first();
         $canvases = is_array($module->metadata ?? null) ? ($module->metadata['canvases'] ?? []) : [];
@@ -203,7 +211,7 @@ class CourseController extends Controller
             'certificationPassed', 'progress', 'prevModule', 'nextModule',
             'canvases', 'isDemo', 'note', 'studentNotes',
             'instructorManualSections', 'instructorNotes', 'teaching',
-            'moduleConceptMap', 'moduleConceptMapForked'
+            'moduleConceptMap', 'moduleConceptMapForked', 'hasModuleDocument'
         ));
     }
 

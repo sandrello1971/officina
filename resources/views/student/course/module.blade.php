@@ -378,6 +378,32 @@
         </div>
         @endif
 
+        {{-- P29 — documento PDF generato dal contenuto del modulo (sostituisce i documentali caricati) --}}
+        @if($hasModuleDocument)
+        <div style="background:white; border-radius:12px; padding:20px; margin-bottom:20px;">
+            <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:12px; font-size:0.9rem;">📄 Documento del modulo</h3>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:1.2rem;">📕</span>
+                    <div>
+                        <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">Dispensa del modulo (PDF)</div>
+                        <div style="font-size:0.75rem; color:#8A9696;">Generato dal contenuto del modulo, sempre aggiornato.</div>
+                    </div>
+                </div>
+                @if($isDemo)
+                    <span style="padding:5px 12px; background:#F5F7F7; color:#8A9696; border-radius:6px; font-size:0.75rem;">
+                        🔒 Solo versione completa
+                    </span>
+                @else
+                    <a href="{{ route('student.module.document.download', [$course->slug, $module]) }}"
+                       style="padding:5px 12px; background:#E8F5F5; color:#3A8C89; border-radius:6px; font-size:0.75rem; font-weight:600; text-decoration:none;">
+                        Scarica PDF
+                    </a>
+                @endif
+            </div>
+        </div>
+        @endif
+
         @if($materials->isNotEmpty())
         <div style="background:white; border-radius:12px; padding:20px; margin-bottom:20px;">
             <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:12px; font-size:0.9rem;">📎 Materiali del modulo</h3>

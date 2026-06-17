@@ -87,6 +87,10 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::post('/course/{course:slug}/module/{module}/complete', [App\Http\Controllers\Student\CourseController::class, 'completeModule'])->name('module.complete');
         Route::get('/course/{course:slug}/module/{module}/canvas/{canvas}', [App\Http\Controllers\Student\CourseController::class, 'canvas'])->name('module.canvas');
 
+        // P29 Fase 3 — PDF generato (modulo + dispensa corso), generazione on-access
+        Route::get('/course/{course:slug}/module/{module}/documento', [App\Http\Controllers\Student\GeneratedDocumentController::class, 'module'])->name('module.document.download');
+        Route::get('/course/{course:slug}/documento', [App\Http\Controllers\Student\GeneratedDocumentController::class, 'course'])->name('course.document.download');
+
         // Mappe concettuali a livello corso (lato studente)
         Route::get('/course/{course:slug}/concept-maps', [App\Http\Controllers\Student\ConceptMapController::class, 'index'])->name('course.concept-maps.index');
         Route::get('/course/{course:slug}/concept-map/{concept_map}', [App\Http\Controllers\Student\ConceptMapController::class, 'show'])->name('course.concept-map.show');
