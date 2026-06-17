@@ -90,7 +90,10 @@ class CourseSourcePdfBuilder
             $blocks[] = ['type' => 'TITLE', 'text' => $title, 'subtitle' => trim((string) ($meta['subtitle'] ?? ''))];
         }
 
-        foreach ($this->htmlToBlocks($html) as $block) {
+        // La banda TITLE rende già il titolo: se il content ripete lo stesso titolo
+        // come primo heading, lo rimuoviamo (no titolo duplicato in testa).
+        $content = $this->stripLeadingTitleEcho($this->htmlToBlocks($html), $title);
+        foreach ($content as $block) {
             $blocks[] = $block;
         }
 
@@ -121,12 +124,45 @@ class CourseSourcePdfBuilder
                 // PART = banda piena su nuova pagina (un modulo per pagina).
                 $blocks[] = ['type' => 'PART', 'text' => $secTitle];
             }
-            foreach ($this->htmlToBlocks((string) ($section['html'] ?? '')) as $block) {
+            // La banda PART rende già il titolo del modulo: deduplica l'eco in testa.
+            $secBlocks = $this->stripLeadingTitleEcho($this->htmlToBlocks((string) ($section['html'] ?? '')), $secTitle);
+            foreach ($secBlocks as $block) {
                 $blocks[] = $block;
             }
         }
 
         return $this->build($blocks, $meta, $theme);
+    }
+
+    /**
+     * P29 — se il PRIMO blocco è un heading che ripete il titolo già reso dalla
+     * banda TITLE/PART del builder, lo rimuove (evita il titolo duplicato in testa
+     * al documento/sezione). Solo il primo blocco e solo se heading: eventuali
+     * ripetizioni più in basso restano. Difetto di rendering, non del content.
+     *
+     * @param  list<array>  $blocks
+     * @return list<array>
+     */
+    private function stripLeadingTitleEcho(array $blocks, string $title): array
+    {
+        $title = $this->normalizeHeading($title);
+        if ($title === '' || $blocks === []) {
+            return $blocks;
+        }
+
+        $first = $blocks[0];
+        $isHeading = in_array($first['type'] ?? '', ['H1', 'H2', 'H3'], true);
+        if ($isHeading && $this->normalizeHeading((string) ($first['text'] ?? '')) === $title) {
+            array_shift($blocks);
+        }
+
+        return array_values($blocks);
+    }
+
+    /** Normalizza un heading per il confronto: trim, spazi collassati, minuscole. */
+    private function normalizeHeading(string $s): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $s)));
     }
 
     /**
