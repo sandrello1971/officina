@@ -26,6 +26,28 @@ class Course extends Model
         return $this->hasMany(Module::class)->orderBy('sort_order');
     }
 
+    // P29 — documento PDF generato dell'INTERO corso (uno per corso).
+    public function document()
+    {
+        return $this->hasOne(CourseDocument::class);
+    }
+
+    /**
+     * Hash aggregato del contenuto del corso, per lo stale del documento-corso.
+     * Concatena i moduli ORDINATI per sort_order: id|sort_order|title|hash(content).
+     * Cambia se un modulo cambia contenuto/titolo, viene aggiunto, rimosso o riordinato.
+     * Il title è incluso: fa parte del documento (intestazione di sezione).
+     */
+    public function currentContentHash(): string
+    {
+        $parts = $this->modules()
+            ->orderBy('sort_order')
+            ->get(['id', 'sort_order', 'title', 'content'])
+            ->map(fn (Module $m) => $m->id . '|' . $m->sort_order . '|' . (string) $m->title . '|' . $m->currentContentHash());
+
+        return md5($parts->implode("\n"));
+    }
+
     public function instructorMaterials()
     {
         return $this->hasMany(Material::class)

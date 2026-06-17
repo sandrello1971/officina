@@ -378,6 +378,18 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::get('courses/{course}/modules/{module}/presentation/status', [App\Http\Controllers\Admin\ModulePresentationController::class, 'status'])->name('courses.modules.presentation.status');
     Route::get('courses/{course}/modules/{module}/presentation/download', [App\Http\Controllers\Admin\ModulePresentationController::class, 'download'])->name('courses.modules.presentation.download');
 
+    // Documento PDF modulo (P29 Fase 1) — renderer brandizzato, pattern async + stale
+    Route::post('courses/{course}/modules/{module}/document/generate', [App\Http\Controllers\Admin\ModuleDocumentController::class, 'generate'])->name('courses.modules.document.generate');
+    Route::post('courses/{course}/modules/{module}/document/regenerate', [App\Http\Controllers\Admin\ModuleDocumentController::class, 'regenerate'])->name('courses.modules.document.regenerate');
+    Route::get('courses/{course}/modules/{module}/document/status', [App\Http\Controllers\Admin\ModuleDocumentController::class, 'status'])->name('courses.modules.document.status');
+    Route::get('courses/{course}/modules/{module}/document/download', [App\Http\Controllers\Admin\ModuleDocumentController::class, 'download'])->name('courses.modules.document.download');
+
+    // Documento PDF dell'intero corso (P29 Fase 2) — hash aggregato, pattern async + stale
+    Route::post('courses/{course}/document/generate', [App\Http\Controllers\Admin\CourseDocumentController::class, 'generate'])->name('courses.document.generate');
+    Route::post('courses/{course}/document/regenerate', [App\Http\Controllers\Admin\CourseDocumentController::class, 'regenerate'])->name('courses.document.regenerate');
+    Route::get('courses/{course}/document/status', [App\Http\Controllers\Admin\CourseDocumentController::class, 'status'])->name('courses.document.status');
+    Route::get('courses/{course}/document/download', [App\Http\Controllers\Admin\CourseDocumentController::class, 'download'])->name('courses.document.download');
+
     // Mappe concettuali (admin) — livello modulo (1 per modulo) + livello corso (1 globale opzionale)
     Route::resource('courses.concept-maps', App\Http\Controllers\Admin\CourseConceptMapController::class);
     Route::post('courses/{course}/concept-maps/{concept_map}/generate', [App\Http\Controllers\Admin\CourseConceptMapController::class, 'generate'])->name('courses.concept-maps.generate');

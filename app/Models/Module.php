@@ -67,6 +67,12 @@ class Module extends Model
         return $this->hasOne(ModulePresentation::class);
     }
 
+    // P29 — documento PDF generato del modulo (uno per modulo).
+    public function document()
+    {
+        return $this->hasOne(ModuleDocument::class);
+    }
+
     public function quizzes()
     {
         return $this->hasMany(Quiz::class);
