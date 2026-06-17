@@ -51,6 +51,58 @@
     @endforelse
 </div>
 
+{{-- ==================== DOCUMENTO PDF DEL CORSO (P29 Fase 2) — hash aggregato, stale-then-regenerate ==================== --}}
+@php $courseDoc = $course->document; @endphp
+<div style="background:white; border-radius:10px; padding:20px; margin-top:16px;"
+     x-data="courseDocumentStatus('{{ $courseDoc?->status ?? 'none' }}')">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+        <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; flex:1;">📄 Documento del corso</h3>
+        <template x-if="status==='generating'">
+            <span style="display:flex; align-items:center; gap:8px; color:#E28A53; font-size:0.85rem; font-weight:600;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#E28A53;display:inline-block;"></span>
+                <span>Generazione in corso…</span>
+            </span>
+        </template>
+        <template x-if="status==='ready'"><span style="color:#3A8C89; font-weight:700; font-size:0.85rem;">&#10003; Pronto</span></template>
+        <template x-if="status==='failed'"><span style="color:#A8521F; font-weight:700; font-size:0.85rem;">&#10007; Generazione fallita</span></template>
+    </div>
+    <p style="font-size:0.78rem; color:#8A9696; margin-bottom:12px;">Un unico PDF brandizzato (tema GLITCH) con tutti i moduli del corso, in ordine.</p>
+
+    @if(($courseDoc?->status ?? null) === 'failed' && ($courseDoc->generation_meta['failure_reason'] ?? null))
+        <p style="margin-bottom:10px; font-size:0.82rem; color:#A8521F;">{{ $courseDoc->generation_meta['failure_reason'] }}</p>
+    @endif
+
+    {{-- Badge stale: obsoleto se un modulo è cambiato/aggiunto/rimosso/riordinato dopo la generazione. --}}
+    @if(($courseDoc?->status ?? null) === 'ready')
+        @if($courseDoc->isStale())
+            <div style="background:rgba(226,138,83,0.12); border-left:4px solid #E28A53; padding:10px 14px; border-radius:6px; margin-bottom:12px; font-size:0.82rem; color:#A8521F;">
+                <strong>⚠ OBSOLETO</strong> — il corso è cambiato dopo questa versione (modulo modificato, aggiunto, rimosso o riordinato). Rigenera per allineare.
+            </div>
+        @else
+            <div style="font-size:0.75rem; color:#3A8C89; margin-bottom:12px; font-weight:600;">&#10003; AGGIORNATO — {{ $courseDoc->generation_meta['modules'] ?? '' }} moduli allineati al contenuto attuale.</div>
+        @endif
+    @endif
+
+    <div x-show="status!=='generating'">
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        @if(!$courseDoc || $courseDoc->status === 'pending' || $courseDoc->status === 'failed')
+            <form method="POST" action="{{ route('admin.courses.document.generate', $course) }}"
+                  onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='⏳ Avvio…';">
+                @csrf
+                <button type="submit" style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">{{ ($courseDoc?->status ?? null) === 'failed' ? '↻ Riprova' : '✨ Genera documento' }}</button>
+            </form>
+        @elseif($courseDoc->status === 'ready')
+            <a href="{{ route('admin.courses.document.download', $course) }}" style="display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:#3A8C89; color:white; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none;">&#11015; Scarica .pdf</a>
+            <form method="POST" action="{{ route('admin.courses.document.regenerate', $course) }}"
+                  onsubmit="return confirm('Rigenerare il documento del corso? Il file attuale verrà sovrascritto.') && (this.querySelector('button').disabled=true || true);">
+                @csrf
+                <button type="submit" style="padding:9px 16px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Rigenera</button>
+            </form>
+        @endif
+    </div>
+    </div>
+</div>
+
 <div style="background:linear-gradient(135deg,#1A1F1F,#3A8C89); border-radius:10px; padding:20px; margin-top:16px; display:flex; align-items:center; justify-content:space-between;">
     <div>
         <div style="color:#55B1AE; font-weight:700;">&#10022; Genera quiz con Claude AI</div>
@@ -70,4 +122,26 @@
         </div>
     </form>
 </div>
+
+@push('scripts')
+<script>
+// P29 — polling stato documento del corso: generating → ready/failed (poi reload).
+function courseDocumentStatus(initial) {
+    return {
+        status: initial,
+        init() { if (this.status === 'generating') this.poll(); },
+        poll() {
+            const timer = setInterval(async () => {
+                try {
+                    const r = await fetch('{{ route('admin.courses.document.status', $course) }}', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+                    const d = await r.json();
+                    this.status = d.status;
+                    if (d.status === 'ready' || d.status === 'failed') { clearInterval(timer); window.location.reload(); }
+                } catch(e) {}
+            }, 5000);
+        },
+    };
+}
+</script>
+@endpush
 @endsection

@@ -98,6 +98,38 @@ class CourseSourcePdfBuilder
     }
 
     /**
+     * P29 Fase 2 — costruisce il PDF dell'INTERO corso da più sezioni-modulo:
+     * header del corso (TITLE) + per ogni modulo una banda PART col titolo (nuova
+     * pagina) seguita dai blocchi del suo content HTML. Riusa htmlToBlocks/build —
+     * nessun renderer nuovo. Tema arbitrario come buildFromHtml (agnostico).
+     *
+     * @param  list<array{title?: string, html?: string}>  $sections  moduli ordinati
+     * @param  array{title?: string, subtitle?: string}  $meta  title = nome corso, subtitle = sottotitolo
+     */
+    public function buildFromSections(array $sections, array $meta = [], ?ResolvedTheme $theme = null): string
+    {
+        $blocks = [];
+
+        $title = trim((string) ($meta['title'] ?? ''));
+        if ($title !== '') {
+            $blocks[] = ['type' => 'TITLE', 'text' => $title, 'subtitle' => trim((string) ($meta['subtitle'] ?? ''))];
+        }
+
+        foreach ($sections as $section) {
+            $secTitle = trim((string) ($section['title'] ?? ''));
+            if ($secTitle !== '') {
+                // PART = banda piena su nuova pagina (un modulo per pagina).
+                $blocks[] = ['type' => 'PART', 'text' => $secTitle];
+            }
+            foreach ($this->htmlToBlocks((string) ($section['html'] ?? '')) as $block) {
+                $blocks[] = $block;
+            }
+        }
+
+        return $this->build($blocks, $meta, $theme);
+    }
+
+    /**
      * Hex (con o senza '#', 3 o 6 cifre) → [r,g,b]. Input non valido → fallback.
      *
      * @param  array{0:int,1:int,2:int}  $fallback
