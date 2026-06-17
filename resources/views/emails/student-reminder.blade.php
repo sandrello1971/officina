@@ -11,7 +11,7 @@ Riprendi il tuo percorso →
 
 Hai domande sui contenuti? Il chatbot **{{ atheneum_setting('assistant_name', 'Minerva') }}** è sempre disponibile nell'area studenti.
 
-*{{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}*
+*{{ atheneum_setting('platform_tagline', 'Il Rumore Che Serve') }}*
 
 **Team {{ atheneum_setting('platform_owner', 'Noscite') }}**
 @endcomponent

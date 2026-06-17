@@ -28,5 +28,5 @@ Se hai domande, scrivi a [{{ $supportEmail }}](mailto:{{ $supportEmail }}).
 
 Buon lavoro,<br>
 **Il team {{ atheneum_setting('platform_owner', 'Noscite') }}**<br>
-<small>{{ atheneum_setting('instance_name', 'Officina') }} — {{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}</small>
+<small>{{ atheneum_setting('instance_name', 'Officina') }} — {{ atheneum_setting('platform_tagline', 'Il Rumore Che Serve') }}</small>
 </x-mail::message>

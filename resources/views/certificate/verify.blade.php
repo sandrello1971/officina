@@ -146,7 +146,7 @@
 <body>
     <div class="header">
         <div class="logo">{{ atheneum_setting('platform_owner', 'Noscite') }}</div>
-        <div class="tagline">{{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}</div>
+        <div class="tagline">{{ atheneum_setting('platform_tagline', 'Il Rumore Che Serve') }}</div>
     </div>
 
     <div class="card">

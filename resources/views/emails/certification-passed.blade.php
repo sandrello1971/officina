@@ -19,7 +19,7 @@ Scarica il certificato PDF
 
 Il PDF è disponibile dopo aver effettuato l'accesso ad {{ atheneum_setting('instance_name', 'Officina') }}.
 
-*{{ atheneum_setting('platform_tagline', 'In digitālī nova virtūs') }}*
+*{{ atheneum_setting('platform_tagline', 'Il Rumore Che Serve') }}*
 
 **Team {{ atheneum_setting('platform_owner', 'Noscite') }}**
 @endcomponent

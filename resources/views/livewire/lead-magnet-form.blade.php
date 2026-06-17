@@ -37,7 +37,7 @@
                 <span class="text-sm text-gray-600">
                     Ho letto e accetto la
                     <a href="{{ route('privacy') }}" target="_blank" class="text-teal-dark underline hover:text-teal">Privacy Policy</a>
-                    e acconsento a ricevere il PDF e comunicazioni informative da Noscite. *
+                    e acconsento a ricevere il PDF e comunicazioni informative da The Glitch World. *
                 </span>
             </label>
             @error('privacy_accepted') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
