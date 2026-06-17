@@ -30,12 +30,45 @@ class CourseDocumentParser
         return $process->getOutput();
     }
 
+    // P29 ingestion fix — marcatori front-matter del manuale (allowlist): rimossi
+    // anche se POST-heading (extractFrontmatter taglia solo prima del primo <h1>).
+    // Conservativo: si rimuove solo un <p> che È INTERAMENTE il marcatore.
+    private const FRONTMATTER_MARKERS = [
+        '/^MANUALE\s+(?:DISCENTE|DOCENTE|STUDENTE|FORMATORE|PARTECIPANTE)$/iu',
+        '/^(?:GUIDA|DISPENSA)\s+(?:DISCENTE|DOCENTE|STUDENTE|FORMATORE)$/iu',
+        '/nova\s+virt[uū]s/iu',            // payoff latino (tagline brand)
+        '/^il\s+rumore\s+che\s+serve$/iu',  // payoff nuovo (tagline brand)
+    ];
+
+    // Prompt-segnaposto: invitano a scrivere in un campo che NON esiste nell'HTML
+    // → testo penzolante. Allowlist conservativa; si rimuove solo il <p> segnaposto.
+    private const PLACEHOLDER_PROMPTS = [
+        '/^usa\s+questo\s+spazio\b/iu',
+        '/^scrivi\s+(?:qui|le\s+tue|i\s+tuoi)\b/iu',
+        '/^spazio\s+(?:per\s+(?:gli\s+)?appunti|libero)\b/iu',
+        '/^annota\s+qui\b/iu',
+    ];
+
     public function normalizeHeadings(string $html): string
     {
-        // La cattura NON deve attraversare il confine </p>: con il flag /s un
-        // <strong> che è solo prefisso del paragrafo (es. "<strong>Sezione 1</strong>. testo")
-        // farebbe scavalcare al match i paragrafi e gli heading successivi fino al primo
-        // </strong></p>, inglobando interi capitoli in un unico falso heading.
+        // Pipeline conservativa (ordine): pulizia boilerplate → promozione heading.
+        $html = $this->stripParagraphsMatching($html, self::FRONTMATTER_MARKERS);   // difetto (a)
+        $html = $this->stripParagraphsMatching($html, self::PLACEHOLDER_PROMPTS);   // difetto (d)
+        $html = $this->promoteBoldHeadings($html);                                  // esistente
+        $html = $this->promoteNumberedHeadings($html);                              // difetto (c)
+
+        return $html;
+    }
+
+    /**
+     * Promozione heading dal grassetto a inizio paragrafo (logica storica).
+     * La cattura NON deve attraversare il confine </p>: con il flag /s un
+     * <strong> che è solo prefisso del paragrafo (es. "<strong>Sezione 1</strong>. testo")
+     * farebbe scavalcare al match i paragrafi e gli heading successivi fino al primo
+     * </strong></p>, inglobando interi capitoli in un unico falso heading.
+     */
+    private function promoteBoldHeadings(string $html): string
+    {
         return preg_replace_callback(
             '/<p[^>]*>\s*<strong[^>]*>((?:(?!<\/p>).)*?)<\/strong>\s*<\/p>/is',
             function ($m) {
@@ -60,6 +93,91 @@ class CourseDocumentParser
             },
             $html
         );
+    }
+
+    /**
+     * Difetto (a)/(d): rimuove i <p> che SONO interamente un marcatore noto
+     * (front-matter manuale o prompt-segnaposto). Conservativo: match sull'intero
+     * testo del paragrafo + guardia di lunghezza (i marcatori sono righe brevi),
+     * così non si tocca mai un paragrafo di contenuto reale. La cattura non
+     * attraversa </p> (come promoteBoldHeadings).
+     *
+     * @param  list<string>  $patterns
+     */
+    private function stripParagraphsMatching(string $html, array $patterns): string
+    {
+        return preg_replace_callback(
+            '/<p[^>]*>((?:(?!<\/p>).)*?)<\/p>\s*/is',
+            function ($m) use ($patterns) {
+                $text = trim(strip_tags($m[1]));
+                // Solo righe brevi: i marcatori/prompt sono corti; il contenuto reale no.
+                if ($text === '' || mb_strlen($text) > 120) {
+                    return $m[0];
+                }
+                foreach ($patterns as $re) {
+                    if (preg_match($re, $text)) {
+                        return ''; // rimuove l'intero <p> marcatore
+                    }
+                }
+
+                return $m[0];
+            },
+            $html
+        );
+    }
+
+    /**
+     * Difetto (c): promuove a heading i <p> "N. TITOLO" (numero + titolo di
+     * sezione), tipici di manuali con stili Word incoerenti. MOLTO conservativo:
+     * solo se il testo dopo "N. " è un titolo plausibile — prevalentemente
+     * maiuscolo, breve, senza punteggiatura di frase — così "1. compra il latte"
+     * (voce di lista/frase) NON viene promosso. Livello h3 (sotto il top-level):
+     * non interferisce mai con lo split dei moduli (h1/h2).
+     */
+    private function promoteNumberedHeadings(string $html): string
+    {
+        return preg_replace_callback(
+            '/<p[^>]*>((?:(?!<\/p>).)*?)<\/p>/is',
+            function ($m) {
+                $text = trim(strip_tags($m[1]));
+                if (!preg_match('/^\d+\.\s+(\S.*)$/u', $text, $mm)) {
+                    return $m[0];
+                }
+                if (!$this->looksLikeSectionTitle(trim($mm[1]))) {
+                    return $m[0];
+                }
+
+                return '<h3>' . $m[1] . '</h3>';
+            },
+            $html
+        );
+    }
+
+    /**
+     * Euristica conservativa "è un titolo di sezione?": breve, poche parole,
+     * niente punteggiatura di frase finale, e lettere PREVALENTEMENTE MAIUSCOLE
+     * (≥60%). Separa "UTILIZZO DEGLI STRUMENTI AI" (titolo) da "compra il latte"
+     * o "Compra il latte" (lista/frase, che NON vanno promossi).
+     */
+    private function looksLikeSectionTitle(string $rest): bool
+    {
+        if ($rest === '' || mb_strlen($rest) > 80) {
+            return false;
+        }
+        if (preg_match('/[.;:]\s*$/u', $rest)) {
+            return false; // termina come una frase/voce → non è un titolo
+        }
+        if (str_word_count(preg_replace('/[^\p{L}\s]/u', ' ', $rest)) > 10) {
+            return false; // troppo lungo per un titolo
+        }
+
+        $letters = preg_replace('/[^\p{L}]/u', '', $rest);
+        if ($letters === '') {
+            return false;
+        }
+        $upper = preg_replace('/[^\p{Lu}]/u', '', $rest);
+
+        return mb_strlen($upper) / max(1, mb_strlen($letters)) >= 0.6;
     }
 
     public function splitIntoModules(string $normalizedHtml): array
