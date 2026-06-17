@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BrandProfile;
 use App\Models\CourseDocument;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -20,6 +21,31 @@ use RuntimeException;
 class CourseDocumentService
 {
     public function __construct(private CourseSourcePdfBuilder $builder) {}
+
+    /**
+     * P29 Fase 3 — generazione ON-ACCESS della dispensa di corso (gemella di
+     * ModuleDocumentService::ensureReadyAndFresh). Lock atomico per-corso: il
+     * primo accesso genera per tutti, gli altri attendono e trovano il file
+     * pronto. Sincrono (TCPDF, no LLM).
+     *
+     * @throws \Illuminate\Contracts\Cache\LockTimeoutException
+     * @return CourseDocument pronto (status=ready, file presente)
+     */
+    public function ensureReadyAndFresh(CourseDocument $cd): CourseDocument
+    {
+        if ($cd->status === 'ready' && !$cd->isStale()) {
+            return $cd;
+        }
+
+        return Cache::lock("course-document:{$cd->course_id}", 60)->block(30, function () use ($cd) {
+            $cd->refresh();
+            if ($cd->status === 'ready' && !$cd->isStale()) {
+                return $cd;
+            }
+
+            return $this->buildDocumentForCourse($cd);
+        });
+    }
 
     /**
      * Costruisce il PDF del corso, lo salva in storage privato e aggiorna il

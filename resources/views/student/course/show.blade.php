@@ -237,6 +237,31 @@
     </div>
     @endif
 
+    {{-- P29 — dispensa PDF dell'intero corso (tutti i moduli, generata on-access) --}}
+    @if($hasCourseDocument)
+    <div style="background:white; border-radius:12px; padding:20px; margin-bottom:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.3rem;">📘</span>
+                <div>
+                    <div style="font-weight:700; color:#1A1F1F; font-size:0.95rem;">Dispensa del corso (PDF)</div>
+                    <div style="color:#8A9696; font-size:0.75rem;">Un unico documento con tutti i moduli, sempre aggiornato.</div>
+                </div>
+            </div>
+            @if($isDemoView)
+                <span style="padding:6px 12px; background:#F5F7F7; color:#8A9696; border-radius:6px; font-size:0.78rem;">
+                    🔒 Solo versione completa
+                </span>
+            @else
+                <a href="{{ route('student.course.document.download', $course->slug) }}"
+                   style="padding:6px 14px; background:#E8F5F5; color:#3A8C89; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
+                    📥 Scarica dispensa
+                </a>
+            @endif
+        </div>
+    </div>
+    @endif
+
     <div style="display:flex; flex-direction:column; gap:8px;">
         @foreach($modules as $index => $module)
         @php

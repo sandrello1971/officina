@@ -15,6 +15,8 @@ class DemoRestrictions
         if ($student && $student->is_demo) {
             if ($request->routeIs('student.material.download') ||
                 $request->routeIs('student.material.canvas') ||
+                $request->routeIs('student.module.document.download') ||
+                $request->routeIs('student.course.document.download') ||
                 $request->is('storage/materials/*') ||
                 $request->is('learn/certificate/*')) {
                 return response()->json(['error' => 'Funzione non disponibile in modalità demo'], 403);

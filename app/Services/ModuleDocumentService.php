@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BrandProfile;
 use App\Models\ModuleDocument;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -21,6 +22,36 @@ use RuntimeException;
 class ModuleDocumentService
 {
     public function __construct(private CourseSourcePdfBuilder $builder) {}
+
+    /**
+     * P29 Fase 3 — generazione ON-ACCESS lato studente/instructor: garantisce un
+     * documento pronto e ALLINEATO al contenuto, generandolo al volo se manca,
+     * non è ready o è stale. Un Cache::lock atomico serializza la generazione: il
+     * primo accesso genera per tutti (cache condivisa), gli altri attendono e
+     * trovano il file pronto — niente doppia generazione (anti-race). Il PDF è
+     * in-process e veloce (TCPDF, no LLM) → sincrono, niente polling.
+     *
+     * @throws \Illuminate\Contracts\Cache\LockTimeoutException se il lock non si acquisisce in tempo
+     * @return ModuleDocument pronto (status=ready, file presente)
+     */
+    public function ensureReadyAndFresh(ModuleDocument $md): ModuleDocument
+    {
+        // Fast-path: già pronto e allineato → nessun lavoro, nessun lock.
+        if ($md->status === 'ready' && !$md->isStale()) {
+            return $md;
+        }
+
+        // Lock per-modulo (TTL ampio: il build è breve). block(N) = attende fino a N s.
+        return Cache::lock("module-document:{$md->module_id}", 60)->block(30, function () use ($md) {
+            $md->refresh();
+            // Ricontrollo dentro il lock: un altro accesso può aver già generato.
+            if ($md->status === 'ready' && !$md->isStale()) {
+                return $md;
+            }
+
+            return $this->buildDocumentForModule($md);
+        });
+    }
 
     /**
      * Costruisce il PDF del modulo, lo salva in storage privato e aggiorna il
