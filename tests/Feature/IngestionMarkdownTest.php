@@ -239,4 +239,68 @@ MD;
         $docxLike = '<h1>PARTE PRIMA — CAPIRE L\'AI</h1><h2>Capitolo 1</h2><p>Prosa del capitolo.</p>';
         $this->assertFalse($parser->isDividerModule('PARTE PRIMA — CAPIRE L\'AI', $docxLike));
     }
+
+    // ============================================================
+    // BUG FIX: <p><strong> NON è un confine di modulo nel Markdown
+    // ============================================================
+
+    public function test_markdown_non_promuove_strong_a_modulo(): void
+    {
+        // 2 veri # + 3 "**Sezione N**" (grassetto). I confini sono SOLO i 2 #.
+        $md = <<<'MD'
+# Modulo 1 — Workshop
+
+Introduzione al workshop.
+
+**Sezione 1 — Obiettivo**
+
+Testo della sezione uno.
+
+**Sezione 2 — Dati**
+
+Testo della sezione due.
+
+**Sezione 3 — Output**
+
+Testo della sezione tre.
+
+# Modulo 2 — Glossario
+
+Voci del glossario.
+MD;
+        $parser = $this->parser();
+        $norm = $parser->normalizeMarkdownHtml($parser->convertManualToHtml($this->writeMd($md)));
+
+        // Conta SOLO i veri <h1> (2), non i 3 <p><strong>.
+        $this->assertSame(2, preg_match_all('/<h1[^>]*>/i', $norm));
+
+        $modules = $parser->splitIntoModules($norm);
+        $this->assertCount(2, $modules, 'Solo 2 moduli (i #), le Sezioni NON sono moduli.');
+        $this->assertSame('Modulo 1 — Workshop', $modules[0]['title']);
+
+        // Le 3 Sezioni restano DENTRO il Modulo 1 come <p><strong>, non come moduli.
+        $this->assertSame(3, substr_count($modules[0]['content_html'], 'Sezione '));
+        $this->assertStringContainsString('<strong>Sezione 1 — Obiettivo</strong>', $modules[0]['content_html']);
+    }
+
+    public function test_suggest_split_level_ignora_gli_strong(): void
+    {
+        // "SEZIONE N" in grassetto NON deve gonfiare il conteggio h1 → resta level 1 su 6 #.
+        $md = "# A\n\nx.\n\n**Sezione 1**\n\ny.\n\n# B\n\nz.\n\n**Sezione 2**\n\nw.";
+        $parser = $this->parser();
+        $norm = $parser->normalizeMarkdownHtml($parser->convertManualToHtml($this->writeMd($md)));
+        $this->assertSame(2, preg_match_all('/<h1[^>]*>/i', $norm));
+        $this->assertSame(1, $parser->suggestSplitLevel($norm));
+    }
+
+    public function test_docx_normalize_ANCORA_promuove_strong_invariato(): void
+    {
+        // Divergenza voluta: il ramo DOCX continua a promuovere i bold-heading
+        // (Word li usa come heading). normalizeHeadings invariato.
+        $parser = $this->parser();
+        $docx = '<p><strong>SEZIONE 1 — Obiettivo</strong></p><p>testo</p>';
+        $this->assertStringContainsString('<h1>', $parser->normalizeHeadings($docx));
+        // Mentre il ramo Markdown lo lascia paragrafo:
+        $this->assertStringNotContainsString('<h1>', $parser->normalizeMarkdownHtml($docx));
+    }
 }

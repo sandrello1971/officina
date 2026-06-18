@@ -42,10 +42,15 @@ class ParseCourseDocumentsJob implements ShouldQueue
             CourseIngestProgress::setStage($this->jobId, 1, 'Conversione manuale discente...');
             $manualHtml = $parser->convertManualToHtml($manualAbsPath);
 
-            // Stage 2: normalize headings + split into modules + separate exam prep
+            // Stage 2: normalize headings + split into modules + separate exam prep.
+            // Markdown: heading espliciti → niente promozione bold/numerati (un
+            // <p><strong> NON è un heading). Docx: promozione necessaria (Word).
             $stage = 2;
             CourseIngestProgress::setStage($this->jobId, 2, 'Identificazione struttura moduli...');
-            $normalizedHtml = $parser->normalizeHeadings($manualHtml);
+            $ext = strtolower(pathinfo($manualAbsPath, PATHINFO_EXTENSION));
+            $normalizedHtml = in_array($ext, ['md', 'markdown'], true)
+                ? $parser->normalizeMarkdownHtml($manualHtml)
+                : $parser->normalizeHeadings($manualHtml);
             $modules = $parser->splitIntoModules($normalizedHtml);
 
             $separated = $parser->separateExamPrep($modules);
