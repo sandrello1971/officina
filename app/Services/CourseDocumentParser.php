@@ -225,9 +225,13 @@ class CourseDocumentParser
     private const DIVIDER_TITLE_PATTERN =
         '/^(?:PARTE|SEZIONE|UNIT[ÀA]|MODULO|BLOCCO)\s+(?:PRIMA|SECONDA|TERZA|QUARTA|QUINTA|SESTA|SETTIMA|OTTAVA|NONA|DECIMA|[IVXLC]+|\d+)\b/iu';
 
-    public function splitIntoModules(string $normalizedHtml): array
+    /**
+     * @param  int|null  $level  livello di split (1=h1, 2=h2). null → auto (chooseTopLevel).
+     *                           Backward-compatible: i caller esistenti non passano il livello.
+     */
+    public function splitIntoModules(string $normalizedHtml, ?int $level = null): array
     {
-        $level = $this->chooseTopLevel($normalizedHtml);
+        $level = $level ?? $this->chooseTopLevel($normalizedHtml);
         $modules = $this->extractTopLevelSections($normalizedHtml, $level);
 
         // Fallback: nessun titolo riconosciuto come heading → modulo unico con tutto il contenuto.
@@ -411,6 +415,28 @@ SYS;
 
         if ($h1Count > 0) return 1;
         if ($h2Count > 0) return 2;
+        return 1;
+    }
+
+    /**
+     * Suggerisce il livello di split robusto alla granularità del .md:
+     *  - un SOLO h1 (titolo-manuale) + ≥2 h2 → livello 2 (i moduli sono i ##);
+     *  - ≥2 h1 → livello 1 (i moduli sono i #);
+     *  - altrimenti → 1 (default).
+     * I conteggi h1/h2 vanno passati sull'HTML GIÀ normalizzato.
+     */
+    public function suggestSplitLevel(string $normalizedHtml): int
+    {
+        $h1 = preg_match_all('/<h1[^>]*>/i', $normalizedHtml);
+        $h2 = preg_match_all('/<h2[^>]*>/i', $normalizedHtml);
+
+        if ($h1 <= 1 && $h2 >= 2) {
+            return 2;
+        }
+        if ($h1 >= 2) {
+            return 1;
+        }
+
         return 1;
     }
 
