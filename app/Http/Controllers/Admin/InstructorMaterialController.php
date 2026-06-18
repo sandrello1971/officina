@@ -21,7 +21,7 @@ class InstructorMaterialController extends Controller
         $data = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'docx'        => 'required|file|extensions:docx,doc|max:20480',
+            'docx'        => 'required|file|extensions:docx,doc,md,markdown|max:20480',
         ]);
 
         try {
@@ -52,7 +52,7 @@ class InstructorMaterialController extends Controller
         $data = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'docx'        => 'nullable|file|extensions:docx,doc|max:20480',
+            'docx'        => 'nullable|file|extensions:docx,doc,md,markdown|max:20480',
         ]);
 
         try {

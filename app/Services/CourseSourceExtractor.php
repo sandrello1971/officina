@@ -62,6 +62,27 @@ class CourseSourceExtractor
     }
 
     /**
+     * Estrae i blocchi da un file Markdown (.md/.markdown). Gemello di
+     * extractFromDocx: cambia SOLO il convertitore davanti (gfm→json invece di
+     * docx→json); mapAst() è riusato as-is (format-agnostic sull'AST pandoc),
+     * quindi block_id/claim hanno la STESSA forma del docx → la Freshness
+     * (FreshnessAgent, StudentMatchFinder, StudentRewriter) funziona identica.
+     *
+     * @return array{blocks: list<array>, frontmatter: list<string>, warnings: list<string>}
+     */
+    public function extractFromMarkdown(string $mdPath): array
+    {
+        if (!is_file($mdPath)) {
+            throw new RuntimeException("File .md non trovato: {$mdPath}");
+        }
+
+        $this->assertPandocAvailable();
+        $ast = $this->markdownToAst($mdPath);
+
+        return $this->mapAst($ast);
+    }
+
+    /**
      * Verifica esplicita che pandoc sia installato e invocabile. Se manca, errore
      * CHIARO (non un crash oscuro più avanti nella pipeline).
      */
@@ -110,6 +131,34 @@ class CourseSourceExtractor
 
         if (!$process->isSuccessful()) {
             throw new RuntimeException('pandoc ha fallito la conversione .docx→json: ' . $process->getErrorOutput());
+        }
+
+        $ast = json_decode($process->getOutput(), true);
+        if (!is_array($ast) || !isset($ast['blocks']) || !is_array($ast['blocks'])) {
+            throw new RuntimeException('Output pandoc non valido: AST senza chiave "blocks".');
+        }
+
+        return $ast;
+    }
+
+    /**
+     * Converte il .md in AST pandoc (JSON) con `--from=gfm`. Gemello di docxToAst:
+     * stesso `--to=json`, stesso AST a valle → mapAst() lo tratta identico.
+     *
+     * @return array AST pandoc decodificato (chiave 'blocks')
+     */
+    private function markdownToAst(string $mdPath): array
+    {
+        $process = new Process([
+            'pandoc', $mdPath,
+            '--from=gfm',
+            '--to=json',
+        ]);
+        $process->setTimeout(120);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            throw new RuntimeException('pandoc ha fallito la conversione .md→json: ' . $process->getErrorOutput());
         }
 
         $ast = json_decode($process->getOutput(), true);

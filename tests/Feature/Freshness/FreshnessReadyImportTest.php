@@ -63,7 +63,8 @@ class FreshnessReadyImportTest extends TestCase
             $rag,
             app(InstructorManualSplitterService::class),
             $extractor,
-            app(CoordinatedMatchService::class)
+            app(CoordinatedMatchService::class),
+            app(\App\Services\CourseDocumentParser::class)
         );
     }
 

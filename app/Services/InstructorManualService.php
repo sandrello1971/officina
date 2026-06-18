@@ -9,11 +9,11 @@ use App\Models\DocumentRag;
 use App\Models\Material;
 use App\Models\UpdateProposal;
 use App\Services\Freshness\CoordinatedMatchService;
+use App\Services\CourseDocumentParser;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Symfony\Component\Process\Process;
 
 class InstructorManualService
 {
@@ -31,7 +31,8 @@ class InstructorManualService
         protected RagService $rag,
         protected InstructorManualSplitterService $splitter,
         protected CourseSourceExtractor $sourceExtractor,
-        protected CoordinatedMatchService $coordinatedMatch
+        protected CoordinatedMatchService $coordinatedMatch,
+        protected CourseDocumentParser $parser
     ) {}
 
     public function import(
@@ -46,12 +47,14 @@ class InstructorManualService
             throw new \InvalidArgumentException("File non trovato: {$sourcePath}");
         }
 
-        $html = $this->convertDocxToHtml($sourcePath);
-        if ($html === null) {
-            throw new \RuntimeException('Conversione pandoc fallita');
+        // Dispatcher per estensione (docx→pandoc docx, md→pandoc gfm): riusa il
+        // convertitore del parser, deduplicando il vecchio convertDocxToHtml privato.
+        $html = $this->parser->convertManualToHtml($sourcePath);
+        if (trim($html) === '') {
+            throw new \RuntimeException('Conversione pandoc fallita (HTML vuoto)');
         }
 
-        $ext = pathinfo($sourcePath, PATHINFO_EXTENSION) ?: 'docx';
+        $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION) ?: 'docx');
         $filename = Str::slug($title) . '-' . time() . '.' . $ext;
         $storedPath = "instructor-manuals/{$course->slug}/{$filename}";
 
@@ -104,9 +107,9 @@ class InstructorManualService
         }
 
         $absolutePath = Storage::disk('local')->path($material->file_path);
-        $html = $this->convertDocxToHtml($absolutePath);
-        if ($html === null) {
-            throw new \RuntimeException('Conversione pandoc fallita');
+        $html = $this->parser->convertManualToHtml($absolutePath);
+        if (trim($html) === '') {
+            throw new \RuntimeException('Conversione pandoc fallita (HTML vuoto)');
         }
 
         $material->update(['content_html' => $html]);
@@ -174,13 +177,21 @@ class InstructorManualService
         bool $confirmOverwrite = false
     ): Material {
         $ext = strtolower($file->getClientOriginalExtension());
-        if (!in_array($ext, ['docx', 'doc'])) {
-            throw new \InvalidArgumentException('Solo file .docx o .doc sono supportati');
+        if (!in_array($ext, ['docx', 'doc', 'md', 'markdown'], true)) {
+            throw new \InvalidArgumentException('Solo file .docx, .doc, .md o .markdown sono supportati');
         }
 
-        $tempPath = $file->getRealPath();
+        // I file temporanei PHP non hanno estensione: copiamo in un temp CON
+        // l'estensione corretta, così il dispatcher per estensione (HTML e
+        // course_sources) sceglie il ramo giusto (docx vs markdown).
+        $tempPath = tempnam(sys_get_temp_dir(), 'instr_') . '.' . $ext;
+        copy($file->getRealPath(), $tempPath);
 
-        return $this->import($tempPath, $course, $title, $description, $existing, $confirmOverwrite);
+        try {
+            return $this->import($tempPath, $course, $title, $description, $existing, $confirmOverwrite);
+        } finally {
+            @unlink($tempPath);
+        }
     }
 
     /**
@@ -222,7 +233,12 @@ class InstructorManualService
                 return;
             }
 
-            $result = $this->sourceExtractor->extractFromDocx($docxAbsolutePath);
+            // Dispatcher per estensione: il formatore .md genera course_sources
+            // ESATTAMENTE come il docx (mapAst condiviso) → la Freshness non si rompe.
+            $srcExt = strtolower(pathinfo($docxAbsolutePath, PATHINFO_EXTENSION));
+            $result = in_array($srcExt, ['md', 'markdown'], true)
+                ? $this->sourceExtractor->extractFromMarkdown($docxAbsolutePath)
+                : $this->sourceExtractor->extractFromDocx($docxAbsolutePath);
             $blocks = $result['blocks'] ?? [];
             if (empty($blocks)) {
                 $this->lastSourceSync = ['status' => 'empty'];
@@ -306,26 +322,4 @@ class InstructorManualService
         throw new \RuntimeException("Versione non incrementabile in modo deterministico: {$v}");
     }
 
-    private function convertDocxToHtml(string $docxPath): ?string
-    {
-        $process = new Process([
-            'pandoc',
-            $docxPath,
-            '--from=docx',
-            '--to=html5',
-            '--wrap=none',
-        ]);
-        $process->setTimeout(60);
-        $process->run();
-
-        if (!$process->isSuccessful()) {
-            Log::error('pandoc failed', [
-                'input' => $docxPath,
-                'error' => $process->getErrorOutput(),
-            ]);
-            return null;
-        }
-
-        return $process->getOutput();
-    }
 }
