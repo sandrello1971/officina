@@ -51,7 +51,7 @@ class ReimportCourseFromMarkdown extends Command
         }
 
         // --- Conversione + scelta livello ---
-        $normalized = $parser->normalizeHeadings($parser->convertManualToHtml($mdPath));
+        $normalized = $parser->normalizeMarkdownHtml($parser->convertManualToHtml($mdPath));
         $h1 = preg_match_all('/<h1[^>]*>/i', $normalized);
         $h2 = preg_match_all('/<h2[^>]*>/i', $normalized);
 

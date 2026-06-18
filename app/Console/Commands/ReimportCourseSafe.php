@@ -105,7 +105,7 @@ class ReimportCourseSafe extends Command
     /** Avvisi DA VERIFICARE: moduli-intestazione (<150 char), split-level 2, zero divisori. */
     private function emitWarnings(CourseDocumentParser $parser, string $mdPath): void
     {
-        $normalized = $parser->normalizeHeadings($parser->convertManualToHtml($mdPath));
+        $normalized = $parser->normalizeMarkdownHtml($parser->convertManualToHtml($mdPath));
         $level = $parser->suggestSplitLevel($normalized);
         $modules = $parser->splitIntoModules($normalized, $level);
 

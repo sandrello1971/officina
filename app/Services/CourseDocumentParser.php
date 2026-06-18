@@ -92,10 +92,27 @@ class CourseDocumentParser
     public function normalizeHeadings(string $html): string
     {
         // Pipeline conservativa (ordine): pulizia boilerplate → promozione heading.
+        // Promozione bold/numerati: serve al DOCX (Word codifica gli heading come
+        // paragrafi in grassetto). NON va applicata al Markdown (heading espliciti).
         $html = $this->stripParagraphsMatching($html, self::FRONTMATTER_MARKERS);   // difetto (a)
         $html = $this->stripParagraphsMatching($html, self::PLACEHOLDER_PROMPTS);   // difetto (d)
-        $html = $this->promoteBoldHeadings($html);                                  // esistente
-        $html = $this->promoteNumberedHeadings($html);                              // difetto (c)
+        $html = $this->promoteBoldHeadings($html);                                  // esistente (docx)
+        $html = $this->promoteNumberedHeadings($html);                              // difetto (c) (docx)
+
+        return $html;
+    }
+
+    /**
+     * Normalizzazione per il MARKDOWN: SOLO pulizia boilerplate, NESSUNA promozione
+     * heading. In Markdown gli heading sono già espliciti (pandoc #→<h1>, ##→<h2>),
+     * mentre un <p><strong>Sezione 1 — …</strong></p> è ENFASI inline, non un heading:
+     * promuoverlo a <h1> spezzerebbe i moduli (bug "strong come confine"). I confini
+     * di modulo restano quindi SOLO i veri <h1>/<h2> prodotti da pandoc.
+     */
+    public function normalizeMarkdownHtml(string $html): string
+    {
+        $html = $this->stripParagraphsMatching($html, self::FRONTMATTER_MARKERS);
+        $html = $this->stripParagraphsMatching($html, self::PLACEHOLDER_PROMPTS);
 
         return $html;
     }
