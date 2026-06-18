@@ -29,10 +29,11 @@
 
         <div style="margin-bottom:20px;">
             <label style="font-size:0.85rem; font-weight:700; color:#1A1F1F; display:block; margin-bottom:8px;">📖 Manuale discente *</label>
-            <input type="file" name="manual_file" accept=".docx,.doc" required
+            <input type="file" name="manual_file" accept=".docx,.doc,.md,.markdown" required
                    style="width:100%; padding:12px; border:2px dashed #55B1AE; border-radius:8px; font-size:0.85rem; background:#F5F7F7;">
             <p style="font-size:0.75rem; color:#8A9696; margin-top:6px;">
-                DOCX (Word) con struttura "PARTE PRIMA — Titolo", "Capitolo N", "X.Y". Max 50MB.
+                DOCX (Word) con struttura "PARTE PRIMA — Titolo", "Capitolo N", "X.Y" —
+                oppure Markdown strutturato (# = modulo, ## = sezione). Max 50MB.
             </p>
             @error('manual_file')<p style="color:#E28A53; font-size:0.75rem; margin-top:4px;">{{ $message }}</p>@enderror
         </div>
