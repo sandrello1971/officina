@@ -199,9 +199,9 @@
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <div style="flex:1; min-width:250px;">
                         <label style="font-size:0.75rem; color:#8A9696; font-weight:600;">
-                            Sostituisci file .docx (opzionale)
+                            Sostituisci file .docx o .md (opzionale)
                         </label>
-                        <input type="file" name="docx" accept=".docx,.doc"
+                        <input type="file" name="docx" accept=".docx,.doc,.md,.markdown"
                                style="width:100%; font-size:0.8rem;">
                     </div>
                     <div style="font-size:0.75rem; color:#8A9696;">
@@ -274,8 +274,9 @@
                        style="width:100%; padding:8px; border:1px solid #E8F5F5; border-radius:6px; font-size:0.85rem;">
                 <input type="text" name="description" placeholder="Descrizione (opzionale)"
                        style="width:100%; padding:8px; border:1px solid #E8F5F5; border-radius:6px; font-size:0.85rem;">
-                <input type="file" name="docx" accept=".docx,.doc" required
+                <input type="file" name="docx" accept=".docx,.doc,.md,.markdown" required
                        style="font-size:0.8rem;">
+                <div style="font-size:0.72rem; color:#8A9696;">DOCX (Word) o Markdown (.md): genera HTML di consultazione + sorgente Freshness.</div>
                 @include('admin.courses.partials.source-overwrite-warning')
                 <div style="display:flex; justify-content:flex-end;">
                     <button type="submit"
