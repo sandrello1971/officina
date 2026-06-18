@@ -37,10 +37,10 @@ class ParseCourseDocumentsJob implements ShouldQueue
                 ? Storage::disk('local')->path($this->examStoragePath)
                 : null;
 
-            // Stage 1: pandoc conversion
+            // Stage 1: pandoc conversion (docx o markdown, via dispatcher per estensione)
             $stage = 1;
             CourseIngestProgress::setStage($this->jobId, 1, 'Conversione manuale discente...');
-            $manualHtml = $parser->convertDocxToHtml($manualAbsPath);
+            $manualHtml = $parser->convertManualToHtml($manualAbsPath);
 
             // Stage 2: normalize headings + split into modules + separate exam prep
             $stage = 2;

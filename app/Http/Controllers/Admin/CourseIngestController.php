@@ -25,7 +25,8 @@ class CourseIngestController extends Controller
     public function parse(Request $request)
     {
         $request->validate([
-            'manual_file' => 'required|file|mimes:docx,doc|max:51200',
+            // .md è text/plain → la regola mimes non basta: si usa extensions (Laravel 13.5).
+            'manual_file' => 'required|file|extensions:docx,doc,md,markdown|max:51200',
             'exam_file' => 'nullable|file|mimes:docx,doc|max:20480',
             'color' => 'nullable|string|max:20',
             'icon' => 'nullable|string|max:20',

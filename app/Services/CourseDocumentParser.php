@@ -30,6 +30,46 @@ class CourseDocumentParser
         return $process->getOutput();
     }
 
+    /**
+     * Converte un manuale Markdown (GitHub-Flavored) in HTML, nella STESSA forma
+     * di convertDocxToHtml (h1/h2/p/em/ul…), così lo split moduli a valle è
+     * identico. Il .md è strutturalmente esplicito (#=heading certo) → più
+     * affidabile del docx. pandoc gestisce l'UTF-8 (accenti) leggendo il file.
+     */
+    public function convertMarkdownToHtml(string $mdPath): string
+    {
+        $process = new Process([
+            'pandoc',
+            $mdPath,
+            '--from=gfm',
+            '--to=html5',
+            '--wrap=none',
+        ]);
+        $process->setTimeout(60);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            throw new \RuntimeException('pandoc (markdown) fallito: ' . $process->getErrorOutput());
+        }
+
+        return $process->getOutput();
+    }
+
+    /**
+     * Dispatcher per estensione: instrada il manuale al convertitore giusto.
+     * .md/.markdown → Markdown (gfm); tutto il resto (.docx/.doc) → ramo docx
+     * INVARIATO. Punto unico di diramazione per tipo file dell'ingestion.
+     */
+    public function convertManualToHtml(string $path): string
+    {
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+        return match ($ext) {
+            'md', 'markdown' => $this->convertMarkdownToHtml($path),
+            default => $this->convertDocxToHtml($path),
+        };
+    }
+
     // P29 ingestion fix — marcatori front-matter del manuale (allowlist): rimossi
     // anche se POST-heading (extractFrontmatter taglia solo prima del primo <h1>).
     // Conservativo: si rimuove solo un <p> che È INTERAMENTE il marcatore.
@@ -180,6 +220,11 @@ class CourseDocumentParser
         return mb_strlen($upper) / max(1, mb_strlen($letters)) >= 0.6;
     }
 
+    // Pattern-titolo di SEZIONE (allowlist estendibile): conferma per il divisore.
+    // NON è il criterio decisivo — quello è l'assenza di corpo (vedi isDividerModule).
+    private const DIVIDER_TITLE_PATTERN =
+        '/^(?:PARTE|SEZIONE|UNIT[ÀA]|MODULO|BLOCCO)\s+(?:PRIMA|SECONDA|TERZA|QUARTA|QUINTA|SESTA|SETTIMA|OTTAVA|NONA|DECIMA|[IVXLC]+|\d+)\b/iu';
+
     public function splitIntoModules(string $normalizedHtml): array
     {
         $level = $this->chooseTopLevel($normalizedHtml);
@@ -196,7 +241,50 @@ class CourseDocumentParser
             ];
         }
 
+        // Classifica ogni modulo: divisore (solo titolo, es. "PARTE PRIMA") vs
+        // contenuto. Vale per entrambi i rami (md e docx) a valle dello split:
+        // nel docx i moduli-PARTE hanno corpo (i Capitoli h2) → restano contenuto,
+        // quindi il comportamento docx non cambia.
+        foreach ($modules as &$mod) {
+            $mod['is_divider'] = $this->isDividerModule($mod['title'], $mod['content_html']);
+        }
+        unset($mod);
+
         return $modules;
+    }
+
+    /**
+     * Un top-level heading è un DIVISORE (es. "PARTE PRIMA — …") quando non ha
+     * corpo: solo il titolo, nessun contenuto fino al modulo successivo.
+     *
+     * Criterio PRIMARIO e robusto: ASSENZA DI CORPO (un capitolo vero ha sempre
+     * prosa; un divisore no) → indipendente dalla parola-chiave. Il pattern-titolo
+     * (PARTE/SEZIONE/UNITÀ/MODULO + ordinale) è una CONFERMA secondaria, non
+     * decisiva: un capitolo con titolo ambiguo ma con corpo NON è un divisore.
+     */
+    public function isDividerModule(string $title, string $contentHtml): bool
+    {
+        if ($this->hasBodyAfterHeading($contentHtml)) {
+            return false; // ha corpo → modulo-contenuto (il no-corpo è il criterio primario)
+        }
+
+        // Nessun corpo → divisore. Il pattern-titolo conferma (telemetria/robustezza),
+        // ma anche un heading vuoto senza pattern resta un divisore (no contenuto da rendere).
+        return true;
+    }
+
+    /** True se il titolo combacia col pattern di sezione (conferma del divisore). */
+    public function looksLikeDividerTitle(string $title): bool
+    {
+        return (bool) preg_match(self::DIVIDER_TITLE_PATTERN, trim($title));
+    }
+
+    /** True se, tolto il primo heading, resta del testo reale nel blocco. */
+    private function hasBodyAfterHeading(string $contentHtml): bool
+    {
+        $body = preg_replace('/^\s*<(h[1-6])\b[^>]*>.*?<\/\1>/is', '', $contentHtml, 1);
+
+        return trim(strip_tags((string) $body)) !== '';
     }
 
     public function normalizeAndSplitIntoModules(string $html): array
