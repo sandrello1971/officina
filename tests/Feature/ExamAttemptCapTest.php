@@ -100,22 +100,23 @@ class ExamAttemptCapTest extends TestCase
         $student->courses()->attach($course->id, ['enrolled_at' => now(), 'is_active' => true]);
         $quiz = $this->makeExamQuiz($course, 1);
 
-        // 1 abandoned (incomplete row that becomes completed-abandoned on next start)
+        // Un tentativo ABBANDONATO (già chiuso da abandon()/reaper) consuma uno slot.
+        // Semantica nuova: start() su un tentativo APERTO lo RIPRENDE (refresh); qui
+        // il tentativo è già completato-abbandonato → conta verso il cap.
         QuizAttempt::create([
             'quiz_id' => $quiz->id, 'student_id' => $student->id,
-            'started_at' => now()->subMinutes(10), 'attempt_number' => 1,
+            'started_at' => now()->subMinutes(10), 'completed_at' => now()->subMinutes(8),
+            'score' => 0, 'passed' => false, 'abandoned' => true, 'attempt_number' => 1,
         ]);
 
-        // Next start: first auto-fails old (abandoned), then checks cap → 403
+        // Nessuno slot residuo (max=1, già 1 abbandonato) → nuovo start bloccato.
         $this->actingAsStudent($student)
             ->postJson(route('student.quiz.start', $quiz))
             ->assertStatus(403)
             ->assertJson(['attempts_exhausted' => true]);
 
-        // Verify the old attempt was marked abandoned
-        $old = QuizAttempt::where('quiz_id', $quiz->id)->first();
-        $this->assertTrue((bool) $old->abandoned);
-        $this->assertNotNull($old->completed_at);
+        // Nessun nuovo tentativo creato.
+        $this->assertSame(1, QuizAttempt::where('quiz_id', $quiz->id)->count());
     }
 
     public function test_zero_or_null_max_means_unlimited(): void

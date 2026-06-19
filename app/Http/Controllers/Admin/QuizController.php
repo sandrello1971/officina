@@ -90,8 +90,21 @@ class QuizController extends Controller
             'time_limit_minutes' => 'nullable|integer|min:0',
             'max_attempts' => 'nullable|integer|min:0',
             'randomize_questions' => 'nullable',
+            'questions_per_attempt' => 'nullable|integer|min:1',
             'is_active' => 'nullable',
         ]);
+
+        // Pool: questions_per_attempt deve essere ≤ numero di domande del quiz
+        // (non puoi estrarre 20 da 15). Vuoto/0 = NULL = somministra tutte.
+        $perAttempt = ($data['questions_per_attempt'] ?? null) ?: null;
+        if ($perAttempt !== null) {
+            $pool = $quiz->questions()->count();
+            if ($perAttempt > $pool) {
+                return back()->withInput()->with('error',
+                    "Non puoi estrarre {$perAttempt} domande da un pool di {$pool}. Riduci il valore o genera più domande.");
+            }
+        }
+        $data['questions_per_attempt'] = $perAttempt;
 
         $data['randomize_questions'] = isset($data['randomize_questions']);
         $data['is_active'] = isset($data['is_active']);

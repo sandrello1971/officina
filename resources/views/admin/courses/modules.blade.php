@@ -111,11 +111,20 @@
     <form method="POST" action="/admin/courses/{{ $course->id }}/generate-quiz">
         @csrf
         <div style="display:flex; align-items:center; gap:10px;">
-            <select name="num_questions" style="padding:6px 10px; border-radius:6px; border:none; font-size:0.8rem;">
-                <option value="5">5 domande</option>
-                <option value="10" selected>10 domande</option>
-                <option value="15">15 domande</option>
+            <label style="color:#8A9696; font-size:0.75rem;">Pool</label>
+            <select name="num_questions" title="Dimensione del pool (domande da generare)" style="padding:6px 10px; border-radius:6px; border:none; font-size:0.8rem;">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="40">40</option>
+                <option value="50">50</option>
             </select>
+            <label style="color:#8A9696; font-size:0.75rem;">Estrai per tentativo</label>
+            <input type="number" name="questions_per_attempt" min="1" placeholder="tutte"
+                   title="Quante domande estrarre a caso per ogni tentativo (vuoto = tutte)"
+                   style="width:80px; padding:6px 10px; border-radius:6px; border:none; font-size:0.8rem;">
             <button type="submit" style="padding:8px 20px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.875rem; font-weight:700; cursor:pointer;">
                 Genera quiz &rarr;
             </button>

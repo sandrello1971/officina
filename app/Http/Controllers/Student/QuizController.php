@@ -69,10 +69,10 @@ class QuizController extends Controller
             abort(404);
         }
 
-        $questions = $quiz->questions()->orderBy('sort_order')->get();
-        if ($quiz->randomize_questions) {
-            $questions = $questions->shuffle()->values();
-        }
+        // Le domande NON sono più pre-embeddate: vengono consegnate da start() (il
+        // sottoinsieme estratto per il tentativo). Qui servono solo i conteggi per l'intro.
+        $poolCount = $quiz->questions()->count();
+        $displayCount = $quiz->effectiveQuestionCount();
 
         $pastAttempts = QuizAttempt::where('quiz_id', $quiz->id)
             ->where('student_id', $student->id)
@@ -112,7 +112,7 @@ class QuizController extends Controller
         }
 
         return view('student.quiz.show', compact(
-            'quiz', 'questions', 'pastAttempts', 'course', 'nextModule',
+            'quiz', 'poolCount', 'displayCount', 'pastAttempts', 'course', 'nextModule',
             'effectiveMax', 'usedAttempts', 'alreadyPassed'
         ));
     }
@@ -123,7 +123,11 @@ class QuizController extends Controller
         $this->guardScholaQuiz($quiz, $student->id);
 
         if ($student->is_demo) {
-            return response()->json(['attempt_id' => 'demo-' . uniqid()]);
+            // Demo: nessuna persistenza; consegna tutte le domande del quiz demo.
+            return response()->json([
+                'attempt_id' => 'demo-' . uniqid(),
+                'questions' => $this->questionsPayload($quiz, $quiz->questions()->pluck('id')->all()),
+            ]);
         }
 
         $course = $this->courseForQuiz($quiz);
@@ -134,33 +138,28 @@ class QuizController extends Controller
             ], 403);
         }
 
-        // Se esiste un tentativo incompleto su QUESTO quiz, va chiuso
-        // come fallito-abbandonato prima di aprirne uno nuovo.
-        // L'autoritativo è qui: il beacon e il reaper sono best-effort.
-        $incomplete = QuizAttempt::where('quiz_id', $quiz->id)
+        // RIPRESA (tutti i quiz, formativi ed esami): se esiste GIÀ un tentativo aperto
+        // per questo studente, lo si RIUSA restituendo le STESSE domande estratte
+        // (selected_question_ids). Un refresh/ricarica della pagina ri-chiama start()
+        // → ritrova il suo tentativo, niente nuovo attempt, niente fail, niente reroll
+        // delle K. Il force-fail dell'incompleto NON avviene più qui: solo su abbandono
+        // vero (abandon() beacon) o sul reaper dei tentativi stale.
+        $open = QuizAttempt::where('quiz_id', $quiz->id)
             ->where('student_id', $student->id)
             ->whereNull('completed_at')
-            ->get();
+            ->orderByDesc('created_at')
+            ->first();
 
-        foreach ($incomplete as $old) {
-            $old->update([
-                'completed_at' => now(),
-                'score'        => 0,
-                'passed'       => false,
-                'abandoned'    => true,
-                'time_spent_seconds' => (int) max(0,
-                    $old->started_at->diffInSeconds(now())),
-            ]);
-            Log::info('Quiz attempt auto-failed (abandoned, restart)', [
-                'attempt_id' => $old->id,
-                'student_id' => $student->id,
-                'quiz_id'    => $quiz->id,
+        if ($open) {
+            return response()->json([
+                'attempt_id' => $open->id,
+                'questions' => $this->questionsPayload($quiz, $open->selected_question_ids),
             ]);
         }
 
         // Tetto tentativi: solo per gli esami (quiz a livello corso).
-        // Ordine non negoziabile: demo/teaching → force-fail abbandono →
-        // già-superato → tetto → creazione attempt.
+        // Ordine: demo/teaching → ripresa tentativo aperto →
+        // già-superato → tetto → creazione NUOVO attempt.
         if ($this->isExamQuiz($quiz)) {
             // Già superato: non bloccare con messaggio "esauriti",
             // segnale gentile dedicato.
@@ -204,6 +203,10 @@ class QuizController extends Controller
             }
         }
 
+        // Estrazione del sottoinsieme per QUESTO tentativo (K casuali dal pool, o
+        // tutte se questions_per_attempt è null) e persistenza per stabilità/punteggio.
+        $selectedIds = $quiz->buildAttemptQuestionIds();
+
         $attempt = QuizAttempt::create([
             'quiz_id' => $quiz->id,
             'student_id' => $student->id,
@@ -211,9 +214,13 @@ class QuizController extends Controller
             'attempt_number' => QuizAttempt::where('quiz_id', $quiz->id)
                 ->where('student_id', $student->id)
                 ->count() + 1,
+            'selected_question_ids' => $selectedIds,
         ]);
 
-        return response()->json(['attempt_id' => $attempt->id]);
+        return response()->json([
+            'attempt_id' => $attempt->id,
+            'questions' => $this->questionsPayload($quiz, $selectedIds),
+        ]);
     }
 
     public function abandon(Request $request, Quiz $quiz)
@@ -225,12 +232,9 @@ class QuizController extends Controller
         if ($student->is_demo) {
             return response()->noContent();
         }
-
-        // Solo per quiz d'esame: i quiz formativi di modulo restano
-        // liberamente ripetibili (decisione §8.1).
-        if (!$this->isExamQuiz($quiz)) {
-            return response()->noContent();
-        }
+        // Abbandono vero = force-fail per TUTTI i quiz (formativi ed esami): è il
+        // criterio "abbandono reale vs refresh tecnico". Il refresh ri-chiama start()
+        // e riprende il tentativo; abandon() (beacon su chiusura/navigazione) lo chiude.
 
         // CSRF: la rotta è web ma il beacon usa sendBeacon → no header CSRF.
         // Validiamo il token manualmente dal body per non indebolire la
@@ -316,7 +320,9 @@ class QuizController extends Controller
         // utile a disabilitare il bottone in caso di doppio submit accidentale.
         abort_if($attempt->completed_at !== null, 409, 'Tentativo già consegnato.');
 
-        $questions = $quiz->questions()->get()->keyBy('id');
+        // Punteggio SOLO sulle domande estratte per questo tentativo (selected_question_ids).
+        // Fallback retrocompat: tentativi vecchi/null senza selezione → tutte le domande.
+        $questions = $this->attemptQuestions($quiz, $attempt);
         $totalPoints = $questions->sum('points') ?: $questions->count();
         $earnedPoints = 0;
 
@@ -490,6 +496,45 @@ class QuizController extends Controller
         }
 
         return $cert;
+    }
+
+    /**
+     * Payload domande per il client, nell'ordine di $ids (selezione del tentativo),
+     * SENZA correct_answer (mai esposta). $ids vuoto/null → tutte le domande.
+     *
+     * @param  list<string>|null  $ids
+     */
+    private function questionsPayload(Quiz $quiz, ?array $ids)
+    {
+        $all = $quiz->questions()->get()->keyBy('id');
+        $ids = !empty($ids) ? $ids : $all->keys()->all();
+
+        return collect($ids)
+            ->map(fn ($id) => $all->get($id))
+            ->filter()
+            ->map(fn ($q) => [
+                'id' => $q->id,
+                'question' => $q->question,
+                'options' => $q->options ?? [],
+            ])
+            ->values();
+    }
+
+    /**
+     * Domande su cui valutare un tentativo: SOLO le estratte (selected_question_ids),
+     * keyed by id. Fallback retrocompat: nessuna selezione (tentativi vecchi o quiz
+     * senza pool) → tutte le domande del quiz.
+     */
+    private function attemptQuestions(Quiz $quiz, QuizAttempt $attempt): \Illuminate\Support\Collection
+    {
+        $all = $quiz->questions()->get()->keyBy('id');
+        $ids = $attempt->selected_question_ids;
+
+        if (empty($ids)) {
+            return $all;
+        }
+
+        return collect($ids)->map(fn ($id) => $all->get($id))->filter()->keyBy('id');
     }
 
     private function courseForQuiz(Quiz $quiz): ?Course
