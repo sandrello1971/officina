@@ -15,8 +15,13 @@
 
         <div style="display:flex; justify-content:center; gap:24px; margin-bottom:32px;">
             <div style="text-align:center;">
-                <div style="font-size:1.5rem; font-weight:700; color:#55B1AE;">{{ $questions->count() }}</div>
-                <div style="font-size:0.75rem; color:#8A9696;">Domande</div>
+                <div style="font-size:1.5rem; font-weight:700; color:#55B1AE;">{{ $displayCount }}</div>
+                <div style="font-size:0.75rem; color:#8A9696;">
+                    Domande
+                    @if($quiz->questions_per_attempt && $poolCount > $displayCount)
+                        <span style="color:#8A9696;">(estratte a caso da {{ $poolCount }})</span>
+                    @endif
+                </div>
             </div>
             <div style="text-align:center;">
                 <div style="font-size:1.5rem; font-weight:700; color:#55B1AE;">{{ $quiz->passing_score }}%</div>
@@ -94,12 +99,12 @@
         <div style="background:white; border-radius:12px; padding:16px 20px; margin-bottom:16px; display:flex; align-items:center; gap:16px;">
             <div style="flex:1;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                    <span style="font-size:0.8rem; color:#8A9696;">Domanda <span x-text="current + 1"></span> di {{ $questions->count() }}</span>
-                    <span style="font-size:0.8rem; font-weight:700; color:#55B1AE;" x-text="Math.round((current / {{ $questions->count() }}) * 100) + '%'"></span>
+                    <span style="font-size:0.8rem; color:#8A9696;">Domanda <span x-text="current + 1"></span> di <span x-text="questions.length"></span></span>
+                    <span style="font-size:0.8rem; font-weight:700; color:#55B1AE;" x-text="(questions.length ? Math.round((current / questions.length) * 100) : 0) + '%'"></span>
                 </div>
                 <div style="height:6px; background:#E8F5F5; border-radius:3px; overflow:hidden;">
                     <div style="height:100%; background:#55B1AE; border-radius:3px; transition:width 0.3s;"
-                         :style="'width:' + Math.round((current / {{ $questions->count() }}) * 100) + '%'"></div>
+                         :style="'width:' + (questions.length ? Math.round((current / questions.length) * 100) : 0) + '%'"></div>
                 </div>
             </div>
             @if($quiz->time_limit_minutes)
@@ -272,21 +277,14 @@
 
 </div>
 
-@php
-    // SECURITY: NON includere correct_answer né explanation. Lo studente vedrebbe
-    // le risposte nel DOM. Le correzioni arrivano solo dopo il submit, server-side.
-    $quizQuestionsJson = $questions->map(fn($q) => [
-        'id' => $q->id,
-        'question' => $q->question,
-        'options' => $q->options ?? [],
-    ])->values();
-@endphp
 @push('scripts')
 <script>
 function quizApp() {
     return {
         phase: 'intro',
-        questions: {!! $quizQuestionsJson->toJson() !!},
+        // Le domande (id/question/options, MAI correct_answer) arrivano da start():
+        // è il sottoinsieme estratto per QUESTO tentativo. Le correzioni solo post-submit.
+        questions: [],
         current: 0,
         answered: {},        // { qid: opzione_scelta }
         corrections: {},     // { qid: { correct_answer, explanation } } popolato post-submit
@@ -322,33 +320,23 @@ function quizApp() {
                 }
 
                 this.attemptId = data.attempt_id;
+                this.questions = data.questions || [];   // sottoinsieme estratto per il tentativo
             } catch(e) {}
+
+            if (!this.questions.length) {
+                alert('Nessuna domanda disponibile per questo quiz.');
+                return;
+            }
 
             this.phase = 'quiz';
 
-            @if(!empty($quiz->course_id) && empty($quiz->module_id))
-            // Esame: beacon best-effort che chiude il tentativo come
-            // abbandonato in caso di chiusura tab / cambio scheda.
-            // Server-side resta autoritativo (force-fail al restart + reaper).
-            this._abandonSent = false;
-            this._sendAbandon = () => {
-                if (!this.attemptId || this._abandonSent) return;
-                this._abandonSent = true;
-                try {
-                    navigator.sendBeacon(
-                        '/learn/quiz/{{ $quiz->id }}/abandon',
-                        new Blob(
-                            [JSON.stringify({_token: '{{ csrf_token() }}'})],
-                            {type: 'application/json'}
-                        )
-                    );
-                } catch(e) {}
-            };
-            window.addEventListener('beforeunload', this._sendAbandon);
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'hidden') this._sendAbandon();
-            });
-            @endif
+            // Nessun abbandono automatico su beforeunload/visibilitychange: quegli
+            // eventi scattano anche su un semplice REFRESH e ucciderebbero il tentativo,
+            // contraddicendo "refresh = riprendi" (start() ritrova il tentativo aperto
+            // con le stesse K). L'abbandono "silenzioso" (chiude il tab / se ne va) è
+            // chiuso dal reaper schedulato `exams:fail-stale` (ogni 5 min, oltre il
+            // time_limit o il cap di default). L'endpoint abandon() resta per un'uscita
+            // ESPLICITA (es. futuro bottone "Esci dal quiz"), non cablato su unload.
 
             @if($quiz->time_limit_minutes)
             this.timer = setInterval(() => {

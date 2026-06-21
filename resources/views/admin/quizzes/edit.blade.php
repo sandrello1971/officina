@@ -58,6 +58,18 @@
                     </div>
                 </div>
                 <div style="display:flex; gap:16px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Domande da estrarre per tentativo (vuoto/0 = tutte)</label>
+                        <input type="number" name="questions_per_attempt" value="{{ old('questions_per_attempt', $quiz->questions_per_attempt) }}" min="1"
+                               placeholder="tutte" style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
+                        <p style="font-size:0.7rem; color:#8A9696; margin-top:4px; line-height:1.4;">
+                            Pool attuale: <strong>{{ $quiz->questions()->count() }}</strong> domande.
+                            Se valorizzato, ogni tentativo ne estrae questo numero a caso (anti-copiatura).
+                            Deve essere ≤ pool.
+                        </p>
+                    </div>
+                </div>
+                <div style="display:flex; gap:16px;">
                     <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                         <input type="checkbox" name="randomize_questions" value="1" {{ old('randomize_questions', $quiz->randomize_questions) ? 'checked' : '' }}>
                         <span style="font-size:0.875rem; color:#4A5252;">Randomizza domande</span>

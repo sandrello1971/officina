@@ -147,16 +147,28 @@ class CourseController extends Controller
             return back()->with('error', 'Nessun contenuto nei moduli. Aggiungi prima il testo dei moduli.');
         }
 
+        // Dimensione pool (quante domande generare) + quante estrarne per tentativo.
         $numQuestions = (int) $request->input('num_questions', 10);
+        $perAttempt = (int) $request->input('questions_per_attempt', 0) ?: null;
+
+        if ($perAttempt !== null && $perAttempt > $numQuestions) {
+            return back()->with('error',
+                "Le domande da estrarre per tentativo ({$perAttempt}) non possono superare la dimensione del pool ({$numQuestions}).");
+        }
+
         $generator = app(\App\Services\QuizGeneratorService::class);
-        $quiz = $generator->generateFromContent($course, $content, $numQuestions);
+        $quiz = $generator->generateFromContent($course, $content, $numQuestions, $perAttempt);
 
         if (!$quiz) {
             return back()->with('error', 'Errore nella generazione del quiz. Riprova.');
         }
 
-        return redirect("/admin/quizzes/{$quiz->id}/questions")
-            ->with('success', "Quiz generato con {$quiz->questions()->count()} domande!");
+        $pool = $quiz->questions()->count();
+        $msg = $quiz->questions_per_attempt
+            ? "Pool di {$pool} domande generato; ogni tentativo ne estrae {$quiz->questions_per_attempt}."
+            : "Quiz generato con {$pool} domande!";
+
+        return redirect("/admin/quizzes/{$quiz->id}/questions")->with('success', $msg);
     }
 
     private function handleVideoUpload(Course $course, $file): ?string

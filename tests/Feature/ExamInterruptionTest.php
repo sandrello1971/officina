@@ -70,8 +70,11 @@ class ExamInterruptionTest extends TestCase
         ]);
     }
 
-    public function test_start_with_incomplete_attempt_force_fails_old_one(): void
+    public function test_start_with_open_attempt_resumes_it(): void
     {
+        // Nuova semantica unificata: start() su un tentativo già aperto lo RIPRENDE
+        // (refresh tecnico), NON lo fallisce e non ne crea un altro. Il force-fail
+        // avviene solo su abbandono vero (abandon beacon) o reaper.
         $student = $this->makeStudent();
         $course = $this->makeCourse();
         $student->courses()->attach($course->id, ['enrolled_at' => now(), 'is_active' => true]);
@@ -82,16 +85,16 @@ class ExamInterruptionTest extends TestCase
             'started_at' => now()->subMinutes(10), 'attempt_number' => 1,
         ]);
 
-        $this->actingAsStudent($student)
+        $res = $this->actingAsStudent($student)
             ->post(route('student.quiz.start', $quiz))
             ->assertOk();
 
+        $this->assertSame($old->id, $res->json('attempt_id'), 'start() deve riprendere il tentativo aperto.');
+
         $old->refresh();
-        $this->assertNotNull($old->completed_at);
-        $this->assertSame(0, (int) $old->score);
-        $this->assertFalse((bool) $old->passed);
-        $this->assertTrue((bool) $old->abandoned);
-        $this->assertSame(2, QuizAttempt::where('quiz_id', $quiz->id)->count());
+        $this->assertNull($old->completed_at, 'Il tentativo aperto NON deve essere fallito da un refresh.');
+        $this->assertFalse((bool) $old->abandoned);
+        $this->assertSame(1, QuizAttempt::where('quiz_id', $quiz->id)->count(), 'Nessun nuovo tentativo.');
     }
 
     public function test_abandon_closes_active_attempt_then_idempotent(): void
@@ -122,8 +125,10 @@ class ExamInterruptionTest extends TestCase
         $this->assertSame(1, QuizAttempt::where('quiz_id', $quiz->id)->count());
     }
 
-    public function test_abandon_on_module_quiz_is_noop(): void
+    public function test_abandon_fails_module_quiz_attempt(): void
     {
+        // Nuova semantica unificata: l'abbandono vero force-failla il tentativo per
+        // TUTTI i quiz (formativi ed esami), non solo per gli esami.
         $student = $this->makeStudent();
         $course = $this->makeCourse();
         $student->courses()->attach($course->id, ['enrolled_at' => now(), 'is_active' => true]);
@@ -139,8 +144,8 @@ class ExamInterruptionTest extends TestCase
             ->assertNoContent();
 
         $attempt->refresh();
-        $this->assertNull($attempt->completed_at, 'Module quiz must NOT be auto-failed on abandon');
-        $this->assertFalse((bool) $attempt->abandoned);
+        $this->assertNotNull($attempt->completed_at, 'Abbandono vero: il tentativo formativo deve essere chiuso.');
+        $this->assertTrue((bool) $attempt->abandoned);
     }
 
     public function test_reaper_fails_stale_exam_attempt(): void
