@@ -1,0 +1,27 @@
+# --- Python ---
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# --- Secrets / config locale ---
+.env
+.env.*
+!.env.example
+
+# --- Dati runtime (video, frame, sqlite, chroma, job) ---
+data/
+data-dev/
+
+# --- Frontend ---
+frontend/node_modules/
+frontend/dist/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
