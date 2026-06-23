@@ -1,0 +1,32 @@
+# Versioni riconciliate con il venv di produzione (/home/noscite/venv,
+# pip freeze del 2026-06-06). Il requirements.txt originale era obsoleto
+# rispetto a ciò che gira realmente in prod (es. chromadb 0.5 -> 1.5,
+# sentence-transformers 3.3 -> 5.4): pinnato alle versioni effettive.
+fastapi==0.136.0
+uvicorn[standard]==0.44.0
+python-multipart==0.0.26
+anthropic==0.96.0
+groq==1.2.0
+chromadb==1.5.8
+sentence-transformers==5.4.1
+ffmpeg-python==0.2.0
+python-dotenv==1.2.2
+pydantic==2.13.2
+httpx==0.28.1
+aiofiles==25.1.0
+tqdm==4.67.3
+
+# Trascrizione audio / YouTube (endpoint /api/audio, /api/youtube)
+youtube-transcript-api==1.2.4
+yt-dlp==2026.3.17
+
+# torch: build CPU-only. La macchina non ha GPU NVIDIA, quindi la wheel di
+# default (che trascina ~5 GB di pacchetti nvidia-* CUDA) è inutile e gira
+# comunque su CPU. Dipendenza transitiva di sentence-transformers; pinnata
+# esplicitamente alla wheel +cpu. Installare con l'extra-index sotto:
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.11.0+cpu
+
+# Test
+pytest==9.0.3
