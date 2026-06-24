@@ -165,6 +165,9 @@
         @if(($presentation?->status ?? null) === 'ready' && ($presentation->generation_meta['slides'] ?? null))
             <div style="margin-top:6px; font-size:0.75rem; color:#8A9696;">{{ $presentation->generation_meta['slides'] }} slide @isset($presentation->generation_meta['model']) · {{ $presentation->generation_meta['model'] }} @endisset</div>
         @endif
+        @if(($presentation->source ?? 'generated') === 'uploaded')
+            <div style="margin-top:6px;"><span style="display:inline-block; padding:2px 8px; background:#EEF3F3; color:#3A8C89; border-radius:6px; font-size:0.72rem; font-weight:700;">Versione caricata</span></div>
+        @endif
 
         {{-- x-show sul wrapper esterno: NON deve stare sul contenitore flex, perché
              Alpine (x-show) rimuove la proprietà `display` inline quando mostra,
@@ -184,8 +187,60 @@
                     <button data-busy-label="Rigenerazione…" style="padding:9px 16px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Rigenera</button>
                 </form>
             @endif
+
+            {{-- S3 — carica una propria versione .pptx (sostituisce quella corrente) --}}
+            <form method="POST" action="{{ route('docente.lessons.presentation.upload', $lesson) }}" enctype="multipart/form-data"
+                  style="display:inline-flex; align-items:center; gap:6px;"
+                  onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='Caricamento…';">
+                @csrf
+                <input type="file" name="presentation" accept=".pptx" required style="font-size:0.78rem; max-width:190px;">
+                <button style="padding:9px 14px; background:white; color:#3A8C89; border:1px solid #3A8C89; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Carica .pptx</button>
+            </form>
+
+            {{-- S3 — elimina la presentazione (azione distruttiva, conferma esplicita) --}}
+            @if($presentation && $presentation->status !== 'pending')
+                <form method="POST" action="{{ route('docente.lessons.presentation.destroy', $lesson) }}"
+                      onsubmit="return confirm('Eliminare la presentazione? Operazione non reversibile.') && (this.querySelector('button').disabled=true || true);">
+                    @csrf @method('DELETE')
+                    <button style="padding:9px 14px; background:white; color:#A8521F; border:1px solid #A8521F; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Elimina</button>
+                </form>
+            @endif
         </div>
         </div>
+
+        {{-- S1 — anteprima slide: PNG renderizzati on-demand (lazy) e serviti da
+             controller (storage privato). loading=lazy differisce il render al
+             momento in cui la galleria entra in viewport. --}}
+        @if(($presentation?->status ?? null) === 'ready' && ($presentation->generation_meta['slides'] ?? 0) > 0)
+            <div style="margin-top:16px; border-top:1px solid #F0F2F2; padding-top:14px;">
+                <div style="font-size:0.72rem; font-weight:700; color:#8A9696; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">Anteprima slide</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;">
+                    @for($i = 1; $i <= (int) $presentation->generation_meta['slides']; $i++)
+                        <figure style="margin:0; border:1px solid #C8D0D0; border-radius:8px; overflow:hidden; background:#F4F1EA;">
+                            <img src="{{ route('docente.lessons.presentation.preview', [$lesson, $i]) }}"
+                                 alt="Slide {{ $i }}" loading="lazy"
+                                 style="display:block; width:100%; height:auto; aspect-ratio:16/9; object-fit:contain; background:#0A0A0A;">
+                            <figcaption style="padding:5px 8px; font-size:0.72rem; color:#8A9696;">Slide {{ $i }}</figcaption>
+                        </figure>
+                    @endfor
+                </div>
+            </div>
+        @endif
+
+        {{-- S2 — correzione via prompt: SOLO se la presentazione ha spec persistita
+             (generata dal sistema). Sui record senza spec il box non appare. --}}
+        @if(($presentation?->status ?? null) === 'ready' && !empty($presentation->spec))
+            <div style="margin-top:16px; border-top:1px solid #F0F2F2; padding-top:14px;" x-show="status!=='generating'">
+                <div style="font-size:0.72rem; font-weight:700; color:#8A9696; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Correggi le slide</div>
+                <form method="POST" action="{{ route('docente.lessons.presentation.edit', $lesson) }}" data-async>
+                    @csrf
+                    <textarea name="instruction" rows="2" maxlength="2000" required
+                              placeholder="Descrivi la modifica (es. «Nella slide 3 aggiungi un esempio pratico»)"
+                              style="width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.85rem; resize:vertical;"></textarea>
+                    <button data-busy-label="Correzione…" style="margin-top:8px; padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Applica correzione</button>
+                </form>
+            </div>
+        @endif
     </div>
     @endif
 

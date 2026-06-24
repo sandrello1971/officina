@@ -300,6 +300,9 @@
         @if(($modPres?->status ?? null) === 'ready' && ($modPres->generation_meta['slides'] ?? null))
             <div style="margin-bottom:10px; font-size:0.75rem; color:#8A9696;">{{ $modPres->generation_meta['slides'] }} slide @isset($modPres->generation_meta['model']) · {{ $modPres->generation_meta['model'] }} @endisset</div>
         @endif
+        @if(($modPres->source ?? 'generated') === 'uploaded')
+            <div style="margin-bottom:10px;"><span style="display:inline-block; padding:2px 8px; background:#EEF3F3; color:#3A8C89; border-radius:6px; font-size:0.72rem; font-weight:700;">Versione caricata</span></div>
+        @endif
 
         @if(empty($module->content))
             <div style="background:#FBE9E7; border-left:4px solid #E28A53; padding:12px 14px; border-radius:6px; color:#7A4A20; font-size:0.85rem;">
@@ -323,7 +326,59 @@
                         <button type="submit" style="padding:9px 16px; background:white; color:#E28A53; border:1px solid #E28A53; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Rigenera</button>
                     </form>
                 @endif
+
+                {{-- S3 — carica una propria versione .pptx (sostituisce l'unico record del modulo) --}}
+                <form method="POST" action="{{ route('admin.courses.modules.presentation.upload', [$course, $module]) }}" enctype="multipart/form-data"
+                      style="display:inline-flex; align-items:center; gap:6px;"
+                      onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='Caricamento…';">
+                    @csrf
+                    <input type="file" name="presentation" accept=".pptx" required style="font-size:0.78rem; max-width:190px;">
+                    <button type="submit" style="padding:9px 14px; background:white; color:#3A8C89; border:1px solid #3A8C89; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Carica .pptx</button>
+                </form>
+
+                {{-- S3 — elimina la presentazione (azione distruttiva, conferma esplicita) --}}
+                @if($modPres && $modPres->status !== 'pending')
+                    <form method="POST" action="{{ route('admin.courses.modules.presentation.destroy', [$course, $module]) }}"
+                          onsubmit="return confirm('Eliminare la presentazione? Operazione non reversibile.') && (this.querySelector('button').disabled=true || true);">
+                        @csrf @method('DELETE')
+                        <button type="submit" style="padding:9px 14px; background:white; color:#A8521F; border:1px solid #A8521F; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Elimina</button>
+                    </form>
+                @endif
             </div>
+            </div>
+        @endif
+
+        {{-- S1 — anteprima slide: PNG renderizzati on-demand (lazy), serviti da
+             controller (storage privato). Gemella della galleria docente. --}}
+        @if(($modPres?->status ?? null) === 'ready' && ($modPres->generation_meta['slides'] ?? 0) > 0)
+            <div style="margin-top:16px; border-top:1px solid #F0F2F2; padding-top:14px;">
+                <div style="font-size:0.72rem; font-weight:700; color:#8A9696; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">Anteprima slide</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;">
+                    @for($i = 1; $i <= (int) $modPres->generation_meta['slides']; $i++)
+                        <figure style="margin:0; border:1px solid #C8D0D0; border-radius:8px; overflow:hidden; background:#F4F1EA;">
+                            <img src="{{ route('admin.courses.modules.presentation.preview', [$course, $module, $i]) }}"
+                                 alt="Slide {{ $i }}" loading="lazy"
+                                 style="display:block; width:100%; height:auto; aspect-ratio:16/9; object-fit:contain; background:#0A0A0A;">
+                            <figcaption style="padding:5px 8px; font-size:0.72rem; color:#8A9696;">Slide {{ $i }}</figcaption>
+                        </figure>
+                    @endfor
+                </div>
+            </div>
+        @endif
+
+        {{-- S2 — correzione via prompt: SOLO se la presentazione ha spec persistita
+             (generata dal sistema). Gemella del box docente. --}}
+        @if(($modPres?->status ?? null) === 'ready' && !empty($modPres->spec))
+            <div style="margin-top:16px; border-top:1px solid #F0F2F2; padding-top:14px;" x-show="status!=='generating'">
+                <div style="font-size:0.72rem; font-weight:700; color:#8A9696; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Correggi le slide</div>
+                <form method="POST" action="{{ route('admin.courses.modules.presentation.edit', [$course, $module]) }}"
+                      onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='⏳ Correzione…';">
+                    @csrf
+                    <textarea name="instruction" rows="2" maxlength="2000" required
+                              placeholder="Descrivi la modifica (es. «Nella slide 3 aggiungi un esempio pratico»)"
+                              style="width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.85rem; resize:vertical;"></textarea>
+                    <button type="submit" style="margin-top:8px; padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Applica correzione</button>
+                </form>
             </div>
         @endif
     </div>
