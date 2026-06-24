@@ -17,10 +17,12 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoApiTransport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerBrevoMailTransport();
         $this->applyMailSettingsOverride();
 
         Certificate::observe(CertificateObserver::class);
@@ -194,6 +197,21 @@ class AppServiceProvider extends ServiceProvider
                 'unreadMessages'        => $unreadMessages,
                 'unreadAnnouncements'   => $unreadAnnouncements,
             ]);
+        });
+    }
+
+    /**
+     * Registra il transport mail 'brevo' (Symfony Brevo bridge via API): Laravel
+     * non lo supporta nativamente, quindi senza questo extend il mailer 'brevo'
+     * di config/mail.php dà "Unsupported mail transport [brevo]". Usa la API key
+     * (config services.brevo.key / BREVO_API_KEY).
+     */
+    private function registerBrevoMailTransport(): void
+    {
+        Mail::extend('brevo', function (array $config) {
+            $key = (string) ($config['key'] ?? config('services.brevo.key'));
+
+            return new BrevoApiTransport($key);
         });
     }
 
