@@ -12,7 +12,7 @@ Parliamone insieme
 </x-mail::button>
 
 A presto,
-**Il team The Glitch World**
+**Il team Effetto Glitch**
 
 <x-mail::subcopy>
 Hai ricevuto questa email perché hai compilato il modulo su {{ url('/mappa-percorso') }}. Se non riconosci la richiesta, ignora pure questa email — non sei iscritto a nessuna mailing list. Trattiamo i tuoi dati secondo la nostra [privacy policy]({{ route('privacy') }}).

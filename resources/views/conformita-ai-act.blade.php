@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Conformità EU AI Act — Track AI The Glitch World')
-@section('description', 'Analisi di copertura dei corsi RUMORE DI FONDO · INTERFERENZA · SEGNALE rispetto all\'obbligo di alfabetizzazione AI dell\'EU AI Act (Reg. UE 2024/1689, Art. 4). Documento The Glitch World di compliance e posizionamento commerciale.')
-@section('og_title', 'Conformità EU AI Act — Track AI The Glitch World')
+@section('title', 'Conformità EU AI Act — Track AI Effetto Glitch')
+@section('description', 'Analisi di copertura dei corsi RUMORE DI FONDO · INTERFERENZA · SEGNALE rispetto all\'obbligo di alfabetizzazione AI dell\'EU AI Act (Reg. UE 2024/1689, Art. 4). Documento Effetto Glitch di compliance e posizionamento commerciale.')
+@section('og_title', 'Conformità EU AI Act — Track AI Effetto Glitch')
 @section('og_description', 'Analisi di copertura dei tre corsi del percorso lineare RUMORE DI FONDO → INTERFERENZA → SEGNALE rispetto alle quattro aree dell\'alfabetizzazione AI richieste dall\'AI Act.')
 
 @push('styles')
@@ -46,7 +46,7 @@
       EU AI Act — Reg. UE 2024/1689 · Art. 4 (Alfabetizzazione AI)
     </div>
     <h1 class="text-3xl md:text-4xl font-bold leading-tight mb-1" style="color:#1A1F1F;">
-      Track AI The Glitch World — Conformità all'AI Act
+      Track AI Effetto Glitch — Conformità all'AI Act
     </h1>
     <p class="text-base" style="color:#4A5252;">
       Analisi di copertura dei tre corsi del percorso lineare: <strong>RUMORE DI FONDO → INTERFERENZA → SEGNALE</strong>
@@ -336,7 +336,7 @@
 
   {{-- ===== FOOTER PAGINA ===== --}}
   <div class="text-center text-xs py-5" style="color:#8A9696;">
-    <div>Track AI The Glitch World · Conformità EU AI Act Art. 4 · coerente con SEGNALE v6 e con la Mappa di Conformità (Reg. UE 2024/1689) · Maggio 2026</div>
+    <div>Track AI Effetto Glitch · Conformità EU AI Act Art. 4 · coerente con SEGNALE v6 e con la Mappa di Conformità (Reg. UE 2024/1689) · Maggio 2026</div>
     <div class="italic mt-1" style="color:#E28A53;">Il Rumore Che Serve</div>
     <div class="mt-1">Documento per uso commerciale e compliance · Conservare per audit AI Act (min. 5 anni)</div>
   </div>

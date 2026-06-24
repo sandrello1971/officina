@@ -24,7 +24,7 @@
     </div>
 
     <div class="py-8 px-6 rounded-xl mb-8" style="background:#E8F5F5">
-        <p class="text-xs font-bold uppercase mb-4 tracking-widest" style="color:#8A9696">Radicato nell'Umanesimo Digitale The Glitch World</p>
+        <p class="text-xs font-bold uppercase mb-4 tracking-widest" style="color:#8A9696">Radicato nell'Umanesimo Digitale Effetto Glitch</p>
         <div class="grid md:grid-cols-3 gap-4">
             <div class="flex gap-3">
                 <span style="color:#55B1AE;font-size:1.2rem">&#9644;</span>
