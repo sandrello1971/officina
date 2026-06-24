@@ -76,8 +76,8 @@
             </form>
 
             @php
-                $supportEmail = 'theglitch@theglitchworld.it';
-                $ownerUrl = atheneum_setting('platform_owner_url', 'https://theglitchworld.it');
+                $supportEmail = 'theglitch@effettoglitch.it';
+                $ownerUrl = atheneum_setting('platform_owner_url', 'https://effettoglitch.it');
                 $ownerName = atheneum_setting('platform_owner', 'Officina');
             @endphp
             <p class="text-center mt-6 text-xs" style="color:#8A9696">

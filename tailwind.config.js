@@ -19,7 +19,7 @@ export default {
                 mono: ['"JetBrains Mono"', ...defaultTheme.fontFamily.mono],
             },
             colors: {
-                // Palette brand GLITCH (theglitchworld.it) per la landing pubblica.
+                // Palette brand GLITCH (effettoglitch.it) per la landing pubblica.
                 glitch: {
                     black: '#0a0a0a',
                     ivory: '#f2efe9',

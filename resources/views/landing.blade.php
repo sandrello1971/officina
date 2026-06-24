@@ -1,6 +1,6 @@
 {{--
     Landing pubblica GLITCH (P24) — pagina pre-login servita su "/".
-    Linguaggio visivo del sito madre theglitchworld.it: nero profondo,
+    Linguaggio visivo del sito madre effettoglitch.it: nero profondo,
     avorio caldo, accento cremisi. Standalone: NON usa layouts.app né alcun
     asset dell'app interna. Font self-hosted (vedi resources/css/glitch-landing.css).
 --}}
@@ -42,7 +42,7 @@
         {{-- ===================== HERO ===================== --}}
         <section class="mx-auto max-w-6xl px-5 pt-20 pb-24 sm:px-8 sm:pt-28 sm:pb-32"
                  aria-labelledby="manifesto">
-            <p class="glitch-tag mb-8">Officina · theglitchworld.it</p>
+            <p class="glitch-tag mb-8">Officina · effettoglitch.it</p>
             <h1 id="manifesto" class="glitch-manifesto text-glitch-ivory max-w-4xl">
                 L'officina di chi impara<span class="text-glitch-red">.</span>
             </h1>
@@ -122,12 +122,12 @@
     <footer class="border-t border-glitch-ivory/10">
         <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3 sm:px-8">
             <p class="glitch-body text-sm text-glitch-ivory/60">
-                officina.theglitchworld.it
+                officina.effettoglitch.it
                 <span class="text-glitch-red">·</span>
                 MMXXVI
             </p>
             <p class="glitch-body text-sm text-glitch-ivory/60 sm:text-center">
-                Un progetto <span class="text-glitch-ivory">GLITCH</span> — theglitchworld.it
+                Un progetto <span class="text-glitch-ivory">GLITCH</span> — effettoglitch.it
             </p>
             <p class="glitch-body text-sm text-glitch-ivory/60 sm:text-right">
                 <a href="{{ route('contatti') }}" class="glitch-navlink text-glitch-ivory">Contatti</a>

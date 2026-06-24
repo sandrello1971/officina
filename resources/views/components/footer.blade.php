@@ -9,7 +9,7 @@
                 </a>
                 <p class="text-accent-400 text-sm font-medium mb-2">Formazione AI per le PMI italiane</p>
                 <p class="text-gray-400 text-sm leading-relaxed">
-                    L'Officina The Glitch World offre programmi formativi su intelligenza artificiale, knowledge management e trasformazione digitale. Percorsi pratici per imprenditori, manager e team operativi.
+                    L'Officina Effetto Glitch offre programmi formativi su intelligenza artificiale, knowledge management e trasformazione digitale. Percorsi pratici per imprenditori, manager e team operativi.
                 </p>
             </div>
 

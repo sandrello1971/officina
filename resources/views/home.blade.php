@@ -9,14 +9,14 @@
     <div class="max-w-4xl mx-auto text-center" style="position:relative;z-index:1;">
         <span class="badge-orange mb-4 inline-block">4 certificazioni &middot; ~60 ore &middot; Conformi EU AI Act</span>
         <p class="text-sm mb-3" style="color:#55B1AE;font-weight:600;letter-spacing:0.05em;text-transform:uppercase">
-            Officina e la parte formativa dell'umanesimo digitale di The Glitch World
+            Officina e la parte formativa dell'umanesimo digitale di Effetto Glitch
         </p>
         <h1 class="text-4xl md:text-6xl font-bold mt-4 mb-4" style="color:#1A1F1F">
-            Officina <span style="color:#55B1AE">The Glitch World</span>
+            Officina <span style="color:#55B1AE">Effetto Glitch</span>
         </h1>
         <p class="text-base mb-4" style="color:#4A5252">Per imprenditori, manager e team operativi che vogliono usare l'AI ogni giorno in azienda, senza improvvisare.</p>
         <p class="text-xl font-semibold mb-3" style="color:#1A1F1F">Formazione AI per le PMI che vogliono crescere davvero.</p>
-        <p class="text-base mb-8 max-w-2xl mx-auto" style="color:#4A5252">La conoscenza che non diventa competenza operativa non cambia nulla. Per questo la formazione The Glitch World non trasmette nozioni: costruisce competenza. I percorsi sono modulari, interattivi e fondati su casi reali.</p>
+        <p class="text-base mb-8 max-w-2xl mx-auto" style="color:#4A5252">La conoscenza che non diventa competenza operativa non cambia nulla. Per questo la formazione Effetto Glitch non trasmette nozioni: costruisce competenza. I percorsi sono modulari, interattivi e fondati su casi reali.</p>
         <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:16px; margin-bottom:24px;">
             <div style="display:flex; align-items:center; gap:6px; padding:8px 16px; background:rgba(85,177,174,0.1); border:1px solid rgba(85,177,174,0.3); border-radius:20px;">
                 <span>👔</span>
@@ -77,7 +77,7 @@
                 FORMAZIONE AI PER PMI ITALIANE
             </div>
             <h2 style="font-size:2rem; color:#1A1F1F; margin:0 0 12px; font-weight:700; line-height:1.2;">
-                Il Percorso AI di The Glitch World
+                Il Percorso AI di Effetto Glitch
             </h2>
             <p style="font-size:1rem; color:#5A6464; max-width:600px; margin:0 auto; line-height:1.5;">
                 Tre corsi, tre domande: <em>perché farlo</em>, <em>cosa fare</em>, <em>come farlo</em>.
@@ -195,7 +195,7 @@
 
         {{-- CTA finale --}}
         <div style="text-align:center; margin-top:20px;">
-            <a href="{{ url('/contatti') }}?msg={{ urlencode('Vorrei ricevere informazioni sul Percorso AI di The Glitch World (RUMORE DI FONDO, INTERFERENZA, SEGNALE).') }}"
+            <a href="{{ url('/contatti') }}?msg={{ urlencode('Vorrei ricevere informazioni sul Percorso AI di Effetto Glitch (RUMORE DI FONDO, INTERFERENZA, SEGNALE).') }}"
                style="display:inline-block; padding:14px 32px; background:#E28A53; color:white;
                       border-radius:10px; text-decoration:none; font-weight:700; font-size:0.95rem;
                       box-shadow:0 4px 12px rgba(226,138,83,0.25); transition:all 0.2s;"
@@ -317,8 +317,8 @@
                     <span style="background:#F5F7F7;color:#8A9696;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:700">Attestato di partecipazione</span>
                 </div>
                 <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">RUMORE DI FONDO — Prima di tutto il perche</h3>
-                <p class="mb-1" style="color:#4A5252">Il punto zero del percorso The Glitch World. Per imprenditori e dirigenti che vogliono capire se e perche l'AI riguarda davvero la loro PMI, prima di investire in formazione.</p>
-                <p class="text-sm mb-4 italic" style="color:#8A9696">Output: Mappa di Maturita Digitale personalizzata + percorso The Glitch World consigliato.</p>
+                <p class="mb-1" style="color:#4A5252">Il punto zero del percorso Effetto Glitch. Per imprenditori e dirigenti che vogliono capire se e perche l'AI riguarda davvero la loro PMI, prima di investire in formazione.</p>
+                <p class="text-sm mb-4 italic" style="color:#8A9696">Output: Mappa di Maturita Digitale personalizzata + percorso Effetto Glitch consigliato.</p>
                 <div class="grid md:grid-cols-2 gap-2 mb-4">
                     <div class="text-sm p-2 rounded" style="background:white"><strong>M1</strong> Il mondo che non aspetta <span style="color:#8A9696">(45')</span></div>
                     <div class="text-sm p-2 rounded" style="background:white"><strong>M2</strong> Il prezzo dell'invisibilita <span style="color:#8A9696">(60')</span></div>
@@ -336,7 +336,7 @@
                     <span class="badge-teal">Certified AI Strategist</span>
                 </div>
                 <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">INTERFERENZA — Strategia AI per PMI</h3>
-                <p class="mb-4" style="color:#4A5252">Il laboratorio direzionale The Glitch World. Dedicato a imprenditori e vertici aziendali che vogliono costruire una visione strategica sull'AI: non seguire la moda, ma guidare una trasformazione con metodo e consapevolezza. Formato 25% teoria, 75% lavoro laboratoriale su canvas. Ogni modulo produce un deliverable operativo.</p>
+                <p class="mb-4" style="color:#4A5252">Il laboratorio direzionale Effetto Glitch. Dedicato a imprenditori e vertici aziendali che vogliono costruire una visione strategica sull'AI: non seguire la moda, ma guidare una trasformazione con metodo e consapevolezza. Formato 25% teoria, 75% lavoro laboratoriale su canvas. Ogni modulo produce un deliverable operativo.</p>
                 <div class="grid md:grid-cols-2 gap-2 mb-4">
                     <div class="text-sm p-2 rounded" style="background:#E8F5F5"><strong>M1</strong> Scenario AI per PMI — opportunita, rischi e casi d'uso <span style="color:#8A9696">(1h 30')</span></div>
                     <div class="text-sm p-2 rounded" style="background:#E8F5F5"><strong>M2</strong> Mappatura processi e identificazione casi d'uso AI <span style="color:#8A9696">(2h)</span></div>
@@ -395,7 +395,7 @@
                     <span class="badge-teal">Certified AI Agent Governance Practitioner</span>
                 </div>
                 <h3 class="text-2xl font-bold mb-2" style="color:#1A1F1F">FREQUENZA — Agenti AI in Azienda</h3>
-                <p class="mb-1" style="color:#4A5252">L'unico corso del portfolio dedicato alla governance degli agenti AI e del protocollo MCP. Livello 1 asincrono fruibile da qualsiasi dispositivo. Livello 2 workshop in presenza su casi reali con demo live MCPHub The Glitch World.</p>
+                <p class="mb-1" style="color:#4A5252">L'unico corso del portfolio dedicato alla governance degli agenti AI e del protocollo MCP. Livello 1 asincrono fruibile da qualsiasi dispositivo. Livello 2 workshop in presenza su casi reali con demo live MCPHub Effetto Glitch.</p>
                 <p class="text-sm mb-4 italic" style="color:#E28A53">Prerequisito: SEGNALE o equivalente &middot; Max 12 partecipanti L2</p>
                 <div class="grid md:grid-cols-2 gap-2 mb-4">
                     <div class="text-sm p-2 rounded" style="background:#E8F5F5"><strong>L1</strong> Asincrono ~3h: paradigma agenti, MCP, casi PMI, governance</div>
