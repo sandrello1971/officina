@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,12 +14,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Brand di piattaforma (instance_name), idempotente/non distruttivo.
+        $this->call(SettingsSeeder::class);
 
         // Schola: materie standard (licei/tecnici), idempotente.
         $this->call(SubjectSeeder::class);
