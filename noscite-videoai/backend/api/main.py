@@ -1,5 +1,7 @@
 import hashlib
 import json
+import os
+import secrets
 import shutil
 from pathlib import Path
 
@@ -7,7 +9,7 @@ import aiofiles
 import chromadb
 import mimetypes
 
-from fastapi import FastAPI, Request, UploadFile, File, BackgroundTasks, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, BackgroundTasks, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
@@ -43,6 +45,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def require_internal_token(x_internal_token: str | None = Header(default=None)):
+    """Auth degli endpoint INTERNI: richiede l'header X-Internal-Token combaciante con
+    INTERNAL_API_TOKEN (.env). Confronto a tempo costante; fail-closed se non configurato.
+    Letto a runtime (os.getenv) per testabilità. NB: NON applicare agli endpoint chiamati
+    dal browser (chat/search/thumbnail) — non inviano il token."""
+    expected = os.getenv("INTERNAL_API_TOKEN", "")
+    if not expected or not x_internal_token or not secrets.compare_digest(x_internal_token, expected):
+        raise HTTPException(status_code=401, detail="Token interno mancante o non valido")
 
 
 class ChatRequest(BaseModel):
@@ -243,7 +255,7 @@ async def ingest_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
 
 
 @app.post("/api/videos/{video_id}/index_chunks")
-async def index_chunks(video_id: str, body: IndexChunksRequest):
+async def index_chunks(video_id: str, body: IndexChunksRequest, _auth: None = Depends(require_internal_token)):
     """R1 — indicizza chunk GIÀ PRONTI (testo + start/end + type), senza Whisper né
     Vision. Per i video GENERATI dalla piattaforma (copione/slide noti). Opera SOLO
     sulla collection video_{video_id}; idempotente (reset + re-add); stesso schema
