@@ -297,14 +297,55 @@
                 <p style="margin-top:6px; font-size:0.72rem; color:#8A9696;">Il copione resta in bozza: nessun costo voce finché non lo confermi.</p>
             </div>
 
-            @if(($lessonVideo?->script_status ?? 'none') === 'draft' && !empty($lessonVideo->script))
-                <div style="margin-top:14px; border-top:1px solid #F0F2F2; padding-top:12px; display:flex; flex-direction:column; gap:8px;">
+            {{-- V2 — revisione copione: anteprima slide + testo affiancati, correzione a mano e via prompt --}}
+            @if(in_array($lessonVideo?->script_status ?? 'none', ['draft', 'confirmed'], true) && !empty($lessonVideo->script))
+                <div style="margin-top:14px; border-top:1px solid #F0F2F2; padding-top:12px;" x-data="{ zoom: null }">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                        <div style="font-size:0.72rem; font-weight:700; color:#8A9696; text-transform:uppercase; letter-spacing:0.05em;">Copione per slide</div>
+                        <span style="flex:1;"></span>
+                        @if($lessonVideo->script_status === 'confirmed')
+                            <span style="display:inline-block; padding:2px 9px; background:#3A8C89; color:white; border-radius:6px; font-size:0.72rem; font-weight:700;">Copione confermato</span>
+                        @else
+                            <form method="POST" action="{{ route('docente.lessons.video.confirm', $lesson) }}"
+                                  onsubmit="return confirm('Confermare il copione? Potrai sempre rimodificarlo (tornerà in bozza).') && (this.querySelector('button').disabled=true || true);">
+                                @csrf
+                                <button style="padding:7px 13px; background:#3A8C89; color:white; border:none; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer;">&#10003; Conferma copione</button>
+                            </form>
+                        @endif
+                    </div>
+
                     @foreach($lessonVideo->script as $line)
-                        <div style="font-size:0.82rem; color:#4A5252;">
-                            <span style="display:inline-block; min-width:64px; font-weight:700; color:#8A9696;">Slide {{ $line['slide_number'] ?? '?' }}</span>
-                            {{ $line['text'] ?? '' }}
+                        @php $sn = (int) ($line['slide_number'] ?? 0); $pv = route('docente.lessons.presentation.preview', [$lesson, $sn]) . '?version=published'; @endphp
+                        <div style="display:flex; gap:12px; padding:12px 0; border-top:1px solid #F4F6F6;">
+                            <img src="{{ $pv }}" alt="Slide {{ $sn }}" loading="lazy" @click="zoom = '{{ $pv }}'"
+                                 style="width:200px; aspect-ratio:16/9; object-fit:contain; background:#0A0A0A; border:1px solid #C8D0D0; border-radius:6px; cursor:zoom-in; flex-shrink:0;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:0.72rem; font-weight:700; color:#8A9696; margin-bottom:4px;">Slide {{ $sn }}</div>
+                                <form method="POST" action="{{ route('docente.lessons.video.line', $lesson) }}"
+                                      onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='Salvataggio…';">
+                                    @csrf
+                                    <input type="hidden" name="slide_number" value="{{ $sn }}">
+                                    <textarea name="text" rows="3" maxlength="3000" style="width:100%; box-sizing:border-box; padding:7px 9px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.82rem; resize:vertical;">{{ $line['text'] ?? '' }}</textarea>
+                                    <button style="margin-top:5px; padding:6px 12px; background:white; color:#3A8C89; border:1px solid #3A8C89; border-radius:7px; font-size:0.78rem; font-weight:600; cursor:pointer;">Salva</button>
+                                </form>
+                                <form method="POST" action="{{ route('docente.lessons.video.line.prompt', $lesson) }}"
+                                      style="margin-top:6px; display:flex; gap:6px;"
+                                      onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='…';">
+                                    @csrf
+                                    <input type="hidden" name="slide_number" value="{{ $sn }}">
+                                    <input type="text" name="instruction" maxlength="2000" required placeholder="Ritocca con un'istruzione (es. «rendila più discorsiva»)"
+                                           style="flex:1; min-width:0; padding:6px 9px; border:1px solid #C8D0D0; border-radius:7px; font-size:0.8rem;">
+                                    <button style="padding:6px 12px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:7px; font-size:0.78rem; font-weight:600; cursor:pointer;">Ritocca</button>
+                                </form>
+                            </div>
                         </div>
                     @endforeach
+
+                    {{-- zoom anteprima --}}
+                    <div x-show="zoom" x-cloak @click="zoom = null" @keydown.escape.window="zoom = null"
+                         style="position:fixed; inset:0; z-index:1000; background:rgba(10,10,10,0.92); display:flex; align-items:center; justify-content:center;">
+                        <img :src="zoom" alt="" style="max-width:90vw; max-height:88vh; object-fit:contain;">
+                    </div>
                 </div>
             @endif
         </div>

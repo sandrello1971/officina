@@ -278,6 +278,10 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     // V1 — video narrato: generazione copione (Claude) + stato.
     Route::post('/lezioni/{lesson}/video/copione', [App\Http\Controllers\Docente\LessonVideoController::class, 'generateScript'])->name('lessons.video.script')->middleware('throttle:schola-generate');
     Route::get('/lezioni/{lesson}/video/stato', [App\Http\Controllers\Docente\LessonVideoController::class, 'status'])->name('lessons.video.status');
+    // V2 — revisione copione: correzione a mano / via prompt / conferma.
+    Route::post('/lezioni/{lesson}/video/riga', [App\Http\Controllers\Docente\LessonVideoController::class, 'editLine'])->name('lessons.video.line');
+    Route::post('/lezioni/{lesson}/video/riga/ritocca', [App\Http\Controllers\Docente\LessonVideoController::class, 'editLinePrompt'])->name('lessons.video.line.prompt')->middleware('throttle:schola-generate');
+    Route::post('/lezioni/{lesson}/video/conferma', [App\Http\Controllers\Docente\LessonVideoController::class, 'confirm'])->name('lessons.video.confirm');
 
     // Pubblicazione lezione su classe (P20a) — cattedra/proprietà + ingestion RAG asincrona
     Route::post('/lezioni/{lesson}/pubblica', [App\Http\Controllers\Docente\LessonPublicationController::class, 'store'])->name('lessons.publish');
@@ -400,6 +404,9 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     // V1 — video narrato del modulo: generazione copione + stato.
     Route::post('courses/{course}/modules/{module}/video/script', [App\Http\Controllers\Admin\ModuleVideoController::class, 'generateScript'])->name('courses.modules.video.script');
     Route::get('courses/{course}/modules/{module}/video/status', [App\Http\Controllers\Admin\ModuleVideoController::class, 'status'])->name('courses.modules.video.status');
+    Route::post('courses/{course}/modules/{module}/video/line', [App\Http\Controllers\Admin\ModuleVideoController::class, 'editLine'])->name('courses.modules.video.line');
+    Route::post('courses/{course}/modules/{module}/video/line/prompt', [App\Http\Controllers\Admin\ModuleVideoController::class, 'editLinePrompt'])->name('courses.modules.video.line.prompt');
+    Route::post('courses/{course}/modules/{module}/video/confirm', [App\Http\Controllers\Admin\ModuleVideoController::class, 'confirm'])->name('courses.modules.video.confirm');
     Route::post('courses/{course}/modules/{module}/presentation/upload', [App\Http\Controllers\Admin\ModulePresentationController::class, 'upload'])->name('courses.modules.presentation.upload');
     Route::delete('courses/{course}/modules/{module}/presentation', [App\Http\Controllers\Admin\ModulePresentationController::class, 'destroy'])->name('courses.modules.presentation.destroy');
     Route::get('courses/{course}/modules/{module}/presentation/status', [App\Http\Controllers\Admin\ModulePresentationController::class, 'status'])->name('courses.modules.presentation.status');

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Jobs\GenerateVideoScriptJob;
 use App\Models\Lesson;
 use App\Models\LessonVideo;
+use App\Services\Schola\VideoScriptService;
+use Illuminate\Http\Request;
 
 // V1 — video narrato di una lezione (lato docente). Per ora solo la generazione del
 // COPIONE (Claude) dalla presentazione PUBBLICATA. Niente TTS/mp4 (V3). Solo proprietario.
@@ -71,5 +73,44 @@ class LessonVideoController extends Controller
             'script_status' => $video?->script_status ?? 'none',
             'failure_reason' => $video?->generation_meta['failure_reason'] ?? null,
         ]);
+    }
+
+    /** V2 — correzione a mano di una riga del copione. */
+    public function editLine(Request $request, Lesson $lesson, VideoScriptService $service)
+    {
+        $this->authorizeOwner($lesson);
+        $data = $request->validate(['slide_number' => 'required|integer|min:1', 'text' => 'required|string|max:3000']);
+        $video = $this->currentVideo($lesson);
+        abort_unless($video && !empty($video->script), 404);
+
+        $service->editLine($video, $data['slide_number'], $data['text']);
+
+        return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Riga del copione aggiornata.');
+    }
+
+    /** V2 — correzione via prompt di una riga (merge mirato). */
+    public function editLinePrompt(Request $request, Lesson $lesson, VideoScriptService $service)
+    {
+        $this->authorizeOwner($lesson);
+        $data = $request->validate(['slide_number' => 'required|integer|min:1', 'instruction' => 'required|string|max:2000']);
+        $video = $this->currentVideo($lesson);
+        abort_unless($video && !empty($video->script), 404);
+
+        $service->editLineViaPrompt($video, $data['slide_number'], $data['instruction']);
+
+        return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Riga del copione ritoccata.');
+    }
+
+    /** V2 — conferma copione (solo cambio stato; il GATE costi/render è V3). */
+    public function confirm(Lesson $lesson)
+    {
+        $this->authorizeOwner($lesson);
+        $video = $this->currentVideo($lesson);
+        abort_unless($video && $video->script_status === 'draft' && !empty($video->script), 422,
+            'Nessun copione in bozza da confermare.');
+
+        $video->update(['script_status' => 'confirmed']);
+
+        return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Copione confermato.');
     }
 }

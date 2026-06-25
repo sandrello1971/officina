@@ -6,6 +6,7 @@ use App\Models\LessonVideo;
 use App\Models\ModuleVideo;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 /**
@@ -19,6 +20,7 @@ class VideoScriptService
 {
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const PROMPT_VERSION = 'video-script-v1';
+    private const EDIT_PROMPT_VERSION = 'video-script-edit-v1';
     private const CHUNK = 10;
     private const TEMPERATURE = 0.5;
     private const MAX_TOKENS = 4000;
@@ -100,6 +102,123 @@ class VideoScriptService
             ]),
             'cached' => false,
         ];
+    }
+
+    /**
+     * V2 — correzione A MANO di una riga del copione: sostituisce SOLO quella slide,
+     * riporta a 'draft' e invalida i derivati audio/video di quella slide.
+     */
+    public function editLine(LessonVideo|ModuleVideo $video, int $slideNumber, string $text): void
+    {
+        $script = $this->replaceLine($video->script ?? [], $slideNumber, trim($text));
+        $video->update(['script' => $script, 'script_status' => 'draft']);
+        $this->invalidateDerivatives($video, $slideNumber);
+    }
+
+    /**
+     * V2 — correzione VIA PROMPT di una riga: Claude riscrive SOLO quel testo (merge
+     * mirato per indice, lato PHP). Le altre righe non si toccano. → 'draft' + invalida.
+     */
+    public function editLineViaPrompt(LessonVideo|ModuleVideo $video, int $slideNumber, string $instruction): void
+    {
+        $script = $video->script ?? [];
+        $current = null;
+        foreach ($script as $line) {
+            if ((int) ($line['slide_number'] ?? 0) === $slideNumber) {
+                $current = (string) ($line['text'] ?? '');
+                break;
+            }
+        }
+        if ($current === null) {
+            throw new RuntimeException('Slide non presente nel copione.');
+        }
+
+        $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
+        if (empty($apiKey)) {
+            throw new RuntimeException('Anthropic API key non configurata.');
+        }
+
+        $presentation = $video->presentation;
+        $slide = $presentation->spec['slides'][$slideNumber - 1] ?? [];
+        $context = $this->summarizeSlide(is_array($slide) ? $slide : [], $slideNumber);
+
+        $newText = $this->callClaudeRewrite($apiKey, $current, $instruction, $context);
+
+        $updated = $this->replaceLine($script, $slideNumber, $newText);
+        $video->update([
+            'script' => $updated,
+            'script_status' => 'draft',
+            'generation_meta' => array_merge((array) $video->generation_meta, [
+                'last_line_edit' => ['slide_number' => $slideNumber, 'prompt_version' => self::EDIT_PROMPT_VERSION],
+            ]),
+        ]);
+        $this->invalidateDerivatives($video, $slideNumber);
+    }
+
+    /** Sostituisce il testo della riga slideNumber; errore se la slide non c'è. */
+    private function replaceLine(array $script, int $slideNumber, string $text): array
+    {
+        $found = false;
+        foreach ($script as &$line) {
+            if ((int) ($line['slide_number'] ?? 0) === $slideNumber) {
+                $line['text'] = $text;
+                $found = true;
+                break;
+            }
+        }
+        unset($line);
+        if (!$found) {
+            throw new RuntimeException('Slide non presente nel copione.');
+        }
+
+        return $script;
+    }
+
+    /**
+     * Invalida i derivati di una slide quando il copione cambia. GANCIO V3: quando
+     * esisteranno gli MP3 per-slide e l'mp4, qui vanno rimossi. Per ora: se esiste un
+     * mp4 reso, lo si elimina e il video torna 'pending' (da rifare).
+     */
+    private function invalidateDerivatives(LessonVideo|ModuleVideo $video, ?int $slideNumber = null): void
+    {
+        if ($video->file_path && Storage::disk('local')->exists($video->file_path)) {
+            Storage::disk('local')->delete($video->file_path);
+        }
+        if ($video->status === 'ready') {
+            $video->update(['status' => 'pending', 'file_path' => null]);
+        }
+    }
+
+    /** Riscrittura di una singola riga: ritorna SOLO il nuovo testo (no JSON). */
+    private function callClaudeRewrite(string $apiKey, string $current, string $instruction, string $context): string
+    {
+        $user = "Contesto della slide: {$context}\n\nTesto di narrazione attuale:\n{$current}\n\nIstruzione: {$instruction}";
+
+        $response = Http::withHeaders([
+            'x-api-key' => $apiKey,
+            'anthropic-version' => '2023-06-01',
+            'content-type' => 'application/json',
+        ])->timeout(60)->post(self::CLAUDE_API_URL, [
+            'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
+            'max_tokens' => 800,
+            'temperature' => self::TEMPERATURE,
+            'system' => 'Riscrivi SOLO questo testo di narrazione secondo l\'istruzione. Mantieni '
+                . 'lunghezza simile (~80-100 parole), tono parlato e discorsivo, lingua italiana. '
+                . 'Restituisci SOLO il nuovo testo, senza virgolette, titoli o preamboli.',
+            'messages' => [['role' => 'user', 'content' => $user]],
+        ]);
+
+        if (!$response->successful()) {
+            throw new RuntimeException('Errore Claude API: ' . $response->status());
+        }
+
+        $text = trim((string) ($response->json('content.0.text') ?? ''));
+        $text = trim(preg_replace('/^```.*?\n|\n```$/s', '', $text));
+        if ($text === '') {
+            throw new RuntimeException('Riscrittura vuota.');
+        }
+
+        return $text;
     }
 
     /** @return array{0: array, 1: int, 2: int} [lines, tokensIn, tokensOut] */
