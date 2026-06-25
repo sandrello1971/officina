@@ -135,6 +135,30 @@ class LessonVideoController extends Controller
         return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Generazione del video avviata. Sarà pronto a breve.');
     }
 
+    /** V4 — pubblica il video (visibile agli studenti). Solo da 'ready'. */
+    public function publishVideo(Lesson $lesson)
+    {
+        $this->authorizeOwner($lesson);
+        $video = $this->currentVideo($lesson);
+        abort_unless($video && $video->status === 'ready', 422, 'Genera prima il video.');
+
+        $video->update(['published_at' => now()]);
+
+        return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Video pubblicato: ora è visibile agli studenti.');
+    }
+
+    /** V4 — ritira il video (non più visibile agli studenti). */
+    public function unpublishVideo(Lesson $lesson)
+    {
+        $this->authorizeOwner($lesson);
+        $video = $this->currentVideo($lesson);
+        abort_unless($video, 404);
+
+        $video->update(['published_at' => null]);
+
+        return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Video ritirato: non è più visibile agli studenti.');
+    }
+
     /** V3 — download del video MP4 (lato docente proprietario). Storage privato. */
     public function downloadVideo(Lesson $lesson)
     {

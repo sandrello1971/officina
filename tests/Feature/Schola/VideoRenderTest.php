@@ -115,6 +115,12 @@ class VideoRenderTest extends TestCase
         $this->assertStringEndsWith('.mp4', $result['file_path']);
         $this->assertSame(1, $fake->calls);
 
+        // slide_timings: una voce per slide, somma ~= durata totale.
+        $timings = $result['meta']['slide_timings'] ?? [];
+        $this->assertCount(1, $timings);
+        $this->assertSame(1, $timings[0]['slide_number']);
+        $this->assertEqualsWithDelta($result['meta']['seconds'], $timings[0]['end_sec'], 0.5);
+
         // Secondo render: testo invariato → MP3 dalla cache, nessuna nuova TTS.
         app(VideoRenderService::class)->render($video->refresh());
         $this->assertSame(1, $fake->calls, 'cache MP3: niente nuova sintesi a testo invariato');

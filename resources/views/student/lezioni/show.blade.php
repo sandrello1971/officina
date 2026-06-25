@@ -17,6 +17,15 @@
         </div>
     </div>
 
+    {{-- V4 — video narrato della lezione (player); coesiste con le slide (download sopra). --}}
+    @if(!empty($hasVideo))
+        <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:16px 18px; margin-bottom:16px;">
+            <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">🎬 Video della lezione</div>
+            <video controls preload="metadata" style="width:100%; max-width:880px; border-radius:8px; background:#0A0A0A; aspect-ratio:16/9;"
+                   src="{{ route('student.classes.lesson.video', [$class, $lesson]) }}"></video>
+        </div>
+    @endif
+
     {{-- Materiali audio/video della lezione (ricerca video / player con seek) --}}
     @if($mediaMaterials->isNotEmpty())
     <div style="margin-top:16px; background:white; border:1px solid #C8D0D0; border-radius:10px; padding:14px 16px;">

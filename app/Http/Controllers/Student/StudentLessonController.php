@@ -71,12 +71,41 @@ class StudentLessonController extends Controller
 
         // Presentazione .pptx pronta (P21): scaricabile, mai generabile dallo studente.
         // Solo la versione PUBBLICATA è visibile: le bozze del formatore restano nascoste.
-        $hasPresentation = $lesson->presentations()->where('status', 'ready')->whereNotNull('published_at')->exists();
+        $publishedPresId = $lesson->presentations()->where('status', 'ready')
+            ->whereNotNull('published_at')->latest('published_at')->value('id');
+        $hasPresentation = $publishedPresId !== null;
+
+        // V4 — video pubblicato, SOLO se legato alla presentazione pubblicata corrente
+        // (un video da una presentazione ritirata/cambiata non resta esposto).
+        $hasVideo = $publishedPresId && $lesson->videos()->where('presentation_id', $publishedPresId)
+            ->where('status', 'ready')->whereNotNull('published_at')->exists();
 
         return view('student.lezioni.show', compact(
             'class', 'lesson', 'publication', 'bodyHtml', 'mediaMaterials', 'notes', 'teacherNotes',
-            'generated', 'usage', 'hasPresentation'
+            'generated', 'usage', 'hasPresentation', 'hasVideo'
         ));
+    }
+
+    /**
+     * V4 — stream del video pubblicato della lezione (player HTML5, supporta Range/seek
+     * via BinaryFileResponse). Stesso gate della presentazione: iscrizione attiva +
+     * lezione pubblicata. Solo il video legato alla presentazione pubblicata corrente.
+     */
+    public function video(SchoolClass $class, Lesson $lesson)
+    {
+        $student = $this->currentStudent();
+        $this->assertActiveEnrollment($class, $student->id);
+        $this->assertLessonPublished($lesson, $class);
+
+        $publishedPresId = $lesson->presentations()->where('status', 'ready')
+            ->whereNotNull('published_at')->latest('published_at')->value('id');
+        abort_unless($publishedPresId, 404);
+
+        $video = $lesson->videos()->where('presentation_id', $publishedPresId)
+            ->where('status', 'ready')->whereNotNull('published_at')->latest('published_at')->first();
+        abort_unless($video && $video->file_path && Storage::disk('local')->exists($video->file_path), 404);
+
+        return response()->file(Storage::disk('local')->path($video->file_path), ['Content-Type' => 'video/mp4']);
     }
 
     /**

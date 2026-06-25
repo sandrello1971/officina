@@ -131,6 +131,30 @@ class ModuleVideoController extends Controller
         return back()->with('success', 'Generazione del video avviata. Sarà pronto a breve.');
     }
 
+    /** V4 — pubblica il video del modulo (visibile ai corsisti). Solo da 'ready'. */
+    public function publishVideo(Course $course, Module $module)
+    {
+        $this->ensureInCourse($course, $module);
+        $video = $this->currentVideo($module);
+        abort_unless($video && $video->status === 'ready', 422, 'Genera prima il video.');
+
+        $video->update(['published_at' => now()]);
+
+        return back()->with('success', 'Video pubblicato: ora è visibile ai corsisti.');
+    }
+
+    /** V4 — ritira il video del modulo. */
+    public function unpublishVideo(Course $course, Module $module)
+    {
+        $this->ensureInCourse($course, $module);
+        $video = $this->currentVideo($module);
+        abort_unless($video, 404);
+
+        $video->update(['published_at' => null]);
+
+        return back()->with('success', 'Video ritirato: non è più visibile ai corsisti.');
+    }
+
     /** V3 — download del video MP4 (lato admin). Storage privato. */
     public function downloadVideo(Course $course, Module $module)
     {

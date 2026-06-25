@@ -15,12 +15,13 @@ class LessonVideo extends Model
 
     protected $fillable = [
         'lesson_id', 'presentation_id', 'file_path', 'status', 'script_status',
-        'script', 'generation_meta',
+        'script', 'generation_meta', 'published_at',
     ];
 
     protected $casts = [
         'script' => 'array',
         'generation_meta' => 'array',
+        'published_at' => 'datetime',
     ];
 
     public function lesson()
@@ -31,5 +32,20 @@ class LessonVideo extends Model
     public function presentation()
     {
         return $this->belongsTo(LessonPresentation::class);
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->published_at !== null;
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->whereNotNull('published_at');
+    }
+
+    public function scopeDraft($query)
+    {
+        return $query->whereNull('published_at');
     }
 }

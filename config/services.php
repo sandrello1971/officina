@@ -97,6 +97,14 @@ return [
         'bin' => env('FFMPEG_BIN', '/usr/bin/ffmpeg'),
         'python' => env('PPTX_PYTHON', '/home/noscite/venv/bin/python'),
     ],
+    // Parametri di encoding del video (tunabili da .env, nessun segreto qui).
+    'video' => [
+        'width' => (int) env('VIDEO_WIDTH', 1280),
+        'height' => (int) env('VIDEO_HEIGHT', 720),
+        'fps' => (int) env('VIDEO_FPS', 25),
+        'crf' => (int) env('VIDEO_CRF', 23),
+        'preset' => env('VIDEO_PRESET', 'medium'),
+    ],
 
     // P26 "Gap & Compose": opt-in finché non è pronto. Nasconde /admin/fonti + endpoint.
     'p26' => [
