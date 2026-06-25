@@ -78,6 +78,26 @@ return [
         'model'  => env('PPTX_MODEL', 'claude-sonnet-4-6'),
     ],
 
+    // Video narrato (V3): TTS parametrico — il provider è scelto da services.tts.provider.
+    // Cambiare fornitore = aggiungere una classe TtsProvider + una voce qui + TTS_PROVIDER in .env.
+    'tts' => [
+        'provider' => env('TTS_PROVIDER', 'elevenlabs'),
+        'voice_id' => env('ELEVENLABS_VOICE_ID', 'HuK8QKF35exsCh2e7fLT'),
+        'providers' => [
+            'elevenlabs' => \App\Services\Tts\ElevenLabsTtsProvider::class,
+        ],
+    ],
+    // Credenziali specifiche del provider ElevenLabs (usate da ElevenLabsTtsProvider).
+    'elevenlabs' => [
+        'key' => env('ELEVENLABS_API_KEY'),
+        'voice_id' => env('ELEVENLABS_VOICE_ID', 'HuK8QKF35exsCh2e7fLT'),
+        'model' => env('ELEVENLABS_MODEL', 'eleven_multilingual_v2'),
+    ],
+    'ffmpeg' => [
+        'bin' => env('FFMPEG_BIN', '/usr/bin/ffmpeg'),
+        'python' => env('PPTX_PYTHON', '/home/noscite/venv/bin/python'),
+    ],
+
     // P26 "Gap & Compose": opt-in finché non è pronto. Nasconde /admin/fonti + endpoint.
     'p26' => [
         'enabled' => env('P26_ENABLED', false),

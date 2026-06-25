@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Docente;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateVideoJob;
 use App\Jobs\GenerateVideoScriptJob;
 use App\Models\Lesson;
 use App\Models\LessonVideo;
 use App\Services\Schola\VideoScriptService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 // V1 — video narrato di una lezione (lato docente). Per ora solo la generazione del
 // COPIONE (Claude) dalla presentazione PUBBLICATA. Niente TTS/mp4 (V3). Solo proprietario.
@@ -112,5 +115,34 @@ class LessonVideoController extends Controller
         $video->update(['script_status' => 'confirmed']);
 
         return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Copione confermato.');
+    }
+
+    /** V3 [GATE costi] — genera il video MP4 (TTS + ffmpeg). Solo da copione confermato. */
+    public function generateVideo(Lesson $lesson)
+    {
+        $this->authorizeOwner($lesson);
+        $video = $this->currentVideo($lesson);
+        abort_unless($video && $video->script_status === 'confirmed', 422,
+            'Conferma il copione prima di generare il video.');
+
+        if ($video->status === 'generating') {
+            return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Generazione video già in corso.');
+        }
+
+        $video->update(['status' => 'generating']);
+        GenerateVideoJob::dispatch($video->id, 'lesson')->afterResponse();
+
+        return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Generazione del video avviata. Sarà pronto a breve.');
+    }
+
+    /** V3 — download del video MP4 (lato docente proprietario). Storage privato. */
+    public function downloadVideo(Lesson $lesson)
+    {
+        $this->authorizeOwner($lesson);
+        $video = $this->currentVideo($lesson);
+        abort_unless($video && $video->status === 'ready' && $video->file_path
+            && Storage::disk('local')->exists($video->file_path), 404);
+
+        return response()->download(Storage::disk('local')->path($video->file_path), Str::slug($lesson->title) . '.mp4');
     }
 }

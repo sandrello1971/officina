@@ -282,6 +282,9 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::post('/lezioni/{lesson}/video/riga', [App\Http\Controllers\Docente\LessonVideoController::class, 'editLine'])->name('lessons.video.line');
     Route::post('/lezioni/{lesson}/video/riga/ritocca', [App\Http\Controllers\Docente\LessonVideoController::class, 'editLinePrompt'])->name('lessons.video.line.prompt')->middleware('throttle:schola-generate');
     Route::post('/lezioni/{lesson}/video/conferma', [App\Http\Controllers\Docente\LessonVideoController::class, 'confirm'])->name('lessons.video.confirm');
+    // V3 — render MP4 (TTS + ffmpeg) e download owner.
+    Route::post('/lezioni/{lesson}/video/genera', [App\Http\Controllers\Docente\LessonVideoController::class, 'generateVideo'])->name('lessons.video.generate')->middleware('throttle:schola-generate');
+    Route::get('/lezioni/{lesson}/video/download', [App\Http\Controllers\Docente\LessonVideoController::class, 'downloadVideo'])->name('lessons.video.download');
 
     // Pubblicazione lezione su classe (P20a) — cattedra/proprietà + ingestion RAG asincrona
     Route::post('/lezioni/{lesson}/pubblica', [App\Http\Controllers\Docente\LessonPublicationController::class, 'store'])->name('lessons.publish');
@@ -407,6 +410,8 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::post('courses/{course}/modules/{module}/video/line', [App\Http\Controllers\Admin\ModuleVideoController::class, 'editLine'])->name('courses.modules.video.line');
     Route::post('courses/{course}/modules/{module}/video/line/prompt', [App\Http\Controllers\Admin\ModuleVideoController::class, 'editLinePrompt'])->name('courses.modules.video.line.prompt');
     Route::post('courses/{course}/modules/{module}/video/confirm', [App\Http\Controllers\Admin\ModuleVideoController::class, 'confirm'])->name('courses.modules.video.confirm');
+    Route::post('courses/{course}/modules/{module}/video/generate', [App\Http\Controllers\Admin\ModuleVideoController::class, 'generateVideo'])->name('courses.modules.video.generate');
+    Route::get('courses/{course}/modules/{module}/video/download', [App\Http\Controllers\Admin\ModuleVideoController::class, 'downloadVideo'])->name('courses.modules.video.download');
     Route::post('courses/{course}/modules/{module}/presentation/upload', [App\Http\Controllers\Admin\ModulePresentationController::class, 'upload'])->name('courses.modules.presentation.upload');
     Route::delete('courses/{course}/modules/{module}/presentation', [App\Http\Controllers\Admin\ModulePresentationController::class, 'destroy'])->name('courses.modules.presentation.destroy');
     Route::get('courses/{course}/modules/{module}/presentation/status', [App\Http\Controllers\Admin\ModulePresentationController::class, 'status'])->name('courses.modules.presentation.status');
