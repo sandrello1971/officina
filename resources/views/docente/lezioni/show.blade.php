@@ -268,6 +268,48 @@
     </div>
     @endif
 
+    {{-- V1 — Video narrato: copione (draft) dalla presentazione PUBBLICATA. UI minima. --}}
+    @if($lesson->generation_status === 'ready' && $published)
+        @php $lessonVideo = $lesson->videos()->where('presentation_id', $published->id)->latest()->first(); @endphp
+        <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:16px 18px; margin-bottom:16px;"
+             x-data="{ s: '{{ $lessonVideo?->status ?? 'none' }}' }"
+             x-init="if (s === 'generating') { const t = setInterval(async () => { const r = await fetch('{{ route('docente.lessons.video.status', $lesson) }}'); const j = await r.json(); if (j.status !== 'generating') { clearInterval(t); location.reload(); } }, 4000); }">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; flex:1;">Video narrato</div>
+                @if(($lessonVideo?->script_status ?? 'none') === 'draft')
+                    <span style="display:inline-block; padding:2px 9px; background:#F5E6B8; color:#7A5C00; border-radius:6px; font-size:0.72rem; font-weight:700;">Copione: bozza</span>
+                @endif
+            </div>
+
+            <template x-if="s === 'generating'">
+                <p style="margin-top:8px; font-size:0.82rem; color:#E28A53;">Generazione del copione in corso… la pagina si aggiorna da sola.</p>
+            </template>
+
+            @if(($lessonVideo?->status ?? null) === 'failed' && ($lessonVideo->generation_meta['failure_reason'] ?? null))
+                <p style="margin-top:8px; font-size:0.82rem; color:#A8521F;">{{ $lessonVideo->generation_meta['failure_reason'] }}</p>
+            @endif
+
+            <div style="margin-top:12px;" x-show="s !== 'generating'">
+                <form method="POST" action="{{ route('docente.lessons.video.script', $lesson) }}" data-async>
+                    @csrf
+                    <button data-busy-label="Preparazione…" style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">{{ ($lessonVideo?->script_status ?? 'none') === 'draft' ? 'Rigenera copione' : 'Prepara copione video' }}</button>
+                </form>
+                <p style="margin-top:6px; font-size:0.72rem; color:#8A9696;">Il copione resta in bozza: nessun costo voce finché non lo confermi.</p>
+            </div>
+
+            @if(($lessonVideo?->script_status ?? 'none') === 'draft' && !empty($lessonVideo->script))
+                <div style="margin-top:14px; border-top:1px solid #F0F2F2; padding-top:12px; display:flex; flex-direction:column; gap:8px;">
+                    @foreach($lessonVideo->script as $line)
+                        <div style="font-size:0.82rem; color:#4A5252;">
+                            <span style="display:inline-block; min-width:64px; font-weight:700; color:#8A9696;">Slide {{ $line['slide_number'] ?? '?' }}</span>
+                            {{ $line['text'] ?? '' }}
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
+
     {{-- Pubblicazione su classi (P20a) — Feedback UX: rag_status + polling --}}
     @if($lesson->generation_status === 'ready')
     <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:16px 18px; margin-bottom:16px;" x-data="lessonPublications('{{ $lesson->id }}')">

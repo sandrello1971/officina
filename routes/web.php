@@ -275,6 +275,9 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::get('/lezioni/{lesson}/presentazione/stato', [App\Http\Controllers\Docente\LessonPresentationController::class, 'status'])->name('lessons.presentation.status');
     Route::get('/lezioni/{lesson}/presentazione/download', [App\Http\Controllers\Docente\LessonPresentationController::class, 'download'])->name('lessons.presentation.download');
     Route::get('/lezioni/{lesson}/presentazione/slide/{n}', [App\Http\Controllers\Docente\LessonPresentationController::class, 'previewImage'])->whereNumber('n')->name('lessons.presentation.preview');
+    // V1 — video narrato: generazione copione (Claude) + stato.
+    Route::post('/lezioni/{lesson}/video/copione', [App\Http\Controllers\Docente\LessonVideoController::class, 'generateScript'])->name('lessons.video.script')->middleware('throttle:schola-generate');
+    Route::get('/lezioni/{lesson}/video/stato', [App\Http\Controllers\Docente\LessonVideoController::class, 'status'])->name('lessons.video.status');
 
     // Pubblicazione lezione su classe (P20a) — cattedra/proprietà + ingestion RAG asincrona
     Route::post('/lezioni/{lesson}/pubblica', [App\Http\Controllers\Docente\LessonPublicationController::class, 'store'])->name('lessons.publish');
@@ -394,6 +397,9 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::post('courses/{course}/modules/{module}/presentation/edit', [App\Http\Controllers\Admin\ModulePresentationController::class, 'edit'])->name('courses.modules.presentation.edit');
     Route::post('courses/{course}/modules/{module}/presentation/publish', [App\Http\Controllers\Admin\ModulePresentationController::class, 'publish'])->name('courses.modules.presentation.publish');
     Route::post('courses/{course}/modules/{module}/presentation/unpublish', [App\Http\Controllers\Admin\ModulePresentationController::class, 'unpublish'])->name('courses.modules.presentation.unpublish');
+    // V1 — video narrato del modulo: generazione copione + stato.
+    Route::post('courses/{course}/modules/{module}/video/script', [App\Http\Controllers\Admin\ModuleVideoController::class, 'generateScript'])->name('courses.modules.video.script');
+    Route::get('courses/{course}/modules/{module}/video/status', [App\Http\Controllers\Admin\ModuleVideoController::class, 'status'])->name('courses.modules.video.status');
     Route::post('courses/{course}/modules/{module}/presentation/upload', [App\Http\Controllers\Admin\ModulePresentationController::class, 'upload'])->name('courses.modules.presentation.upload');
     Route::delete('courses/{course}/modules/{module}/presentation', [App\Http\Controllers\Admin\ModulePresentationController::class, 'destroy'])->name('courses.modules.presentation.destroy');
     Route::get('courses/{course}/modules/{module}/presentation/status', [App\Http\Controllers\Admin\ModulePresentationController::class, 'status'])->name('courses.modules.presentation.status');

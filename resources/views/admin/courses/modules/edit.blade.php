@@ -411,6 +411,51 @@
     </div>
 </div>
 
+{{-- ==================== VIDEO NARRATO (V1) — copione bozza dalla presentazione pubblicata ==================== --}}
+@if($modPublished)
+    @php $modVideo = $module->videos()->where('presentation_id', $modPublished->id)->latest()->first(); @endphp
+    <div style="max-width:900px; margin:20px auto 0;">
+        <div style="background:white; border-radius:12px; padding:24px;"
+             x-data="{ s: '{{ $modVideo?->status ?? 'none' }}' }"
+             x-init="if (s === 'generating') { const t = setInterval(async () => { const r = await fetch('{{ route('admin.courses.modules.video.status', [$course, $module]) }}'); const j = await r.json(); if (j.status !== 'generating') { clearInterval(t); location.reload(); } }, 4000); }">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+                <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; flex:1;">🎬 Video narrato</h3>
+                @if(($modVideo?->script_status ?? 'none') === 'draft')
+                    <span style="display:inline-block; padding:2px 9px; background:#F5E6B8; color:#7A5C00; border-radius:6px; font-size:0.72rem; font-weight:700;">Copione: bozza</span>
+                @endif
+            </div>
+            <p style="font-size:0.78rem; color:#8A9696; margin-bottom:12px;">Copione narrato per slide (Claude). Resta in bozza: nessun costo voce finché non lo confermi.</p>
+
+            <template x-if="s === 'generating'">
+                <p style="font-size:0.82rem; color:#E28A53;">Generazione del copione in corso… la pagina si aggiorna da sola.</p>
+            </template>
+
+            @if(($modVideo?->status ?? null) === 'failed' && ($modVideo->generation_meta['failure_reason'] ?? null))
+                <p style="font-size:0.82rem; color:#A8521F;">{{ $modVideo->generation_meta['failure_reason'] }}</p>
+            @endif
+
+            <div x-show="s !== 'generating'">
+                <form method="POST" action="{{ route('admin.courses.modules.video.script', [$course, $module]) }}"
+                      onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='⏳ Preparazione…';">
+                    @csrf
+                    <button type="submit" style="padding:9px 16px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">{{ ($modVideo?->script_status ?? 'none') === 'draft' ? 'Rigenera copione' : 'Prepara copione video' }}</button>
+                </form>
+            </div>
+
+            @if(($modVideo?->script_status ?? 'none') === 'draft' && !empty($modVideo->script))
+                <div style="margin-top:14px; border-top:1px solid #F0F2F2; padding-top:12px; display:flex; flex-direction:column; gap:8px;">
+                    @foreach($modVideo->script as $line)
+                        <div style="font-size:0.82rem; color:#4A5252;">
+                            <span style="display:inline-block; min-width:64px; font-weight:700; color:#8A9696;">Slide {{ $line['slide_number'] ?? '?' }}</span>
+                            {{ $line['text'] ?? '' }}
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
+@endif
+
 {{-- ==================== DOCUMENTO PDF (P29) — renderer brandizzato GLITCH, stale-then-regenerate ==================== --}}
 @php $modDoc = $module->document; @endphp
 <div style="max-width:900px; margin:20px auto 0;">
