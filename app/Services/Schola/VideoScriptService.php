@@ -184,8 +184,9 @@ class VideoScriptService
         if ($video->file_path && Storage::disk('local')->exists($video->file_path)) {
             Storage::disk('local')->delete($video->file_path);
         }
-        if ($video->status === 'ready') {
-            $video->update(['status' => 'pending', 'file_path' => null]);
+        // R3 — copione cambiato → mp4 + indice + pubblicazione stale: va rifatto tutto.
+        if ($video->status === 'ready' || $video->indexed_at || $video->published_at) {
+            $video->update(['status' => 'pending', 'file_path' => null, 'indexed_at' => null, 'published_at' => null]);
         }
     }
 

@@ -7,6 +7,7 @@ use App\Jobs\GenerateVideoJob;
 use App\Jobs\GenerateVideoScriptJob;
 use App\Models\Lesson;
 use App\Models\LessonVideo;
+use App\Services\Schola\VideoIndexService;
 use App\Services\Schola\VideoScriptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -135,16 +136,32 @@ class LessonVideoController extends Controller
         return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Generazione del video avviata. Sarà pronto a breve.');
     }
 
-    /** V4 — pubblica il video (visibile agli studenti). Solo da 'ready'. */
-    public function publishVideo(Lesson $lesson)
+    /**
+     * R3/V4 — pubblica il video. GATE: pubblicabile SOLO se interrogabile. Per i video
+     * GENERATI l'indicizzazione è gratis → "indicizza e pubblica" in un colpo: se il
+     * video non è indicizzato lo indicizza (R2) e solo a successo imposta published_at.
+     * Indicizzazione fallita (videoai down) → publish annullato, resta bozza.
+     */
+    public function publishVideo(Lesson $lesson, VideoIndexService $indexer)
     {
         $this->authorizeOwner($lesson);
         $video = $this->currentVideo($lesson);
         abort_unless($video && $video->status === 'ready', 422, 'Genera prima il video.');
 
+        if (!$video->indexed_at || !$video->video_ai_id) {
+            try {
+                $indexer->indexGenerated($video);
+                $video->refresh();
+            } catch (\Throwable $e) {
+                return redirect()->route('docente.lessons.show', $lesson)
+                    ->with('error', 'Pubblicazione annullata: indicizzazione non riuscita (' . $e->getMessage() . '). Il video resta in bozza.');
+            }
+        }
+
         $video->update(['published_at' => now()]);
 
-        return redirect()->route('docente.lessons.show', $lesson)->with('success', 'Video pubblicato: ora è visibile agli studenti.');
+        return redirect()->route('docente.lessons.show', $lesson)
+            ->with('success', 'Video pubblicato e indicizzato: visibile agli studenti e ricercabile.');
     }
 
     /** V4 — ritira il video (non più visibile agli studenti). */

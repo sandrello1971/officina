@@ -8,6 +8,7 @@ use App\Jobs\GenerateVideoScriptJob;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\ModuleVideo;
+use App\Services\Schola\VideoIndexService;
 use App\Services\Schola\VideoScriptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -131,16 +132,29 @@ class ModuleVideoController extends Controller
         return back()->with('success', 'Generazione del video avviata. Sarà pronto a breve.');
     }
 
-    /** V4 — pubblica il video del modulo (visibile ai corsisti). Solo da 'ready'. */
-    public function publishVideo(Course $course, Module $module)
+    /**
+     * R3/V4 — pubblica il video del modulo. GATE: pubblicabile solo se interrogabile.
+     * Generato → "indicizza e pubblica" in un colpo (indicizzazione gratis); a successo
+     * published_at. Indicizzazione fallita → publish annullato, resta bozza.
+     */
+    public function publishVideo(Course $course, Module $module, VideoIndexService $indexer)
     {
         $this->ensureInCourse($course, $module);
         $video = $this->currentVideo($module);
         abort_unless($video && $video->status === 'ready', 422, 'Genera prima il video.');
 
+        if (!$video->indexed_at || !$video->video_ai_id) {
+            try {
+                $indexer->indexGenerated($video);
+                $video->refresh();
+            } catch (\Throwable $e) {
+                return back()->with('error', 'Pubblicazione annullata: indicizzazione non riuscita (' . $e->getMessage() . '). Il video resta in bozza.');
+            }
+        }
+
         $video->update(['published_at' => now()]);
 
-        return back()->with('success', 'Video pubblicato: ora è visibile ai corsisti.');
+        return back()->with('success', 'Video pubblicato e indicizzato: visibile ai corsisti e ricercabile.');
     }
 
     /** V4 — ritira il video del modulo. */
