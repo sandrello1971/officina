@@ -39,6 +39,9 @@ Route::prefix('learn')->name('student.')->group(function () {
     Route::get('/login', [App\Http\Controllers\Student\AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\Student\AuthController::class, 'login'])->middleware('throttle:login')->name('login.post');
     Route::post('/logout', [App\Http\Controllers\Student\AuthController::class, 'logout'])->name('logout');
+    // GET di cortesia: aprire /learn/logout via URL/bookmark esegue il logout e
+    // riporta al login (invece del 405). Il logout "ufficiale" resta POST (i form).
+    Route::get('/logout', [App\Http\Controllers\Student\AuthController::class, 'logout'])->name('logout.get');
     Route::get('/change-password', [App\Http\Controllers\Student\AuthController::class, 'showChangePassword'])->name('change-password');
     Route::post('/change-password', [App\Http\Controllers\Student\AuthController::class, 'changePassword'])->name('change-password.post');
 
