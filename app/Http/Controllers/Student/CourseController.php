@@ -248,6 +248,23 @@ class CourseController extends Controller
         return response()->file(Storage::disk('local')->path($video->file_path), ['Content-Type' => 'video/mp4']);
     }
 
+    /** R4 — ricerca PER-VIDEO nel video pubblicato del modulo (corsista). Stesso gate. */
+    public function moduleVideoSearch(Course $course, Module $module, Request $request, \App\Services\Schola\VideoSearchService $search)
+    {
+        $this->checkAccess($course);
+        abort_unless($module->course_id === $course->id, 404);
+        $q = trim($request->input('q', ''));
+        abort_if($q === '', 422, 'Inserisci una ricerca.');
+
+        $presId = $module->presentations()->where('status', 'ready')
+            ->whereNotNull('published_at')->latest('published_at')->value('id');
+        $video = $presId ? $module->videos()->where('presentation_id', $presId)
+            ->where('status', 'ready')->whereNotNull('published_at')->latest('published_at')->first() : null;
+        abort_unless($video && $video->video_ai_id, 404);
+
+        return response()->json(['matches' => $search->perVideo($video->video_ai_id, $q)]);
+    }
+
     /**
      * Blocco B — download della presentazione PUBBLICATA del modulo (corsista).
      * Gate: stesso checkAccess del modulo. File da storage PRIVATO, mai URL diretto.

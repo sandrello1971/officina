@@ -109,6 +109,27 @@ class StudentLessonController extends Controller
     }
 
     /**
+     * R4 — ricerca PER-VIDEO nel video pubblicato della lezione. Stesso gate del video
+     * (iscrizione attiva + lezione pubblicata). Proxy a videoai sul video_ai_id del video.
+     */
+    public function videoSearch(SchoolClass $class, Lesson $lesson, \Illuminate\Http\Request $request, \App\Services\Schola\VideoSearchService $search)
+    {
+        $student = $this->currentStudent();
+        $this->assertActiveEnrollment($class, $student->id);
+        $this->assertLessonPublished($lesson, $class);
+        $q = trim($request->input('q', ''));
+        abort_if($q === '', 422, 'Inserisci una ricerca.');
+
+        $publishedPresId = $lesson->presentations()->where('status', 'ready')
+            ->whereNotNull('published_at')->latest('published_at')->value('id');
+        $video = $publishedPresId ? $lesson->videos()->where('presentation_id', $publishedPresId)
+            ->where('status', 'ready')->whereNotNull('published_at')->latest('published_at')->first() : null;
+        abort_unless($video && $video->video_ai_id, 404);
+
+        return response()->json(['matches' => $search->perVideo($video->video_ai_id, $q)]);
+    }
+
+    /**
      * Download della presentazione .pptx di una lezione pubblicata (P21). Lo
      * studente può SOLO scaricare (niente generazione). Stesso criterio di accesso
      * della fruizione: iscrizione attiva + lezione pubblicata sulla sua classe.
