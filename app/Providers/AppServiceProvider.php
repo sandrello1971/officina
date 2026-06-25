@@ -28,7 +28,11 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // V3 — provider TTS di default (ElevenLabs); sostituibile in test/dev.
+        $this->app->bind(
+            \App\Services\Schola\Contracts\TextToSpeech::class,
+            \App\Services\Schola\ElevenLabsTextToSpeech::class
+        );
     }
 
     public function boot(): void

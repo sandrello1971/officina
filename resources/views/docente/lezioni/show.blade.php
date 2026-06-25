@@ -348,6 +348,25 @@
                     </div>
                 </div>
             @endif
+
+            {{-- V3 — render MP4: da copione confermato. Pronto → scarica. --}}
+            @if(($lessonVideo?->status ?? null) === 'ready' && $lessonVideo->file_path)
+                <div style="margin-top:14px; border-top:1px solid #F0F2F2; padding-top:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <span style="display:inline-block; padding:2px 9px; background:#3A8C89; color:white; border-radius:6px; font-size:0.72rem; font-weight:700;">🎬 Video pronto</span>
+                    @isset($lessonVideo->generation_meta['seconds'])<span style="font-size:0.75rem; color:#8A9696;">{{ (int) $lessonVideo->generation_meta['seconds'] }}s</span>@endisset
+                    <a href="{{ route('docente.lessons.video.download', $lesson) }}" style="padding:7px 13px; background:white; color:#3A8C89; border:1px solid #3A8C89; border-radius:8px; font-size:0.8rem; font-weight:600; text-decoration:none;">&#11015; Scarica video (.mp4)</a>
+                </div>
+            @endif
+            @if(($lessonVideo?->script_status ?? 'none') === 'confirmed')
+                <div style="margin-top:12px; border-top:1px solid #F0F2F2; padding-top:12px;" x-show="s !== 'generating'">
+                    <form method="POST" action="{{ route('docente.lessons.video.generate', $lesson) }}" data-async
+                          onsubmit="return confirm('Generare il video? Verrà sintetizzata la voce (ha un costo) e composto l\'mp4.');">
+                        @csrf
+                        <button data-busy-label="Generazione…" style="padding:9px 16px; background:#A6192E; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:700; cursor:pointer;">🎬 {{ ($lessonVideo?->status ?? null) === 'ready' ? 'Rigenera video' : 'Genera video' }}</button>
+                    </form>
+                    <p style="margin-top:6px; font-size:0.72rem; color:#8A9696;">La voce TTS ha un costo: si genera solo dal copione confermato.</p>
+                </div>
+            @endif
         </div>
     @endif
 
