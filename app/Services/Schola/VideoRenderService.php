@@ -4,7 +4,7 @@ namespace App\Services\Schola;
 
 use App\Models\LessonVideo;
 use App\Models\ModuleVideo;
-use App\Services\Schola\Contracts\TextToSpeech;
+use App\Services\Tts\TtsProvider;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Symfony\Component\Process\Process;
@@ -21,7 +21,7 @@ class VideoRenderService
 
     public function __construct(
         private SlidePreviewService $preview,
-        private TextToSpeech $tts,
+        private TtsProvider $tts,
     ) {}
 
     /**
@@ -44,7 +44,8 @@ class VideoRenderService
         }
 
         $images = $this->preview->imagesFor($presentation->file_path); // PNG ordinati slide_1..N
-        $voiceId = (string) config('services.elevenlabs.voice_id', 'HuK8QKF35exsCh2e7fLT');
+        $provider = (string) config('services.tts.provider', 'elevenlabs');
+        $voiceId = (string) config('services.tts.voice_id', config('services.elevenlabs.voice_id', 'HuK8QKF35exsCh2e7fLT'));
 
         $manifest = [];
         foreach ($video->script as $line) {
@@ -55,11 +56,11 @@ class VideoRenderService
                 continue;
             }
 
-            // CACHE MP3 per (testo+voce): se invariato non si ri-sintetizza.
-            $hash = md5($text . '|' . $voiceId);
+            // CACHE MP3 per (provider+voce+testo): cambiando provider o voce, l'audio si rigenera.
+            $hash = md5($provider . '|' . $voiceId . '|' . $text);
             $audioRel = $this->audioDir($video) . "/slide_{$n}_{$hash}.mp3";
             if (!$disk->exists($audioRel)) {
-                $disk->put($audioRel, $this->tts->synthesize($text, $voiceId));
+                $disk->put($audioRel, $this->tts->synthesize($text, ['voice_id' => $voiceId]));
             }
 
             $manifest[] = ['image' => $disk->path($pngRel), 'audio' => $disk->path($audioRel)];
@@ -82,6 +83,7 @@ class VideoRenderService
             'meta' => array_merge((array) $video->generation_meta, [
                 'seconds' => $seconds,
                 'rendered_slides' => count($manifest),
+                'tts_provider' => $provider,
                 'voice_id' => $voiceId,
             ]),
         ];

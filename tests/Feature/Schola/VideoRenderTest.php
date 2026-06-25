@@ -9,7 +9,7 @@ use App\Models\LessonVideo;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Topic;
-use App\Services\Schola\Contracts\TextToSpeech;
+use App\Services\Tts\TtsProvider;
 use App\Services\Schola\SlidePreviewService;
 use App\Services\Schola\VideoRenderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -102,12 +102,12 @@ class VideoRenderTest extends TestCase
         // TTS fake con contatore (audio di prova reale).
         $audio = $this->sampleAudioBytes();
         $this->assertNotSame('', $audio, 'ffmpeg deve produrre l\'audio di prova');
-        $fake = new class($audio) implements TextToSpeech {
+        $fake = new class($audio) implements TtsProvider {
             public int $calls = 0;
             public function __construct(private string $audio) {}
-            public function synthesize(string $text, string $voiceId): string { $this->calls++; return $this->audio; }
+            public function synthesize(string $text, array $options = []): string { $this->calls++; return $this->audio; }
         };
-        $this->app->instance(TextToSpeech::class, $fake);
+        $this->app->instance(TtsProvider::class, $fake);
 
         $result = app(VideoRenderService::class)->render($video->refresh());
 

@@ -1,26 +1,28 @@
 <?php
 
-namespace App\Services\Schola;
+namespace App\Services\Tts;
 
-use App\Services\Schola\Contracts\TextToSpeech;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * TTS via ElevenLabs (text-to-speech API). Ritorna i byte MP3. La chiave vive in
- * config('services.elevenlabs.key'). Una chiamata = audio di UNA slide (il caching
- * per testo è responsabilità del chiamante, VideoRenderService).
+ * Provider TTS di default: ElevenLabs (text-to-speech API). Unico punto che parla con
+ * ElevenLabs; ritorna i byte MP3. Chiave in config('services.elevenlabs.key').
  */
-class ElevenLabsTextToSpeech implements TextToSpeech
+class ElevenLabsTtsProvider implements TtsProvider
 {
     private const BASE = 'https://api.elevenlabs.io/v1/text-to-speech';
 
-    public function synthesize(string $text, string $voiceId): string
+    public function synthesize(string $text, array $options = []): string
     {
         $key = config('services.elevenlabs.key');
         if (empty($key)) {
             throw new RuntimeException('ELEVENLABS_API_KEY non configurata.');
         }
+
+        $voiceId = $options['voice_id']
+            ?? config('services.tts.voice_id')
+            ?? config('services.elevenlabs.voice_id');
 
         $response = Http::withHeaders([
             'xi-api-key' => $key,
