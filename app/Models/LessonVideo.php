@@ -15,13 +15,14 @@ class LessonVideo extends Model
 
     protected $fillable = [
         'lesson_id', 'presentation_id', 'file_path', 'status', 'script_status',
-        'script', 'generation_meta', 'published_at',
+        'script', 'generation_meta', 'published_at', 'video_ai_id', 'indexed_at',
     ];
 
     protected $casts = [
         'script' => 'array',
         'generation_meta' => 'array',
         'published_at' => 'datetime',
+        'indexed_at' => 'datetime',
     ];
 
     public function lesson()
