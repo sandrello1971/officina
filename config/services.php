@@ -47,6 +47,13 @@ return [
         // Polling trascrizione audio/youtube (Schola pacchetto 4a/4b)
         'poll_interval' => (int) env('VIDEOAI_POLL_INTERVAL', 3),
         'poll_max_attempts' => (int) env('VIDEOAI_POLL_MAX_ATTEMPTS', 200),
+        // R4 — max risultati mostrati dalla ricerca per-video.
+        'search_max_results' => (int) env('VIDEOAI_SEARCH_MAX_RESULTS', 5),
+        // R5 — fps keyframe per i caricati (lato videoai; qui solo documentato).
+        'keyframe_fps' => (float) env('VIDEOAI_KEYFRAME_FPS', 0.2),
+        // R5 — tipi sorgente Schola che passano da sub-processori esterni
+        // (audio/video→Whisper, foto→Vision): richiedono il consenso DPA della scuola.
+        'dpa_required_source_types' => ['audio', 'youtube', 'photos'],
     ],
 
     // Embedding per il RAG vettoriale Schola (pre-pacchetto 6). Il servizio è

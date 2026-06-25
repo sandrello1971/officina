@@ -29,12 +29,13 @@ class VideoSearchService
 
         $results = $response->json();
         $matches = is_array($results) && !empty($results) ? ($results[0]['matches'] ?? []) : [];
+        $max = (int) config('services.videoai.search_max_results', 5);
 
         return array_map(fn ($m) => [
             'start' => (float) ($m['start'] ?? 0),
             'text' => (string) ($m['text'] ?? ''),
             'type' => (string) ($m['type'] ?? ''),
             'timestamp_str' => (string) ($m['timestamp_str'] ?? ''),
-        ], is_array($matches) ? $matches : []);
+        ], array_slice(is_array($matches) ? $matches : [], 0, $max));
     }
 }
