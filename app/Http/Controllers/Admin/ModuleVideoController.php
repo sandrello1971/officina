@@ -1,0 +1,112 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Jobs\GenerateVideoScriptJob;
+use App\Models\Course;
+use App\Models\Module;
+use App\Models\ModuleVideo;
+use App\Services\Schola\VideoScriptService;
+use Illuminate\Http\Request;
+
+// V1 — video narrato di un MODULO (lato admin). Solo generazione del COPIONE dalla
+// presentazione PUBBLICATA. Gemello di Docente\LessonVideoController.
+class ModuleVideoController extends Controller
+{
+    private function ensureInCourse(Course $course, Module $module): void
+    {
+        abort_unless($module->course_id === $course->id, 404);
+    }
+
+    private function publishedPresentation(Module $module)
+    {
+        return $module->presentations()->where('status', 'ready')
+            ->whereNotNull('published_at')->latest('published_at')->first();
+    }
+
+    private function currentVideo(Module $module): ?ModuleVideo
+    {
+        $published = $this->publishedPresentation($module);
+
+        return $published
+            ? $module->videos()->where('presentation_id', $published->id)->latest()->first()
+            : null;
+    }
+
+    public function generateScript(Course $course, Module $module)
+    {
+        $this->ensureInCourse($course, $module);
+
+        $published = $this->publishedPresentation($module);
+        abort_unless($published, 422,
+            'Pubblica prima le slide: il video si genera dalla presentazione pubblicata.');
+        abort_unless(!empty($published->spec), 422,
+            'Rigenera le slide dal sistema per abilitare il copione del video.');
+
+        $video = $module->videos()->firstOrCreate(
+            ['presentation_id' => $published->id],
+            ['status' => 'pending', 'script_status' => 'none']
+        );
+
+        if ($video->status === 'generating') {
+            return back()->with('success', 'Generazione copione già in corso.');
+        }
+
+        $video->update(['status' => 'generating']);
+        GenerateVideoScriptJob::dispatch($video->id, 'module')->afterResponse();
+
+        return back()->with('success', 'Generazione del copione avviata. Sarà pronto a breve.');
+    }
+
+    public function status(Course $course, Module $module)
+    {
+        $this->ensureInCourse($course, $module);
+        $video = $this->currentVideo($module);
+
+        return response()->json([
+            'status' => $video?->status ?? 'none',
+            'script_status' => $video?->script_status ?? 'none',
+            'failure_reason' => $video?->generation_meta['failure_reason'] ?? null,
+        ]);
+    }
+
+    /** V2 — correzione a mano di una riga del copione. */
+    public function editLine(Request $request, Course $course, Module $module, VideoScriptService $service)
+    {
+        $this->ensureInCourse($course, $module);
+        $data = $request->validate(['slide_number' => 'required|integer|min:1', 'text' => 'required|string|max:3000']);
+        $video = $this->currentVideo($module);
+        abort_unless($video && !empty($video->script), 404);
+
+        $service->editLine($video, $data['slide_number'], $data['text']);
+
+        return back()->with('success', 'Riga del copione aggiornata.');
+    }
+
+    /** V2 — correzione via prompt di una riga (merge mirato). */
+    public function editLinePrompt(Request $request, Course $course, Module $module, VideoScriptService $service)
+    {
+        $this->ensureInCourse($course, $module);
+        $data = $request->validate(['slide_number' => 'required|integer|min:1', 'instruction' => 'required|string|max:2000']);
+        $video = $this->currentVideo($module);
+        abort_unless($video && !empty($video->script), 404);
+
+        $service->editLineViaPrompt($video, $data['slide_number'], $data['instruction']);
+
+        return back()->with('success', 'Riga del copione ritoccata.');
+    }
+
+    /** V2 — conferma copione (solo cambio stato; il GATE costi/render è V3). */
+    public function confirm(Course $course, Module $module)
+    {
+        $this->ensureInCourse($course, $module);
+        $video = $this->currentVideo($module);
+        abort_unless($video && $video->script_status === 'draft' && !empty($video->script), 422,
+            'Nessun copione in bozza da confermare.');
+
+        $video->update(['script_status' => 'confirmed']);
+
+        return back()->with('success', 'Copione confermato.');
+    }
+}
