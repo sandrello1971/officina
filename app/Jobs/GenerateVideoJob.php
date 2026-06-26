@@ -47,6 +47,10 @@ class GenerateVideoJob implements ShouldQueue
                 'status' => 'ready',
                 'file_path' => $result['file_path'],
                 'generation_meta' => $result['meta'],
+                // R3 — nuovo mp4 → indice e pubblicazione precedenti sono stale:
+                // va re-indicizzato e ripubblicato (no video pubblicato senza indice valido).
+                'indexed_at' => null,
+                'published_at' => null,
             ]);
         } catch (Throwable $e) {
             Log::warning('[video] render mp4 fallito', [

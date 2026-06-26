@@ -187,3 +187,15 @@ class VideoIndex:
             return self.collection_name in collections and self.collection.count() > 0
         except Exception:
             return False
+
+    def reset(self) -> None:
+        """Svuota SOLO questa collection (re-indicizzazione idempotente): elimina e
+        ricrea video_{id}. Non tocca le altre collection."""
+        try:
+            self.client.delete_collection(self.collection_name)
+        except Exception:
+            pass
+        self.collection = self.client.get_or_create_collection(
+            name=self.collection_name,
+            metadata={"hnsw:space": "cosine"},
+        )

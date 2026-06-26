@@ -1,5 +1,7 @@
 import hashlib
 import json
+import os
+import secrets
 import shutil
 from pathlib import Path
 
@@ -7,13 +9,13 @@ import aiofiles
 import chromadb
 import mimetypes
 
-from fastapi import FastAPI, Request, UploadFile, File, BackgroundTasks, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, BackgroundTasks, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 from backend.config import settings
-from backend.ingest.extractor import extract_audio, extract_keyframes, extract_thumbnail, get_video_duration
+from backend.ingest.extractor import extract_audio, extract_keyframes, extract_thumbnail, get_video_duration, format_timestamp
 from backend.ingest.transcriber import transcribe_audio
 from backend.ingest.vision_analyzer import analyze_frames_batch
 from backend.rag.chunker import build_chunks
@@ -45,6 +47,16 @@ app.add_middleware(
 )
 
 
+def require_internal_token(x_internal_token: str | None = Header(default=None)):
+    """Auth degli endpoint INTERNI: richiede l'header X-Internal-Token combaciante con
+    INTERNAL_API_TOKEN (.env). Confronto a tempo costante; fail-closed se non configurato.
+    Letto a runtime (os.getenv) per testabilità. NB: NON applicare agli endpoint chiamati
+    dal browser (chat/search/thumbnail) — non inviano il token."""
+    expected = os.getenv("INTERNAL_API_TOKEN", "")
+    if not expected or not x_internal_token or not secrets.compare_digest(x_internal_token, expected):
+        raise HTTPException(status_code=401, detail="Token interno mancante o non valido")
+
+
 class ChatRequest(BaseModel):
     question: str
     history: list[dict] = []
@@ -74,6 +86,18 @@ class YouTubeRequest(BaseModel):
 
 class EmbeddingsRequest(BaseModel):
     texts: list[str]
+
+
+class IndexChunkItem(BaseModel):
+    text: str
+    start: float = 0
+    end: float = 0
+    type: str = "transcript"  # transcript | frame | slide
+
+
+class IndexChunksRequest(BaseModel):
+    chunks: list[IndexChunkItem]
+    meta: dict | None = None
 
 
 def _compute_video_id(content: bytes) -> str:
@@ -228,6 +252,46 @@ async def ingest_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
         "status": "processing",
         "message": "Analisi avviata in background",
     }
+
+
+@app.post("/api/videos/{video_id}/index_chunks")
+async def index_chunks(video_id: str, body: IndexChunksRequest, _auth: None = Depends(require_internal_token)):
+    """R1 — indicizza chunk GIÀ PRONTI (testo + start/end + type), senza Whisper né
+    Vision. Per i video GENERATI dalla piattaforma (copione/slide noti). Opera SOLO
+    sulla collection video_{video_id}; idempotente (reset + re-add); stesso schema
+    metadati dei chunk prodotti da build_chunks(), così /api/search li tratta uguali."""
+    index = VideoIndex(video_id)  # collection video_{video_id} — SOLO questa
+    index.reset()                 # idempotenza: sostituisce i chunk di QUESTA collection
+
+    chunks = []
+    for i, c in enumerate(body.chunks):
+        chunks.append({
+            "id": f"{video_id}_known_{i}",
+            "text": c.text,
+            "type": c.type,
+            "start": round(c.start, 2),
+            "end": round(c.end, 2),
+            "timestamp_str": format_timestamp(c.start),
+            "content_type": "",
+        })
+
+    n = index.index_chunks(chunks)
+
+    # Record video "leggero" così il video compare nella ricerca cross-video
+    # (lo stream/thumbnail dei video generati resta servito dalla piattaforma).
+    meta = body.meta or {}
+    db = get_db()
+    db.upsert(video_id, {
+        "filename": meta.get("title", video_id),
+        "title": meta.get("title", ""),
+        "summary": meta.get("summary", ""),
+        "duration_seconds": meta.get("duration_seconds", 0),
+        "duration_str": meta.get("duration_str", "00:00"),
+        "chunks_count": n,
+        "collection": meta.get("collection", "Video generati"),
+    })
+
+    return {"video_id": video_id, "indexed_chunks": n}
 
 
 @app.get("/api/videos/{video_id}/status")

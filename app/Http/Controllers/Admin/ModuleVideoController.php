@@ -8,6 +8,7 @@ use App\Jobs\GenerateVideoScriptJob;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\ModuleVideo;
+use App\Services\Schola\VideoIndexService;
 use App\Services\Schola\VideoScriptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -129,6 +130,43 @@ class ModuleVideoController extends Controller
         GenerateVideoJob::dispatch($video->id, 'module')->afterResponse();
 
         return back()->with('success', 'Generazione del video avviata. Sarà pronto a breve.');
+    }
+
+    /**
+     * R3/V4 — pubblica il video del modulo. GATE: pubblicabile solo se interrogabile.
+     * Generato → "indicizza e pubblica" in un colpo (indicizzazione gratis); a successo
+     * published_at. Indicizzazione fallita → publish annullato, resta bozza.
+     */
+    public function publishVideo(Course $course, Module $module, VideoIndexService $indexer)
+    {
+        $this->ensureInCourse($course, $module);
+        $video = $this->currentVideo($module);
+        abort_unless($video && $video->status === 'ready', 422, 'Genera prima il video.');
+
+        if (!$video->indexed_at || !$video->video_ai_id) {
+            try {
+                $indexer->indexGenerated($video);
+                $video->refresh();
+            } catch (\Throwable $e) {
+                return back()->with('error', 'Pubblicazione annullata: indicizzazione non riuscita (' . $e->getMessage() . '). Il video resta in bozza.');
+            }
+        }
+
+        $video->update(['published_at' => now()]);
+
+        return back()->with('success', 'Video pubblicato e indicizzato: visibile ai corsisti e ricercabile.');
+    }
+
+    /** V4 — ritira il video del modulo. */
+    public function unpublishVideo(Course $course, Module $module)
+    {
+        $this->ensureInCourse($course, $module);
+        $video = $this->currentVideo($module);
+        abort_unless($video, 404);
+
+        $video->update(['published_at' => null]);
+
+        return back()->with('success', 'Video ritirato: non è più visibile ai corsisti.');
     }
 
     /** V3 — download del video MP4 (lato admin). Storage privato. */

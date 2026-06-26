@@ -16,8 +16,9 @@ from pathlib import Path
 
 FFMPEG = "/usr/bin/ffmpeg"
 FFPROBE = "/usr/bin/ffprobe"
-# 16:9 720p, coerente con le slide.
-VF = "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1"
+
+# Parametri di encoding (da config services.video, con default coerenti con V3).
+DEFAULTS = {"width": 1280, "height": 720, "fps": 25, "crf": 23, "preset": "medium"}
 
 
 def run(cmd):
@@ -40,11 +41,16 @@ def main():
     manifest = json.load(sys.stdin)
     slides = manifest["slides"]
     out = manifest["out"]
+    cfg = {**DEFAULTS, **(manifest.get("config") or {})}
+    w, h, fps = int(cfg["width"]), int(cfg["height"]), int(cfg["fps"])
+    vf = (f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
+          f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1")
     if not slides:
         sys.stderr.write("nessuna slide nel manifest\n")
         return 2
 
     total = 0.0
+    durations = []
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         segments = []
@@ -53,12 +59,15 @@ def main():
             run([
                 FFMPEG, "-y", "-loop", "1", "-i", s["image"], "-i", s["audio"],
                 "-c:v", "libx264", "-tune", "stillimage", "-pix_fmt", "yuv420p",
-                "-r", "25", "-vf", VF,
+                "-preset", str(cfg["preset"]), "-crf", str(cfg["crf"]),
+                "-r", str(fps), "-vf", vf,
                 "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "44100",
                 "-shortest", "-movflags", "+faststart", seg,
             ])
             segments.append(seg)
-            total += duration(s["audio"])
+            d = duration(s["audio"])
+            durations.append(round(d, 2))
+            total += d
 
         # Concat dei segmenti (stessi parametri → copy stream).
         listfile = tmp / "concat.txt"
@@ -67,7 +76,9 @@ def main():
         run([FFMPEG, "-y", "-f", "concat", "-safe", "0", "-i", str(listfile),
              "-c", "copy", "-movflags", "+faststart", out])
 
-    print(round(total, 2))
+    # JSON su stdout: durata totale + durata per-segmento (in ordine slide) → la
+    # piattaforma costruisce slide_timings (timestamp per-slide, gratis).
+    print(json.dumps({"total": round(total, 2), "durations": durations}))
     return 0
 
 

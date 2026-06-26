@@ -48,6 +48,7 @@ class VideoRenderService
         $voiceId = (string) config('services.tts.voice_id', config('services.elevenlabs.voice_id', 'HuK8QKF35exsCh2e7fLT'));
 
         $manifest = [];
+        $slideNumbers = [];
         foreach ($video->script as $line) {
             $n = (int) ($line['slide_number'] ?? 0);
             $text = trim((string) ($line['text'] ?? ''));
@@ -64,6 +65,7 @@ class VideoRenderService
             }
 
             $manifest[] = ['image' => $disk->path($pngRel), 'audio' => $disk->path($audioRel)];
+            $slideNumbers[] = $n;
         }
 
         if ($manifest === []) {
@@ -72,17 +74,28 @@ class VideoRenderService
 
         $outRel = $this->videoPath($video);
         $disk->makeDirectory(dirname($outRel));
-        $seconds = $this->runFfmpeg($manifest, $disk->path($outRel));
+        $render = $this->runFfmpeg($manifest, $disk->path($outRel));
 
         if (!$disk->exists($outRel)) {
             throw new RuntimeException('Il file video non è stato creato.');
         }
 
+        // slide_timings: slide_number → [start_sec, end_sec] dalle durate dei segmenti
+        // (in ordine). Timestamp per-slide a costo zero, per la ricerca (R2/R4).
+        $timings = [];
+        $cursor = 0.0;
+        foreach (($render['durations'] ?? []) as $i => $d) {
+            $start = round($cursor, 2);
+            $cursor += (float) $d;
+            $timings[] = ['slide_number' => $slideNumbers[$i] ?? ($i + 1), 'start_sec' => $start, 'end_sec' => round($cursor, 2)];
+        }
+
         return [
             'file_path' => $outRel,
             'meta' => array_merge((array) $video->generation_meta, [
-                'seconds' => $seconds,
+                'seconds' => $render['total'] ?? 0,
                 'rendered_slides' => count($manifest),
+                'slide_timings' => $timings,
                 'tts_provider' => $provider,
                 'voice_id' => $voiceId,
             ]),
@@ -101,15 +114,22 @@ class VideoRenderService
             : "module-videos/{$video->module_id}/{$video->id}.mp4";
     }
 
-    /** Lancia build_video.py (ffmpeg) sotto nice/ionice; ritorna i secondi totali. */
-    private function runFfmpeg(array $manifestSlides, string $outAbs): float
+    /**
+     * Lancia build_video.py (ffmpeg) sotto nice/ionice.
+     * @return array{total: float, durations: array<int, float>}
+     */
+    private function runFfmpeg(array $manifestSlides, string $outAbs): array
     {
         $python = config('services.ffmpeg.python', '/home/noscite/venv/bin/python');
         $script = base_path('resources/python/build_video.py');
 
         // nice -n 19 + ionice -c3 (idle): non disturba gli altri siti del server condiviso.
         $process = new Process(['nice', '-n', '19', 'ionice', '-c3', $python, $script]);
-        $process->setInput(json_encode(['out' => $outAbs, 'slides' => $manifestSlides], JSON_UNESCAPED_UNICODE));
+        $process->setInput(json_encode([
+            'out' => $outAbs,
+            'slides' => $manifestSlides,
+            'config' => config('services.video'),
+        ], JSON_UNESCAPED_UNICODE));
         $process->setTimeout(1200);
         $process->run();
 
@@ -117,6 +137,12 @@ class VideoRenderService
             throw new RuntimeException('Render video fallito: ' . trim($process->getErrorOutput() ?: $process->getOutput()));
         }
 
-        return (float) trim($process->getOutput());
+        $out = trim($process->getOutput());
+        $data = json_decode($out, true);
+        if (is_array($data) && isset($data['total'])) {
+            return ['total' => (float) $data['total'], 'durations' => array_map('floatval', $data['durations'] ?? [])];
+        }
+
+        return ['total' => (float) $out, 'durations' => []]; // fallback difensivo
     }
 }

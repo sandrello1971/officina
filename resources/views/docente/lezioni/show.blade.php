@@ -354,8 +354,30 @@
                 <div style="margin-top:14px; border-top:1px solid #F0F2F2; padding-top:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                     <span style="display:inline-block; padding:2px 9px; background:#3A8C89; color:white; border-radius:6px; font-size:0.72rem; font-weight:700;">🎬 Video pronto</span>
                     @isset($lessonVideo->generation_meta['seconds'])<span style="font-size:0.75rem; color:#8A9696;">{{ (int) $lessonVideo->generation_meta['seconds'] }}s</span>@endisset
-                    <a href="{{ route('docente.lessons.video.download', $lesson) }}" style="padding:7px 13px; background:white; color:#3A8C89; border:1px solid #3A8C89; border-radius:8px; font-size:0.8rem; font-weight:600; text-decoration:none;">&#11015; Scarica video (.mp4)</a>
+                    @if($lessonVideo->published_at)
+                        <span style="display:inline-block; padding:2px 9px; background:#3A8C89; color:white; border-radius:6px; font-size:0.72rem; font-weight:700;">Pubblicato</span>
+                    @else
+                        <span style="display:inline-block; padding:2px 9px; background:#F5E6B8; color:#7A5C00; border-radius:6px; font-size:0.72rem; font-weight:700;">Bozza</span>
+                    @endif
+                    <span style="flex:1;"></span>
+                    <a href="{{ route('docente.lessons.video.download', $lesson) }}" style="padding:7px 13px; background:white; color:#3A8C89; border:1px solid #3A8C89; border-radius:8px; font-size:0.8rem; font-weight:600; text-decoration:none;">&#11015; Scarica</a>
+                    @if($lessonVideo->published_at)
+                        <form method="POST" action="{{ route('docente.lessons.video.unpublish', $lesson) }}"
+                              onsubmit="return confirm('Ritirare il video? Gli studenti non lo vedranno più.') && (this.querySelector('button').disabled=true || true);">
+                            @csrf
+                            <button style="padding:7px 13px; background:white; color:#A8521F; border:1px solid #A8521F; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer;">Ritira</button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('docente.lessons.video.publish', $lesson) }}"
+                              onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='Pubblicazione…';">
+                            @csrf
+                            <button style="padding:7px 14px; background:#3A8C89; color:white; border:none; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer;">&#10003; Pubblica</button>
+                        </form>
+                    @endif
                 </div>
+                @unless($lessonVideo->published_at)
+                    <p style="font-size:0.72rem; color:#8A9696;">Pubblicando, il video viene anche indicizzato (ricercabile). Indicizzazione gratuita per i video generati.</p>
+                @endunless
             @endif
             @if(($lessonVideo?->script_status ?? 'none') === 'confirmed')
                 <div style="margin-top:12px; border-top:1px solid #F0F2F2; padding-top:12px;" x-show="s !== 'generating'">
