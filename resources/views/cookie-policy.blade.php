@@ -10,7 +10,7 @@
         <p>I cookie sono piccoli file di testo che i siti web visitati dall'utente inviano al suo terminale (computer, tablet, smartphone), dove vengono memorizzati per essere poi ritrasmessi agli stessi siti alla visita successiva.</p>
 
         <h2 class="text-xl font-bold mt-8 mb-3" style="color:#1A1F1F">2. Cookie utilizzati da questo sito</h2>
-        <p class="mb-4">Il sito atheneum.noscite.it utilizza esclusivamente <strong>cookie tecnici necessari</strong> al funzionamento del sito:</p>
+        <p class="mb-4">Il sito officina.effettoglitch.it utilizza esclusivamente <strong>cookie tecnici necessari</strong> al funzionamento del sito:</p>
         <table class="w-full text-sm border-collapse mb-4">
             <thead>
                 <tr style="background:#E8F5F5">
@@ -46,7 +46,7 @@
         <p>L'utente puo gestire le preferenze relative ai cookie attraverso il banner presente alla prima visita del sito, oppure tramite le impostazioni del proprio browser. La disabilitazione dei cookie tecnici potrebbe compromettere alcune funzionalita del sito.</p>
 
         <h2 class="text-xl font-bold mt-8 mb-3" style="color:#1A1F1F">5. Contatti</h2>
-        <p>Per qualsiasi informazione: <a href="mailto:info@noscite.it" style="color:#55B1AE">info@noscite.it</a></p>
+        <p>Per qualsiasi informazione: <a href="mailto:rumore@effettoglitch.it" style="color:#55B1AE">rumore@effettoglitch.it</a></p>
     </div>
 </div>
 @endsection

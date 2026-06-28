@@ -13,5 +13,5 @@ Hai domande sui contenuti? Il chatbot **{{ atheneum_setting('assistant_name', 'M
 
 *{{ atheneum_setting('platform_tagline', 'Il Rumore Che Serve') }}*
 
-**Team {{ atheneum_setting('platform_owner', 'Noscite') }}**
+**Team {{ atheneum_setting('platform_owner', 'Effetto Glitch') }}**
 @endcomponent

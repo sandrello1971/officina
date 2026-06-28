@@ -28,7 +28,7 @@
         @else
             <div style="font-size:0.9rem; color:#A8521F;">&#9888; DPA non ancora firmato. Necessario prima di trattare dati degli studenti reali.</div>
         @endif
-        <p style="font-size:0.78rem; color:#8A9696; margin:8px 0 0;">La scuola è titolare del trattamento, Noscite responsabile (art. 28). Il consenso è gestito dalla scuola, non dalla piattaforma.</p>
+        <p style="font-size:0.78rem; color:#8A9696; margin:8px 0 0;">La scuola è titolare del trattamento, Effetto Glitch di Stefano Andrello responsabile (art. 28). Il consenso è gestito dalla scuola, non dalla piattaforma.</p>
     </div>
 
     {{-- Import recenti --}}

@@ -23,10 +23,10 @@ Accedi ad {{ atheneum_setting('instance_name', 'Officina') }}
 > Al primo accesso ti verra chiesto di impostare una password personale.
 > Conserva questa email in un luogo sicuro fino a quando non avrai completato il primo accesso.
 
-@php $supportEmail = atheneum_setting('mail_from_address', 'info@noscite.it'); @endphp
+@php $supportEmail = atheneum_setting('mail_from_address', 'rumore@effettoglitch.it'); @endphp
 Se hai domande, scrivi a [{{ $supportEmail }}](mailto:{{ $supportEmail }}).
 
 Buon lavoro,<br>
-**Il team {{ atheneum_setting('platform_owner', 'Noscite') }}**<br>
+**Il team {{ atheneum_setting('platform_owner', 'Effetto Glitch') }}**<br>
 <small>{{ atheneum_setting('instance_name', 'Officina') }} — {{ atheneum_setting('platform_tagline', 'Il Rumore Che Serve') }}</small>
 </x-mail::message>

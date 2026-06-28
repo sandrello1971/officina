@@ -38,7 +38,7 @@
                 </div>
                 <div>
                     <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Organizzazione proprietaria</label>
-                    <input type="text" name="platform_owner" value="{{ old('platform_owner', $settings['platform_owner']) }}" maxlength="120" placeholder="Noscite Srl"
+                    <input type="text" name="platform_owner" value="{{ old('platform_owner', $settings['platform_owner']) }}" maxlength="120" placeholder="Effetto Glitch"
                            style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
                 </div>
                 <div>
@@ -78,7 +78,7 @@
                     <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Email di contatto generale</label>
                     <input type="email" name="contact_email" maxlength="255"
                            value="{{ old('contact_email', $settings['contact_email'] ?? '') }}"
-                           placeholder="info@noscite.it"
+                           placeholder="rumore@effettoglitch.it"
                            style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
                     <p style="font-size:0.7rem; color:#8A9696; margin-top:4px; font-style:italic;">
                         Riceve i messaggi del form contatti pubblico e appare nei mailto del footer.
@@ -90,7 +90,7 @@
                     <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Email utente demo</label>
                     <input type="email" name="demo_user_email" maxlength="255"
                            value="{{ old('demo_user_email', $settings['demo_user_email'] ?? '') }}"
-                           placeholder="demo@atheneum.noscite.it"
+                           placeholder="demo@effettoglitch.it"
                            style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; margin-top:4px;">
                     <p style="font-size:0.7rem; color:#8A9696; margin-top:4px; font-style:italic;">
                         Email dell'account demo mostrato nelle istruzioni della pagina di login.
