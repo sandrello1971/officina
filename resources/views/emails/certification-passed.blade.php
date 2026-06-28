@@ -21,5 +21,5 @@ Il PDF è disponibile dopo aver effettuato l'accesso ad {{ atheneum_setting('ins
 
 *{{ atheneum_setting('platform_tagline', 'Il Rumore Che Serve') }}*
 
-**Team {{ atheneum_setting('platform_owner', 'Noscite') }}**
+**Team {{ atheneum_setting('platform_owner', 'Effetto Glitch') }}**
 @endcomponent

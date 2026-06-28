@@ -7,7 +7,7 @@
 
     <div class="prose max-w-none" style="color:#4A5252; line-height:1.8">
         <h2 class="text-xl font-bold mt-8 mb-3" style="color:#1A1F1F">1. Titolare del trattamento</h2>
-        <p>Noscite S.r.l.s., con sede legale in Corsico (MI), P.IVA in corso di registrazione.<br>Email: info@noscite.it — Tel: +39 347 685 9801</p>
+        <p>Effetto Glitch di Stefano Andrello, con sede legale in Via Monte Grappa 13, 20094 Corsico (MI), P.IVA 14209320960.<br>Email: rumore@effettoglitch.it — Tel: +39 347 685 9801</p>
 
         <h2 class="text-xl font-bold mt-8 mb-3" style="color:#1A1F1F">2. Dati raccolti</h2>
         <p>Il sito raccoglie i seguenti dati personali:</p>
@@ -32,7 +32,7 @@
         <p>I dati di contatto sono conservati per un massimo di 24 mesi dalla ricezione. I dati per newsletter fino alla revoca del consenso. I log di sistema per 30 giorni.</p>
 
         <h2 class="text-xl font-bold mt-8 mb-3" style="color:#1A1F1F">6. Diritti dell'interessato</h2>
-        <p>Ai sensi degli artt. 15-22 GDPR, l'interessato ha diritto di: accesso, rettifica, cancellazione, limitazione, portabilita, opposizione al trattamento. Per esercitare i diritti: info@noscite.it</p>
+        <p>Ai sensi degli artt. 15-22 GDPR, l'interessato ha diritto di: accesso, rettifica, cancellazione, limitazione, portabilita, opposizione al trattamento. Per esercitare i diritti: rumore@effettoglitch.it</p>
 
         <h2 class="text-xl font-bold mt-8 mb-3" style="color:#1A1F1F">7. Cookie</h2>
         <p>Il sito utilizza esclusivamente cookie tecnici necessari al funzionamento. Non utilizza cookie di profilazione o di terze parti a fini pubblicitari.</p>

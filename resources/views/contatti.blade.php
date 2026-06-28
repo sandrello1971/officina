@@ -15,7 +15,7 @@
                     </div>
                     <div>
                         <div class="text-xs font-bold uppercase" style="color:#55B1AE">Email</div>
-                        <div style="color:#1A1F1F">info@noscite.it</div>
+                        <div style="color:#1A1F1F">rumore@effettoglitch.it</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">

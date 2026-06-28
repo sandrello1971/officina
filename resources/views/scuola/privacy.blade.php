@@ -9,7 +9,7 @@
     <div style="background:white; border:1px solid #C8D0D0; border-radius:10px; padding:18px; margin-bottom:16px;">
         <div style="font-size:0.75rem; font-weight:700; color:#4A5252; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">Accordo sul trattamento dati (DPA)</div>
         <p style="font-size:0.83rem; color:#4A5252; margin:0 0 12px;">
-            La scuola è <strong>titolare</strong> del trattamento; Noscite è <strong>responsabile</strong> (art. 28 GDPR).
+            La scuola è <strong>titolare</strong> del trattamento; Effetto Glitch di Stefano Andrello è <strong>responsabile</strong> (art. 28 GDPR).
             Il DPA deve esplicitare il flusso dati verso il modello AI (chat Minerva): gli embedding sono locali, la chat va a Claude.
         </p>
         @if($school->dpa_signed_at)

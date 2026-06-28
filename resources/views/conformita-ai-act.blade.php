@@ -321,11 +321,6 @@
       Compila in 3 minuti la <strong>Mappa di Maturità AI</strong> e ricevi via email il report PDF personalizzato con la raccomandazione del corso più adatto al tuo livello attuale.
     </p>
     <div class="flex flex-wrap justify-center gap-3">
-      <a href="https://noscite.it/assessment-ai-act" target="_blank" rel="noopener"
-         class="inline-block px-7 py-3 text-white rounded font-bold transition hover:opacity-90"
-         style="background:#E28A53;">
-        Compila la Mappa di Maturità AI
-      </a>
       <a href="{{ route('contatti') }}"
          class="inline-block px-7 py-3 text-white rounded font-bold transition hover:opacity-90"
          style="background:#55B1AE;">

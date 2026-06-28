@@ -28,5 +28,5 @@ return [
     | evitando di lasciare la piattaforma senza nessun firmatario al deploy.
     | A migrazione applicata in tutti gli ambienti, è rimovibile.
     */
-    'legal_representative_email' => env('LEGAL_REPRESENTATIVE_EMAIL', 'sandrello@noscite.it'),
+    'legal_representative_email' => env('LEGAL_REPRESENTATIVE_EMAIL', 'glitch@effettoglitch.it'),
 ];

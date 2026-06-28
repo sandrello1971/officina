@@ -145,7 +145,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">{{ atheneum_setting('platform_owner', 'Noscite') }}</div>
+        <div class="logo">{{ atheneum_setting('platform_owner', 'Effetto Glitch') }}</div>
         <div class="tagline">{{ atheneum_setting('platform_tagline', 'Il Rumore Che Serve') }}</div>
     </div>
 
@@ -158,7 +158,7 @@
 
             <h1>{{ $cert->student?->name ?? 'Studente' }}</h1>
             <p class="subtitle">
-                Ha completato con successo il corso e ottenuto la certificazione di {{ atheneum_setting('platform_owner', 'Noscite') }}.
+                Ha completato con successo il corso e ottenuto la certificazione di {{ atheneum_setting('platform_owner', 'Effetto Glitch') }}.
             </p>
 
             <div class="code-block">{{ $cert->code }}</div>
@@ -193,8 +193,8 @@
                     </div>
                     <div style="color: #1A1F1F; font-size: 0.85rem; line-height: 1.6;">
                         Firmato digitalmente da
-                        <strong>{{ $cert->signed_by ?? ('Legale rappresentante ' . atheneum_setting('platform_owner', 'Noscite')) }}</strong>,
-                        in qualità di legale rappresentante di {{ atheneum_setting('platform_owner', 'Noscite S.r.l.s.') }},
+                        <strong>{{ $cert->signed_by ?? ('Legale rappresentante ' . atheneum_setting('platform_owner', 'Effetto Glitch')) }}</strong>,
+                        in qualità di legale rappresentante di {{ atheneum_setting('platform_owner', 'Effetto Glitch di Stefano Andrello') }},
                         il <strong>{{ $cert->signed_at->locale('it')->isoFormat('D MMMM YYYY') }}</strong>.
                     </div>
                     <a href="{{ route('certificate.verify.pdf', ['code' => $cert->code]) }}"
@@ -226,9 +226,9 @@
     </div>
 
     <div class="footer-link">
-        <a href="https://www.noscite.it">noscite.it</a>
+        <a href="https://effettoglitch.it">effettoglitch.it</a>
         &nbsp;·&nbsp;
-        <a href="https://atheneum.noscite.it">atheneum.noscite.it</a>
+        <a href="https://officina.effettoglitch.it">officina.effettoglitch.it</a>
     </div>
 </body>
 </html>

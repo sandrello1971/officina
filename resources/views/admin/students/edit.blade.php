@@ -118,7 +118,7 @@
                         Auto-iscrizione a tutti i corsi
                     </label>
                     <div style="font-size:0.7rem; color:#8A9696; margin-top:2px;">
-                        Tipico per formatori interni {{ atheneum_setting('platform_owner', 'Noscite') }}
+                        Tipico per formatori interni {{ atheneum_setting('platform_owner', 'Effetto Glitch') }}
                     </div>
                 </div>
             </div>
@@ -136,7 +136,7 @@
                 <strong>⚠️ Attenzione:</strong> assegnare il ruolo "Formatore" dà accesso ai
                 manuali formatore, alle annotazioni private e alla sezione "Note per il formatore"
                 di {{ atheneum_setting('assistant_name', 'Minerva') }}. "Amministratore" dà
-                controllo totale. Promuovi solo membri fidati del team {{ atheneum_setting('platform_owner', 'Noscite') }}.
+                controllo totale. Promuovi solo membri fidati del team {{ atheneum_setting('platform_owner', 'Effetto Glitch') }}.
             </div>
 
             <div style="display:flex; justify-content:flex-end;">

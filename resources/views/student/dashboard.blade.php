@@ -44,7 +44,7 @@
         <h2 style="color:#1A1F1F; margin-bottom:8px;">Nessun corso attivo</h2>
         <p style="color:#8A9696; font-size:0.875rem;">
             Non hai ancora corsi assegnati.<br>
-            Scrivi a <a href="mailto:{{ atheneum_setting('contact_email', 'info@noscite.it') }}" style="color:#55B1AE;">{{ atheneum_setting('contact_email', 'info@noscite.it') }}</a> per attivare il tuo percorso.
+            Scrivi a <a href="mailto:{{ atheneum_setting('contact_email', 'rumore@effettoglitch.it') }}" style="color:#55B1AE;">{{ atheneum_setting('contact_email', 'rumore@effettoglitch.it') }}</a> per attivare il tuo percorso.
         </p>
     </div>
 
