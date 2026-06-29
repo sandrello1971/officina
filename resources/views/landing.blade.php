@@ -10,7 +10,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Officina trasforma appunti, lezioni e documenti in materiale di studio vivo. Per chi studia, per chi insegna, per chi manda avanti una scuola.">
-    <title>GLITCH / Officina — L'officina di chi impara</title>
+    <title>Effetto Glitch / Officina — L'officina di chi impara</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     @vite(['resources/css/glitch-landing.css'])
 </head>
@@ -26,7 +26,7 @@
         <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8"
              aria-label="Navigazione principale">
             <a href="/" class="glitch-navlink text-glitch-ivory">
-                GLITCH <span class="text-glitch-red">/</span> OFFICINA
+                EFFETTO GLITCH <span class="text-glitch-red">/</span> OFFICINA
             </a>
             <div class="flex items-center gap-5 sm:gap-8">
                 <a href="#studenti" class="glitch-navlink text-glitch-ivory hidden sm:inline">Studenti</a>
@@ -127,7 +127,7 @@
                 MMXXVI
             </p>
             <p class="glitch-body text-sm text-glitch-ivory/60 sm:text-center">
-                Un progetto <span class="text-glitch-ivory">GLITCH</span> — effettoglitch.it
+                Un progetto <span class="text-glitch-ivory">Effetto Glitch</span> — effettoglitch.it
             </p>
             <p class="glitch-body text-sm text-glitch-ivory/60 sm:text-right">
                 <a href="{{ route('contatti') }}" class="glitch-navlink text-glitch-ivory">Contatti</a>
