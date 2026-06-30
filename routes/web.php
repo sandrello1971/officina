@@ -454,6 +454,7 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::post('aggiornamenti/{course}/audience', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'setAudience'])->name('freshness.proposals.audience');
     Route::post('aggiornamenti/{course}/applica', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'apply'])->name('freshness.proposals.apply');
     Route::post('aggiornamenti/{course}/rollback', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'rollback'])->name('freshness.proposals.rollback');
+    Route::post('aggiornamenti/{course}/scarta-bloccate', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'rejectStuck'])->name('freshness.proposals.reject-stuck');
     Route::patch('aggiornamenti/{proposal}/approva', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'approve'])->name('freshness.proposals.approve');
     Route::patch('aggiornamenti/{proposal}/rifiuta', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'reject'])->name('freshness.proposals.reject');
     Route::patch('aggiornamenti/{proposal}/conferma', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'confirm'])->name('freshness.proposals.confirm');
