@@ -495,10 +495,14 @@
                         if (preg_match('/Scheda Progetto (\d+)$/u', $material->title, $matches)) {
                             $progettoNumber = $matches[1];
                         }
-                        $canvasUrl = route('student.material.canvas', $material);
+                        // Il canvas legge l'id del materiale da ?mid= per le API di
+                        // salvataggio/caricamento (/learn/canvas/{mid}/data): senza
+                        // mostra "manca mid" e disabilita l'autosalvataggio.
+                        $canvasQuery = ['mid' => $material->id];
                         if ($progettoNumber) {
-                            $canvasUrl .= "?progetto={$progettoNumber}";
+                            $canvasQuery['progetto'] = $progettoNumber;
                         }
+                        $canvasUrl = route('student.material.canvas', $material) . '?' . http_build_query($canvasQuery);
                     @endphp
                     <a href="{{ $canvasUrl }}" target="_blank"
                        style="padding:6px 14px; background:linear-gradient(135deg,#55B1AE,#3A8C89); color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
