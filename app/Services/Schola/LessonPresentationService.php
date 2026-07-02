@@ -30,6 +30,8 @@ class LessonPresentationService
     private const TEMPERATURE = 0.3;
     private const MAX_TOKENS = 4000;
     private const MAX_CONTENT_CHARS = 30000;
+    /** Tentativi su output non conforme: la generazione LLM è non deterministica. */
+    private const JSON_ATTEMPTS = 3;
     private const PROMPT_VERSION = 'pptx-p27-2026-06';
     private const EDIT_PROMPT_VERSION = 'pptx-edit-v1';
 
@@ -170,39 +172,24 @@ class LessonPresentationService
             throw new RuntimeException('File della presentazione assente: rigenerala dal sistema.');
         }
 
-        $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
-        if (empty($apiKey)) {
-            throw new RuntimeException('Anthropic API key non configurata.');
-        }
-
         $current = json_encode(['slides' => $spec['slides']], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         $userMessage = "SPEC corrente (slide numerate da 1; la slide 1 è la copertina):\n```json\n{$current}\n```\n\nIstruzione dell'utente:\n{$instruction}";
 
         Log::info('Lesson pptx edit request', ['presentation_id' => $presentation->id]);
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(120)->post(self::CLAUDE_API_URL, [
-            'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
-            'max_tokens' => self::MAX_TOKENS,
-            'temperature' => self::TEMPERATURE,
-            'system' => $this->buildEditSystemPrompt(),
-            'messages' => [['role' => 'user', 'content' => $userMessage]],
-        ]);
+        // Stesso trasporto strutturato della generazione: niente JSON testuale da parsare.
+        $result = $this->callClaudeStructured(
+            $this->buildEditSystemPrompt(),
+            $userMessage,
+            'apply_edits',
+            'Registra SOLO le slide da modificare, ciascuna col suo numero (1-based).',
+            $this->editSchema(),
+            ['presentation_id' => $presentation->id],
+        );
 
-        if (!$response->successful()) {
-            Log::error('Lesson pptx edit Claude API failed', ['status' => $response->status()]);
-            throw new RuntimeException('Errore Claude API: ' . $response->status());
-        }
-
-        $text = (string) ($response->json('content.0.text') ?? '');
-        $text = preg_replace('/^```(?:json)?\s*/i', '', trim($text));
-        $text = preg_replace('/```\s*$/', '', $text);
-        $data = json_decode(trim($text), true);
-
-        if (!is_array($data) || !isset($data['edits']) || !is_array($data['edits']) || $data['edits'] === []) {
+        // Stesso recupero della generazione: "edits" può arrivare come stringa JSON.
+        $edits = $this->coerceJsonArray($result['input']['edits'] ?? null);
+        if ($edits === null || $edits === []) {
             throw new RuntimeException('Risposta di correzione non valida (edits mancanti).');
         }
 
@@ -210,7 +197,7 @@ class LessonPresentationService
         // e theme intoccabili per costruzione → garanzia di non-modifica collaterale.
         $newSlides = $spec['slides'];
         $changed = [];
-        foreach ($data['edits'] as $edit) {
+        foreach ($edits as $edit) {
             if (!is_array($edit) || !isset($edit['slide']) || !is_array($edit['slide'])) {
                 continue;
             }
@@ -245,8 +232,8 @@ class LessonPresentationService
                 'slides' => count($newSpec['slides']),
                 'prompt_version' => self::EDIT_PROMPT_VERSION,
                 'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
-                'tokens_in' => (int) ($response->json('usage.input_tokens') ?? 0),
-                'tokens_out' => (int) ($response->json('usage.output_tokens') ?? 0),
+                'tokens_in' => $result['tokens_in'],
+                'tokens_out' => $result['tokens_out'],
                 'edited_slides' => $changed,
                 'last_edit' => mb_substr($instruction, 0, 500),
                 'filename' => Str::slug($coverTitle !== '' ? $coverTitle : 'presentazione') . '.pptx',
@@ -266,14 +253,14 @@ class LessonPresentationService
 
         Le slide sono numerate a partire da 1. La slide 1 è la COPERTINA, generata dal sistema: NON modificarla. Non toccare il tema né l'ordine.
 
-        Restituisci SOLO le slide che cambiano, in JSON valido e nient'altro, in questa forma esatta:
-        {"edits":[{"slide_number": <numero 1-based della slide da modificare>, "slide": <oggetto slide completo aggiornato>}]}
+        Restituisci le modifiche chiamando lo strumento "apply_edits": per ogni slide da cambiare,
+        un elemento con "slide_number" (numero 1-based) e "slide" (oggetto slide completo aggiornato).
 
         Regole:
-        - Includi in "edits" SOLO le slide effettivamente modificate dall'istruzione; ometti tutte le altre.
+        - Includi SOLO le slide effettivamente modificate dall'istruzione; ometti tutte le altre.
         - Ogni "slide" deve usare uno dei layout consentiti ({$layouts}) con la stessa struttura della spec corrente.
         - Non aggiungere né rimuovere slide: modifica il contenuto di quelle esistenti.
-        - Nessun testo, commento o markdown fuori dal JSON.
+        - Il testo può contenere liberamente virgolette e apostrofi: non serve nessun escaping.
         PROMPT;
     }
 
@@ -284,53 +271,39 @@ class LessonPresentationService
      */
     public function generateSpec(string $content, string $title, array $options = []): array
     {
-        $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
-        if (empty($apiKey)) {
-            throw new RuntimeException('Anthropic API key non configurata.');
-        }
-
         if (mb_strlen($content) > self::MAX_CONTENT_CHARS) {
             $content = mb_substr($content, 0, self::MAX_CONTENT_CHARS) . "\n[...troncato]";
         }
 
         $subject = trim((string) ($options['subject'] ?? ''));
         $systemPrompt = $this->buildSystemPrompt($subject);
-        $userMessage = "Titolo lezione: **{$title}**\n\nCorpo della lezione (markdown):\n---\n{$content}\n---\n\nProduci la presentazione in JSON.";
+        $userMessage = "Titolo lezione: **{$title}**\n\nCorpo della lezione (markdown):\n---\n{$content}\n---\n\nProduci la presentazione chiamando lo strumento fornito.";
 
         Log::info('Lesson pptx spec request', $options['log_context'] ?? []);
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(120)->post(self::CLAUDE_API_URL, [
-            'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
-            'max_tokens' => self::MAX_TOKENS,
-            'temperature' => self::TEMPERATURE,
-            'system' => $systemPrompt,
-            'messages' => [['role' => 'user', 'content' => $userMessage]],
-        ]);
+        // Output STRUTTURATO forzato: l'input del tool arriva già come oggetto,
+        // niente parsing di testo né escaping manuale → causa radice eliminata.
+        $result = $this->callClaudeStructured(
+            $systemPrompt,
+            $userMessage,
+            'emit_presentation',
+            'Registra le slide di CONTENUTO della presentazione (la copertina è generata dal sistema).',
+            $this->presentationSchema(),
+            $options['log_context'] ?? [],
+        );
 
-        if (!$response->successful()) {
-            Log::error('Lesson pptx Claude API failed', ['status' => $response->status()]);
-            throw new RuntimeException('Errore Claude API: ' . $response->status());
-        }
-
-        $text = (string) ($response->json('content.0.text') ?? '');
-        $text = preg_replace('/^```(?:json)?\s*/i', '', trim($text));
-        $text = preg_replace('/```\s*$/', '', $text);
-        $data = json_decode(trim($text), true);
-
-        if (!is_array($data) || !isset($data['slides']) || !is_array($data['slides']) || empty($data['slides'])) {
-            throw new RuntimeException('Spec presentazione non valida (JSON slides mancante).');
+        // Recupero: a volte il modello consegna "slides" come stringa JSON (non array).
+        $slides = $this->coerceJsonArray($result['input']['slides'] ?? null);
+        if ($slides === null || $slides === []) {
+            throw new RuntimeException('Spec presentazione non valida (slides mancanti).');
         }
 
         return [
-            'slides' => $this->normalizeSlides($data['slides']),
+            'slides' => $this->normalizeSlides($slides),
             'meta' => [
                 'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
-                'tokens_in' => (int) ($response->json('usage.input_tokens') ?? 0),
-                'tokens_out' => (int) ($response->json('usage.output_tokens') ?? 0),
+                'tokens_in' => $result['tokens_in'],
+                'tokens_out' => $result['tokens_out'],
             ],
         ];
     }
@@ -567,13 +540,187 @@ Regole:
 - Matematica in forma testuale leggibile (es. E = m·c²).
 - Non inventare: usa solo i contenuti della lezione. Registro da scuola superiore.
 
-Rispondi SOLO con JSON valido, senza testo extra:
-{
-  "slides": [
-    {"layout": "process_cards", "title": "...", "steps": [{"title": "...", "text": "..."}], "notes": "opzionale"},
-    {"layout": "bullets_clean", "title": "...", "bullets": ["...", "..."]}
-  ]
-}
+Restituisci le slide chiamando lo strumento "emit_presentation" con il campo "slides".
+Il testo può contenere liberamente virgolette e apostrofi: non serve nessun escaping.
 TXT;
+    }
+
+    /**
+     * Chiamata Claude con OUTPUT STRUTTURATO forzato (tool use): l'input del tool
+     * viene consegnato già come oggetto associativo, quindi niente parsing di
+     * testo/fence né escaping manuale — è questo che elimina alla radice il JSON
+     * malformato (virgolette non-escapate). Ritenta su risposte non conformi (la
+     * generazione LLM è non deterministica) e logga il motivo dell'ultimo fallimento.
+     *
+     * @param array<string, mixed> $schema      input_schema JSON del tool
+     * @param array<string, mixed> $logContext  contesto per i log diagnostici
+     * @return array{input: array<string, mixed>, tokens_in: int, tokens_out: int}
+     */
+    private function callClaudeStructured(string $system, string $userMessage, string $toolName, string $toolDescription, array $schema, array $logContext = []): array
+    {
+        $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
+        if (empty($apiKey)) {
+            throw new RuntimeException('Anthropic API key non configurata.');
+        }
+
+        $lastError = 'nessun tentativo eseguito';
+        for ($attempt = 1; $attempt <= self::JSON_ATTEMPTS; $attempt++) {
+            $response = Http::withHeaders([
+                'x-api-key' => $apiKey,
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])->timeout(120)->post(self::CLAUDE_API_URL, [
+                'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
+                'max_tokens' => self::MAX_TOKENS,
+                'temperature' => self::TEMPERATURE,
+                'system' => $system,
+                'tools' => [[
+                    'name' => $toolName,
+                    'description' => $toolDescription,
+                    'input_schema' => $schema,
+                ]],
+                'tool_choice' => ['type' => 'tool', 'name' => $toolName],
+                'messages' => [['role' => 'user', 'content' => $userMessage]],
+            ]);
+
+            if (!$response->successful()) {
+                $lastError = 'HTTP ' . $response->status();
+                Log::warning('Lesson pptx Claude API non ok', $logContext + ['attempt' => $attempt, 'status' => $response->status()]);
+                continue;
+            }
+
+            $stop = (string) $response->json('stop_reason');
+            $input = $this->extractToolInput($response->json('content'), $toolName);
+
+            // Troncamento (max_tokens) → il tool_use può essere incompleto: scartalo e ritenta.
+            if (is_array($input) && $stop !== 'max_tokens') {
+                return [
+                    'input' => $input,
+                    'tokens_in' => (int) ($response->json('usage.input_tokens') ?? 0),
+                    'tokens_out' => (int) ($response->json('usage.output_tokens') ?? 0),
+                ];
+            }
+
+            $lastError = $input === null
+                ? "tool '{$toolName}' non invocato (stop={$stop})"
+                : 'output troncato (max_tokens)';
+            Log::warning('Lesson pptx output strutturato non conforme', $logContext + ['attempt' => $attempt, 'reason' => $lastError]);
+        }
+
+        throw new RuntimeException('Generazione presentazione non riuscita dopo ' . self::JSON_ATTEMPTS . " tentativi: {$lastError}.");
+    }
+
+    /**
+     * Coerce a array: se già array lo ritorna; se stringa JSON (failure mode del
+     * tool use, che talvolta serializza le liste annidate) la decodifica.
+     *
+     * @return array<int|string, mixed>|null
+     */
+    private function coerceJsonArray(mixed $value): ?array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (is_string($value) && trim($value) !== '') {
+            $decoded = json_decode($value, true);
+
+            return is_array($decoded) ? $decoded : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Estrae l'input del primo blocco tool_use col nome atteso dalla risposta Claude.
+     *
+     * @param mixed $content blocchi content della risposta
+     * @return array<string, mixed>|null
+     */
+    private function extractToolInput(mixed $content, string $toolName): ?array
+    {
+        if (!is_array($content)) {
+            return null;
+        }
+        foreach ($content as $block) {
+            if (is_array($block)
+                && ($block['type'] ?? null) === 'tool_use'
+                && ($block['name'] ?? null) === $toolName
+                && is_array($block['input'] ?? null)) {
+                return $block['input'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Schema di UNA slide di contenuto: unione permissiva dei campi dei layout noti.
+     * normalizeSlide() applica poi il contratto chiuso, quindi qui basta guidare l'LLM.
+     *
+     * @return array<string, mixed>
+     */
+    private function slideSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'layout' => ['type' => 'string', 'enum' => self::CONTENT_LAYOUTS],
+                'title' => ['type' => 'string'],
+                'steps' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'object', 'properties' => [
+                        'title' => ['type' => 'string'],
+                        'text' => ['type' => 'string'],
+                    ]],
+                ],
+                'columns' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'object', 'properties' => [
+                        'icon' => ['type' => 'string'],
+                        'title' => ['type' => 'string'],
+                        'text' => ['type' => 'string'],
+                    ]],
+                ],
+                'value' => ['type' => 'string'],
+                'label' => ['type' => 'string'],
+                'bullets' => ['type' => 'array', 'items' => ['type' => 'string']],
+                'notes' => ['type' => 'string'],
+            ],
+            'required' => ['layout'],
+        ];
+    }
+
+    /** Schema del tool di generazione: { slides: [slide, ...] }. @return array<string, mixed> */
+    private function presentationSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'slides' => ['type' => 'array', 'items' => $this->slideSchema()],
+            ],
+            'required' => ['slides'],
+        ];
+    }
+
+    /** Schema del tool di correzione: { edits: [{ slide_number, slide }] }. @return array<string, mixed> */
+    private function editSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'edits' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'slide_number' => ['type' => 'integer'],
+                            'slide' => $this->slideSchema(),
+                        ],
+                        'required' => ['slide_number', 'slide'],
+                    ],
+                ],
+            ],
+            'required' => ['edits'],
+        ];
     }
 }
