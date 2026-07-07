@@ -166,6 +166,19 @@ class VideoIndex:
         chunks.sort(key=lambda c: c["metadata"].get("start", 0))
         return chunks
 
+    def all_chunks(self) -> list[dict]:
+        """Tutti i chunk del video (per la scansione lessicale della ricerca ibrida)."""
+        if self.collection.count() == 0:
+            return []
+        raw = self.collection.get(include=["documents", "metadatas"])
+        out = []
+        for i in range(len(raw["ids"])):
+            out.append({
+                "text": raw["documents"][i] or "",
+                "metadata": raw["metadatas"][i] or {},
+            })
+        return out
+
     def has_transcript_chunks(self) -> bool:
         """True se ci sono chunk di tipo transcript nella collection."""
         try:
@@ -187,15 +200,3 @@ class VideoIndex:
             return self.collection_name in collections and self.collection.count() > 0
         except Exception:
             return False
-
-    def reset(self) -> None:
-        """Svuota SOLO questa collection (re-indicizzazione idempotente): elimina e
-        ricrea video_{id}. Non tocca le altre collection."""
-        try:
-            self.client.delete_collection(self.collection_name)
-        except Exception:
-            pass
-        self.collection = self.client.get_or_create_collection(
-            name=self.collection_name,
-            metadata={"hnsw:space": "cosine"},
-        )
