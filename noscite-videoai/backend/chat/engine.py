@@ -103,7 +103,7 @@ Domanda: {question}"""
     # Chiama Claude
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=2048,
         system=SYSTEM_PROMPT,
         messages=messages,
@@ -237,8 +237,52 @@ def auto_assign_collection(video_id: str, all_collections: list[str] | None = No
         return "Altro"
 
 
+# Parole di contorno/stopword italiane da ignorare nell'estrazione dei termini
+# salienti per la ricerca lessicale (es. "cercami dove si parla di articolo 4"
+# → termini salienti = ["articolo", "4"], frase = "articolo 4").
+_SEARCH_STOP = {
+    "cercami", "cerca", "cercare", "trova", "trovami", "dove", "dimmi", "mostra",
+    "mostrami", "fammi", "vedere", "si", "parla", "parlano", "parlato", "della",
+    "dello", "delle", "degli", "dei", "del", "di", "da", "il", "lo", "la", "le",
+    "gli", "un", "uno", "una", "in", "con", "per", "che", "cosa", "come", "quando",
+    "quale", "quali", "mi", "ci", "e", "ed", "o", "a", "al", "alla", "allo", "ai",
+    "sul", "sulla", "sullo", "questo", "questa", "quello", "quella", "video",
+    "punto", "minuto", "argomento", "riguarda", "spiega", "spiegato",
+}
+
+
+def _salient_terms(question: str) -> tuple[list[str], list[str]]:
+    """Termini salienti (parole >=3 char o numeri, senza stopword) + frasi
+    'parola numero' (es. 'articolo 4') per il match esatto."""
+    toks = re.findall(r"[a-zà-ù0-9]+", question.lower())
+    terms = [t for t in toks if t.isdigit() or (len(t) >= 3 and t not in _SEARCH_STOP)]
+    phrases = []
+    for i in range(len(toks) - 1):
+        if len(toks[i]) >= 3 and toks[i] not in _SEARCH_STOP and toks[i + 1].isdigit():
+            phrases.append(f"{toks[i]} {toks[i + 1]}")
+    # dedup preservando l'ordine
+    return list(dict.fromkeys(terms)), list(dict.fromkeys(phrases))
+
+
+def _keyword_score(text_low: str, terms: list[str], phrases: list[str]) -> float:
+    """Punteggio lessicale di un chunk: frase esatta (es. 'articolo 4') pesa molto,
+    ogni termine saliente a confine di parola pesa 1."""
+    score = 0.0
+    for p in phrases:
+        if p in text_low:
+            score += 3.0
+    for t in terms:
+        if re.search(r"(?<![a-zà-ù0-9])" + re.escape(t) + r"(?![a-zà-ù0-9])", text_low):
+            score += 1.0
+    return score
+
+
 def search_across_videos(question: str, video_ids: list[str]) -> list[dict]:
-    """Cerca una domanda attraverso più video."""
+    """Ricerca IBRIDA per-video: retrieval semantico (embedding) unito a una
+    scansione LESSICALE su tutti i chunk. I chunk che contengono letteralmente i
+    termini cercati (es. 'articolo 4') salgono in cima — la sola similarità coseno
+    non li pescava perché la query conteneva parole di contorno."""
+    terms, phrases = _salient_terms(question)
     results = []
 
     for vid in video_ids:
@@ -246,28 +290,50 @@ def search_across_videos(question: str, video_ids: list[str]) -> list[dict]:
             index = VideoIndex(vid)
             if not index.exists():
                 continue
-            chunks = index.retrieve(question, n_results=3)
-            # Filter by relevance (lower distance = more relevant)
-            relevant = [c for c in chunks if c.get("distance", 1) < 0.7]
-            if not relevant:
+
+            # Semantico: top-8, soglia distanza leggermente più larga.
+            semantic = [c for c in index.retrieve(question, n_results=8) if c.get("distance", 1) < 0.75]
+
+            # Lessicale: scansione di TUTTI i chunk sui termini salienti.
+            merged = {}
+            for c in semantic:
+                start = c["metadata"].get("start", 0)
+                merged[start] = {"chunk": c, "kw": 0.0, "dist": c.get("distance", 1)}
+
+            if terms or phrases:
+                for c in index.all_chunks():
+                    s = _keyword_score(c["text"].lower(), terms, phrases)
+                    if s <= 0:
+                        continue
+                    start = c["metadata"].get("start", 0)
+                    if start in merged:
+                        merged[start]["kw"] = s
+                    else:
+                        merged[start] = {"chunk": c, "kw": s, "dist": 1.0}
+
+            if not merged:
                 continue
+
+            # Ordina: prima i match lessicali (kw desc), poi i più vicini semanticamente.
+            ordered = sorted(merged.values(), key=lambda m: (-m["kw"], m["dist"]))[:8]
 
             matches = [
                 {
-                    "timestamp_str": c["metadata"].get("timestamp_str", ""),
-                    "text": c["text"][:200],
-                    "start": c["metadata"].get("start", 0),
-                    "type": c["metadata"].get("type", ""),
+                    "timestamp_str": m["chunk"]["metadata"].get("timestamp_str", ""),
+                    "text": m["chunk"]["text"][:200],
+                    "start": m["chunk"]["metadata"].get("start", 0),
+                    "type": m["chunk"]["metadata"].get("type", ""),
                 }
-                for c in relevant
+                for m in ordered
             ]
 
-            # Best score for sorting
-            best_score = min(c.get("distance", 1) for c in relevant)
+            best_kw = max((m["kw"] for m in ordered), default=0.0)
+            best_dist = min((m["dist"] for m in ordered), default=1.0)
             results.append({
                 "video_id": vid,
                 "matches": matches,
-                "relevance": 1 - best_score,
+                # I match lessicali dominano il ranking cross-video.
+                "relevance": best_kw * 10 + (1 - best_dist),
             })
         except Exception as e:
             print(f"[SEARCH] Errore su video {vid[:8]}: {e}")
@@ -400,7 +466,7 @@ def global_chat(question: str, history: list[dict] | None = None) -> dict:
 
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=2048,
         system=GLOBAL_SYSTEM_PROMPT,
         messages=messages,

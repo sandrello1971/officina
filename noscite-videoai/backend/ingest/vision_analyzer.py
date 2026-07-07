@@ -42,7 +42,7 @@ def analyze_frame(frame_path: str, timestamp_str: str) -> dict:
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-5",
             max_tokens=1024,
             messages=[
                 {

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 #
-# deploy-videoai.sh — deploy di noscite-videoai dal monorepo a produzione.
+# deploy-videoai.sh — PROCEDURA UFFICIALE di deploy di noscite-videoai in
+# produzione (mai rsync a mano). Uso: ./deploy-videoai.sh [--dry-run].
+# Prerequisiti: eseguire dal monorepo; dopo il deploy installare le eventuali
+# deps nuove di requirements.txt nel venv CONDIVISO /home/noscite/venv e poi
+# `sudo systemctl restart noscite-videoai`.
 #
 # Sincronizza il sorgente dal monorepo (questa cartella) verso la dir di
 # produzione via rsync, PRESERVANDO i dati e i segreti che vivono solo in

@@ -1,7 +1,7 @@
 import hashlib
+import hmac
 import json
-import os
-import secrets
+import re
 import shutil
 from pathlib import Path
 
@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 from backend.config import settings
-from backend.ingest.extractor import extract_audio, extract_keyframes, extract_thumbnail, get_video_duration, format_timestamp
+from backend.ingest.extractor import extract_audio, extract_keyframes, extract_thumbnail, get_video_duration
 from backend.ingest.transcriber import transcribe_audio
 from backend.ingest.vision_analyzer import analyze_frames_batch
 from backend.rag.chunker import build_chunks
@@ -36,25 +36,34 @@ from backend.transcription.audio import run_audio_job, ALLOWED_AUDIO_EXTENSIONS
 from backend.transcription.youtube import run_youtube_job
 
 
-app = FastAPI(title="Video Chatbot API", version="1.0.0")
+def require_internal_token(x_internal_token: str = Header(default="")):
+    """Autenticazione interna server-to-server per TUTTI gli endpoint /api/*.
+
+    Fail-closed: se INTERNAL_API_TOKEN non è configurato → 503 (mai aperto).
+    Confronto a tempo costante (hmac.compare_digest) per evitare timing attack.
+    """
+    expected = settings.INTERNAL_API_TOKEN
+    if not expected:
+        raise HTTPException(status_code=503, detail="INTERNAL_API_TOKEN non configurato")
+    if not hmac.compare_digest(x_internal_token or "", expected):
+        raise HTTPException(status_code=401, detail="Token interno non valido")
+
+
+# Dependency applicata a livello di APPLICAZIONE: vale per ogni route, così non
+# se ne dimentica nessuna. Tutti gli endpoint esposti sono /api/*.
+app = FastAPI(
+    title="Video Chatbot API",
+    version="1.0.0",
+    dependencies=[Depends(require_internal_token)],
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:5174", "https://atheneum.noscite.it", "http://127.0.0.1"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Internal-Token"],
 )
-
-
-def require_internal_token(x_internal_token: str | None = Header(default=None)):
-    """Auth degli endpoint INTERNI: richiede l'header X-Internal-Token combaciante con
-    INTERNAL_API_TOKEN (.env). Confronto a tempo costante; fail-closed se non configurato.
-    Letto a runtime (os.getenv) per testabilità. NB: NON applicare agli endpoint chiamati
-    dal browser (chat/search/thumbnail) — non inviano il token."""
-    expected = os.getenv("INTERNAL_API_TOKEN", "")
-    if not expected or not x_internal_token or not secrets.compare_digest(x_internal_token, expected):
-        raise HTTPException(status_code=401, detail="Token interno mancante o non valido")
 
 
 class ChatRequest(BaseModel):
@@ -88,21 +97,32 @@ class EmbeddingsRequest(BaseModel):
     texts: list[str]
 
 
-class IndexChunkItem(BaseModel):
+class IndexChunkIn(BaseModel):
     text: str
     start: float = 0
     end: float = 0
-    type: str = "transcript"  # transcript | frame | slide
+    type: str = "transcript"
 
 
 class IndexChunksRequest(BaseModel):
-    chunks: list[IndexChunkItem]
-    meta: dict | None = None
+    chunks: list[IndexChunkIn]
+    meta: dict = {}
 
 
 def _compute_video_id(content: bytes) -> str:
     """Calcola video_id deterministico basato su hash MD5 del file."""
     return hashlib.md5(content).hexdigest()
+
+
+def _validate_video_id(video_id: str) -> None:
+    """Valida il video_id ricevuto come path param: deve essere un MD5 (32 hex).
+
+    Difesa contro path traversal: il video_id viene usato per comporre percorsi
+    sotto DATA_DIR/videos/. Senza validazione, valori come '../..' permetterebbero
+    di uscire dalla directory dei dati.
+    """
+    if not re.fullmatch(r"[a-f0-9]{32}", video_id or ""):
+        raise HTTPException(status_code=400, detail="video_id non valido")
 
 
 def _save_metadata(video_id: str, metadata: dict):
@@ -231,10 +251,16 @@ async def ingest_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
             "skipped": True,
         }
 
+    # Sanifica il nome file del client: solo il basename, niente componenti di
+    # percorso. Rifiuta se vuoto o se contiene ancora separatori dopo la sanificazione.
+    safe_name = Path(file.filename or "").name
+    if not safe_name or "/" in safe_name or "\\" in safe_name:
+        raise HTTPException(status_code=400, detail="Nome file non valido")
+
     # Salva file video
     video_dir = settings.DATA_DIR / "videos" / video_id
     video_dir.mkdir(parents=True, exist_ok=True)
-    video_path = video_dir / file.filename
+    video_path = video_dir / safe_name
     async with aiofiles.open(str(video_path), "wb") as f:
         await f.write(content)
 
@@ -254,49 +280,10 @@ async def ingest_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
     }
 
 
-@app.post("/api/videos/{video_id}/index_chunks")
-async def index_chunks(video_id: str, body: IndexChunksRequest, _auth: None = Depends(require_internal_token)):
-    """R1 — indicizza chunk GIÀ PRONTI (testo + start/end + type), senza Whisper né
-    Vision. Per i video GENERATI dalla piattaforma (copione/slide noti). Opera SOLO
-    sulla collection video_{video_id}; idempotente (reset + re-add); stesso schema
-    metadati dei chunk prodotti da build_chunks(), così /api/search li tratta uguali."""
-    index = VideoIndex(video_id)  # collection video_{video_id} — SOLO questa
-    index.reset()                 # idempotenza: sostituisce i chunk di QUESTA collection
-
-    chunks = []
-    for i, c in enumerate(body.chunks):
-        chunks.append({
-            "id": f"{video_id}_known_{i}",
-            "text": c.text,
-            "type": c.type,
-            "start": round(c.start, 2),
-            "end": round(c.end, 2),
-            "timestamp_str": format_timestamp(c.start),
-            "content_type": "",
-        })
-
-    n = index.index_chunks(chunks)
-
-    # Record video "leggero" così il video compare nella ricerca cross-video
-    # (lo stream/thumbnail dei video generati resta servito dalla piattaforma).
-    meta = body.meta or {}
-    db = get_db()
-    db.upsert(video_id, {
-        "filename": meta.get("title", video_id),
-        "title": meta.get("title", ""),
-        "summary": meta.get("summary", ""),
-        "duration_seconds": meta.get("duration_seconds", 0),
-        "duration_str": meta.get("duration_str", "00:00"),
-        "chunks_count": n,
-        "collection": meta.get("collection", "Video generati"),
-    })
-
-    return {"video_id": video_id, "indexed_chunks": n}
-
-
 @app.get("/api/videos/{video_id}/status")
 async def get_status(video_id: str):
     """Ritorna lo stato del processing da progress.json."""
+    _validate_video_id(video_id)
     tracker = ProgressTracker(video_id)
     progress = tracker.get()
 
@@ -327,6 +314,7 @@ async def get_status(video_id: str):
 @app.get("/api/videos/{video_id}/thumbnail")
 async def get_thumbnail(video_id: str):
     """Serve la thumbnail del video."""
+    _validate_video_id(video_id)
     thumb_path = settings.DATA_DIR / "videos" / video_id / "thumbnail.jpg"
     if not thumb_path.exists():
         raise HTTPException(status_code=404, detail="Thumbnail non trovata")
@@ -336,6 +324,7 @@ async def get_thumbnail(video_id: str):
 @app.get("/api/videos/{video_id}/stream")
 async def stream_video(video_id: str, request: Request):
     """Serve il file video con supporto HTTP Range Requests per seek."""
+    _validate_video_id(video_id)
     video_dir = settings.DATA_DIR / "videos" / video_id
     if not video_dir.exists():
         raise HTTPException(status_code=404, detail="Video non trovato")
@@ -404,6 +393,7 @@ async def stream_video(video_id: str, request: Request):
 @app.post("/api/videos/{video_id}/chat", response_model=ChatResponse)
 async def chat_endpoint(video_id: str, request: ChatRequest):
     """Chat con il video indicizzato."""
+    _validate_video_id(video_id)
     # Controlla progress
     tracker = ProgressTracker(video_id)
     progress = tracker.get()
@@ -429,6 +419,18 @@ async def chat_endpoint(video_id: str, request: ChatRequest):
     # Se can_chat=true ma non ancora ready: solo transcript
     transcript_only = progress.get("step") != "ready"
     result = chat(video_id, request.question, request.history, transcript_only=transcript_only)
+    return ChatResponse(**result)
+
+
+@app.post("/api/videos/{video_id}/ask", response_model=ChatResponse)
+def ask_video(video_id: str, request: ChatRequest):
+    """Q&A GROUNDED su un video già indicizzato ('Chiedi al video' di atheneum).
+    Funziona sia per i video CARICATI (id MD5) sia per i GENERATI (id 'gen_...'),
+    perché lavora sulla collection ChromaDB senza passare dal ProgressTracker.
+    Difesa path-traversal: id limitato a [A-Za-z0-9_-]. Auth interna globale."""
+    if not re.fullmatch(r"[A-Za-z0-9_\-]{1,80}", video_id or ""):
+        raise HTTPException(status_code=400, detail="video_id non valido")
+    result = chat(video_id, request.question, request.history)
     return ChatResponse(**result)
 
 
@@ -488,6 +490,7 @@ async def list_videos(
 @app.patch("/api/videos/{video_id}/metadata")
 async def update_video_metadata(video_id: str, body: MetadataUpdate):
     """Aggiorna metadati editabili di un video."""
+    _validate_video_id(video_id)
     db = get_db()
     updated = db.update_metadata(
         video_id,
@@ -504,6 +507,7 @@ async def update_video_metadata(video_id: str, body: MetadataUpdate):
 @app.get("/api/videos/{video_id}/transcript")
 async def get_transcript(video_id: str):
     """Ritorna la trascrizione del video."""
+    _validate_video_id(video_id)
     meta_path = settings.DATA_DIR / "videos" / video_id / "metadata.json"
     if not meta_path.exists():
         raise HTTPException(status_code=404, detail="Video non trovato")
@@ -535,6 +539,91 @@ async def get_transcript(video_id: str):
         return {"segments": segments}
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/videos/{video_id}/index_chunks")
+def index_video_chunks(video_id: str, body: IndexChunksRequest):
+    """Indicizza chunk di testo GIÀ PRONTI per un video GENERATO (copione + testo a
+    schermo), senza upload né trascrizione. Idempotente: resetta la collection del
+    video prima di reindicizzare. Usato da atheneum (video narrato). L'auth interna
+    è applicata globalmente (require_internal_token)."""
+    index = VideoIndex(video_id)
+    # Reset idempotente della collection (R1: reindicizzare = sostituire).
+    try:
+        index.client.delete_collection(index.collection_name)
+    except Exception:
+        pass
+    index = VideoIndex(video_id)
+
+    chunks = []
+    for i, c in enumerate(body.chunks):
+        text = (c.text or "").strip()
+        if not text:
+            continue
+        start = float(c.start or 0)
+        chunks.append({
+            "id": f"{video_id}_{i}",
+            "text": text,
+            "type": c.type or "transcript",
+            "start": start,
+            "end": float(c.end or 0),
+            "timestamp_str": format_timestamp(start),
+            "content_type": "",
+        })
+
+    index.index_chunks(chunks)
+
+    # Registra il video in SQLite così /api/search lo elenca e ne arricchisce i risultati.
+    meta = body.meta or {}
+    max_end = max((c["end"] for c in chunks), default=0)
+    try:
+        get_db().upsert(video_id, {
+            "filename": meta.get("title") or video_id,
+            "title": meta.get("title") or video_id,
+            "summary": "",
+            "duration_seconds": max_end,
+            "duration_str": format_timestamp(max_end),
+            "language": "it",
+            "chunks_count": len(chunks),
+            "has_thumbnail": 0,
+            "collection": meta.get("kind") or "generated",
+            "tags": "[]",
+            "notes": "",
+        })
+    except Exception as e:
+        print(f"[API] upsert DB fallito per {video_id}: {e}")
+
+    return {"video_id": video_id, "indexed_chunks": len(chunks)}
+
+
+@app.get("/api/videos/{video_id}/chunks_text")
+def get_chunks_text(video_id: str):
+    """Ritorna TUTTI i chunk testuali del video (parlato + frame/Vision), ordinati per
+    tempo, per alimentare il RAG esterno (Minerva di atheneum). Read-only. Auth interna
+    globale (require_internal_token). Video assente/senza indice → lista vuota."""
+    _validate_video_id(video_id)
+    try:
+        index = VideoIndex(video_id)
+        if not index.exists():
+            return {"video_id": video_id, "chunks": []}
+
+        raw = index.collection.get(include=["documents", "metadatas"])
+        chunks = []
+        for i in range(len(raw["ids"])):
+            meta = raw["metadatas"][i] or {}
+            text = (raw["documents"][i] or "").strip()
+            if not text:
+                continue
+            chunks.append({
+                "text": text,
+                "type": meta.get("type", "transcript"),
+                "start": float(meta.get("start", 0) or 0),
+                "timestamp_str": meta.get("timestamp_str", "00:00"),
+            })
+        chunks.sort(key=lambda c: c["start"])
+        return {"video_id": video_id, "chunks": chunks}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -607,6 +696,7 @@ async def auto_organize():
 @app.post("/api/videos/{video_id}/regenerate-tags")
 async def regenerate_tags(video_id: str):
     """Rigenera i tag AI per un video."""
+    _validate_video_id(video_id)
     db = get_db()
     if not db.get(video_id):
         raise HTTPException(status_code=404, detail="Video non trovato")
@@ -712,6 +802,7 @@ async def get_graph(min_score: float = 0.15, video_id: str = "", mode: str = "se
 @app.delete("/api/videos/{video_id}")
 async def delete_video(video_id: str):
     """Elimina un video: file, ChromaDB e SQLite."""
+    _validate_video_id(video_id)
     video_dir = settings.DATA_DIR / "videos" / video_id
     if not video_dir.exists():
         raise HTTPException(status_code=404, detail="Video non trovato")
