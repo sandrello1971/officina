@@ -63,8 +63,14 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/classi/{class}/lezioni/{lesson}', [App\Http\Controllers\Student\StudentLessonController::class, 'show'])->name('classes.lesson.show');
         Route::get('/classi/{class}/lezioni/{lesson}/materiali/{document}/sorgente', [App\Http\Controllers\Student\StudentLessonController::class, 'materialSource'])->name('classes.lesson.material.source');
         Route::get('/classi/{class}/lezioni/{lesson}/presentazione', [App\Http\Controllers\Student\StudentLessonController::class, 'presentation'])->name('classes.lesson.presentation');
+        Route::get('/classi/{class}/lezioni/{lesson}/presentazione/slide/{n}', [App\Http\Controllers\Student\StudentLessonController::class, 'presentationSlide'])->whereNumber('n')->name('classes.lesson.presentation.slide');
         Route::get('/classi/{class}/lezioni/{lesson}/video', [App\Http\Controllers\Student\StudentLessonController::class, 'video'])->name('classes.lesson.video');
         Route::post('/classi/{class}/lezioni/{lesson}/video/cerca', [App\Http\Controllers\Student\StudentLessonController::class, 'videoSearch'])->name('classes.lesson.video.search')->middleware('throttle:minerva-chat');
+        Route::post('/classi/{class}/lezioni/{lesson}/video/chiedi', [App\Http\Controllers\Student\StudentLessonController::class, 'videoAsk'])->name('classes.lesson.video.ask')->middleware('throttle:minerva-chat');
+        // Video CARICATI dal docente e pubblicati sulla lezione (stream locale + ricerca in-video)
+        Route::get('/classi/{class}/lezioni/{lesson}/video-caricati/{video}', [App\Http\Controllers\Student\StudentLessonController::class, 'uploadedVideo'])->name('classes.lesson.uploaded-video');
+        Route::post('/classi/{class}/lezioni/{lesson}/video-caricati/{video}/cerca', [App\Http\Controllers\Student\StudentLessonController::class, 'uploadedVideoSearch'])->name('classes.lesson.uploaded-video.search')->middleware('throttle:minerva-chat');
+        Route::post('/classi/{class}/lezioni/{lesson}/video-caricati/{video}/chiedi', [App\Http\Controllers\Student\StudentLessonController::class, 'uploadedVideoAsk'])->name('classes.lesson.uploaded-video.ask')->middleware('throttle:minerva-chat');
 
         // Messaggistica di classe (P22) — thread col docente + annunci (sola lettura)
         Route::get('/classi/{class}/messaggi', [App\Http\Controllers\Student\ClassMessageController::class, 'index'])->name('classi.messaggi.index');
@@ -207,6 +213,11 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::patch('/classi/{class}', [App\Http\Controllers\Docente\ClassController::class, 'update'])->name('classes.update');
 
     // Messaggistica di classe (P22) — thread studente↔docente + annunci (cattedra)
+    // Casella "Messaggi" del docente: tutti i thread di tutte le classi + compositore.
+    Route::get('/messaggi', [App\Http\Controllers\Docente\MessageInboxController::class, 'index'])->name('messages.index');
+    Route::get('/messaggi/nuovo', [App\Http\Controllers\Docente\MessageInboxController::class, 'create'])->name('messages.create');
+    Route::post('/messaggi', [App\Http\Controllers\Docente\MessageInboxController::class, 'store'])->name('messages.store');
+
     Route::get('/classi/{class}/messaggi', [App\Http\Controllers\Docente\ClassMessageController::class, 'index'])->name('classi.messaggi.index');
     Route::get('/classi/{class}/messaggi/nuovo', [App\Http\Controllers\Docente\ClassMessageController::class, 'create'])->name('classi.messaggi.create');
     Route::post('/classi/{class}/messaggi', [App\Http\Controllers\Docente\ClassMessageController::class, 'store'])->name('classi.messaggi.store');
@@ -222,6 +233,8 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::patch('/classi/{class}/studenti/{enrollment}', [App\Http\Controllers\Docente\ClassRosterController::class, 'update'])->name('classes.roster.update');
     // Minerva di classe lato docente (scope teacher_private + class). Stessa view, POST su /minerva/ask.
     Route::get('/classi/{class}/minerva', [App\Http\Controllers\Student\ChatController::class, 'showClass'])->name('classes.minerva');
+    // Chatbot floating docente: risponde su tutta la sua documentazione scolastica (con fonti).
+    Route::post('/minerva/ask', [App\Http\Controllers\Student\ChatController::class, 'teacherSchoolAsk'])->middleware('throttle:minerva-chat')->name('minerva.ask');
 
     // Cruscotto (pacchetto 8)
     Route::get('/classi/{class}/attivita', [App\Http\Controllers\Docente\ClassActivityController::class, 'index'])->name('classes.activity');
@@ -239,6 +252,14 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::get('/materiali/{document}/file/{index}', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'downloadSource'])->name('materials.download');
     Route::get('/materiali/{document}/stato', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'status'])->name('materials.status');
     Route::post('/materiali/{document}/retry', [App\Http\Controllers\Docente\TeachingDocumentController::class, 'retry'])->name('materials.retry')->middleware('throttle:schola-generate');
+    // Condivisione del materiale con altri docenti (ambito materia/tutti).
+    Route::patch('/materiali/{document}/condivisione', [App\Http\Controllers\Docente\MaterialSharingController::class, 'update'])->name('materials.sharing');
+
+    // Libreria dei materiali condivisi da altri docenti (vedi / scarica / importa).
+    Route::get('/materiali-condivisi', [App\Http\Controllers\Docente\SharedMaterialLibraryController::class, 'index'])->name('materials.shared.index');
+    Route::get('/materiali-condivisi/{document}', [App\Http\Controllers\Docente\SharedMaterialLibraryController::class, 'show'])->name('materials.shared.show');
+    Route::get('/materiali-condivisi/{document}/file/{index}', [App\Http\Controllers\Docente\SharedMaterialLibraryController::class, 'download'])->name('materials.shared.download');
+    Route::post('/materiali-condivisi/{document}/importa', [App\Http\Controllers\Docente\SharedMaterialLibraryController::class, 'import'])->name('materials.shared.import')->middleware('throttle:schola-generate');
 
     // Argomenti e Lezioni (fase 3, P18) — solo organizzazione, niente generazione
     Route::get('/argomenti', [App\Http\Controllers\Docente\TopicController::class, 'index'])->name('topics.index');
@@ -291,6 +312,18 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
     Route::get('/lezioni/{lesson}/video/download', [App\Http\Controllers\Docente\LessonVideoController::class, 'downloadVideo'])->name('lessons.video.download');
     Route::post('/lezioni/{lesson}/video/pubblica', [App\Http\Controllers\Docente\LessonVideoController::class, 'publishVideo'])->name('lessons.video.publish');
     Route::post('/lezioni/{lesson}/video/ritira', [App\Http\Controllers\Docente\LessonVideoController::class, 'unpublishVideo'])->name('lessons.video.unpublish');
+
+    // Video CARICATI dal docente (analisi Vision videoai): upload da lezione o materiale,
+    // riproducibili + ricercabili al loro interno + nel RAG Minerva. Più video per lezione.
+    Route::post('/video-caricati', [App\Http\Controllers\Docente\UploadedVideoController::class, 'store'])->name('videos.store');
+    Route::get('/video-caricati', [App\Http\Controllers\Docente\UploadedVideoController::class, 'index'])->name('videos.index');
+    Route::get('/video-caricati/{video}/stato', [App\Http\Controllers\Docente\UploadedVideoController::class, 'status'])->name('videos.status');
+    Route::get('/video-caricati/{video}/stream', [App\Http\Controllers\Docente\UploadedVideoController::class, 'stream'])->name('videos.stream');
+    Route::post('/video-caricati/{video}/cerca', [App\Http\Controllers\Docente\UploadedVideoController::class, 'search'])->name('videos.search')->middleware('throttle:minerva-chat');
+    Route::post('/video-caricati/{video}/chiedi', [App\Http\Controllers\Docente\UploadedVideoController::class, 'ask'])->name('videos.ask')->middleware('throttle:minerva-chat');
+    Route::post('/video-caricati/{video}/pubblica', [App\Http\Controllers\Docente\UploadedVideoController::class, 'publish'])->name('videos.publish');
+    Route::post('/video-caricati/{video}/ritira', [App\Http\Controllers\Docente\UploadedVideoController::class, 'unpublish'])->name('videos.unpublish');
+    Route::delete('/video-caricati/{video}', [App\Http\Controllers\Docente\UploadedVideoController::class, 'destroy'])->name('videos.destroy');
 
     // Pubblicazione lezione su classe (P20a) — cattedra/proprietà + ingestion RAG asincrona
     Route::post('/lezioni/{lesson}/pubblica', [App\Http\Controllers\Docente\LessonPublicationController::class, 'store'])->name('lessons.publish');
@@ -350,6 +383,12 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
     Route::get('/studenti/import/{batch}/credenziali.csv', [App\Http\Controllers\Scuola\StudentImportController::class, 'credentialsDownload'])->name('studenti.import.credentials');
     Route::post('/studenti/import/{batch}/discard', [App\Http\Controllers\Scuola\StudentImportController::class, 'discard'])->name('studenti.import.discard');
 
+    // Modifica singolo studente: correzione dati + reset password/reinvio invito + attiva/disattiva
+    Route::get('/studenti/{student}/modifica', [App\Http\Controllers\Scuola\StudentController::class, 'edit'])->name('studenti.edit');
+    Route::patch('/studenti/{student}', [App\Http\Controllers\Scuola\StudentController::class, 'update'])->name('studenti.update');
+    Route::post('/studenti/{student}/reset-password', [App\Http\Controllers\Scuola\StudentController::class, 'resetPassword'])->name('studenti.reset-password');
+    Route::patch('/studenti/{student}/stato', [App\Http\Controllers\Scuola\StudentController::class, 'toggleActive'])->name('studenti.toggle');
+
     // Classi e cattedre (P15): gestione segreteria
     Route::get('/classi', [App\Http\Controllers\Scuola\ClassController::class, 'index'])->name('classi.index');
     Route::get('/classi/crea', [App\Http\Controllers\Scuola\ClassController::class, 'create'])->name('classi.create');
@@ -365,6 +404,15 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
     Route::post('/privacy/dpa', [App\Http\Controllers\Scuola\PrivacyController::class, 'markDpa'])->name('privacy.dpa');
     Route::post('/privacy/export', [App\Http\Controllers\Scuola\PrivacyController::class, 'export'])->name('privacy.export');
     Route::get('/privacy/export/download', [App\Http\Controllers\Scuola\PrivacyController::class, 'download'])->name('privacy.export.download');
+    // DPA specifico video-AI (Whisper/Vision): firma/revoca a livello scuola.
+    Route::post('/privacy/video-dpa', [App\Http\Controllers\Scuola\PrivacyController::class, 'markVideoAiDpa'])->name('privacy.video-dpa');
+
+    // Materiali della scuola (segreteria estesa): elenco di tutti i docenti, upload di
+    // scuola (→ Biblioteca), eliminazione. Tutto tenant-scoped su school_id.
+    Route::get('/materiali', [App\Http\Controllers\Scuola\SchoolMaterialController::class, 'index'])->name('materiali.index');
+    Route::get('/materiali/crea', [App\Http\Controllers\Scuola\SchoolMaterialController::class, 'create'])->name('materiali.create');
+    Route::post('/materiali', [App\Http\Controllers\Scuola\SchoolMaterialController::class, 'store'])->name('materiali.store')->middleware('throttle:schola-generate');
+    Route::delete('/materiali/{document}', [App\Http\Controllers\Scuola\SchoolMaterialController::class, 'destroy'])->name('materiali.destroy');
 });
 
 // Logo scuola da storage privato — accessibile a tutti gli utenti della scuola
