@@ -7,7 +7,7 @@
     <div id="reading-bar" style="height:100%;background:#55B1AE;width:0%;transition:width 0.1s;"></div>
 </div>
 
-<div style="display:grid; grid-template-columns:1fr 280px; gap:24px; max-width:1100px;">
+<div style="display:grid; grid-template-columns:1fr 280px; gap:24px; max-width:1100px; margin:0 auto;">
 
     <div>
         <a href="/learn/course/{{ $course->slug }}"

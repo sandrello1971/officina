@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div style="max-width:800px;">
+<div style="max-width:800px; margin:0 auto;">
 
     @php $demoStudent = \App\Models\Student::find(session('student_id')); $isDemoView = $demoStudent && $demoStudent->is_demo; @endphp
 
