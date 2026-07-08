@@ -36,7 +36,7 @@
         window.currentUserId = '{{ session('student_id') }}';
     </script>
     @endif
-    @include('layouts.partials._rail-styles')
+    @include('layouts.partials._topbar-styles')
     <style>
         /* Progress bar delle card corso (usata dalla dashboard studente). */
         .progress-bar { height: 6px; background: #C8D0D0; border-radius: 3px; overflow: hidden; }
@@ -55,98 +55,96 @@
     $isInstructor = $sidebarStudent && $sidebarStudent->isInstructor();
     $assistantName = atheneum_setting('assistant_name', 'Minerva');
 @endphp
-<aside class="rail">
-    <a href="/learn/dashboard" class="rail-mono" title="{{ atheneum_setting('instance_name', 'Officina') }} — Dashboard">GL</a>
+<nav class="topbar">
+    <button type="button" class="mobile-toggle" data-toggle="#student-nav" title="Menu" aria-label="Menu">
+        @include('layouts.partials._icon', ['name' => 'dashboard', 'size' => 22])
+    </button>
+    <a href="/learn/dashboard" class="topbar-brand" title="{{ atheneum_setting('instance_name', 'Officina') }} — Dashboard">
+        <span class="mono">GL</span>
+    </a>
 
-    <div class="rail-scroll">
-        @include('layouts.partials._rail-item', [
-            'href' => '/learn/dashboard', 'icon' => 'dashboard', 'title' => 'Dashboard',
+    {{-- Nav orizzontale. I corsi NON stanno più qui: tornano solo come card nella dashboard. --}}
+    <div class="topbar-nav" id="student-nav">
+        @include('layouts.partials._topbar-item', [
+            'href' => '/learn/dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard',
             'active' => request()->routeIs('student.dashboard'),
         ])
-
-        {{-- Corsi navigabili: ognuno una voce (il nome nel tooltip). I corsi
-             insegnati portano "— insegni" nel title e l'accento arancio. --}}
-        @foreach($sidebarCourses as $sidebarCourse)
-            @php $teaching = ($sidebarCourse->access_kind ?? 'enrolled') === 'teaching'; @endphp
-            @include('layouts.partials._rail-item', [
-                'href'     => '/learn/course/' . $sidebarCourse->slug,
-                'icon'     => 'course',
-                'title'    => $sidebarCourse->name . ($teaching ? ' — insegni' : ''),
-                'active'   => request()->is('learn/course/' . $sidebarCourse->slug . '*'),
-                'teaching' => $teaching,
-            ])
-        @endforeach
-
-        <div class="rail-sep"></div>
-
-        @include('layouts.partials._rail-item', [
-            'href' => route('student.documents.index'), 'icon' => 'document', 'title' => 'I miei documenti',
+        @include('layouts.partials._topbar-item', [
+            'href' => '/learn/dashboard', 'label' => 'I miei corsi', 'icon' => 'course',
+            'active' => request()->is('learn/course/*'),
+        ])
+        @include('layouts.partials._topbar-item', [
+            'href' => route('student.documents.index'), 'label' => 'I miei documenti', 'icon' => 'document',
             'active' => request()->routeIs('student.documents.*'),
         ])
-        @include('layouts.partials._rail-item', [
-            'href' => route('student.messages.index'), 'icon' => 'messages', 'title' => 'Messaggi',
+        @include('layouts.partials._topbar-item', [
+            'href' => route('student.messages.index'), 'label' => 'Messaggi', 'icon' => 'messages',
             'active' => request()->routeIs('student.messages.*'),
             'badgeId' => 'sidebar-unread-badge', 'badgeCount' => $unreadMessages ?? 0,
         ])
-        @include('layouts.partials._rail-item', [
-            'href' => route('student.announcements.index'), 'icon' => 'announcements', 'title' => 'Annunci',
+        @include('layouts.partials._topbar-item', [
+            'href' => route('student.announcements.index'), 'label' => 'Annunci', 'icon' => 'announcements',
             'active' => request()->routeIs('student.announcements.*'),
             'badgeId' => 'sidebar-announcements-badge', 'badgeCount' => $unreadAnnouncements ?? 0,
         ])
+    </div>
 
+    <div class="topbar-actions">
         {{-- Assistente AI: inibito server-side durante l'esame. --}}
         @if(!empty($examLock))
-        <a href="#" class="rail-item disabled" title="{{ $assistantName }} non è disponibile durante un esame">
-            @include('layouts.partials._icon', ['name' => 'ai'])
-        </a>
+        <span class="topbar-item" style="opacity:0.4; cursor:not-allowed;" title="{{ $assistantName }} non è disponibile durante un esame">
+            @include('layouts.partials._icon', ['name' => 'ai', 'size' => 20])
+        </span>
         @else
-        <a href="#" x-data @click.prevent="$dispatch('minerva-toggle')" class="rail-item" title="Assistente AI — {{ $assistantName }}">
-            @include('layouts.partials._icon', ['name' => 'ai'])
-        </a>
+        <button type="button" x-data @click="$dispatch('minerva-toggle')" class="topbar-item" title="Assistente AI — {{ $assistantName }}">
+            @include('layouts.partials._icon', ['name' => 'ai', 'size' => 20])
+        </button>
         @endif
 
-        @if($isAnyCourseInstructor)
-            @include('layouts.partials._rail-item', [
-                'href' => route('student.instructor_settings.index'), 'icon' => 'settings', 'title' => 'Impostazioni formatore',
-                'active' => request()->routeIs('student.instructor_settings.*'),
-            ])
-        @endif
-        @if($isInstructor)
-            @include('layouts.partials._rail-item', [
-                'href' => route('student.knowledge_base.index'), 'icon' => 'kb', 'title' => 'Knowledge Base',
-                'active' => request()->routeIs('student.knowledge_base.*'),
-            ])
-            @include('layouts.partials._rail-item', [
-                'href' => route('student.instructor_documents.index'), 'icon' => 'folder', 'title' => 'Documenti discenti',
-                'active' => request()->routeIs('student.instructor_documents.*'),
-            ])
-        @endif
-    </div>{{-- /.rail-scroll --}}
-
-    <div class="rail-footer">
-        @if($identity['professor'] ?? false)
-            @include('layouts.partials._rail-item', ['href' => route('docente.dashboard'), 'icon' => 'teachers', 'title' => 'Cambia contesto: Area docente'])
-        @endif
-        @if($identity['secretary'] ?? false)
-            @include('layouts.partials._rail-item', ['href' => route('scuola.dashboard'), 'icon' => 'secretary', 'title' => 'Cambia contesto: Segreteria'])
-        @endif
-
-        <div class="rail-avatar {{ ($sidebarStudent && $sidebarStudent->is_demo) ? 'demo' : '' }}"
-             title="{{ session('student_name') }} · {{ session('student_email') }}{{ ($sidebarStudent && $sidebarStudent->is_demo) ? ' (Demo)' : '' }}">
-            {{ strtoupper(substr(session('student_name', 'S'), 0, 1)) }}
-        </div>
-        <form method="POST" action="/learn/logout">
-            @csrf
-            <button type="submit" class="rail-item" title="Esci">
-                @include('layouts.partials._icon', ['name' => 'logout'])
+        <div class="topbar-usermenu">
+            <button type="button" class="topbar-avatar {{ ($sidebarStudent && $sidebarStudent->is_demo) ? 'demo' : '' }}"
+                    data-toggle="#student-usermenu" title="{{ session('student_name') }}">
+                {{ strtoupper(substr(session('student_name', 'S'), 0, 1)) }}
             </button>
-        </form>
+            <div id="student-usermenu" class="topbar-menu">
+                <div class="um-head">
+                    <div class="um-name">{{ session('student_name') }}</div>
+                    <div class="um-email">{{ session('student_email') }}{{ ($sidebarStudent && $sidebarStudent->is_demo) ? ' · Demo' : '' }}</div>
+                </div>
+
+                @if($isAnyCourseInstructor || $isInstructor)
+                <div class="um-label">Formatore</div>
+                @if($isAnyCourseInstructor)
+                <a href="{{ route('student.instructor_settings.index') }}">@include('layouts.partials._icon', ['name' => 'settings', 'size' => 18]) Impostazioni formatore</a>
+                @endif
+                @if($isInstructor)
+                <a href="{{ route('student.knowledge_base.index') }}">@include('layouts.partials._icon', ['name' => 'kb', 'size' => 18]) Knowledge Base</a>
+                <a href="{{ route('student.instructor_documents.index') }}">@include('layouts.partials._icon', ['name' => 'folder', 'size' => 18]) Documenti discenti</a>
+                @endif
+                @endif
+
+                @if(($identity['professor'] ?? false) || ($identity['secretary'] ?? false))
+                <div class="um-label">Cambia contesto</div>
+                @if($identity['professor'] ?? false)
+                <a href="{{ route('docente.dashboard') }}">@include('layouts.partials._icon', ['name' => 'teachers', 'size' => 18]) Area docente</a>
+                @endif
+                @if($identity['secretary'] ?? false)
+                <a href="{{ route('scuola.dashboard') }}">@include('layouts.partials._icon', ['name' => 'secretary', 'size' => 18]) Segreteria</a>
+                @endif
+                @endif
+
+                <div class="um-label">Account</div>
+                <form method="POST" action="/learn/logout">
+                    @csrf
+                    <button type="submit" class="um-logout">@include('layouts.partials._icon', ['name' => 'logout', 'size' => 18]) Esci</button>
+                </form>
+            </div>
+        </div>
     </div>
-</aside>
+</nav>
 
 <div class="main-content">
     <div style="background:white; padding:12px 24px; border-bottom:1px solid #C8D0D0; display:flex; align-items:center; gap:12px;">
-        <button onclick="document.querySelector('.rail').classList.toggle('open')" class="mobile-toggle" style="display:none; background:none; border:none; cursor:pointer; color:#55B1AE; font-size:1.2rem;">&#9776;</button>
         <div style="font-size:0.875rem; color:#8A9696;">
             @yield('breadcrumb', 'Dashboard')
         </div>
@@ -456,5 +454,6 @@ function minervaBubble() {
 })();
 </script>
 @endif
+@include('layouts.partials._topbar-scripts')
 </body>
 </html>

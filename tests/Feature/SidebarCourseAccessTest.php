@@ -151,8 +151,11 @@ class SidebarCourseAccessTest extends TestCase
             'Auto-enroll instructor accesses everything as enrolled, no teaching mode');
     }
 
-    public function test_dashboard_render_shows_teaching_course_in_both_sidebar_and_main(): void
+    public function test_dashboard_render_shows_teaching_course_card_with_insegni(): void
     {
+        // Direzione A (topbar): i corsi NON stanno più nella nav — appaiono solo
+        // come card nella dashboard. Il corso insegnato si mostra nella griglia
+        // con l'indicazione "insegni".
         $instructor = $this->makeStudent(['role' => 'instructor']);
         $course = $this->makeCourse('teaching-only-' . uniqid(), 1);
         $course->name = 'Corso Solo Insegnato';
@@ -168,12 +171,13 @@ class SidebarCourseAccessTest extends TestCase
         $response->assertOk();
         $html = $response->getContent();
 
-        // Once in sidebar (with "insegni" badge), once in main dashboard area
+        // Compare almeno nella griglia card della dashboard.
         $this->assertGreaterThanOrEqual(
-            2,
+            1,
             substr_count($html, 'Corso Solo Insegnato'),
-            'Course must appear in both sidebar and dashboard area'
+            'Course must appear in the dashboard card grid'
         );
+        // L'indicazione di docenza resta ("Insegni questo corso").
         $this->assertStringContainsString('insegni', strtolower($html));
     }
 }
