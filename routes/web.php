@@ -53,6 +53,7 @@ Route::prefix('learn')->name('student.')->group(function () {
 
     Route::middleware(['student.auth', 'student.password', 'demo.restrictions'])->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\Student\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/corsi', [App\Http\Controllers\Student\DashboardController::class, 'courses'])->name('courses.index');
         Route::get('/classi', [App\Http\Controllers\Student\StudentClassController::class, 'index'])->name('classes.index');
         // Minerva di classe (pacchetto 6b): la chat usa /minerva/ask con school_class_id.
         Route::get('/classi/{class}/minerva', [App\Http\Controllers\Student\ChatController::class, 'showClass'])->name('classes.minerva');
