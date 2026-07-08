@@ -69,15 +69,16 @@ class InstructorTeachingModeTest extends TestCase
     // Dashboard
     // ============================================================
 
-    public function test_dashboard_shows_taught_course_with_teaching_badge(): void
+    public function test_courses_page_shows_taught_course_with_teaching_badge(): void
     {
+        // L'elenco corsi (con badge "Insegni questo corso") vive in /learn/corsi.
         $course = $this->makeCourse();
         $course->name = 'Corso Speciale Docenza';
         $course->save();
         $instructor = $this->makeTeachingInstructor($course);
 
         $this->actingAsStudent($instructor)
-            ->get(route('student.dashboard'))
+            ->get(route('student.courses.index'))
             ->assertOk()
             ->assertSee('Corso Speciale Docenza')
             ->assertSee('Insegni questo corso');

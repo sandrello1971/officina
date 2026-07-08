@@ -60,7 +60,8 @@ class DashboardGroupingTest extends TestCase
         $this->enroll($student, $c1);
         $this->enroll($student, $c2);
 
-        $res = $this->asStudent($student)->get(route('student.dashboard'));
+        // Il grouping vive nella pagina "I miei corsi" (/learn/corsi), non più nella dashboard.
+        $res = $this->asStudent($student)->get(route('student.courses.index'));
 
         $res->assertOk();
         $res->assertSee('Corso Alfa');
@@ -80,7 +81,7 @@ class DashboardGroupingTest extends TestCase
         $this->enroll($student, $c1);
         $this->enroll($student, $c2);
 
-        $res = $this->asStudent($student)->get(route('student.dashboard'));
+        $res = $this->asStudent($student)->get(route('student.courses.index'));
 
         $res->assertOk();
         // Due gruppi → le due intestazioni di categoria compaiono.
@@ -90,7 +91,7 @@ class DashboardGroupingTest extends TestCase
         $res->assertSee('Corso ISO 9001');
     }
 
-    public function test_student_dashboard_renders_icon_rail(): void
+    public function test_dashboard_is_an_overview_with_stats(): void
     {
         $student = $this->student();
         $this->enroll($student, $this->course('Corso Rail'));
@@ -98,7 +99,10 @@ class DashboardGroupingTest extends TestCase
         $res = $this->asStudent($student)->get(route('student.dashboard'));
 
         $res->assertOk();
-        // Topbar (Direzione A): classe .topbar + brand al posto del rail laterale.
+        // Dashboard = panoramica con KPI (non più l'elenco corsi raggruppato).
+        $res->assertSee('Corsi attivi');
+        $res->assertSee('Progresso medio');
+        // Topbar (Direzione A): classe .topbar + brand.
         $res->assertSee('class="topbar"', false);
         $res->assertSee('topbar-brand', false);
         // Il contratto composer resta: gli id badge per lo script Reverb.

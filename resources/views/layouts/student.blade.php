@@ -70,8 +70,8 @@
             'active' => request()->routeIs('student.dashboard'),
         ])
         @include('layouts.partials._topbar-item', [
-            'href' => '/learn/dashboard', 'label' => 'I miei corsi', 'icon' => 'course',
-            'active' => request()->is('learn/course/*'),
+            'href' => route('student.courses.index'), 'label' => 'I miei corsi', 'icon' => 'course',
+            'active' => request()->routeIs('student.courses.*') || request()->is('learn/course/*'),
         ])
         @include('layouts.partials._topbar-item', [
             'href' => route('student.documents.index'), 'label' => 'I miei documenti', 'icon' => 'document',
