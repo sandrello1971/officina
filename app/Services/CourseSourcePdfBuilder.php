@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Support\Branding\ResolvedTheme;
+use App\Support\Pdf\CopyrightTcpdf;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
@@ -52,11 +53,13 @@ class CourseSourcePdfBuilder
         $this->accentRgb = $theme ? $this->hexToRgb($theme->accent, self::TEAL) : self::TEAL;
         $this->inkRgb = $theme ? $this->hexToRgb($theme->ink, self::INK) : self::INK;
 
-        $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8');
+        $pdf = new CopyrightTcpdf('P', 'mm', 'A4', true, 'UTF-8');
         $pdf->SetCreator('Officina');
         $pdf->SetTitle($meta['title'] ?? 'Corso — sorgente strutturato');
         $pdf->setPrintHeader(false);
-        $pdf->setPrintFooter(false);
+        // Footer di copyright su ogni pagina (CopyrightTcpdf::Footer).
+        $pdf->setPrintFooter(true);
+        $pdf->SetFooterMargin(10);
         $pdf->SetMargins(20, 18, 20);
         $pdf->SetAutoPageBreak(true, 18);
         $pdf->AddPage();

@@ -96,4 +96,17 @@ class CertificatePdfBrandingTest extends TestCase
         $this->assertStringNotContainsString('Noscite SRLS', $pdfBranded,
             'L\'intestatario di default non deve sopravvivere quando platform_owner è settato');
     }
+
+    public function test_certificato_riporta_il_copyright_in_footer(): void
+    {
+        $pdf = (new CertificatePdfBuilder())->build($this->makeCertificate());
+
+        $text = (new \Smalot\PdfParser\Parser())->parseContent($pdf)->getText();
+
+        $this->assertStringContainsString(
+            'Stefano Domenico Andrello',
+            $text,
+            'Il certificato deve riportare la dicitura di copyright in footer.'
+        );
+    }
 }

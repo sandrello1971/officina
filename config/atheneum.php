@@ -29,4 +29,15 @@ return [
     | A migrazione applicata in tutti gli ambienti, è rimovibile.
     */
     'legal_representative_email' => env('LEGAL_REPRESENTATIVE_EMAIL', 'glitch@effettoglitch.it'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Copyright — dicitura di tutela del diritto d'autore
+    |--------------------------------------------------------------------------
+    | Stampata in piccolo nel footer di OGNI PDF, documento e slide generati
+    | dalla piattaforma (CourseSourcePdfBuilder, CertificatePdfBuilder e
+    | resources/python/build_pptx.py). Centralizzata qui per aggiornarla — es.
+    | l'anno — in un punto solo.
+    */
+    'copyright' => env('ATHENEUM_COPYRIGHT', '© 2026 Stefano Domenico Andrello. Tutti i diritti riservati.'),
 ];

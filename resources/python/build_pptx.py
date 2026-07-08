@@ -302,10 +302,26 @@ def _logo(slide, prs, theme):
         pass
 
 
+def footer(slide, theme, notice, on_dark):
+    """Dicitura di copyright in piccolo, centrata in fondo a OGNI slide (tutela
+    del diritto d'autore). Colore tenue scelto in base allo sfondo. Mai bloccante."""
+    if not notice:
+        return
+    try:
+        color = theme.muted_on_dark if on_dark else mix(theme.bg, theme.ink, 0.5)
+        _, tf = textbox(slide, MARGIN, SLIDE_H - 0.42, CONTENT_W, 0.32,
+                        anchor=MSO_ANCHOR.BOTTOM)
+        add_para(tf, notice, theme.body_font, 7, color, align=PP_ALIGN.CENTER,
+                 space_after=0, first=True)
+    except Exception:
+        pass
+
+
 def main():
     spec = json.load(sys.stdin)
     out_path = sys.argv[1]
     theme = Theme(spec.get("theme"))
+    copyright_notice = str(spec.get("copyright") or "").strip()
 
     prs = Presentation()
     prs.slide_width = Inches(SLIDE_W)
@@ -324,6 +340,9 @@ def main():
         except Exception:
             # Difesa: l'errore di un renderer non rompe la presentazione.
             render_bullets_clean(slide, prs, theme, s)
+
+        # La cover ha sfondo scuro (theme.ink), gli altri layout sfondo chiaro.
+        footer(slide, theme, copyright_notice, on_dark=(layout == "cover"))
 
         notes = s.get("notes")
         if notes:

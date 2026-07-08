@@ -161,6 +161,20 @@ class CertificatePdfBuilder
         $pdf->SetXY($blockX, $qrY + $qrSize + 5.0);
         $pdf->MultiCell($blockW, 2.5, $verifyUrl, 0, 'C');
 
+        // === Copyright (tutela diritto d'autore) ===
+        // In piccolo, grigio chiaro, centrato in fondo alla pagina. Scritto a
+        // coordinate fisse (auto page-break è OFF) per non interferire col
+        // layout del template importato. 'intervariable' (Inter) ha il glifo ©.
+        $notice = trim((string) config('atheneum.copyright', ''));
+        if ($notice !== '') {
+            $pageH = $isLandscape ? $portraitW : $portraitH;
+            $pdf->SetFont('intervariable', '', 6);
+            $pdf->SetTextColor(150, 158, 158);
+            $pdf->setFontSpacing(0);
+            $pdf->SetXY(0, $pageH - 6.0);
+            $pdf->Cell($pageW, 4, $notice, 0, 0, 'C');
+        }
+
         // === Output bytes ===
         // 'S' = ritorna come stringa (i bytes del PDF)
         return $pdf->Output('', 'S');
