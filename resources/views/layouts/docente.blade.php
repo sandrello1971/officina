@@ -7,7 +7,7 @@
     <title>@yield('title', 'Area docente') — {{ $branding->instanceName() }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-    @include('layouts.partials._rail-styles')
+    @include('layouts.partials._topbar-styles')
     <style>
         /* Feedback UX: spinner per le operazioni async (vedi CLAUDE.md). */
         @keyframes nosc-spin { to { transform: rotate(360deg); } }
@@ -25,63 +25,77 @@
         ->whereHas('conversation', fn ($q) => $q->where('teacher_id', session('student_id')))
         ->count();
 @endphp
-<aside class="rail">
-    <a href="{{ route('docente.dashboard') }}" class="rail-mono" title="{{ $branding->instanceName() }} — Area docente">GL</a>
+<nav class="topbar">
+    <button type="button" class="mobile-toggle" data-toggle="#docente-nav" title="Menu" aria-label="Menu">
+        @include('layouts.partials._icon', ['name' => 'dashboard', 'size' => 22])
+    </button>
+    <a href="{{ route('docente.dashboard') }}" class="topbar-brand" title="{{ $branding->instanceName() }} — Area docente">
+        <img src="{{ $branding->logoUrl() }}" alt="{{ $branding->ownerLabel() }}">
+    </a>
 
-    <div class="rail-scroll">
-        @include('layouts.partials._rail-item', [
-            'href' => route('docente.dashboard'), 'icon' => 'dashboard', 'title' => 'Dashboard',
+    <div class="topbar-nav" id="docente-nav">
+        @include('layouts.partials._topbar-item', [
+            'href' => route('docente.dashboard'), 'label' => 'Dashboard', 'icon' => 'dashboard',
             'active' => request()->routeIs('docente.dashboard'),
         ])
-        @include('layouts.partials._rail-item', [
-            'href' => route('docente.classes.index'), 'icon' => 'classes', 'title' => 'Classi',
+        @include('layouts.partials._topbar-item', [
+            'href' => route('docente.classes.index'), 'label' => 'Classi', 'icon' => 'classes',
             'active' => request()->routeIs('docente.classes.*'),
         ])
-        @include('layouts.partials._rail-item', [
-            'href' => route('docente.topics.index'), 'icon' => 'topics', 'title' => 'Argomenti',
+        @include('layouts.partials._topbar-item', [
+            'href' => route('docente.topics.index'), 'label' => 'Argomenti', 'icon' => 'topics',
             'active' => request()->routeIs('docente.topics.*') || request()->routeIs('docente.lessons.*'),
         ])
-        @include('layouts.partials._rail-item', [
-            'href' => route('docente.materials.index'), 'icon' => 'materials', 'title' => 'Materiali',
+        @include('layouts.partials._topbar-item', [
+            'href' => route('docente.materials.index'), 'label' => 'Materiali', 'icon' => 'materials',
             'active' => request()->routeIs('docente.materials.*') && !request()->routeIs('docente.materials.shared.*'),
         ])
-        @include('layouts.partials._rail-item', [
-            'href' => route('docente.biblioteca.index'), 'icon' => 'library', 'title' => 'Biblioteca',
+        @include('layouts.partials._topbar-item', [
+            'href' => route('docente.biblioteca.index'), 'label' => 'Biblioteca', 'icon' => 'library',
             'active' => request()->routeIs('docente.biblioteca.*') || request()->routeIs('docente.materials.shared.*'),
         ])
-        @include('layouts.partials._rail-item', [
-            'href' => route('docente.messages.index'), 'icon' => 'messages', 'title' => 'Messaggi',
+        @include('layouts.partials._topbar-item', [
+            'href' => route('docente.messages.index'), 'label' => 'Messaggi', 'icon' => 'messages',
             'active' => request()->routeIs('docente.messages.*'),
             'badgeId' => 'docente-unread-badge', 'badgeCount' => $docenteUnread,
         ])
-        <a href="#" x-data @click.prevent="$dispatch('minerva-toggle')" class="rail-item" title="Assistente AI — {{ atheneum_setting('assistant_name', 'Minerva') }}">
-            @include('layouts.partials._icon', ['name' => 'ai'])
-        </a>
-    </div>{{-- /.rail-scroll --}}
-
-    <div class="rail-footer">
-        @if($identity['courses'] ?? false)
-            @include('layouts.partials._rail-item', ['href' => route('student.dashboard'), 'icon' => 'course', 'title' => 'Cambia contesto: I miei corsi'])
-        @endif
-        @if($identity['secretary'] ?? false)
-            @include('layouts.partials._rail-item', ['href' => route('scuola.dashboard'), 'icon' => 'secretary', 'title' => 'Cambia contesto: Segreteria'])
-        @endif
-
-        <div class="rail-avatar" title="{{ session('student_name') }} · {{ session('student_email') }} (Docente)">
-            {{ strtoupper(substr(session('student_name', 'D'), 0, 1)) }}
-        </div>
-        <form method="POST" action="/learn/logout">
-            @csrf
-            <button type="submit" class="rail-item" title="Esci">
-                @include('layouts.partials._icon', ['name' => 'logout'])
-            </button>
-        </form>
     </div>
-</aside>
+
+    <div class="topbar-actions">
+        <button type="button" x-data @click="$dispatch('minerva-toggle')" class="topbar-item" title="Assistente AI — {{ atheneum_setting('assistant_name', 'Minerva') }}">
+            @include('layouts.partials._icon', ['name' => 'ai', 'size' => 20])
+        </button>
+
+        <div class="topbar-usermenu">
+            <button type="button" class="topbar-avatar" data-toggle="#docente-usermenu" title="{{ session('student_name') }}">
+                {{ strtoupper(substr(session('student_name', 'D'), 0, 1)) }}
+            </button>
+            <div id="docente-usermenu" class="topbar-menu">
+                <div class="um-head">
+                    <div class="um-name">{{ session('student_name') }}</div>
+                    <div class="um-email">{{ session('student_email') }} · Docente</div>
+                </div>
+                @if(($identity['courses'] ?? false) || ($identity['secretary'] ?? false))
+                <div class="um-label">Cambia contesto</div>
+                @if($identity['courses'] ?? false)
+                <a href="{{ route('student.dashboard') }}">@include('layouts.partials._icon', ['name' => 'course', 'size' => 18]) I miei corsi</a>
+                @endif
+                @if($identity['secretary'] ?? false)
+                <a href="{{ route('scuola.dashboard') }}">@include('layouts.partials._icon', ['name' => 'secretary', 'size' => 18]) Segreteria</a>
+                @endif
+                @endif
+                <div class="um-label">Account</div>
+                <form method="POST" action="/learn/logout">
+                    @csrf
+                    <button type="submit" class="um-logout">@include('layouts.partials._icon', ['name' => 'logout', 'size' => 18]) Esci</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</nav>
 
 <div class="main-content">
     <div style="background:white; padding:12px 24px; border-bottom:1px solid #C8D0D0; display:flex; align-items:center; gap:12px;">
-        <button onclick="document.querySelector('.rail').classList.toggle('open')" class="mobile-toggle" style="display:none; background:none; border:none; cursor:pointer; color:#55B1AE; font-size:1.2rem;">&#9776;</button>
         <div style="font-size:0.875rem; color:#8A9696;">@yield('breadcrumb', 'Area docente')</div>
     </div>
 
@@ -237,5 +251,6 @@ function docenteMinervaBubble() {
 </script>
 @endpush
 @stack('scripts')
+@include('layouts.partials._topbar-scripts')
 </body>
 </html>

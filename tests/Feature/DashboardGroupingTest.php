@@ -98,9 +98,9 @@ class DashboardGroupingTest extends TestCase
         $res = $this->asStudent($student)->get(route('student.dashboard'));
 
         $res->assertOk();
-        // Nuovo rail: classe .rail e monogramma GL al posto della vecchia .sidebar.
-        $res->assertSee('class="rail"', false);
-        $res->assertSee('rail-mono', false);
+        // Topbar (Direzione A): classe .topbar + brand al posto del rail laterale.
+        $res->assertSee('class="topbar"', false);
+        $res->assertSee('topbar-brand', false);
         // Il contratto composer resta: gli id badge per lo script Reverb.
         $res->assertSee('sidebar-unread-badge', false);
         $res->assertSee('sidebar-announcements-badge', false);
@@ -113,7 +113,7 @@ class DashboardGroupingTest extends TestCase
         $res = $this->asStudent($prof)->get(route('docente.dashboard'));
 
         $res->assertOk();
-        $res->assertSee('class="rail"', false);
+        $res->assertSee('class="topbar"', false);
     }
 
     public function test_scuola_dashboard_renders_200_with_rail(): void
@@ -124,6 +124,6 @@ class DashboardGroupingTest extends TestCase
         $res = $this->asStudent($secretary)->get(route('scuola.dashboard'));
 
         $res->assertOk();
-        $res->assertSee('class="rail"', false);
+        $res->assertSee('class="topbar"', false);
     }
 }
