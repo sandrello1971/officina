@@ -33,6 +33,8 @@
         <a href="{{ route('admin.scuole.index') }}" class="nav-item {{ request()->routeIs('admin.scuole.*') ? 'active' : '' }}">&#127979; Scuole</a>
         <a href="/admin/certificates/signatures" class="nav-item {{ request()->routeIs('admin.certificates.signatures.*') ? 'active' : '' }}">&#9997; Firma Certificati</a>
         <a href="/admin/courses" class="nav-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">&#128218; Corsi</a>
+        <a href="{{ route('admin.course-categories.index') }}" class="nav-item {{ request()->routeIs('admin.course-categories.*') ? 'active' : '' }}">&#127991; Categorie corsi</a>
+        <a href="{{ route('admin.course-tags.index') }}" class="nav-item {{ request()->routeIs('admin.course-tags.*') ? 'active' : '' }}">&#128278; Tag corsi</a>
         <a href="{{ route('admin.freshness.proposals.index') }}" class="nav-item {{ request()->routeIs('admin.freshness.*') ? 'active' : '' }}">&#128260; Aggiornamenti corsi</a>
         @if(config('services.p26.enabled'))
         <a href="{{ route('admin.sources.index') }}" class="nav-item {{ request()->routeIs('admin.sources.*') ? 'active' : '' }}">&#128218; Fonti attendibili</a>

@@ -444,6 +444,17 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::get('courses/ingest/processing', [App\Http\Controllers\Admin\CourseIngestController::class, 'processing'])->name('courses.ingest.processing');
     Route::get('courses/ingest/status', [App\Http\Controllers\Admin\CourseIngestController::class, 'status'])->name('courses.ingest.status');
 
+    // Tassonomia corsi — categorie (esclusiva) e tag (trasversali). CRUD minimale.
+    Route::get('course-categories', [App\Http\Controllers\Admin\CourseCategoryController::class, 'index'])->name('course-categories.index');
+    Route::post('course-categories', [App\Http\Controllers\Admin\CourseCategoryController::class, 'store'])->name('course-categories.store');
+    Route::put('course-categories/{course_category}', [App\Http\Controllers\Admin\CourseCategoryController::class, 'update'])->name('course-categories.update');
+    Route::delete('course-categories/{course_category}', [App\Http\Controllers\Admin\CourseCategoryController::class, 'destroy'])->name('course-categories.destroy');
+
+    Route::get('course-tags', [App\Http\Controllers\Admin\CourseTagController::class, 'index'])->name('course-tags.index');
+    Route::post('course-tags', [App\Http\Controllers\Admin\CourseTagController::class, 'store'])->name('course-tags.store');
+    Route::put('course-tags/{course_tag}', [App\Http\Controllers\Admin\CourseTagController::class, 'update'])->name('course-tags.update');
+    Route::delete('course-tags/{course_tag}', [App\Http\Controllers\Admin\CourseTagController::class, 'destroy'])->name('course-tags.destroy');
+
     Route::resource('courses', App\Http\Controllers\Admin\CourseController::class);
     Route::resource('courses.modules', App\Http\Controllers\Admin\ModuleController::class);
     Route::resource('courses.modules.materials', App\Http\Controllers\Admin\MaterialController::class);

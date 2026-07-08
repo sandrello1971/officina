@@ -81,6 +81,13 @@
                            style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
                 </div>
 
+                @include('admin.courses._taxonomy-fields', [
+                    'categories'     => $categories,
+                    'tags'           => $tags,
+                    'selectedCat'    => old('course_category_id'),
+                    'selectedTagIds' => old('tags', []),
+                ])
+
                 <div>
                     <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                         <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
