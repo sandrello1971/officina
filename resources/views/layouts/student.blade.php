@@ -36,157 +36,109 @@
         window.currentUserId = '{{ session('student_id') }}';
     </script>
     @endif
+    @include('layouts.partials._rail-styles')
     <style>
-        [x-cloak] { display: none !important; }
-        body { font-family: 'Calibri', system-ui, sans-serif; }
-        /* Sidebar: flexbox column. Header + user-card + nav scrollabili
-           (overflow-y:auto sul .sidebar-scroll), footer logout fisso in
-           basso (flex-shrink:0). Senza questo, con molte voci nav la
-           nav esce dal viewport e il bottone "Esci" (in absolute) le copre. */
-        .sidebar { width: 260px; height: 100vh; background: #1A1F1F; position: fixed; left: 0; top: 0; bottom: 0; z-index: 40; display: flex; flex-direction: column; }
-        .sidebar-scroll { flex: 1; overflow-y: auto; min-height: 0; }
-        .sidebar-footer { flex-shrink: 0; padding: 16px 20px; border-top: 1px solid rgba(85,177,174,0.1); background: #1A1F1F; }
-        .main-content { margin-left: 260px; min-height: 100vh; background: #F5F7F7; }
-        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #8A9696; font-size: 0.875rem; transition: all 0.2s; border-radius: 6px; margin: 2px 8px; text-decoration:none; }
-        .nav-item:hover { background: rgba(85,177,174,0.1); color: #55B1AE; }
-        .nav-item.active { background: rgba(85,177,174,0.15); color: #55B1AE; font-weight: 600; }
+        /* Progress bar delle card corso (usata dalla dashboard studente). */
         .progress-bar { height: 6px; background: #C8D0D0; border-radius: 3px; overflow: hidden; }
         .progress-fill { height: 100%; background: #55B1AE; border-radius: 3px; transition: width 0.3s; }
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
-            .sidebar.open { transform: translateX(0); }
-            .main-content { margin-left: 0; }
-            .mobile-toggle { display: inline-flex !important; }
-        }
     </style>
     @livewireStyles
     @stack('styles')
 </head>
 <body>
 
-<aside class="sidebar">
-    {{-- Scrollabile: prende tutta l'altezza disponibile meno il footer.
-         Senza questo wrapper, con molte voci nav (es. instructor: KB +
-         Documenti discenti) le ultime finiscono coperte dal bottone Esci. --}}
-    <div class="sidebar-scroll">
-    <div style="padding: 24px 20px; border-bottom: 1px solid rgba(85,177,174,0.2);">
-        <div style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; letter-spacing:0.2em; line-height:1; color:#f2efe9; font-size:1.3rem; margin-bottom:8px;">GLITCH</div>
-        <div style="color:#55B1AE; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;">{{ atheneum_setting('instance_name', 'Officina') }}</div>
-        <div style="color:#8A9696; font-size:0.7rem; font-style:italic;">{{ atheneum_setting('platform_tagline', 'Il Rumore Che Serve') }}</div>
-    </div>
+@php
+    // "Impostazioni formatore" a chiunque insegni almeno un corso (DB-based, non
+    // role-based: copre l'admin che insegna senza role=instructor).
+    $isAnyCourseInstructor = $sidebarStudent
+        && \DB::table('course_instructor')->where('instructor_id', $sidebarStudent->id)->exists();
+    $isInstructor = $sidebarStudent && $sidebarStudent->isInstructor();
+    $assistantName = atheneum_setting('assistant_name', 'Minerva');
+@endphp
+<aside class="rail">
+    <a href="/learn/dashboard" class="rail-mono" title="{{ atheneum_setting('instance_name', 'Officina') }} — Dashboard">GL</a>
 
-    <div style="padding: 16px 20px; border-bottom: 1px solid rgba(85,177,174,0.1);">
-        <div style="width:36px; height:36px; border-radius:50%; background:#55B1AE; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:0.875rem; margin-bottom:8px;">
-            {{ strtoupper(substr(session('student_name', 'S'), 0, 1)) }}
-        </div>
-        <div style="color:#E8EDED; font-size:0.8rem; font-weight:600;">{{ session('student_name') }}</div>
-        <div style="color:#8A9696; font-size:0.7rem;">{{ session('student_email') }}</div>
-        @if($sidebarStudent && $sidebarStudent->is_demo)
-        <div style="margin-top:6px; padding:3px 8px; background:rgba(226,138,83,0.2); border:1px solid #E28A53; border-radius:4px; display:inline-block;">
-            <span style="color:#E28A53; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Versione Demo</span>
-        </div>
-        @endif
-    </div>
+    <div class="rail-scroll">
+        @include('layouts.partials._rail-item', [
+            'href' => '/learn/dashboard', 'icon' => 'dashboard', 'title' => 'Dashboard',
+            'active' => request()->routeIs('student.dashboard'),
+        ])
 
-    <nav style="padding: 12px 0;">
-        <a href="/learn/dashboard" class="nav-item {{ request()->routeIs('student.dashboard') ? 'active' : '' }}">
-            <span>&#9632;</span> Dashboard
-        </a>
+        {{-- Corsi navigabili: ognuno una voce (il nome nel tooltip). I corsi
+             insegnati portano "— insegni" nel title e l'accento arancio. --}}
+        @foreach($sidebarCourses as $sidebarCourse)
+            @php $teaching = ($sidebarCourse->access_kind ?? 'enrolled') === 'teaching'; @endphp
+            @include('layouts.partials._rail-item', [
+                'href'     => '/learn/course/' . $sidebarCourse->slug,
+                'icon'     => 'course',
+                'title'    => $sidebarCourse->name . ($teaching ? ' — insegni' : ''),
+                'active'   => request()->is('learn/course/' . $sidebarCourse->slug . '*'),
+                'teaching' => $teaching,
+            ])
+        @endforeach
 
-        @if($sidebarCourses->isNotEmpty())
-            @foreach($sidebarCourses as $sidebarCourse)
-            <a href="/learn/course/{{ $sidebarCourse->slug }}"
-               class="nav-item {{ request()->is('learn/course/'.$sidebarCourse->slug.'*') ? 'active' : '' }}">
-                <span>{{ $sidebarCourse->icon }}</span>
-                <span>{{ $sidebarCourse->name }}</span>
-                @if(($sidebarCourse->access_kind ?? 'enrolled') === 'teaching')
-                <span style="margin-left:auto; font-size:0.6rem; font-weight:700;
-                             color:#E28A53; text-transform:uppercase; letter-spacing:0.05em;">
-                    insegni
-                </span>
-                @endif
-            </a>
-            @endforeach
-        @endif
+        <div class="rail-sep"></div>
 
-        <div style="margin: 16px 8px 4px; padding: 0 12px;">
-            <div style="color:#4A5252; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Supporto</div>
-        </div>
+        @include('layouts.partials._rail-item', [
+            'href' => route('student.documents.index'), 'icon' => 'document', 'title' => 'I miei documenti',
+            'active' => request()->routeIs('student.documents.*'),
+        ])
+        @include('layouts.partials._rail-item', [
+            'href' => route('student.messages.index'), 'icon' => 'messages', 'title' => 'Messaggi',
+            'active' => request()->routeIs('student.messages.*'),
+            'badgeId' => 'sidebar-unread-badge', 'badgeCount' => $unreadMessages ?? 0,
+        ])
+        @include('layouts.partials._rail-item', [
+            'href' => route('student.announcements.index'), 'icon' => 'announcements', 'title' => 'Annunci',
+            'active' => request()->routeIs('student.announcements.*'),
+            'badgeId' => 'sidebar-announcements-badge', 'badgeCount' => $unreadAnnouncements ?? 0,
+        ])
+
+        {{-- Assistente AI: inibito server-side durante l'esame. --}}
         @if(!empty($examLock))
-        <a href="#"
-           title="{{ atheneum_setting('assistant_name', 'Minerva') }} non è disponibile durante un esame"
-           class="nav-item"
-           style="opacity:0.4; cursor:not-allowed; pointer-events:none;">
-            <span>&#10022;</span> Assistente AI
-            <span style="margin-left:auto; font-size:0.6rem; color:#E28A53; text-transform:uppercase;">esame</span>
+        <a href="#" class="rail-item disabled" title="{{ $assistantName }} non è disponibile durante un esame">
+            @include('layouts.partials._icon', ['name' => 'ai'])
         </a>
         @else
-        <a href="#" x-data @click.prevent="$dispatch('minerva-toggle')" class="nav-item">
-            <span>&#10022;</span> Assistente AI
+        <a href="#" x-data @click.prevent="$dispatch('minerva-toggle')" class="rail-item" title="Assistente AI — {{ $assistantName }}">
+            @include('layouts.partials._icon', ['name' => 'ai'])
         </a>
         @endif
 
-        <a href="{{ route('student.documents.index') }}"
-           class="nav-item {{ request()->routeIs('student.documents.*') ? 'active' : '' }}">
-            <span>📎</span> I miei documenti
-        </a>
-
-        <a href="{{ route('student.messages.index') }}"
-           class="nav-item {{ request()->routeIs('student.messages.*') ? 'active' : '' }}">
-            <span>✉️</span> Messaggi
-            <span id="sidebar-unread-badge"
-                  style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center; display:{{ !empty($unreadMessages) ? 'inline-block' : 'none' }};">{{ $unreadMessages ?? 0 }}</span>
-        </a>
-
-        <a href="{{ route('student.announcements.index') }}"
-           class="nav-item {{ request()->routeIs('student.announcements.*') ? 'active' : '' }}">
-            <span>📢</span> Annunci
-            <span id="sidebar-announcements-badge"
-                  style="margin-left:auto; background:#E28A53; color:#FFF; font-size:0.65rem; font-weight:700; padding:1px 7px; border-radius:10px; min-width:18px; text-align:center; display:{{ !empty($unreadAnnouncements) ? 'inline-block' : 'none' }};">{{ $unreadAnnouncements ?? 0 }}</span>
-        </a>
-
-        @php
-            // Mostra "Impostazioni" a chiunque insegni almeno un corso (DB-based,
-            // non role-based: copre il caso admin che insegna senza role=instructor)
-            $isAnyCourseInstructor = $sidebarStudent
-                && \DB::table('course_instructor')->where('instructor_id', $sidebarStudent->id)->exists();
-        @endphp
         @if($isAnyCourseInstructor)
-        <a href="{{ route('student.instructor_settings.index') }}"
-           class="nav-item {{ request()->routeIs('student.instructor_settings.*') ? 'active' : '' }}">
-            <span>⚙️</span> Impostazioni formatore
-        </a>
+            @include('layouts.partials._rail-item', [
+                'href' => route('student.instructor_settings.index'), 'icon' => 'settings', 'title' => 'Impostazioni formatore',
+                'active' => request()->routeIs('student.instructor_settings.*'),
+            ])
+        @endif
+        @if($isInstructor)
+            @include('layouts.partials._rail-item', [
+                'href' => route('student.knowledge_base.index'), 'icon' => 'kb', 'title' => 'Knowledge Base',
+                'active' => request()->routeIs('student.knowledge_base.*'),
+            ])
+            @include('layouts.partials._rail-item', [
+                'href' => route('student.instructor_documents.index'), 'icon' => 'folder', 'title' => 'Documenti discenti',
+                'active' => request()->routeIs('student.instructor_documents.*'),
+            ])
+        @endif
+    </div>{{-- /.rail-scroll --}}
+
+    <div class="rail-footer">
+        @if($identity['professor'] ?? false)
+            @include('layouts.partials._rail-item', ['href' => route('docente.dashboard'), 'icon' => 'teachers', 'title' => 'Cambia contesto: Area docente'])
+        @endif
+        @if($identity['secretary'] ?? false)
+            @include('layouts.partials._rail-item', ['href' => route('scuola.dashboard'), 'icon' => 'secretary', 'title' => 'Cambia contesto: Segreteria'])
         @endif
 
-        @if($sidebarStudent && $sidebarStudent->isInstructor())
-        <a href="{{ route('student.knowledge_base.index') }}"
-           class="nav-item {{ request()->routeIs('student.knowledge_base.*') ? 'active' : '' }}">
-            <span>📓</span> Knowledge Base
-        </a>
-        <a href="{{ route('student.instructor_documents.index') }}"
-           class="nav-item {{ request()->routeIs('student.instructor_documents.*') ? 'active' : '' }}">
-            <span>📂</span> Documenti discenti
-        </a>
-        @endif
-    </nav>
-    </div>{{-- /.sidebar-scroll --}}
-
-    <div class="sidebar-footer">
-        @if(($identity['professor'] ?? false) || ($identity['secretary'] ?? false))
-        <div style="margin-bottom:8px;">
-            <div style="color:#8A9696; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px;">Cambia contesto</div>
-            @if($identity['professor'] ?? false)
-                <a href="{{ route('docente.dashboard') }}" style="display:block; text-align:center; padding:7px; margin-bottom:4px; background:rgba(85,177,174,0.1); color:#55B1AE; border:1px solid rgba(85,177,174,0.3); border-radius:6px; font-size:0.78rem; text-decoration:none;">&#9788; Area docente</a>
-            @endif
-            @if($identity['secretary'] ?? false)
-                <a href="{{ route('scuola.dashboard') }}" style="display:block; text-align:center; padding:7px; background:rgba(85,177,174,0.1); color:#55B1AE; border:1px solid rgba(85,177,174,0.3); border-radius:6px; font-size:0.78rem; text-decoration:none;">&#128188; Segreteria</a>
-            @endif
+        <div class="rail-avatar {{ ($sidebarStudent && $sidebarStudent->is_demo) ? 'demo' : '' }}"
+             title="{{ session('student_name') }} · {{ session('student_email') }}{{ ($sidebarStudent && $sidebarStudent->is_demo) ? ' (Demo)' : '' }}">
+            {{ strtoupper(substr(session('student_name', 'S'), 0, 1)) }}
         </div>
-        @endif
         <form method="POST" action="/learn/logout">
             @csrf
-            <button type="submit" style="width:100%; padding:8px; background:rgba(226,138,83,0.1); color:#E28A53; border:1px solid rgba(226,138,83,0.3); border-radius:6px; font-size:0.8rem; cursor:pointer;">
-                Esci
+            <button type="submit" class="rail-item" title="Esci">
+                @include('layouts.partials._icon', ['name' => 'logout'])
             </button>
         </form>
     </div>
@@ -194,17 +146,13 @@
 
 <div class="main-content">
     <div style="background:white; padding:12px 24px; border-bottom:1px solid #C8D0D0; display:flex; align-items:center; gap:12px;">
-        <button onclick="document.querySelector('.sidebar').classList.toggle('open')" class="mobile-toggle" style="display:none; background:none; border:none; cursor:pointer; color:#55B1AE; font-size:1.2rem;">&#9776;</button>
+        <button onclick="document.querySelector('.rail').classList.toggle('open')" class="mobile-toggle" style="display:none; background:none; border:none; cursor:pointer; color:#55B1AE; font-size:1.2rem;">&#9776;</button>
         <div style="font-size:0.875rem; color:#8A9696;">
             @yield('breadcrumb', 'Dashboard')
         </div>
     </div>
 
-    @if(session('success'))
-    <div style="margin:16px 24px; padding:12px 16px; background:#E8F5F5; border-left:4px solid #55B1AE; border-radius:6px; color:#3A8C89; font-size:0.875rem;">
-        &#10003; {{ session('success') }}
-    </div>
-    @endif
+    @include('layouts.partials._flash')
 
     <div style="padding:24px;">
         @yield('content')

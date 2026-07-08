@@ -7,24 +7,7 @@
     <title>@yield('title', 'Area docente') — {{ $branding->instanceName() }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-    <style>
-        body { font-family: 'Calibri', system-ui, sans-serif; }
-        .sidebar { width: 260px; height: 100vh; background: #1A1F1F; position: fixed; left: 0; top: 0; bottom: 0; z-index: 40; display: flex; flex-direction: column; }
-        .sidebar-scroll { flex: 1; overflow-y: auto; min-height: 0; }
-        .sidebar-footer { flex-shrink: 0; padding: 16px 20px; border-top: 1px solid rgba(85,177,174,0.1); background: #1A1F1F; }
-        .main-content { margin-left: 260px; min-height: 100vh; background: #F5F7F7; }
-        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #8A9696; font-size: 0.875rem; transition: all 0.2s; border-radius: 6px; margin: 2px 8px; text-decoration:none; }
-        .nav-item:hover { background: rgba(85,177,174,0.1); color: #55B1AE; }
-        .nav-item.active { background: rgba(85,177,174,0.15); color: #55B1AE; font-weight: 600; }
-        /* Voce non ancora implementata: visibile ma non cliccabile */
-        .nav-item.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
-            .sidebar.open { transform: translateX(0); }
-            .main-content { margin-left: 0; }
-            .mobile-toggle { display: inline-flex !important; }
-        }
-    </style>
+    @include('layouts.partials._rail-styles')
     <style>
         /* Feedback UX: spinner per le operazioni async (vedi CLAUDE.md). */
         @keyframes nosc-spin { to { transform: rotate(360deg); } }
@@ -35,80 +18,62 @@
 </head>
 <body>
 
-<aside class="sidebar">
-    <div class="sidebar-scroll">
-    <div style="padding: 24px 20px; border-bottom: 1px solid rgba(85,177,174,0.2);">
-        <img src="{{ $branding->logoUrl() }}" alt="{{ $branding->ownerLabel() }}" style="height:36px; filter:brightness(0) invert(1); margin-bottom:8px;">
-        <div style="color:#55B1AE; font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;">{{ $branding->instanceName() }}</div>
-        <div style="color:#8A9696; font-size:0.7rem; font-style:italic;">Area docente</div>
-    </div>
+@php
+    // Messaggi non letti del docente (thread di tutte le sue classi).
+    $docenteUnread = (int) \App\Models\ClassMessage::whereNull('read_at')
+        ->where('sender_id', '!=', session('student_id'))
+        ->whereHas('conversation', fn ($q) => $q->where('teacher_id', session('student_id')))
+        ->count();
+@endphp
+<aside class="rail">
+    <a href="{{ route('docente.dashboard') }}" class="rail-mono" title="{{ $branding->instanceName() }} — Area docente">GL</a>
 
-    <div style="padding: 16px 20px; border-bottom: 1px solid rgba(85,177,174,0.1);">
-        <div style="width:36px; height:36px; border-radius:50%; background:#55B1AE; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:0.875rem; margin-bottom:8px;">
+    <div class="rail-scroll">
+        @include('layouts.partials._rail-item', [
+            'href' => route('docente.dashboard'), 'icon' => 'dashboard', 'title' => 'Dashboard',
+            'active' => request()->routeIs('docente.dashboard'),
+        ])
+        @include('layouts.partials._rail-item', [
+            'href' => route('docente.classes.index'), 'icon' => 'classes', 'title' => 'Classi',
+            'active' => request()->routeIs('docente.classes.*'),
+        ])
+        @include('layouts.partials._rail-item', [
+            'href' => route('docente.topics.index'), 'icon' => 'topics', 'title' => 'Argomenti',
+            'active' => request()->routeIs('docente.topics.*') || request()->routeIs('docente.lessons.*'),
+        ])
+        @include('layouts.partials._rail-item', [
+            'href' => route('docente.materials.index'), 'icon' => 'materials', 'title' => 'Materiali',
+            'active' => request()->routeIs('docente.materials.*') && !request()->routeIs('docente.materials.shared.*'),
+        ])
+        @include('layouts.partials._rail-item', [
+            'href' => route('docente.biblioteca.index'), 'icon' => 'library', 'title' => 'Biblioteca',
+            'active' => request()->routeIs('docente.biblioteca.*') || request()->routeIs('docente.materials.shared.*'),
+        ])
+        @include('layouts.partials._rail-item', [
+            'href' => route('docente.messages.index'), 'icon' => 'messages', 'title' => 'Messaggi',
+            'active' => request()->routeIs('docente.messages.*'),
+            'badgeId' => 'docente-unread-badge', 'badgeCount' => $docenteUnread,
+        ])
+        <a href="#" x-data @click.prevent="$dispatch('minerva-toggle')" class="rail-item" title="Assistente AI — {{ atheneum_setting('assistant_name', 'Minerva') }}">
+            @include('layouts.partials._icon', ['name' => 'ai'])
+        </a>
+    </div>{{-- /.rail-scroll --}}
+
+    <div class="rail-footer">
+        @if($identity['courses'] ?? false)
+            @include('layouts.partials._rail-item', ['href' => route('student.dashboard'), 'icon' => 'course', 'title' => 'Cambia contesto: I miei corsi'])
+        @endif
+        @if($identity['secretary'] ?? false)
+            @include('layouts.partials._rail-item', ['href' => route('scuola.dashboard'), 'icon' => 'secretary', 'title' => 'Cambia contesto: Segreteria'])
+        @endif
+
+        <div class="rail-avatar" title="{{ session('student_name') }} · {{ session('student_email') }} (Docente)">
             {{ strtoupper(substr(session('student_name', 'D'), 0, 1)) }}
         </div>
-        <div style="color:#E8EDED; font-size:0.8rem; font-weight:600;">{{ session('student_name') }}</div>
-        <div style="color:#8A9696; font-size:0.7rem;">{{ session('student_email') }}</div>
-        <div style="margin-top:6px; padding:3px 8px; background:rgba(85,177,174,0.15); border:1px solid #55B1AE; border-radius:4px; display:inline-block;">
-            <span style="color:#55B1AE; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Docente</span>
-        </div>
-    </div>
-
-    <nav style="padding: 12px 0;">
-        <a href="{{ route('docente.dashboard') }}"
-           class="nav-item {{ request()->routeIs('docente.dashboard') ? 'active' : '' }}">
-            <span>&#9632;</span> Dashboard
-        </a>
-        <a href="{{ route('docente.classes.index') }}"
-           class="nav-item {{ request()->routeIs('docente.classes.*') ? 'active' : '' }}">
-            <span>&#128218;</span> Classi
-        </a>
-        <a href="{{ route('docente.topics.index') }}"
-           class="nav-item {{ request()->routeIs('docente.topics.*') || request()->routeIs('docente.lessons.*') ? 'active' : '' }}">
-            <span>&#128214;</span> Argomenti
-        </a>
-        <a href="{{ route('docente.materials.index') }}"
-           class="nav-item {{ request()->routeIs('docente.materials.*') && !request()->routeIs('docente.materials.shared.*') ? 'active' : '' }}">
-            <span>&#128196;</span> Materiali
-        </a>
-        <a href="{{ route('docente.biblioteca.index') }}"
-           class="nav-item {{ request()->routeIs('docente.biblioteca.*') || request()->routeIs('docente.materials.shared.*') ? 'active' : '' }}">
-            <span>&#127963;</span> Biblioteca
-        </a>
-        @php
-            // Messaggi non letti del docente (thread di tutte le sue classi).
-            $docenteUnread = (int) \App\Models\ClassMessage::whereNull('read_at')
-                ->where('sender_id', '!=', session('student_id'))
-                ->whereHas('conversation', fn ($q) => $q->where('teacher_id', session('student_id')))
-                ->count();
-        @endphp
-        <a href="{{ route('docente.messages.index') }}"
-           class="nav-item {{ request()->routeIs('docente.messages.*') ? 'active' : '' }}" style="justify-content:flex-start;">
-            <span>&#9993;</span> Messaggi
-            @if($docenteUnread > 0)
-                <span style="margin-left:auto; font-size:0.66rem; font-weight:700; color:#fff; background:#E28A53; border-radius:10px; padding:2px 8px;">{{ $docenteUnread }}</span>
-            @endif
-        </a>
-        <a href="#" x-data @click.prevent="$dispatch('minerva-toggle')" class="nav-item"><span>&#10022;</span> Assistente AI</a>
-    </nav>
-    </div>{{-- /.sidebar-scroll --}}
-
-    <div class="sidebar-footer">
-        @if(($identity['courses'] ?? false) || ($identity['secretary'] ?? false))
-        <div style="margin-bottom:8px;">
-            <div style="color:#8A9696; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px;">Cambia contesto</div>
-            @if($identity['courses'] ?? false)
-                <a href="{{ route('student.dashboard') }}" style="display:block; text-align:center; padding:7px; margin-bottom:4px; background:rgba(85,177,174,0.1); color:#55B1AE; border:1px solid rgba(85,177,174,0.3); border-radius:6px; font-size:0.78rem; text-decoration:none;">&#128218; I miei corsi</a>
-            @endif
-            @if($identity['secretary'] ?? false)
-                <a href="{{ route('scuola.dashboard') }}" style="display:block; text-align:center; padding:7px; background:rgba(85,177,174,0.1); color:#55B1AE; border:1px solid rgba(85,177,174,0.3); border-radius:6px; font-size:0.78rem; text-decoration:none;">&#128188; Segreteria</a>
-            @endif
-        </div>
-        @endif
         <form method="POST" action="/learn/logout">
             @csrf
-            <button type="submit" style="width:100%; padding:8px; background:rgba(226,138,83,0.1); color:#E28A53; border:1px solid rgba(226,138,83,0.3); border-radius:6px; font-size:0.8rem; cursor:pointer;">
-                Esci
+            <button type="submit" class="rail-item" title="Esci">
+                @include('layouts.partials._icon', ['name' => 'logout'])
             </button>
         </form>
     </div>
@@ -116,25 +81,11 @@
 
 <div class="main-content">
     <div style="background:white; padding:12px 24px; border-bottom:1px solid #C8D0D0; display:flex; align-items:center; gap:12px;">
-        <button onclick="document.querySelector('.sidebar').classList.toggle('open')" class="mobile-toggle" style="display:none; background:none; border:none; cursor:pointer; color:#55B1AE; font-size:1.2rem;">&#9776;</button>
+        <button onclick="document.querySelector('.rail').classList.toggle('open')" class="mobile-toggle" style="display:none; background:none; border:none; cursor:pointer; color:#55B1AE; font-size:1.2rem;">&#9776;</button>
         <div style="font-size:0.875rem; color:#8A9696;">@yield('breadcrumb', 'Area docente')</div>
     </div>
 
-    @if(session('success'))
-    <div style="margin:16px 24px; padding:12px 16px; background:#E8F5F5; border-left:4px solid #55B1AE; border-radius:6px; color:#3A8C89; font-size:0.875rem;">
-        &#10003; {{ session('success') }}
-    </div>
-    @endif
-    @if(session('error'))
-    <div style="margin:16px 24px; padding:12px 16px; background:#FDECE2; border-left:4px solid #E28A53; border-radius:6px; color:#A8521F; font-size:0.875rem;">
-        {{ session('error') }}
-    </div>
-    @endif
-    @if(session('warning'))
-    <div style="margin:16px 24px; padding:12px 16px; background:#FBF3E2; border-left:4px solid #E2A653; border-radius:6px; color:#9A7B2E; font-size:0.875rem;">
-        &#9888; {{ session('warning') }}
-    </div>
-    @endif
+    @include('layouts.partials._flash')
 
     <div style="padding:24px;">
         @yield('content')

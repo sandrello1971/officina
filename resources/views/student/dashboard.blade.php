@@ -49,8 +49,16 @@
     </div>
 
     @elseif($courses->isNotEmpty())
-    <div style="display:grid; gap:16px;">
-        @foreach($courses as $course)
+    {{-- Raggruppamento per categoria (tassonomia). Graceful degradation: con un
+         unico gruppo "Altri corsi" (nessun corso categorizzato) non mostro
+         intestazioni e la dashboard resta identica a prima. --}}
+    @php $showCategoryHeadings = !($coursesByCategory->count() === 1 && $coursesByCategory->keys()->first() === 'Altri corsi'); @endphp
+    @foreach($coursesByCategory as $categoryName => $groupCourses)
+    @if($showCategoryHeadings)
+    <div style="margin:20px 0 10px; color:#4A5252; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em;">{{ $categoryName }}</div>
+    @endif
+    <div style="display:grid; gap:16px; margin-bottom:8px;">
+        @foreach($groupCourses as $course)
         <div style="background:white; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
             <div style="background:{{ $course->color }}; padding:16px 20px; display:flex; align-items:center; justify-content:space-between;">
                 <div style="display:flex; align-items:center; gap:12px;">
@@ -114,6 +122,7 @@
         </div>
         @endforeach
     </div>
+    @endforeach
     @endif
 
 </div>
