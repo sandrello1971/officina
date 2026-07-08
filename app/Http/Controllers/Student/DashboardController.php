@@ -26,7 +26,7 @@ class DashboardController extends Controller
             ->get();
 
         $courses = $this->courseAccess->navigableCourses($student)
-            ->loadMissing('modules')
+            ->loadMissing('modules', 'category')
             ->map(function ($course) use ($student) {
                 $totalModules = $course->modules->count();
                 $course->modules_total = $totalModules;
@@ -81,6 +81,11 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('student.dashboard', compact('student', 'courses', 'stats', 'lastModule', 'myClasses'));
+        // Raggruppamento per categoria (tassonomia). I corsi senza categoria
+        // finiscono in "Altri corsi". Graceful degradation: se c'è un solo gruppo
+        // "Altri corsi", la vista mostra le card come prima (nessuna intestazione).
+        $coursesByCategory = $courses->groupBy(fn ($c) => $c->category?->name ?? 'Altri corsi');
+
+        return view('student.dashboard', compact('student', 'courses', 'coursesByCategory', 'stats', 'lastModule', 'myClasses'));
     }
 }
