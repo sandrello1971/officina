@@ -14,7 +14,7 @@ class Course extends Model
         'name', 'slug', 'description', 'short_description', 'color',
         'icon', 'duration_hours', 'certification_name', 'is_active', 'sort_order',
         'video_ai_id', 'video_filename', 'video_status',
-        'exam_prep_html',
+        'exam_prep_html', 'course_category_id',
     ];
 
     protected $casts = [
@@ -24,6 +24,17 @@ class Course extends Model
     public function modules()
     {
         return $this->hasMany(Module::class)->orderBy('sort_order');
+    }
+
+    // Tassonomia — categoria esclusiva (nullable) e tag trasversali.
+    public function category()
+    {
+        return $this->belongsTo(CourseCategory::class, 'course_category_id');
+    }
+
+    public function tags()
+    {
+        return $this->belongsToMany(CourseTag::class, 'course_course_tag');
     }
 
     // P29 — documento PDF generato dell'INTERO corso (uno per corso).
