@@ -56,7 +56,7 @@ class CertificatePdfBuilder
         $size = $pdf->getTemplateSize($tplId);
 
         $pdf->SetCreator('Officina');
-        $pdf->SetAuthor(atheneum_setting('platform_owner', 'Noscite SRLS'));
+        $pdf->SetAuthor(atheneum_setting('platform_owner', 'Stefano Andrello'));
         $pdf->SetTitle("Certificato {$cert->code}");
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
@@ -130,7 +130,7 @@ class CertificatePdfBuilder
 
         $writeCentered($date, self::COORDS['date_value']);
         $writeCentered($cert->code, self::COORDS['code_value']);
-        $writeCentered(atheneum_setting('platform_owner', 'Noscite SRLS'), self::COORDS['owner_value']);
+        $writeCentered(atheneum_setting('platform_owner', 'Stefano Andrello'), self::COORDS['owner_value']);
 
         // === QR + verify URL (basso a sinistra) ===
         // CSS spec: verify-block left:25mm, top:162mm, width:45mm;

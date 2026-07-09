@@ -15,7 +15,7 @@ class ModulesSeeder extends Seeder
             ['title' => 'Il mondo che non aspetta', 'description' => 'La fotografia della trasformazione AI nelle PMI italiane. Dati, casi reali, demo dal vivo.', 'duration_minutes' => 45, 'sort_order' => 1],
             ['title' => 'Il prezzo dell\'invisibilita', 'description' => 'Calcolo personalizzato del costo mensile di non agire. Canvas interattivo.', 'duration_minutes' => 60, 'sort_order' => 2],
             ['title' => 'La tua azienda nell\'AI', 'description' => 'Identificazione dei processi dove l\'AI genera valore nei prossimi 90 giorni.', 'duration_minutes' => 60, 'sort_order' => 3],
-            ['title' => 'La tua mappa e il tuo percorso', 'description' => 'Mappa di Maturita Digitale personalizzata + percorso Noscite consigliato.', 'duration_minutes' => 35, 'sort_order' => 4],
+            ['title' => 'La tua mappa e il tuo percorso', 'description' => 'Mappa di Maturita Digitale personalizzata + percorso consigliato.', 'duration_minutes' => 35, 'sort_order' => 4],
         ];
         foreach ($moduliPrimus as $m) {
             Module::firstOrCreate(
@@ -76,7 +76,7 @@ class ModulesSeeder extends Seeder
             ['title' => 'L1 M2 — Come ragiona un agente', 'description' => 'Tool, risorse, memoria. Regola semaforo verde/giallo/rosso. Anti-pattern pericolosi.', 'duration_minutes' => 45, 'sort_order' => 2],
             ['title' => 'L1 M3 — Agenti in azienda', 'description' => '4 scenari PMI con ROI, 3 livelli integrazione MCP, caso Travel Agency -89%.', 'duration_minutes' => 75, 'sort_order' => 3],
             ['title' => 'L1 M4 — Rischi, governance e quando fermarsi', 'description' => '3 rischi sistemici, matrice HITL, GDPR agentivo, checklist prontezza 10 domande.', 'duration_minutes' => 45, 'sort_order' => 4],
-            ['title' => 'L2 Blocco A — Fondamenta MCP', 'description' => 'Protocollo MCP, demo live MCPHub Noscite, anatomia agente aziendale.', 'duration_minutes' => 120, 'sort_order' => 5],
+            ['title' => 'L2 Blocco A — Fondamenta MCP', 'description' => 'Protocollo MCP, demo live MCPHub, anatomia agente aziendale.', 'duration_minutes' => 120, 'sort_order' => 5],
             ['title' => 'L2 Blocco B — Canvas Architetto dell\'Agente', 'description' => 'Canvas 7 sezioni su caso reale: obiettivo, dati, tool, trigger, output, HITL, KPI.', 'duration_minutes' => 120, 'sort_order' => 6],
             ['title' => 'L2 Blocco C — Demo MCPHub', 'description' => 'Demo live interrogazione dati aziendali via agente in produzione.', 'duration_minutes' => 60, 'sort_order' => 7],
             ['title' => 'L2 Blocco D — Make vs Buy e Piano 90 giorni', 'description' => 'Framework Make vs Buy, 8 criteri vendor selection, Canvas Piano 90 giorni.', 'duration_minutes' => 60, 'sort_order' => 8],

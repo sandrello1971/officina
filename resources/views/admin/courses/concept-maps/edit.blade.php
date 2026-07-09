@@ -217,7 +217,7 @@
             },
             init() {
                 const initial = @json($map->data ?: ['nodes' => [], 'edges' => []]);
-                this.editor = window.NosciteConceptMap.createEditor('#cm-canvas', initial, {
+                this.editor = window.GlitchConceptMap.createEditor('#cm-canvas', initial, {
                     onChange: (data) => {
                         this.nodeCount = data.nodes.length;
                         this.edgeCount = data.edges.length;

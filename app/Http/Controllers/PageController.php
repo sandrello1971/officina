@@ -9,7 +9,7 @@ class PageController extends Controller
     public function index(): View
     {
         // P24: landing pubblica in stile GLITCH (pre-login). La vecchia home
-        // marketing Noscite resta su disco (resources/views/home.blade.php) ma
+        // marketing storico resta su disco (resources/views/home.blade.php) ma
         // non è più instradata.
         return view('landing');
     }

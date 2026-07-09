@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 
 class RagIndexPlatform extends Command
 {
-    protected $signature = 'rag:index-platform {--base=https://atheneum.noscite.it}';
+    protected $signature = 'rag:index-platform {--base=https://officina.effettoglitch.it}';
     protected $description = 'Indicizza le pagine pubbliche di Officina (home + corsi + contatti) per Minerva';
 
     private array $pages = [

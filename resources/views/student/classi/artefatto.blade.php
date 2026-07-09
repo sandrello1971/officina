@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const initial = @json($graph ?: ['nodes' => [], 'edges' => []]);
     const el = document.getElementById('artifact-concept-map');
     if (!initial.nodes || !initial.nodes.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:#8A9696">Nessun dato.</div>'; return; }
-    window.NosciteConceptMap.createViewer('#artifact-concept-map', initial, {});
+    window.GlitchConceptMap.createViewer('#artifact-concept-map', initial, {});
 });
 </script>
 @endif

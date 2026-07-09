@@ -8,19 +8,19 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Sostituzione mirata del brand "The Glitch World" → "Noscite" nel campo content
- * dei moduli. Con --dry-run mostra un'anteprima (slug corso, titolo modulo, estratto
- * PRIMA/DOPO) senza scrivere. Senza --dry-run applica in transazione e logga ogni
- * modulo modificato. Sostituisce SOLO la stringa esatta: nient'altro viene toccato.
+ * Rebrand del content dei moduli: sostituisce il vecchio brand nel campo content.
+ * Con --dry-run mostra un'anteprima (slug corso, titolo modulo, estratto PRIMA/DOPO)
+ * senza scrivere. Senza --dry-run applica in transazione e logga ogni modulo
+ * modificato. Sostituisce SOLO la stringa esatta: nient'altro viene toccato.
  */
 class ReplaceBrandInModules extends Command
 {
     protected $signature = 'brand:replace-modules {--dry-run : Mostra le modifiche senza scrivere nulla}';
 
-    protected $description = 'Sostituisce "The Glitch World" con "Noscite" nel content dei moduli';
+    protected $description = 'Sostituisce il vecchio brand con "Effetto Glitch" nel content dei moduli';
 
-    private const FROM = 'The Glitch World';
-    private const TO = 'Noscite';
+    private const FROM = 'Noscite';
+    private const TO = 'Effetto Glitch';
     private const CTX = 40; // caratteri di contesto per lato (~80 attorno all'occorrenza)
 
     public function handle(): int

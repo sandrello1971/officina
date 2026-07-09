@@ -79,21 +79,21 @@ class CertificatePdfBrandingTest extends TestCase
 
     public function test_owner_branding_comes_from_settings(): void
     {
-        // Default cablato: senza platform_owner il documento usa "Noscite SRLS".
+        // Default cablato: senza platform_owner il documento usa "Stefano Andrello".
         $pdfDefault = (new CertificatePdfBuilder())->build($this->makeCertificate());
-        $this->assertStringContainsString('Noscite SRLS', $pdfDefault,
+        $this->assertStringContainsString('Stefano Andrello', $pdfDefault,
             'Senza setting, il PDF deve riportare l\'intestatario di default');
 
         // Con platform_owner valorizzato (ASCII, così resta literal nei metadati
         // PDF e l\'asserzione non dipende dalla compressione degli stream di
         // contenuto), il nuovo intestatario deve propagare nel documento e il
-        // default Noscite non deve più comparire.
+        // default non deve più comparire.
         atheneum_setting_put('platform_owner', 'ACME Formazione SRL');
 
         $pdfBranded = (new CertificatePdfBuilder())->build($this->makeCertificate());
         $this->assertStringContainsString('ACME Formazione SRL', $pdfBranded,
             'Il PDF deve riportare l\'intestatario impostato via settings');
-        $this->assertStringNotContainsString('Noscite SRLS', $pdfBranded,
+        $this->assertStringNotContainsString('Stefano Andrello', $pdfBranded,
             'L\'intestatario di default non deve sopravvivere quando platform_owner è settato');
     }
 

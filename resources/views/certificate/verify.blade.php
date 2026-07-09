@@ -1,5 +1,5 @@
 @php
-    // Maschera l'email: prima lettera + *** + @dominio (es. stefano@noscite.it -> s***@noscite.it)
+    // Maschera l'email: prima lettera + *** + @dominio (es. stefano@effettoglitch.it -> s***@effettoglitch.it)
     $maskedEmail = null;
     if ($cert && $cert->student?->email) {
         $email = $cert->student->email;
