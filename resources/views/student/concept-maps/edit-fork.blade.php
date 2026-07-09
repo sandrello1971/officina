@@ -100,7 +100,7 @@
             selectedNode: null,
             init() {
                 const initial = @json($fork->data ?: ['nodes' => [], 'edges' => []]);
-                this.editor = window.NosciteConceptMap.createEditor('#cm-canvas', initial, {
+                this.editor = window.GlitchConceptMap.createEditor('#cm-canvas', initial, {
                     onChange: () => { if (this.status === 'saved') this.status = 'dirty'; },
                     onSelect: (node) => {
                         this.selectedNode = node ? JSON.parse(JSON.stringify(node)) : null;

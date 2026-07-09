@@ -18,7 +18,7 @@ class CoursesSeeder extends Seeder
                 'color' => '#8A9696',
                 'icon' => '✦',
                 'duration_hours' => 4,
-                'certification_name' => 'Attestato di partecipazione Noscite',
+                'certification_name' => 'Attestato di partecipazione',
                 'is_active' => true,
                 'sort_order' => 0,
             ]

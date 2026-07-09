@@ -48,7 +48,7 @@ class SchoolBranding
     /** Etichetta proprietario: nome scuola se in contesto scuola, altrimenti owner piattaforma. */
     public function ownerLabel(): string
     {
-        return $this->school?->name ?: (string) atheneum_setting('platform_owner', 'Noscite Srl');
+        return $this->school?->name ?: (string) atheneum_setting('platform_owner', 'Stefano Andrello');
     }
 
     /** URL del logo: route privata di scuola se caricato, altrimenti logo piattaforma. */

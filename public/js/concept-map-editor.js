@@ -1,11 +1,11 @@
 /**
  * Concept Map Editor — wrapper vanilla di vis-network (UMD via CDN)
- * Esposto come window.NosciteConceptMap.{createEditor, createViewer}
+ * Esposto come window.GlitchConceptMap.{createEditor, createViewer}
  *
  * Richiede che window.vis (vis-network UMD) sia gia' caricato.
  *
  * Uso:
- *   const editor = NosciteConceptMap.createEditor('#cm-canvas', initialData, {
+ *   const editor = GlitchConceptMap.createEditor('#cm-canvas', initialData, {
  *     onChange: (data) => { ... },     // chiamato a ogni modifica
  *     onSelect: (node) => { ... },     // nodo cliccato (può essere null)
  *   });
@@ -19,7 +19,7 @@
  */
 (function () {
     if (!window.vis || !window.vis.Network) {
-        console.warn('NosciteConceptMap: window.vis non disponibile. Includere vis-network UMD prima di questo script.');
+        console.warn('GlitchConceptMap: window.vis non disponibile. Includere vis-network UMD prima di questo script.');
         return;
     }
 
@@ -263,7 +263,7 @@
         };
     }
 
-    window.NosciteConceptMap = {
+    window.GlitchConceptMap = {
         createEditor: function (container, initialData, opts) {
             opts = opts || {};
             opts.editable = true;

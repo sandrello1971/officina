@@ -92,7 +92,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const initial = @json($map->data ?: ['nodes' => [], 'edges' => []]);
-        window.NosciteConceptMap.createViewer('#cm-viewer', initial, {
+        window.GlitchConceptMap.createViewer('#cm-viewer', initial, {
             onNodeClick: function (node) {
                 window.dispatchEvent(new CustomEvent('cm-node-click', { detail: node }));
             },

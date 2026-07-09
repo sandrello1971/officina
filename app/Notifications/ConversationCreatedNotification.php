@@ -27,7 +27,7 @@ class ConversationCreatedNotification extends Notification implements ShouldQueu
     {
         $sender = $this->firstMessage->sender;
         $platformName = atheneum_setting('instance_name', 'Officina');
-        $platformOwner = atheneum_setting('platform_owner', 'Noscite SRLS');
+        $platformOwner = atheneum_setting('platform_owner', 'Stefano Andrello');
 
         $bodyPreview = mb_strlen($this->firstMessage->body) > 200
             ? mb_substr($this->firstMessage->body, 0, 200) . '...'

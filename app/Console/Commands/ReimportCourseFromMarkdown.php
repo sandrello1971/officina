@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  * Granularità robusta: --split-level=1|2 forza il livello; in automatico distingue
  * i .md "molti #" (capitoli a #) dai .md "un # titolo + molti ##" (capitoli a ##).
  *
- * I .md sono già senza branding "Noscite" → nessuna sostituzione: import as-is.
+ * I .md sono già senza il vecchio branding → nessuna sostituzione: import as-is.
  * Solo il corso indicato per slug. Mai prod senza backup (passo separato).
  */
 class ReimportCourseFromMarkdown extends Command

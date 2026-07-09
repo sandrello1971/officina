@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
         el.innerHTML = '<div style="padding:40px; text-align:center; color:#8A9696;">Nessun dato per la mappa concettuale.</div>';
         return;
     }
-    window.NosciteConceptMap.createViewer('#artifact-concept-map', initial, {});
+    window.GlitchConceptMap.createViewer('#artifact-concept-map', initial, {});
 });
 </script>
 @endif

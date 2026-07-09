@@ -19,7 +19,7 @@ class DemoController extends Controller
         session([
             'student_id' => $demo->id,
             'student_name' => 'Visitatore Demo',
-            'student_email' => 'demo@atheneum.noscite.it',
+            'student_email' => 'demo@effettoglitch.it',
             'demo_mode' => true,
         ]);
 

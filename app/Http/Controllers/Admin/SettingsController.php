@@ -19,7 +19,7 @@ class SettingsController extends Controller
     /**
      * Chiavi branding+identità gestite da questa pagina (Fase 1).
      * Vuoto / null = default cablato in codice nelle view e nel system
-     * prompt di Minerva. È la rete di sicurezza: l'istanza Noscite
+     * prompt di Minerva. È la rete di sicurezza: l'istanza
      * attuale non regredisce finché tu non riempi questi campi.
      */
     private const BRANDING_KEYS = [

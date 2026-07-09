@@ -140,11 +140,10 @@ class ReimportCourseSafe extends Command
         }
     }
 
-    /** Liste per il ri-aggancio canvas (lasciato al giudizio umano) + sanity Noscite. */
+    /** Liste per il ri-aggancio canvas (lasciato al giudizio umano). */
     private function postWriteReport(Course $course): void
     {
         $modules = $course->modules()->orderBy('sort_order')->get(['id', 'sort_order', 'title', 'content']);
-        $noscite = $modules->filter(fn ($m) => stripos((string) $m->content, 'noscite') !== false);
 
         // Materiali del corso: i canvas staccati (module_id NULL) da ri-agganciare.
         $materials = Material::where('course_id', $course->id)
@@ -156,8 +155,6 @@ class ReimportCourseSafe extends Command
         $this->info('REPORT POST-WRITE');
         $this->line('  • moduli nuovi: ' . $modules->count());
         $this->line('  • materiali del corso: ' . $materials->count() . ' (canvas: ' . $canvas->count() . ')');
-        $this->line('  • moduli con "Noscite" nel content: <comment>' . $noscite->count() . '</comment>'
-            . ($noscite->count() === 0 ? ' ✓' : ' (il .md andava ribrandizzato!)'));
 
         $this->newLine();
         $this->line('MATERIALI del corso (da ri-agganciare ai moduli):');
