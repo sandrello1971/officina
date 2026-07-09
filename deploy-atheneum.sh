@@ -15,8 +15,8 @@
 #
 set -euo pipefail
 
-SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # .../noscite-websites/noscite-atheneum
-REPO="$(cd "$SRC/.." && pwd)"                          # clone monorepo
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # root dell'app Laravel (= root del repo)
+REPO="$SRC"                                            # il .git vive qui (repo non più in sottocartella)
 DEST="/var/www/noscite-atheneum"
 BRANCH="main"
 FPM_SERVICE="php8.4-fpm"
@@ -32,6 +32,8 @@ EXCLUDES=(
   --exclude='/bootstrap/cache/' # config/route/view cache di prod: senza questo
                                # --delete la cancella → app senza config → 500
                                # (.env non è leggibile da www-data)
+  --exclude='/noscite-videoai/' # videoai ha deploy separato (deploy-videoai.sh) e
+                               # un venv proprio: MAI riversarlo in noscite-atheneum
   --exclude='.git/'
 )
 
