@@ -34,7 +34,7 @@ class QuizController extends Controller
         return view('admin.quizzes.create', compact('courses', 'modules'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\QuizGeneratorService $generator)
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
@@ -46,6 +46,9 @@ class QuizController extends Controller
             'max_attempts' => 'nullable|integer|min:0',
             'randomize_questions' => 'nullable',
             'is_active' => 'nullable',
+            'generate_with_ai' => 'nullable',
+            'num_questions' => 'nullable|integer|min:1|max:50',
+            'questions_per_attempt' => 'nullable|integer|min:1',
         ]);
 
         $data['randomize_questions'] = isset($data['randomize_questions']);
@@ -59,10 +62,78 @@ class QuizController extends Controller
         $data['course_id'] = ($data['course_id'] ?? null) ?: null;
         $data['module_id'] = $data['module_id'] ?? null ?: null;
 
+        // Ramo generazione AI: crea il quiz già popolato con le domande estratte
+        // dal contenuto dei moduli del corso, rispettando gli attributi del form
+        // (title/descrizione/soglia/tempo/tentativi) invece di quelli di default.
+        if ($request->boolean('generate_with_ai')) {
+            return $this->storeGenerated($request, $data, $generator);
+        }
+
         $quiz = Quiz::create($data);
 
         return redirect("/admin/quizzes/{$quiz->id}/questions")
             ->with('success', 'Quiz creato. Aggiungi le domande.');
+    }
+
+    /**
+     * Crea un quiz generando le domande con Claude AI dal contenuto dei moduli
+     * del corso selezionato. Il pool (num_questions) e le domande-per-tentativo
+     * (questions_per_attempt) sono scelti nel form; tutti gli altri attributi
+     * arrivano da $data (già normalizzato in store()).
+     */
+    private function storeGenerated(Request $request, array $data, \App\Services\QuizGeneratorService $generator)
+    {
+        if (empty($data['course_id'])) {
+            return back()->withInput()->with('error',
+                'Seleziona un corso per generare le domande con l\'AI.');
+        }
+
+        $course = Course::findOrFail($data['course_id']);
+
+        $content = $course->modules()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->pluck('content')
+            ->filter()
+            ->join("\n\n");
+
+        if (empty(trim($content))) {
+            return back()->withInput()->with('error',
+                'Nessun contenuto nei moduli del corso. Aggiungi prima il testo dei moduli.');
+        }
+
+        $numQuestions = (int) ($data['num_questions'] ?? 10);
+        $perAttempt = ($data['questions_per_attempt'] ?? null) ?: null;
+
+        if ($perAttempt !== null && $perAttempt > $numQuestions) {
+            return back()->withInput()->with('error',
+                "Le domande da estrarre per tentativo ({$perAttempt}) non possono superare la dimensione del pool ({$numQuestions}).");
+        }
+
+        $brand = atheneum_setting('instance_name', 'aziende e PMI');
+        $result = $generator->generateQuestionSet($content, $course->name, $numQuestions, [
+            'audience' => "formazione aziendale per {$brand}",
+            'subject_noun' => 'corso',
+        ]);
+
+        if ($result === null) {
+            return back()->withInput()->with('error',
+                'Errore nella generazione del quiz. Riprova.');
+        }
+
+        // questions_per_attempt valido solo se < pool effettivo; altrimenti NULL (tutte).
+        $pool = count($result['questions']);
+        $data['questions_per_attempt'] = ($perAttempt !== null && $perAttempt < $pool) ? $perAttempt : null;
+
+        // Attributi del form → prevalgono sui default del service.
+        unset($data['generate_with_ai'], $data['num_questions']);
+        $quiz = $generator->persistQuiz($data, $result['questions']);
+
+        $msg = $quiz->questions_per_attempt
+            ? "Pool di {$pool} domande generato; ogni tentativo ne estrae {$quiz->questions_per_attempt}."
+            : "Quiz generato con {$pool} domande!";
+
+        return redirect("/admin/quizzes/{$quiz->id}/questions")->with('success', $msg);
     }
 
     public function show(string $id)

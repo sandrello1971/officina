@@ -37,11 +37,7 @@ class QuizGeneratorService
             'subject_noun' => 'corso',
         ];
 
-        // Pool grande → generazione a batch (evita il troncamento del single-call);
-        // pool piccolo → singola chiamata storica.
-        $result = $numQuestions > self::POOL_BATCH_SIZE
-            ? $this->generatePool($content, $course->name, $numQuestions, $opts)
-            : $this->generateQuestions($content, $course->name, $numQuestions, $opts);
+        $result = $this->generateQuestionSet($content, $course->name, $numQuestions, $opts);
 
         if ($result === null) {
             return null;
@@ -63,6 +59,21 @@ class QuizGeneratorService
             'questions_per_attempt' => $perAttempt,
             'show_results_immediately' => true,
         ], $result['questions']);
+    }
+
+    /**
+     * Restituisce un set di domande della dimensione richiesta SENZA persistere:
+     * pool grande (> POOL_BATCH_SIZE) → generazione a batch (evita il troncamento
+     * del single-call); pool piccolo → singola chiamata storica. Riusabile da
+     * chiunque debba poi persistere con attributi propri (es. il form admin).
+     *
+     * @return array{questions: array, meta: array}|null
+     */
+    public function generateQuestionSet(string $content, string $contextLabel, int $numQuestions, array $options = []): ?array
+    {
+        return $numQuestions > self::POOL_BATCH_SIZE
+            ? $this->generatePool($content, $contextLabel, $numQuestions, $options)
+            : $this->generateQuestions($content, $contextLabel, $numQuestions, $options);
     }
 
     /**

@@ -47,6 +47,29 @@
                                style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
                     </div>
                 </div>
+                <div style="border:1px solid #C8D0D0; border-radius:8px; padding:16px; background:#F6F9F9;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:4px;">
+                        <input type="checkbox" name="generate_with_ai" value="1" {{ old('generate_with_ai') ? 'checked' : '' }}
+                               onchange="document.getElementById('ai-opts').style.display = this.checked ? 'grid' : 'none';">
+                        <span style="font-size:0.875rem; font-weight:600; color:#3A8C89;">&#10022; Genera le domande con Claude AI dal contenuto del corso</span>
+                    </label>
+                    <div style="font-size:0.75rem; color:#8A9696; margin-bottom:12px;">Richiede un corso selezionato con testo nei moduli. Senza AI il quiz viene creato vuoto e aggiungi le domande a mano.</div>
+                    <div id="ai-opts" style="display:{{ old('generate_with_ai') ? 'grid' : 'none' }}; grid-template-columns:1fr 1fr; gap:16px;">
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Numero di domande (pool)</label>
+                            <select name="num_questions" style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
+                                @foreach([5,10,15,20,30,40,50] as $n)
+                                <option value="{{ $n }}" {{ (int) old('num_questions', 10) === $n ? 'selected' : '' }}>{{ $n }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Estrai per tentativo (vuoto = tutte)</label>
+                            <input type="number" name="questions_per_attempt" value="{{ old('questions_per_attempt') }}" min="1" placeholder="tutte"
+                                   style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
+                        </div>
+                    </div>
+                </div>
                 <div style="display:flex; gap:16px;">
                     <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                         <input type="checkbox" name="randomize_questions" value="1" {{ old('randomize_questions') ? 'checked' : '' }}>
