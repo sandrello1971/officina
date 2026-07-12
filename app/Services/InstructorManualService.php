@@ -124,6 +124,32 @@ class InstructorManualService
         return $material;
     }
 
+    /**
+     * Salva il contenuto del manuale editato a mano dall'admin (master
+     * materials.content_html = ciò che il formatore legge a schermo), poi
+     * ri-deriva le sezioni e re-indicizza il RAG. NON tocca il file .docx
+     * sorgente né il sorgente strutturato Freshness (course_sources): il
+     * master HTML diventa la fonte di verità dell'edit manuale.
+     *
+     * Nota: split() cancella e ricrea le sezioni dal master, preservando le
+     * mappature-modulo manuali per anchor; eventuali modifiche applicate SOLO
+     * alle sezioni (es. Freshness) vengono ri-derivate dal testo qui salvato.
+     */
+    public function saveEditedHtml(Material $material, string $html): Material
+    {
+        if (!$material->is_instructor_only) {
+            throw new \InvalidArgumentException('Solo i manuali formatore possono essere modificati qui.');
+        }
+
+        $material->update(['content_html' => $html]);
+        $material = $material->fresh();
+
+        $this->reindexInRag($material);
+        $this->splitter->split($material);
+
+        return $material;
+    }
+
     public function delete(Material $material): void
     {
         DocumentRag::where('course_id', $material->course_id)

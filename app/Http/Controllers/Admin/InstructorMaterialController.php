@@ -133,6 +133,37 @@ class InstructorMaterialController extends Controller
             ->with('success', 'Manuale formatore eliminato.');
     }
 
+    public function editContent(Course $course, Material $material)
+    {
+        abort_unless($material->course_id === $course->id, 404);
+        abort_unless($material->is_instructor_only, 404);
+
+        return view('admin.courses.instructor-materials.edit-content', [
+            'course'   => $course,
+            'material' => $material,
+        ]);
+    }
+
+    public function updateContent(Request $request, Course $course, Material $material)
+    {
+        abort_unless($material->course_id === $course->id, 404);
+        abort_unless($material->is_instructor_only, 404);
+
+        $data = $request->validate([
+            'content_html' => 'required|string',
+        ]);
+
+        try {
+            $this->service->saveEditedHtml($material, $data['content_html']);
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', 'Salvataggio fallito: ' . $e->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.courses.instructor-materials.edit-content', [$course->id, $material->id])
+            ->with('success', 'Contenuto del manuale aggiornato. Sezioni ri-derivate e RAG re-indicizzato.');
+    }
+
     public function manageSections(Course $course, Material $material)
     {
         abort_unless($material->course_id === $course->id, 404);

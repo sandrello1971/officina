@@ -241,6 +241,14 @@
 
                 <div style="flex:1;"></div>
 
+                <a href="{{ route('admin.courses.instructor-materials.edit-content', [$course->id, $im->id]) }}"
+                   style="padding:6px 12px; background:white; color:#3A8C89;
+                          border:1px solid #55B1AE; border-radius:6px;
+                          text-decoration:none; font-size:0.75rem; font-weight:600;
+                          display:inline-flex; align-items:center; gap:4px;">
+                    ✏️ Modifica contenuto
+                </a>
+
                 <a href="{{ route('admin.courses.instructor-materials.sections', [$course->id, $im->id]) }}"
                    style="padding:6px 12px; background:white; color:#D87840;
                           border:1px solid #E28A53; border-radius:6px;

@@ -558,6 +558,8 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
             Route::put('/{material}', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'update'])->name('update');
             Route::post('/{material}/regenerate', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'regenerate'])->name('regenerate');
             Route::delete('/{material}', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'destroy'])->name('destroy');
+            Route::get('/{material}/edit-content', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'editContent'])->name('edit-content');
+            Route::put('/{material}/content', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'updateContent'])->name('content.update');
             Route::get('/{material}/sections', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'manageSections'])->name('sections');
             Route::put('/{material}/sections', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'updateSections'])->name('sections.update');
             Route::post('/{material}/sections/reset', [App\Http\Controllers\Admin\InstructorMaterialController::class, 'resetSections'])->name('sections.reset');
