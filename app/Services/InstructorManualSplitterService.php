@@ -206,29 +206,71 @@ class InstructorManualSplitterService
         return sprintf('sez-%03d-%s', $sortOrder, $slug);
     }
 
-    private function autoMapToModule(string $sectionTitle, $modules): ?string
+    /**
+     * Mappa una sezione del manuale formatore al modulo discente corrispondente,
+     * abbinando l'ETICHETTA-UNITÀ ("Modulo N" / "Lezione N" / "Blocco X") presente
+     * IN ENTRAMBI i titoli — nel titolo del modulo discente, NON per sort_order.
+     *
+     * Perché non sort_order: il vecchio approccio ("Modulo N" → modulo con
+     * sort_order == N) andava sistematicamente in off-by-one, perché sort_order è
+     * 0-based e il modulo #0 è quasi sempre il frontespizio. Abbinare l'etichetta
+     * nel titolo del modulo è immune alla posizione.
+     *
+     * Deterministico solo per Modulo/Lezione/Blocco: la numerazione "Capitolo N"
+     * del formatore NON coincide con quella dei moduli discente, e "Parte N" è
+     * troppo ambigua (spesso è un divisore pedagogico) → quei casi restano null e
+     * vanno risolti dal fallback AI o a mano.
+     *
+     * Pubblico: riusato dal remap delle mappature esistenti (InstructorManualRemapService).
+     */
+    public function autoMapToModule(string $sectionTitle, $modules): ?string
     {
         if ($modules->isEmpty()) return null;
 
-        // PRIORITÀ 1: "Modulo N" o "M N"
-        if (preg_match('/(?:^|[^a-z])(?:Modulo|M)\s*(?:nr\.?\s*)?(\d+)/i', $sectionTitle, $m)) {
-            $module = $modules->firstWhere('sort_order', (int)$m[1]);
-            if ($module) return $module->id;
-        }
+        $label = $this->extractUnitLabel($sectionTitle);
+        if ($label === null) return null;
 
-        // PRIORITÀ 2: "Lezione N"
-        if (preg_match('/(?:^|[^a-z])Lezione\s*(\d+)/i', $sectionTitle, $m)) {
-            $module = $modules->firstWhere('sort_order', (int)$m[1]);
-            if ($module) return $module->id;
-        }
-
-        // PRIORITÀ 3: "Blocco X" (lettera) → substring match
-        if (preg_match('/(?:^|[^a-z])Blocco\s+([A-Z])\b/i', $sectionTitle, $m)) {
-            $letter = strtoupper($m[1]);
-            $module = $modules->first(fn($mod) => stripos($mod->title, "Blocco $letter") !== false);
-            if ($module) return $module->id;
+        foreach ($modules as $module) {
+            if ($this->titleHasUnitLabel($module->title, $label)) {
+                return $module->id;
+            }
         }
 
         return null;
+    }
+
+    /**
+     * Estrae l'etichetta-unità più affidabile da un titolo, con priorità
+     * Modulo > Lezione > Blocco. Ritorna es. ['kind' => 'modulo', 'num' => 1] o
+     * ['kind' => 'blocco', 'letter' => 'A'], oppure null.
+     *
+     * @return array{kind:string, num?:int, letter?:string}|null
+     */
+    private function extractUnitLabel(string $title): ?array
+    {
+        // "Modulo N" (singolare: esclude "MODULI" dei divisori tipo "GUIDA AI MODULI").
+        if (preg_match('/\bModulo\s*0*(\d+)/i', $title, $m)) {
+            return ['kind' => 'modulo', 'num' => (int) $m[1]];
+        }
+        if (preg_match('/\bLezione\s*0*(\d+)/i', $title, $m)) {
+            return ['kind' => 'lezione', 'num' => (int) $m[1]];
+        }
+        if (preg_match('/\bBlocco\s+([A-Za-z])\b/i', $title, $m)) {
+            return ['kind' => 'blocco', 'letter' => strtoupper($m[1])];
+        }
+
+        return null;
+    }
+
+    /** True se il titolo del modulo porta la stessa etichetta-unità. */
+    private function titleHasUnitLabel(string $moduleTitle, array $label): bool
+    {
+        if ($label['kind'] === 'blocco') {
+            return (bool) preg_match('/\bBlocco\s+' . preg_quote($label['letter'], '/') . '\b/i', $moduleTitle);
+        }
+
+        $word = $label['kind'] === 'lezione' ? 'Lezione' : 'Modulo';
+
+        return (bool) preg_match('/\b' . $word . '\s*0*' . $label['num'] . '\b/i', $moduleTitle);
     }
 }
