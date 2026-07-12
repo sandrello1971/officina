@@ -30,8 +30,8 @@ class RemapInstructorManuals extends Command
 
         $query = Material::where('is_instructor_only', true);
         if ($courseOpt = $this->option('course')) {
-            $ids = Course::where('id', $courseOpt)
-                ->orWhere('name', 'ilike', '%' . $courseOpt . '%')
+            $ids = Course::where('name', 'ilike', '%' . $courseOpt . '%')
+                ->when(\Illuminate\Support\Str::isUuid($courseOpt), fn ($q) => $q->orWhere('id', $courseOpt))
                 ->pluck('id');
             $query->whereIn('course_id', $ids);
         }
