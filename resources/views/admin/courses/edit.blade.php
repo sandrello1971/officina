@@ -185,7 +185,7 @@
 
             <form method="POST"
                   action="{{ route('admin.courses.instructor-materials.update', [$course, $im->id]) }}"
-                  enctype="multipart/form-data"
+                  enctype="multipart/form-data" data-guard-submit
                   style="display:flex; flex-direction:column; gap:10px;">
                 @csrf
                 @method('PUT')
@@ -282,7 +282,7 @@
             </div>
             <form method="POST"
                   action="{{ route('admin.courses.instructor-materials.store', $course) }}"
-                  enctype="multipart/form-data"
+                  enctype="multipart/form-data" data-guard-submit
                   style="display:flex; flex-direction:column; gap:10px;">
                 @csrf
                 <input type="text" name="title" placeholder="Titolo (es. 'Manuale Formatore v5.0')" required
@@ -304,6 +304,19 @@
                 Formato: .docx o .doc • Max 20 MB • Il file verrà convertito automaticamente in HTML per la consultazione online.
             </div>
         </div>
+
+        {{-- Guardia anti doppio-submit sui form di upload manuale (previene i duplicati
+             da doppio click, es. il manuale caricato due volte a 5s di distanza). --}}
+        <script>
+        document.addEventListener('submit', function (e) {
+            var f = e.target;
+            if (!(f instanceof HTMLFormElement) || !f.hasAttribute('data-guard-submit')) return;
+            if (f.dataset.submitting === '1') { e.preventDefault(); return; }
+            f.dataset.submitting = '1';
+            var btn = f.querySelector('button[type=submit]');
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'wait'; btn.textContent = '⏳ Attendere…'; }
+        }, true);
+        </script>
     </div>
 
     {{-- Form elimina separata --}}
