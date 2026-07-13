@@ -10,6 +10,8 @@ use Smalot\PdfParser\Parser as PdfParser;
 
 class CourseIngestionService
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_MODEL = 'claude-sonnet-4-5';
 
     public function extractText(UploadedFile $file): string
@@ -119,34 +121,12 @@ SYS;
 
     private function callClaudeJson(string $systemPrompt, string $userPrompt): array
     {
-        $apiKey = config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY');
-        if (empty($apiKey)) {
-            throw new \RuntimeException('ANTHROPIC_API_KEY non configurata.');
-        }
-
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])
-            ->withOptions(['stream' => true])
-            ->connectTimeout(30)
-            ->timeout(600)
-            ->post('https://api.anthropic.com/v1/messages', [
-                'model' => self::CLAUDE_MODEL,
-                'max_tokens' => 64000,
-                'stream' => true,
-                'system' => $systemPrompt,
-                'messages' => [['role' => 'user', 'content' => $userPrompt]],
-            ]);
-
-        if ($response->status() >= 400) {
-            $errorBody = (string) $response->toPsrResponse()->getBody();
-            Log::error('Claude API failed', ['status' => $response->status(), 'body' => substr($errorBody, 0, 500)]);
-            throw new \RuntimeException('Claude API error (HTTP ' . $response->status() . ').');
-        }
-
-        $text = $this->readSseTextStream($response->toPsrResponse()->getBody());
+        $text = $this->claude->stream([
+            'model' => self::CLAUDE_MODEL,
+            'max_tokens' => 64000,
+            'system' => $systemPrompt,
+            'messages' => [['role' => 'user', 'content' => $userPrompt]],
+        ], ['feature' => 'course.ingest']);
 
         $json = $this->stripJsonFences($text);
         $decoded = json_decode($json, true);

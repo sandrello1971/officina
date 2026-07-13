@@ -75,4 +75,42 @@ class ClaudeClientTest extends TestCase
         // solo la chiamata finale riuscita viene messa a metering
         $this->assertSame(1, AiUsage::where('feature', 'test.retry')->count());
     }
+
+    private function sse(string ...$events): string
+    {
+        return implode('', array_map(fn ($e) => $e . "\n\n", $events));
+    }
+
+    public function test_stream_accumula_testo_e_registra_token(): void
+    {
+        $body = $this->sse(
+            "event: message_start\ndata: " . json_encode(['message' => ['usage' => ['input_tokens' => 100]]]),
+            "event: content_block_delta\ndata: " . json_encode(['delta' => ['type' => 'text_delta', 'text' => 'Ciao ']]),
+            "event: content_block_delta\ndata: " . json_encode(['delta' => ['type' => 'text_delta', 'text' => 'mondo']]),
+            "event: message_delta\ndata: " . json_encode(['usage' => ['output_tokens' => 42], 'delta' => ['stop_reason' => 'end_turn']]),
+        );
+        Http::fake(['api.anthropic.com/*' => Http::response($body, 200)]);
+
+        $text = app(ClaudeClient::class)->stream(
+            ['messages' => [['role' => 'user', 'content' => 'hi']]],
+            ['feature' => 'test.stream']
+        );
+
+        $this->assertSame('Ciao mondo', $text);
+        $u = AiUsage::where('feature', 'test.stream')->firstOrFail();
+        $this->assertSame(100, $u->tokens_in);
+        $this->assertSame(42, $u->tokens_out);
+    }
+
+    public function test_stream_troncamento_max_tokens_lancia(): void
+    {
+        $body = $this->sse(
+            "event: content_block_delta\ndata: " . json_encode(['delta' => ['type' => 'text_delta', 'text' => 'parz']]),
+            "event: message_delta\ndata: " . json_encode(['delta' => ['stop_reason' => 'max_tokens']]),
+        );
+        Http::fake(['api.anthropic.com/*' => Http::response($body, 200)]);
+
+        $this->expectExceptionMessage('troncata');
+        app(ClaudeClient::class)->stream(['messages' => [['role' => 'user', 'content' => 'hi']]], ['feature' => 'test.trunc']);
+    }
 }
