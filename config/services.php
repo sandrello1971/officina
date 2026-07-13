@@ -77,12 +77,11 @@ return [
         'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com/v1/messages'),
         'timeout' => (int) env('ANTHROPIC_TIMEOUT', 120),
         'max_retries' => (int) env('ANTHROPIC_MAX_RETRIES', 2),
-        // Prezzi USD per 1M token [input, output] per stima costi nel metering.
-        // ⚠️ DA VERIFICARE con il listino corrente prima di usarli per il pricing.
+        // Prezzi USD per 1M token [input, output] — listino verificato 2026-07-12.
         'prices' => [
             'claude-sonnet-4-5' => ['in' => 3.0, 'out' => 15.0],
             'claude-sonnet-4-6' => ['in' => 3.0, 'out' => 15.0],
-            'claude-opus-4-8'   => ['in' => 15.0, 'out' => 75.0],
+            'claude-opus-4-8'   => ['in' => 5.0, 'out' => 25.0],
         ],
 
         // Vision (OCR/trascrizione foto e PDF scansionati) — Schola pacchetto 4a

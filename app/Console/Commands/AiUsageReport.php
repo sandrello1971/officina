@@ -80,7 +80,7 @@ class AiUsageReport extends Command
             number_format((int) $tot->too),
             $tot->cost === null ? 'n/d' : '$' . number_format((float) $tot->cost, 2)
         ));
-        $this->comment('Nota: i costi usano il listino in config/services.php (services.anthropic.prices) — verificarlo col listino reale.');
+        $this->comment('Nota: i costi usano il listino in config/services.php (services.anthropic.prices).');
 
         return self::SUCCESS;
     }
