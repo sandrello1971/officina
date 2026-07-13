@@ -23,6 +23,8 @@ use RuntimeException;
  */
 class LessonGenerationService
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const CLAUDE_MODEL = 'claude-sonnet-4-5';
     private const TEMPERATURE = 0.4;
@@ -63,30 +65,21 @@ class LessonGenerationService
         ]);
         Log::info('Lesson composition request', $log);
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(180)->post(self::CLAUDE_API_URL, [
-            'model' => self::CLAUDE_MODEL,
+        $res = $this->claude->messages([
             'max_tokens' => self::MAX_TOKENS,
             'temperature' => self::TEMPERATURE,
             'system' => $systemPrompt,
             'messages' => [
                 ['role' => 'user', 'content' => $userMessage],
             ],
-        ]);
+        ], ['feature' => 'lesson.generate']);
 
-        if (!$response->successful()) {
-            Log::error('Lesson Claude API failed', array_merge($log, [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]));
-            throw new RuntimeException('Errore Claude API: ' . $response->status());
+        if ($res->failed()) {
+            Log::error('Lesson Claude API failed', array_merge($log, ['error' => $res->error]));
+            throw new RuntimeException('Errore Claude API: ' . ($res->status ?? $res->error));
         }
 
-        $data = $response->json();
-        $markdown = $data['content'][0]['text'] ?? '';
+        $markdown = $res->text();
 
         if (empty(trim($markdown))) {
             throw new RuntimeException('Risposta Claude vuota');
@@ -101,15 +94,15 @@ class LessonGenerationService
 
         Log::info('Lesson composed', array_merge($log, [
             'output_chars' => mb_strlen($markdown),
-            'usage' => $data['usage'] ?? null,
+            'usage' => $res->raw['usage'] ?? null,
         ]));
 
         return [
             'content' => $markdown,
             'meta' => [
-                'model' => self::CLAUDE_MODEL,
-                'tokens_in' => (int) ($data['usage']['input_tokens'] ?? 0),
-                'tokens_out' => (int) ($data['usage']['output_tokens'] ?? 0),
+                'model' => config('services.anthropic.model'),
+                'tokens_in' => $res->tokensIn(),
+                'tokens_out' => $res->tokensOut(),
                 'prompt_version' => self::PROMPT_VERSION,
                 'sources_used' => $sourcesMeta,                 // [{id,title,source_type,has_segments}]
                 'sources_count' => count($sourcesMeta),

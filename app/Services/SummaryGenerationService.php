@@ -16,6 +16,8 @@ use RuntimeException;
  */
 class SummaryGenerationService
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const CLAUDE_MODEL = 'claude-sonnet-4-5';
     private const TEMPERATURE = 0.3;
@@ -85,30 +87,21 @@ class SummaryGenerationService
 
         Log::info('Summary generation request', $logContext);
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(120)->post(self::CLAUDE_API_URL, [
-            'model' => self::CLAUDE_MODEL,
+        $res = $this->claude->messages([
             'max_tokens' => $maxTokens,
             'temperature' => self::TEMPERATURE,
             'system' => $systemPrompt,
             'messages' => [
                 ['role' => 'user', 'content' => $userMessage],
             ],
-        ]);
+        ], ['feature' => 'summary.generate']);
 
-        if (!$response->successful()) {
-            Log::error('Summary Claude API failed', array_merge($logContext, [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]));
-            throw new RuntimeException('Errore Claude API: ' . $response->status());
+        if ($res->failed()) {
+            Log::error('Summary Claude API failed', array_merge($logContext, ['error' => $res->error]));
+            throw new RuntimeException('Errore Claude API: ' . ($res->status ?? $res->error));
         }
 
-        $data = $response->json();
-        $markdown = $data['content'][0]['text'] ?? '';
+        $markdown = $res->text();
 
         if (empty(trim($markdown))) {
             throw new RuntimeException('Risposta Claude vuota');
@@ -121,15 +114,15 @@ class SummaryGenerationService
 
         Log::info('Summary generated', array_merge($logContext, [
             'output_chars' => mb_strlen($markdown),
-            'usage' => $data['usage'] ?? null,
+            'usage' => $res->raw['usage'] ?? null,
         ]));
 
         return [
             'content' => $markdown,
             'meta' => array_merge([
-                'model' => self::CLAUDE_MODEL,
-                'tokens_in' => (int) ($data['usage']['input_tokens'] ?? 0),
-                'tokens_out' => (int) ($data['usage']['output_tokens'] ?? 0),
+                'model' => config('services.anthropic.model'),
+                'tokens_in' => $res->tokensIn(),
+                'tokens_out' => $res->tokensOut(),
                 'prompt_version' => self::PROMPT_VERSION,
             ], $extraMeta),
         ];
