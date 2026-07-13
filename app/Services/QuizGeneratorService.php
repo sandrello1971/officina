@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Course;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class QuizGeneratorService
@@ -19,6 +18,8 @@ class QuizGeneratorService
     private const POOL_MAX_ROUNDS = 12;
     /** Contenuto usato per i pool grandi (più materiale = più varietà). */
     private const POOL_CONTENT_CHARS = 16000;
+
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
 
     /**
      * Percorso storico (mondo corsi): genera e persiste un quiz legato a un corso.
@@ -35,6 +36,7 @@ class QuizGeneratorService
         $opts = [
             'audience' => "formazione aziendale per {$brand}",
             'subject_noun' => 'corso',
+            'meter' => ['feature' => 'quiz.generate', 'course_id' => $course->id],
         ];
 
         $result = $this->generateQuestionSet($content, $course->name, $numQuestions, $opts);
@@ -217,47 +219,33 @@ SYSTEM;
 
         $userPrompt .= "\n\nRispondi SOLO con JSON valido.";
 
-        try {
-            $response = Http::withHeaders([
-                'x-api-key' => config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY'),
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
-                'model' => self::CLAUDE_MODEL,
-                'max_tokens' => 4096,
-                'system' => $systemPrompt,
-                'messages' => [['role' => 'user', 'content' => $userPrompt]],
-            ]);
+        $res = $this->claude->messages([
+            'system' => $systemPrompt,
+            'messages' => [['role' => 'user', 'content' => $userPrompt]],
+            'max_tokens' => 4096,
+        ], array_merge(['feature' => 'quiz.generate'], $options['meter'] ?? []));
 
-            if ($response->failed()) {
-                Log::warning('QuizGeneratorService: API call failed', ['status' => $response->status()]);
-                return null;
-            }
-
-            $text = $response->json('content.0.text', '');
-            $text = preg_replace('/```json\s*/i', '', $text);
-            $text = preg_replace('/```\s*/i', '', $text);
-            $data = json_decode(trim($text), true);
-
-            if (!$data || !isset($data['questions']) || !is_array($data['questions']) || empty($data['questions'])) {
-                Log::warning('QuizGeneratorService: invalid JSON response');
-                return null;
-            }
-
-            return [
-                'questions' => $data['questions'],
-                'meta' => [
-                    'model' => self::CLAUDE_MODEL,
-                    'tokens_in' => (int) $response->json('usage.input_tokens', 0),
-                    'tokens_out' => (int) $response->json('usage.output_tokens', 0),
-                    'prompt_version' => self::PROMPT_VERSION,
-                    'questions_count' => count($data['questions']),
-                ],
-            ];
-        } catch (\Throwable $e) {
-            Log::error('QuizGeneratorService error: ' . $e->getMessage());
+        if ($res->failed()) {
+            Log::warning('QuizGeneratorService: API call failed', ['error' => $res->error]);
             return null;
         }
+
+        $data = $res->jsonFromText();
+        if (!$data || !isset($data['questions']) || !is_array($data['questions']) || empty($data['questions'])) {
+            Log::warning('QuizGeneratorService: invalid JSON response');
+            return null;
+        }
+
+        return [
+            'questions' => $data['questions'],
+            'meta' => [
+                'model' => config('services.anthropic.model'),
+                'tokens_in' => $res->tokensIn(),
+                'tokens_out' => $res->tokensOut(),
+                'prompt_version' => self::PROMPT_VERSION,
+                'questions_count' => count($data['questions']),
+            ],
+        ];
     }
 
     /**

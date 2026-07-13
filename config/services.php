@@ -69,6 +69,22 @@ return [
 
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
+
+        // ClaudeClient centralizzato: default riusati da tutti i call-site (il
+        // modello è overridabile per-chiamata: alcune fasi vogliono Opus).
+        'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-4-5'),
+        'version' => env('ANTHROPIC_VERSION', '2023-06-01'),
+        'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com/v1/messages'),
+        'timeout' => (int) env('ANTHROPIC_TIMEOUT', 120),
+        'max_retries' => (int) env('ANTHROPIC_MAX_RETRIES', 2),
+        // Prezzi USD per 1M token [input, output] per stima costi nel metering.
+        // ⚠️ DA VERIFICARE con il listino corrente prima di usarli per il pricing.
+        'prices' => [
+            'claude-sonnet-4-5' => ['in' => 3.0, 'out' => 15.0],
+            'claude-sonnet-4-6' => ['in' => 3.0, 'out' => 15.0],
+            'claude-opus-4-8'   => ['in' => 15.0, 'out' => 75.0],
+        ],
+
         // Vision (OCR/trascrizione foto e PDF scansionati) — Schola pacchetto 4a
         'vision_model' => env('ANTHROPIC_VISION_MODEL', 'claude-sonnet-4-5'),
         'vision_max_tokens' => (int) env('ANTHROPIC_VISION_MAX_TOKENS', 4000),

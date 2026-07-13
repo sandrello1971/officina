@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\InstructorManualSection;
 use App\Models\Material;
 use App\Models\Module;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -23,9 +22,10 @@ use Illuminate\Support\Facades\Log;
  */
 class InstructorManualRemapService
 {
-    private const CLAUDE_MODEL = 'claude-sonnet-4-5';
-
-    public function __construct(protected InstructorManualSplitterService $splitter) {}
+    public function __construct(
+        protected InstructorManualSplitterService $splitter,
+        protected \App\Services\Ai\ClaudeClient $claude,
+    ) {}
 
     /**
      * @return array{
@@ -142,43 +142,30 @@ SYS;
         $user = "CORSO: {$material->title}\n\nMODULI DISCENTE (sort_order | titolo):\n{$moduleList}\n\n"
             . "SEZIONI DEL FORMATORE da mappare:\n{$secList}\n\nRispondi SOLO con JSON valido.";
 
-        try {
-            $response = Http::withHeaders([
-                'x-api-key' => config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY'),
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
-                'model' => self::CLAUDE_MODEL,
-                'max_tokens' => 2048,
-                'system' => $system,
-                'messages' => [['role' => 'user', 'content' => $user]],
-            ]);
+        $res = $this->claude->messages([
+            'system' => $system,
+            'messages' => [['role' => 'user', 'content' => $user]],
+            'max_tokens' => 2048,
+        ], ['feature' => 'manual.remap', 'course_id' => $material->course_id]);
 
-            if ($response->failed()) {
-                Log::warning('InstructorManualRemapService: AI call failed', ['status' => $response->status()]);
-                return [];
-            }
-
-            $text = (string) $response->json('content.0.text', '');
-            $text = trim(preg_replace('/```(?:json)?\s*|\s*```/i', '', $text));
-            $data = json_decode($text, true);
-
-            if (!is_array($data) || !isset($data['map']) || !is_array($data['map'])) {
-                Log::warning('InstructorManualRemapService: JSON AI non valido');
-                return [];
-            }
-
-            $out = [];
-            foreach ($data['map'] as $row) {
-                if (!isset($row['section_id'])) continue;
-                $sort = $row['module_sort_order'] ?? null;
-                $out[(string) $row['section_id']] = is_numeric($sort) ? (int) $sort : null;
-            }
-
-            return $out;
-        } catch (\Throwable $e) {
-            Log::error('InstructorManualRemapService error: ' . $e->getMessage());
+        if ($res->failed()) {
+            Log::warning('InstructorManualRemapService: AI call failed', ['error' => $res->error]);
             return [];
         }
+
+        $data = $res->jsonFromText();
+        if (!is_array($data) || !isset($data['map']) || !is_array($data['map'])) {
+            Log::warning('InstructorManualRemapService: JSON AI non valido');
+            return [];
+        }
+
+        $out = [];
+        foreach ($data['map'] as $row) {
+            if (!isset($row['section_id'])) continue;
+            $sort = $row['module_sort_order'] ?? null;
+            $out[(string) $row['section_id']] = is_numeric($sort) ? (int) $sort : null;
+        }
+
+        return $out;
     }
 }
