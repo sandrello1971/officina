@@ -26,6 +26,12 @@ use Symfony\Component\Process\Process;
  */
 class LessonPresentationService
 {
+    // Param opzionale con fallback dal container: talvolta istanziato con `new` (test).
+    public function __construct(private ?\App\Services\Ai\ClaudeClient $claude = null)
+    {
+        $this->claude ??= app(\App\Services\Ai\ClaudeClient::class);
+    }
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const TEMPERATURE = 0.3;
     private const MAX_TOKENS = 4000;
@@ -567,11 +573,7 @@ TXT;
 
         $lastError = 'nessun tentativo eseguito';
         for ($attempt = 1; $attempt <= self::JSON_ATTEMPTS; $attempt++) {
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])->timeout(120)->post(self::CLAUDE_API_URL, [
+            $res = $this->claude->messages([
                 'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
                 'max_tokens' => self::MAX_TOKENS,
                 'temperature' => self::TEMPERATURE,
@@ -583,23 +585,23 @@ TXT;
                 ]],
                 'tool_choice' => ['type' => 'tool', 'name' => $toolName],
                 'messages' => [['role' => 'user', 'content' => $userMessage]],
-            ]);
+            ], ['feature' => 'pptx.structured']);
 
-            if (!$response->successful()) {
-                $lastError = 'HTTP ' . $response->status();
-                Log::warning('Lesson pptx Claude API non ok', $logContext + ['attempt' => $attempt, 'status' => $response->status()]);
+            if ($res->failed()) {
+                $lastError = 'HTTP ' . ($res->status ?? $res->error);
+                Log::warning('Lesson pptx Claude API non ok', $logContext + ['attempt' => $attempt, 'status' => $res->status]);
                 continue;
             }
 
-            $stop = (string) $response->json('stop_reason');
-            $input = $this->extractToolInput($response->json('content'), $toolName);
+            $stop = (string) ($res->raw['stop_reason'] ?? '');
+            $input = $this->extractToolInput($res->raw['content'] ?? [], $toolName);
 
             // Troncamento (max_tokens) → il tool_use può essere incompleto: scartalo e ritenta.
             if (is_array($input) && $stop !== 'max_tokens') {
                 return [
                     'input' => $input,
-                    'tokens_in' => (int) ($response->json('usage.input_tokens') ?? 0),
-                    'tokens_out' => (int) ($response->json('usage.output_tokens') ?? 0),
+                    'tokens_in' => $res->tokensIn(),
+                    'tokens_out' => $res->tokensOut(),
                 ];
             }
 
