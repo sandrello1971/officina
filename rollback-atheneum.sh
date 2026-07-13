@@ -77,12 +77,17 @@ php "$DEST/artisan" config:cache
 php "$DEST/artisan" route:cache
 php "$DEST/artisan" view:cache
 
-echo "==> reload php-fpm + restart queue"
-sudo systemctl reload "$FPM_SERVICE"
-sudo systemctl restart "$QUEUE_SERVICE"
-
+# Manutenzione OFF PRIMA dei passi privilegiati (un fallimento sudo non lascia giù il sito).
 echo "==> manutenzione OFF"
 php "$DEST/artisan" up
+
+echo "==> ricarico i worker della coda (queue:restart, NO sudo)"
+php "$DEST/artisan" queue:restart
+
+echo "==> reload php-fpm (opcache) — opzionale, richiede privilegi"
+sudo -n systemctl reload "$FPM_SERVICE" 2>/dev/null \
+  && echo "    php-fpm ricaricato." \
+  || echo "    ⚠️  reload php-fpm non eseguito (no sudo). Se serve: systemctl reload $FPM_SERVICE (root)."
 
 printf '%s %s (rollback da %s)\n' "$(date +%Y-%m-%dT%H:%M:%S)" "$TARGET_SHA" "$CURRENT_SHA" >> "$HISTORY"
 git -C "$REPO" checkout --quiet main || true

@@ -91,12 +91,24 @@ php "$DEST/artisan" config:cache
 php "$DEST/artisan" route:cache
 php "$DEST/artisan" view:cache
 
-echo "==> reload php-fpm + restart queue worker"
-sudo systemctl reload "$FPM_SERVICE"
-sudo systemctl restart "$QUEUE_SERVICE"
-
-echo "==> manutenzione OFF"
+# IMPORTANTE: manutenzione OFF PRIMA dei passi privilegiati, così un eventuale
+# fallimento del reload fpm (utente senza sudo) NON lascia il sito giù.
+echo "==> manutenzione OFF (codice + cache pronti)"
 php "$DEST/artisan" up
+
+echo "==> ricarico i worker della coda col nuovo codice (queue:restart, NO sudo)"
+# Il worker esce alla prossima pausa e systemd (Restart=always) lo rilancia col
+# codice aggiornato. Segnale via cache DB, condivisa www-data↔deployer.
+php "$DEST/artisan" queue:restart
+
+echo "==> reload php-fpm (opcache) — opzionale, richiede privilegi"
+if sudo -n systemctl reload "$FPM_SERVICE" 2>/dev/null; then
+  echo "    php-fpm ricaricato."
+else
+  echo "    ⚠️  reload php-fpm non eseguito (utente senza sudo). L'opcache di prod si"
+  echo "        revalida sui timestamp dei file; se in prod è disattivato, esegui come"
+  echo "        root:  systemctl reload $FPM_SERVICE"
+fi
 
 # Storico dei commit deployati: consente il rollback (rollback-atheneum.sh legge
 # il penultimo SHA). File noscite-owned fuori dal repo e da /var/www.
