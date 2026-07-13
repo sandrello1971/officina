@@ -619,6 +619,18 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::post('upload-image', [App\Http\Controllers\Admin\AdminDashboardController::class, 'uploadImage'])->name('upload-image');
     Route::post('courses/{course}/generate-quiz', [App\Http\Controllers\Admin\CourseController::class, 'generateQuiz'])->name('courses.generate-quiz');
 
+    // Registro di frequenza — sessioni sincrone + prospetto ore (sync + FAD).
+    Route::get('courses/{course}/sessions', [App\Http\Controllers\Admin\CourseSessionController::class, 'index'])->name('courses.sessions.index');
+    Route::get('courses/{course}/sessions/create', [App\Http\Controllers\Admin\CourseSessionController::class, 'create'])->name('courses.sessions.create');
+    Route::post('courses/{course}/sessions', [App\Http\Controllers\Admin\CourseSessionController::class, 'store'])->name('courses.sessions.store');
+    Route::get('courses/{course}/sessions/{session}', [App\Http\Controllers\Admin\CourseSessionController::class, 'show'])->name('courses.sessions.show');
+    Route::post('courses/{course}/sessions/{session}/mark', [App\Http\Controllers\Admin\CourseSessionController::class, 'mark'])->name('courses.sessions.mark');
+    Route::patch('courses/{course}/sessions/{session}', [App\Http\Controllers\Admin\CourseSessionController::class, 'update'])->name('courses.sessions.update');
+    Route::delete('courses/{course}/sessions/{session}', [App\Http\Controllers\Admin\CourseSessionController::class, 'destroy'])->name('courses.sessions.destroy');
+    Route::get('courses/{course}/register', [App\Http\Controllers\Admin\AttendanceRegisterController::class, 'course'])->name('courses.register');
+    Route::get('courses/{course}/register/pdf', [App\Http\Controllers\Admin\AttendanceRegisterController::class, 'coursePdf'])->name('courses.register.pdf');
+    Route::get('courses/{course}/register/{student}', [App\Http\Controllers\Admin\AttendanceRegisterController::class, 'student'])->name('courses.register.student');
+
     // Firma digitale certificati — solo legale rappresentante.
     // Le route batch/* sono dichiarate PRIMA di {certificate}/... per
     // evitare che Laravel interpreti "batch" come model binding di Certificate.

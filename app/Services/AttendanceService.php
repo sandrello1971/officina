@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\AttendanceRecord;
 use App\Models\Course;
+use App\Models\CourseSession;
 use App\Models\Module;
 use App\Models\Student;
 use App\Models\StudentModuleProgress;
+use Illuminate\Support\Collection;
 
 /**
  * Logica centrale del registro di frequenza.
@@ -142,5 +144,109 @@ class AttendanceService
             'hours_credited' => 0,
             'ip'          => $ip,
         ]);
+    }
+
+    // ---------------------------------------------------------------------
+    // Sessioni sincrone (aula / live online): presenza segnata dal docente.
+    // ---------------------------------------------------------------------
+
+    /**
+     * Registra le presenze di una sessione sincrona. `$marks` è una mappa
+     * student_id => ore (float) per i presenti; gli assenti (non in mappa)
+     * vedono rimosso l'eventuale record precedente. Idempotente: un solo
+     * record instructor_mark per (studente, sessione).
+     *
+     * @param  array<string, float|string|null>  $marks
+     * @return int  numero di presenti registrati
+     */
+    public function markSessionAttendance(CourseSession $session, array $marks): int
+    {
+        $enrolled = $session->course->students()->pluck('students.id')->all();
+        $present = 0;
+
+        foreach ($enrolled as $studentId) {
+            $isPresent = array_key_exists($studentId, $marks);
+            $existing = AttendanceRecord::where('course_session_id', $session->id)
+                ->where('student_id', $studentId)
+                ->where('source', 'instructor_mark')
+                ->first();
+
+            if (! $isPresent) {
+                $existing?->delete();
+                continue;
+            }
+
+            $present++;
+            // Ore: valore dato dal docente, altrimenti la durata della sessione.
+            $hours = $marks[$studentId] !== null && $marks[$studentId] !== ''
+                ? round((float) $marks[$studentId], 2)
+                : round(($session->duration_minutes ?? 0) / 60, 2);
+
+            $payload = [
+                'course_id'   => $session->course_id,
+                'type'        => 'sync_session',
+                'source'      => 'instructor_mark',
+                'occurred_at' => $session->scheduled_at ?? now(),
+                'hours_credited' => $hours,
+            ];
+
+            if ($existing) {
+                $existing->update($payload);
+            } else {
+                AttendanceRecord::create($payload + [
+                    'student_id'        => $studentId,
+                    'course_session_id' => $session->id,
+                ]);
+            }
+        }
+
+        return $present;
+    }
+
+    // ---------------------------------------------------------------------
+    // Aggregazioni per il registro (service riusabile, non inline nei controller).
+    // ---------------------------------------------------------------------
+
+    /**
+     * Registro di corso: una riga per studente iscritto con le ore maturate,
+     * distinte tra sincrono (sessioni) e asincrono (FAD), e i totali.
+     *
+     * @return Collection<int, array{student:Student, sync_hours:float, async_hours:float, total_hours:float, sessions_attended:int, modules_completed:int, last_activity:?\Illuminate\Support\Carbon}>
+     */
+    public function courseRegister(Course $course): Collection
+    {
+        $records = AttendanceRecord::where('course_id', $course->id)->get();
+        $byStudent = $records->groupBy('student_id');
+
+        return $course->students()->orderBy('name')->get()->map(function (Student $student) use ($byStudent) {
+            $recs = $byStudent->get($student->id, collect());
+            $sync = round((float) $recs->where('type', 'sync_session')->sum('hours_credited'), 2);
+            $async = round((float) $recs->where('source', 'module_completion')->sum('hours_credited'), 2);
+
+            return [
+                'student'           => $student,
+                'sync_hours'        => $sync,
+                'async_hours'       => $async,
+                'total_hours'       => round($sync + $async, 2),
+                'sessions_attended' => $recs->where('source', 'instructor_mark')->count(),
+                'modules_completed' => $recs->where('source', 'module_completion')->count(),
+                'last_activity'     => $recs->max('occurred_at'),
+            ];
+        })->values();
+    }
+
+    /**
+     * Dettaglio cronologico della presenza di uno studente su un corso: la
+     * lista completa dei record (sessioni, completamenti, accessi) ordinati.
+     *
+     * @return Collection<int, AttendanceRecord>
+     */
+    public function studentCourseDetail(Course $course, Student $student): Collection
+    {
+        return AttendanceRecord::where('course_id', $course->id)
+            ->where('student_id', $student->id)
+            ->with(['session', 'module'])
+            ->orderBy('occurred_at')
+            ->get();
     }
 }
