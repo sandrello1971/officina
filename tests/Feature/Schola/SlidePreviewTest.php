@@ -78,10 +78,15 @@ class SlidePreviewTest extends TestCase
     {
         config(['services.anthropic.key' => 'test-key']);
         Http::fake(['api.anthropic.com/*' => Http::response([
-            'content' => [['text' => json_encode(['slides' => [
-                ['layout' => 'bullets_clean', 'title' => 'Intro', 'bullets' => ['A', 'B']],
-                ['layout' => 'stat', 'value' => '3×', 'label' => 'meglio'],
-            ]])]],
+            'content' => [[
+                'type' => 'tool_use',
+                'name' => 'emit_presentation',
+                'input' => ['slides' => [
+                    ['layout' => 'bullets_clean', 'title' => 'Intro', 'bullets' => ['A', 'B']],
+                    ['layout' => 'stat', 'value' => '3×', 'label' => 'meglio'],
+                ]],
+            ]],
+            'stop_reason' => 'tool_use',
             'usage' => ['input_tokens' => 10, 'output_tokens' => 20],
         ], 200)]);
     }

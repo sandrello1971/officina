@@ -62,10 +62,28 @@ class SlidePresentationEditTest extends TestCase
     private function fakeEditLlm(): void
     {
         config(['services.anthropic.key' => 'test-key']);
+        // Due blocchi tool_use: apply_edits per l'edit + emit_presentation nel caso
+        // il test costruisca prima la presentazione (extractToolInput sceglie per nome).
         Http::fake(['api.anthropic.com/*' => Http::response([
-            'content' => [['text' => json_encode(['edits' => [
-                ['slide_number' => 3, 'slide' => ['layout' => 'bullets_clean', 'title' => 'MODIFICATA', 'bullets' => ['nuovo punto']]],
-            ]])]],
+            'content' => [
+                [
+                    'type' => 'tool_use',
+                    'name' => 'apply_edits',
+                    'input' => ['edits' => [
+                        ['slide_number' => 3, 'slide' => ['layout' => 'bullets_clean', 'title' => 'MODIFICATA', 'bullets' => ['nuovo punto']]],
+                    ]],
+                ],
+                [
+                    'type' => 'tool_use',
+                    'name' => 'emit_presentation',
+                    'input' => ['slides' => [
+                        ['layout' => 'bullets_clean', 'title' => 'Uno', 'bullets' => ['a']],
+                        ['layout' => 'bullets_clean', 'title' => 'Due', 'bullets' => ['b']],
+                        ['layout' => 'bullets_clean', 'title' => 'Tre', 'bullets' => ['c']],
+                    ]],
+                ],
+            ],
+            'stop_reason' => 'tool_use',
             'usage' => ['input_tokens' => 30, 'output_tokens' => 12],
         ], 200)]);
     }

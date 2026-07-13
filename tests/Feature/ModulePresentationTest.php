@@ -52,10 +52,16 @@ class ModulePresentationTest extends TestCase
     {
         config(['services.anthropic.key' => 'test-key']);
         Http::fake(['api.anthropic.com/*' => Http::response([
-            'content' => [['text' => json_encode(['slides' => [
-                ['layout' => 'bullets_clean', 'title' => 'Introduzione', 'bullets' => ['Punto A', 'Punto B']],
-                ['layout' => 'stat', 'value' => '3×', 'label' => 'più efficace'],
-            ]])]],
+            // Output strutturato via tool_use (come l'API reale con tool_choice), non testo.
+            'content' => [[
+                'type' => 'tool_use',
+                'name' => 'emit_presentation',
+                'input' => ['slides' => [
+                    ['layout' => 'bullets_clean', 'title' => 'Introduzione', 'bullets' => ['Punto A', 'Punto B']],
+                    ['layout' => 'stat', 'value' => '3×', 'label' => 'più efficace'],
+                ]],
+            ]],
+            'stop_reason' => 'tool_use',
             'usage' => ['input_tokens' => 10, 'output_tokens' => 20],
         ], 200)]);
     }
