@@ -18,6 +18,13 @@ use RuntimeException;
  */
 class VideoScriptService
 {
+    // Param opzionale con fallback dal container: il servizio è talvolta istanziato
+    // con `new` (test), oltre che risolto via DI.
+    public function __construct(private ?\App\Services\Ai\ClaudeClient $claude = null)
+    {
+        $this->claude ??= app(\App\Services\Ai\ClaudeClient::class);
+    }
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const PROMPT_VERSION = 'video-script-v1';
     private const EDIT_PROMPT_VERSION = 'video-script-edit-v1';
@@ -195,11 +202,7 @@ class VideoScriptService
     {
         $user = "Contesto della slide: {$context}\n\nTesto di narrazione attuale:\n{$current}\n\nIstruzione: {$instruction}";
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(60)->post(self::CLAUDE_API_URL, [
+        $res = $this->claude->messages([
             'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
             'max_tokens' => 800,
             'temperature' => self::TEMPERATURE,
@@ -207,13 +210,13 @@ class VideoScriptService
                 . 'lunghezza simile (~80-100 parole), tono parlato e discorsivo, lingua italiana. '
                 . 'Restituisci SOLO il nuovo testo, senza virgolette, titoli o preamboli.',
             'messages' => [['role' => 'user', 'content' => $user]],
-        ]);
+        ], ['feature' => 'video.script_edit']);
 
-        if (!$response->successful()) {
-            throw new RuntimeException('Errore Claude API: ' . $response->status());
+        if ($res->failed()) {
+            throw new RuntimeException('Errore Claude API: ' . ($res->status ?? $res->error));
         }
 
-        $text = trim((string) ($response->json('content.0.text') ?? ''));
+        $text = trim((string) $res->text());
         $text = trim(preg_replace('/^```.*?\n|\n```$/s', '', $text));
         if ($text === '') {
             throw new RuntimeException('Riscrittura vuota.');
@@ -233,24 +236,20 @@ class VideoScriptService
         $user = "Scrivi il copione narrato. Rispondi SOLO con le slide numerate {$numbers}, "
             . "una voce per slide:\n\n{$list}";
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(120)->post(self::CLAUDE_API_URL, [
+        $res = $this->claude->messages([
             'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
             'max_tokens' => self::MAX_TOKENS,
             'temperature' => self::TEMPERATURE,
             'system' => $this->systemPrompt(),
             'messages' => [['role' => 'user', 'content' => $user]],
-        ]);
+        ], ['feature' => 'video.script']);
 
-        if (!$response->successful()) {
-            Log::error('Video script Claude API failed', ['status' => $response->status()]);
-            throw new RuntimeException('Errore Claude API: ' . $response->status());
+        if ($res->failed()) {
+            Log::error('Video script Claude API failed', ['status' => $res->status, 'error' => $res->error]);
+            throw new RuntimeException('Errore Claude API: ' . ($res->status ?? $res->error));
         }
 
-        $text = (string) ($response->json('content.0.text') ?? '');
+        $text = (string) $res->text();
         $text = preg_replace('/^```(?:json)?\s*/i', '', trim($text));
         $text = preg_replace('/```\s*$/', '', $text);
         $data = json_decode(trim($text), true);
@@ -263,8 +262,8 @@ class VideoScriptService
 
         return [
             is_array($lines) ? $lines : [],
-            (int) ($response->json('usage.input_tokens') ?? 0),
-            (int) ($response->json('usage.output_tokens') ?? 0),
+            $res->tokensIn(),
+            $res->tokensOut(),
         ];
     }
 
