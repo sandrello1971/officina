@@ -95,6 +95,18 @@ Route::prefix('learn')->name('student.')->group(function () {
         // Trasparenza (§8.1): informativa "l'attività di studio è visibile al docente"
         Route::view('/info/studio-condiviso', 'student.classi.trasparenza')->name('schola.transparency');
         Route::get('/course/{course:slug}', [App\Http\Controllers\Student\CourseController::class, 'show'])->name('course.show');
+
+        // Registro di frequenza lato FORMATORE (gate: insegna il corso).
+        Route::get('/course/{course:slug}/sessions', [App\Http\Controllers\Student\CourseAttendanceController::class, 'sessions'])->name('course.sessions.index');
+        Route::get('/course/{course:slug}/sessions/create', [App\Http\Controllers\Student\CourseAttendanceController::class, 'createSession'])->name('course.sessions.create');
+        Route::post('/course/{course:slug}/sessions', [App\Http\Controllers\Student\CourseAttendanceController::class, 'storeSession'])->name('course.sessions.store');
+        Route::get('/course/{course:slug}/sessions/{session}', [App\Http\Controllers\Student\CourseAttendanceController::class, 'showSession'])->name('course.sessions.show');
+        Route::post('/course/{course:slug}/sessions/{session}/mark', [App\Http\Controllers\Student\CourseAttendanceController::class, 'mark'])->name('course.sessions.mark');
+        Route::delete('/course/{course:slug}/sessions/{session}', [App\Http\Controllers\Student\CourseAttendanceController::class, 'destroySession'])->name('course.sessions.destroy');
+        Route::get('/course/{course:slug}/register', [App\Http\Controllers\Student\CourseAttendanceController::class, 'register'])->name('course.register');
+        Route::get('/course/{course:slug}/register/pdf', [App\Http\Controllers\Student\CourseAttendanceController::class, 'registerPdf'])->name('course.register.pdf');
+        Route::get('/course/{course:slug}/register/{student}', [App\Http\Controllers\Student\CourseAttendanceController::class, 'studentDetail'])->name('course.register.student');
+
         Route::get('/course/{course:slug}/module/{module}', [App\Http\Controllers\Student\CourseController::class, 'module'])->name('module.show');
         Route::post('/course/{course:slug}/module/{module}/complete', [App\Http\Controllers\Student\CourseController::class, 'completeModule'])->name('module.complete');
         // Registro FAD: heartbeat presenza (~ogni 30s dal client mentre segue il modulo).
