@@ -23,6 +23,8 @@ use RuntimeException;
  */
 class FreshnessVerifier
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const MAX_TOKENS = 1500;
     private const WEB_SEARCH_TOOL = 'web_search_20250305';
@@ -50,19 +52,15 @@ class FreshnessVerifier
             ];
         }
 
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(180)->post(self::CLAUDE_API_URL, $payload);
+        $res = $this->claude->messages($payload, ['feature' => 'freshness.verify']);
 
-        if (!$response->successful()) {
-            throw new RuntimeException(AnthropicError::message($response, 'Fase 2'));
+        if ($res->failed()) {
+            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'Fase 2'));
         }
 
         // SOLO i blocchi `text` (giudizio finale del modello): i blocchi tool-result
         // (contenuto web non fidato) NON vengono interpretati come output.
-        $text = $this->extractFinalText($response->json('content') ?? []);
+        $text = $this->extractFinalText($res->raw['content'] ?? []);
         $data = $this->decodeJson($text);
 
         return $this->normalize($data);

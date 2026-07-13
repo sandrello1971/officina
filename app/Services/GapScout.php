@@ -20,6 +20,8 @@ use RuntimeException;
  */
 class GapScout
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const WEB_SEARCH_TOOL = 'web_search_20250305';
     private const MAX_TOKENS = 2500;
@@ -102,17 +104,13 @@ class GapScout
             ]],
         ];
 
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(180)->post(self::CLAUDE_API_URL, $payload);
+        $res = $this->claude->messages($payload, ['feature' => 'freshness.gap_scout']);
 
-        if (!$response->successful()) {
-            throw new RuntimeException(AnthropicError::message($response, 'scout copertura'));
+        if ($res->failed()) {
+            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'scout copertura'));
         }
 
-        $gaps = $this->parseGaps($this->extractFinalText($response->json('content') ?? []));
+        $gaps = $this->parseGaps($this->extractFinalText($res->raw['content'] ?? []));
 
         // Etichetta ogni gap col topic di provenienza + peso, derivati dall'host della fonte citata.
         foreach ($gaps as &$g) {

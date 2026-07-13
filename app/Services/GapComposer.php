@@ -18,6 +18,8 @@ use RuntimeException;
  */
 class GapComposer
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const WEB_SEARCH_TOOL = 'web_search_20250305';
     private const MAX_TOKENS = 4000;
@@ -73,17 +75,13 @@ class GapComposer
             ]];
         }
 
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(180)->post(self::CLAUDE_API_URL, $payload);
+        $res = $this->claude->messages($payload, ['feature' => 'freshness.gap_compose']);
 
-        if (!$response->successful()) {
-            throw new RuntimeException(AnthropicError::message($response, 'compose bozza'));
+        if ($res->failed()) {
+            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'compose bozza'));
         }
 
-        return $this->parse($this->extractFinalText($response->json('content') ?? []));
+        return $this->parse($this->extractFinalText($res->raw['content'] ?? []));
     }
 
     private function userMessage(CoverageGap $gap, array $style, string $courseName): string
