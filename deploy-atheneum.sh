@@ -98,4 +98,9 @@ sudo systemctl restart "$QUEUE_SERVICE"
 echo "==> manutenzione OFF"
 php "$DEST/artisan" up
 
-echo "=== deploy completato ==="
+# Storico dei commit deployati: consente il rollback (rollback-atheneum.sh legge
+# il penultimo SHA). File noscite-owned fuori dal repo e da /var/www.
+HISTORY="/home/noscite/atheneum-deploy-history.log"
+printf '%s %s\n' "$(date +%Y-%m-%dT%H:%M:%S)" "$(git -C "$REPO" rev-parse HEAD)" >> "$HISTORY"
+
+echo "=== deploy completato (registrato in $HISTORY) ==="
