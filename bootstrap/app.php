@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Header di sicurezza su tutte le risposte del gruppo web.
         $middleware->web(append: [
             \App\Http\Middleware\SecurityHeaders::class,
+            // Audit trail: registra le azioni mutanti in /admin e /docente (si auto-filtra).
+            \App\Http\Middleware\AuditTrail::class,
         ]);
 
         $middleware->alias([

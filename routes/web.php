@@ -426,6 +426,9 @@ Route::get('/branding/scuola/{school}/logo', [App\Http\Controllers\Scuola\Brandi
 Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
 
+    // Audit trail — chi ha fatto cosa nelle aree admin/docente.
+    Route::get('audit', [App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit.index');
+
     // Scuole (fase 2, P11) — il platform admin è l'unico che attraversa le scuole.
     Route::get('scuole', [App\Http\Controllers\Admin\SchoolController::class, 'index'])->name('scuole.index');
     Route::get('scuole/crea', [App\Http\Controllers\Admin\SchoolController::class, 'create'])->name('scuole.create');
