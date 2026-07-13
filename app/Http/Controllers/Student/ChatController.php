@@ -23,6 +23,7 @@ class ChatController extends Controller
     public function __construct(
         private RagService $rag,
         private StudentCourseAccess $courseAccess,
+        private \App\Services\Ai\ClaudeClient $claude,
     ) {}
 
     public function show(Course $course)
@@ -226,29 +227,20 @@ TXT;
         $messages[] = ['role' => 'user', 'content' => $question];
 
         try {
-            $response = Http::withHeaders([
-                'x-api-key' => config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY'),
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
-                'model' => 'claude-sonnet-4-5',
+            $res = $this->claude->messages([
                 'max_tokens' => $mode === 'expand' ? 4096 : 200,
                 'system' => $systemPrompt,
                 'messages' => $messages,
-            ]);
+            ], ['feature' => 'chat.learn', 'actor_type' => 'student']);
 
-            if ($response->failed()) {
-                \Log::error('Minerva Claude API failed', [
-                    'status' => $response->status(),
-                    'body' => substr($response->body(), 0, 500),
-                ]);
+            if ($res->failed()) {
+                \Log::error('Minerva Claude API failed', ['status' => $res->status, 'error' => $res->error]);
                 return ['content' => 'Errore nella risposta. Riprova.', 'tokens' => null];
             }
 
-            $body = $response->json();
             return [
-                'content' => $body['content'][0]['text'] ?? 'Risposta vuota.',
-                'tokens' => ($body['usage']['input_tokens'] ?? 0) + ($body['usage']['output_tokens'] ?? 0),
+                'content' => $res->text() ?: 'Risposta vuota.',
+                'tokens' => $res->tokensIn() + $res->tokensOut(),
             ];
         } catch (\Throwable $e) {
             return ['content' => 'Assistente momentaneamente non disponibile.', 'tokens' => null];
@@ -398,25 +390,19 @@ TXT;
         $systemPrompt = $this->buildCourseChatSystemPrompt($courseName, $context);
 
         try {
-            $response = Http::withHeaders([
-                'x-api-key' => config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY'),
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
-                'model' => 'claude-sonnet-4-5',
+            $res = $this->claude->messages([
                 'max_tokens' => 2048,
                 'system' => $systemPrompt,
                 'messages' => $history,
-            ]);
+            ], ['feature' => 'chat.course', 'actor_type' => 'student']);
 
-            if ($response->failed()) {
+            if ($res->failed()) {
                 return ['content' => 'Errore nella risposta dell\'assistente. Riprova.', 'tokens' => null];
             }
 
-            $body = $response->json();
             return [
-                'content' => $body['content'][0]['text'] ?? 'Risposta vuota.',
-                'tokens' => ($body['usage']['input_tokens'] ?? 0) + ($body['usage']['output_tokens'] ?? 0),
+                'content' => $res->text() ?: 'Risposta vuota.',
+                'tokens' => $res->tokensIn() + $res->tokensOut(),
             ];
         } catch (\Throwable $e) {
             return ['content' => 'Assistente momentaneamente non disponibile.', 'tokens' => null];
@@ -713,26 +699,20 @@ TXT;
         $messages[] = ['role' => 'user', 'content' => $question];
 
         try {
-            $response = Http::withHeaders([
-                'x-api-key' => config('services.anthropic.key') ?? env('ANTHROPIC_API_KEY'),
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
-                'model' => 'claude-sonnet-4-5',
+            $res = $this->claude->messages([
                 'max_tokens' => 1024,
                 'system' => $systemPrompt,
                 'messages' => $messages,
-            ]);
+            ], ['feature' => 'chat.class', 'actor_type' => 'student']);
 
-            if ($response->failed()) {
-                \Log::error('Minerva classe Claude API failed', ['status' => $response->status()]);
+            if ($res->failed()) {
+                \Log::error('Minerva classe Claude API failed', ['status' => $res->status, 'error' => $res->error]);
                 return ['content' => 'Errore nella risposta. Riprova.', 'tokens' => null];
             }
 
-            $body = $response->json();
             return [
-                'content' => $body['content'][0]['text'] ?? 'Risposta vuota.',
-                'tokens' => ($body['usage']['input_tokens'] ?? 0) + ($body['usage']['output_tokens'] ?? 0),
+                'content' => $res->text() ?: 'Risposta vuota.',
+                'tokens' => $res->tokensIn() + $res->tokensOut(),
             ];
         } catch (\Throwable $e) {
             return ['content' => 'Assistente momentaneamente non disponibile.', 'tokens' => null];

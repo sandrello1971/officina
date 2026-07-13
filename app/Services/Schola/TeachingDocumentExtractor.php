@@ -25,7 +25,7 @@ Regole:
 - NON aggiungere commenti tuoi: solo la trascrizione.
 TXT;
 
-    public function __construct(private VideoAIService $videoai) {}
+    public function __construct(private VideoAIService $videoai, private \App\Services\Ai\ClaudeClient $claude) {}
 
     public function extract(TeachingDocument $doc): array
     {
@@ -294,13 +294,7 @@ TXT;
             throw new RuntimeException("Immagine non leggibile: {$absImagePath}");
         }
 
-        $response = Http::timeout(120)
-            ->withHeaders([
-                'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])
-            ->post(self::VISION_API_URL, [
+        $res = $this->claude->messages([
                 'model' => config('services.anthropic.vision_model', 'claude-sonnet-4-5'),
                 'max_tokens' => (int) config('services.anthropic.vision_max_tokens', 4000),
                 'messages' => [[
@@ -317,21 +311,21 @@ TXT;
                         ['type' => 'text', 'text' => self::VISION_PROMPT],
                     ],
                 ]],
-            ]);
+            ], ['feature' => 'vision.transcribe']);
 
-        if ($response->failed()) {
-            throw new RuntimeException('Claude vision error: ' . $response->status());
+        if ($res->failed()) {
+            throw new RuntimeException('Claude vision error: ' . ($res->status ?? $res->error));
         }
 
-        $text = $response->json('content.0.text');
-        if ($text === null) {
+        $text = $res->text();
+        if ($text === '') {
             throw new RuntimeException('Risposta vision vuota.');
         }
 
         return [
             'text' => $text,
-            'tokens_in' => (int) $response->json('usage.input_tokens', 0),
-            'tokens_out' => (int) $response->json('usage.output_tokens', 0),
+            'tokens_in' => $res->tokensIn(),
+            'tokens_out' => $res->tokensOut(),
         ];
     }
 
