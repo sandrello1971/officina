@@ -97,6 +97,8 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::get('/course/{course:slug}', [App\Http\Controllers\Student\CourseController::class, 'show'])->name('course.show');
         Route::get('/course/{course:slug}/module/{module}', [App\Http\Controllers\Student\CourseController::class, 'module'])->name('module.show');
         Route::post('/course/{course:slug}/module/{module}/complete', [App\Http\Controllers\Student\CourseController::class, 'completeModule'])->name('module.complete');
+        // Registro FAD: heartbeat presenza (~ogni 30s dal client mentre segue il modulo).
+        Route::post('/course/{course:slug}/module/{module}/heartbeat', [App\Http\Controllers\Student\CourseController::class, 'heartbeat'])->name('module.heartbeat')->middleware('throttle:60,1');
         Route::get('/course/{course:slug}/module/{module}/canvas/{canvas}', [App\Http\Controllers\Student\CourseController::class, 'canvas'])->name('module.canvas');
         // Blocco B — presentazione .pptx del modulo (corsista): solo la pubblicata.
         Route::get('/course/{course:slug}/module/{module}/presentazione/download', [App\Http\Controllers\Student\CourseController::class, 'presentationDownload'])->name('module.presentation.download');
