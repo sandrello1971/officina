@@ -29,5 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Error tracking: inoltra le eccezioni non gestite a Sentry.
+        // Inerte finché SENTRY_LARAVEL_DSN non è configurato in .env.
+        \Sentry\Laravel\Integration::handles($exceptions);
     })->create();
