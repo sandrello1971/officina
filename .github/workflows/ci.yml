@@ -34,6 +34,11 @@ jobs:
       APP_KEY: base64:2fl+F0Xr3s2mS9m6R0m8oQ8Yy0m1s3n5p7r9t1v3x5A=
       ANTHROPIC_API_KEY: ci-dummy-key           # i servizi AI sono testati con Http::fake; la chiave non deve essere vera
       PPTX_PYTHON: python3                       # config services.pptx.python
+      # CACHE/SESSION su array: senza .env il default CACHE_STORE=database fa sì che
+      # il boot (Setting::resolve → Cache::remember in AppServiceProvider) interroghi
+      # la tabella 'cache' inesistente su DB fresco → package:discover fallirebbe.
+      CACHE_STORE: array
+      SESSION_DRIVER: array
 
     steps:
       - uses: actions/checkout@v4
