@@ -429,6 +429,13 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     // Audit trail — chi ha fatto cosa nelle aree admin/docente.
     Route::get('audit', [App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit.index');
 
+    // Job falliti — visibilità + retry/rimozione.
+    Route::get('failed-jobs', [App\Http\Controllers\Admin\FailedJobController::class, 'index'])->name('failed-jobs.index');
+    Route::post('failed-jobs/retry-all', [App\Http\Controllers\Admin\FailedJobController::class, 'retryAll'])->name('failed-jobs.retry-all');
+    Route::post('failed-jobs/flush', [App\Http\Controllers\Admin\FailedJobController::class, 'flush'])->name('failed-jobs.flush');
+    Route::post('failed-jobs/{uuid}/retry', [App\Http\Controllers\Admin\FailedJobController::class, 'retry'])->name('failed-jobs.retry');
+    Route::post('failed-jobs/{uuid}/forget', [App\Http\Controllers\Admin\FailedJobController::class, 'forget'])->name('failed-jobs.forget');
+
     // Scuole (fase 2, P11) — il platform admin è l'unico che attraversa le scuole.
     Route::get('scuole', [App\Http\Controllers\Admin\SchoolController::class, 'index'])->name('scuole.index');
     Route::get('scuole/crea', [App\Http\Controllers\Admin\SchoolController::class, 'create'])->name('scuole.create');

@@ -45,6 +45,16 @@ class AppServiceProvider extends ServiceProvider
         $this->registerBrevoMailTransport();
         $this->applyMailSettingsOverride();
 
+        // Observability: logga in modo strutturato ogni job asincrono fallito
+        // (visibile nei log e, quando configurato, inoltrabile a Sentry/Slack).
+        \Illuminate\Support\Facades\Queue::failing(function (\Illuminate\Queue\Events\JobFailed $event) {
+            \Illuminate\Support\Facades\Log::error('[job-failed] ' . $event->job->resolveName(), [
+                'connection' => $event->connectionName,
+                'queue'      => $event->job->getQueue(),
+                'exception'  => $event->exception->getMessage(),
+            ]);
+        });
+
         Certificate::observe(CertificateObserver::class);
 
         Gate::policy(Conversation::class, ConversationPolicy::class);
