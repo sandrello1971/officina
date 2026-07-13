@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: pint + phpunit
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: atheneum_user
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: atheneum_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U atheneum_user -d atheneum_test_db"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+
+    env:
+      # Il DB/env di test è già dichiarato in phpunit.xml; qui forniamo solo ciò
+      # che manca (password, APP_KEY, chiave AI fittizia, python per il pptx).
+      DB_PASSWORD: secret
+      APP_KEY: base64:2fl+F0Xr3s2mS9m6R0m8oQ8Yy0m1s3n5p7r9t1v3x5A=
+      ANTHROPIC_API_KEY: ci-dummy-key           # i servizi AI sono testati con Http::fake; la chiave non deve essere vera
+      PPTX_PYTHON: python3                       # config services.pptx.python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Binari nativi usati dai test (con skip-guard se assenti; qui li rendiamo
+      # disponibili così girano davvero). soffice/LibreOffice è già sul runner.
+      - name: Dipendenze di sistema
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pandoc poppler-utils ffmpeg
+
+      - name: Python (python-pptx + pdf2image)
+        run: pip install --quiet python-pptx pdf2image
+
+      - name: PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, pgsql, mbstring, bcmath, intl, gd, zip
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: composer install
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Node + build asset Vite
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - name: Estensione pgvector
+        run: PGPASSWORD=secret psql -h 127.0.0.1 -U atheneum_user -d atheneum_test_db -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+
+      # Lint di stile — informativo finché il codebase non è formattato in blocco
+      # (poi si passa a gate duro rimuovendo continue-on-error).
+      - name: Pint (style, informativo)
+        continue-on-error: true
+        run: vendor/bin/pint --test
+
+      - name: PHPUnit
+        run: php artisan test
