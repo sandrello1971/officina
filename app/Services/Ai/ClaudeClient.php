@@ -74,10 +74,16 @@ class ClaudeClient
         }
 
         if ($response === null || !$response->successful()) {
-            $this->meter($model, 0, 0, 'error', $context, $lastError);
-            Log::warning('ClaudeClient call failed', ['feature' => $context['feature'] ?? '?', 'error' => $lastError]);
+            // Dettaglio leggibile dal body (error.message) per messaggi utili in UI/failure_reason.
+            $detail = null;
+            if ($response !== null) {
+                $d = $response->json('error.message');
+                $detail = (is_string($d) && trim($d) !== '') ? trim($d) : null;
+            }
+            $this->meter($model, 0, 0, 'error', $context, $detail ?? $lastError);
+            Log::warning('ClaudeClient call failed', ['feature' => $context['feature'] ?? '?', 'error' => $detail ?? $lastError]);
 
-            return new ClaudeResponse(ok: false, status: $response?->status(), error: $lastError);
+            return new ClaudeResponse(ok: false, status: $response?->status(), error: $lastError, errorDetail: $detail);
         }
 
         $raw = $response->json();

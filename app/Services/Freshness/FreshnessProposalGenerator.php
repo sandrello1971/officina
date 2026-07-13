@@ -18,6 +18,8 @@ use RuntimeException;
  */
 class FreshnessProposalGenerator
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const MAX_TOKENS = 1500;
 
@@ -55,22 +57,18 @@ class FreshnessProposalGenerator
         $user = "Affermazione obsoleta (categoria: {$category}):\n\"{$beforeText}\"{$sourceLine}\n\n"
             . "Proponi il testo aggiornato (after) che sostituisce questa frase.";
 
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(120)->post(self::CLAUDE_API_URL, [
+        $res = $this->claude->messages([
             'model' => config('services.anthropic.freshness_extract_model'),
             'max_tokens' => self::MAX_TOKENS,
             'system' => self::SYSTEM_PROMPT,
             'messages' => [['role' => 'user', 'content' => $user]],
-        ]);
+        ], ['feature' => 'freshness.proposal']);
 
-        if (!$response->successful()) {
-            throw new RuntimeException(AnthropicError::message($response, 'Fase 3'));
+        if ($res->failed()) {
+            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'Fase 3'));
         }
 
-        $text = $response->json('content.0.text');
+        $text = $res->text();
         if (!is_string($text) || trim($text) === '') {
             throw new RuntimeException('Risposta Fase 3 vuota o malformata.');
         }

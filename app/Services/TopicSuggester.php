@@ -19,6 +19,8 @@ use RuntimeException;
  */
 class TopicSuggester
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const MAX_TOKENS = 500;
 
@@ -58,22 +60,18 @@ class TopicSuggester
         $existing = $this->existingTopics();
         $map = app(CourseMapExtractor::class)->fromCourse($course);
 
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(60)->post(self::CLAUDE_API_URL, [
+        $res = $this->claude->messages([
             'model' => config('services.anthropic.freshness_extract_model'),
             'max_tokens' => self::MAX_TOKENS,
             'system' => self::SYSTEM_PROMPT,
             'messages' => [['role' => 'user', 'content' => $this->userMessage($course, $map, $existing)]],
-        ]);
+        ], ['feature' => 'freshness.topic_suggest']);
 
-        if (!$response->successful()) {
-            throw new RuntimeException(AnthropicError::message($response, 'suggerimento topic'));
+        if ($res->failed()) {
+            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'suggerimento topic'));
         }
 
-        $parsed = $this->parse($response->json('content.0.text'));
+        $parsed = $this->parse($res->text());
         $topic = $this->slug($parsed['suggested_topic']);
         if ($topic === '') {
             throw new RuntimeException('Nessun topic proposto.');
@@ -101,22 +99,18 @@ class TopicSuggester
         $existing = $this->existingTopics();
         $map = app(CourseMapExtractor::class)->fromCourse($course);
 
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(60)->post(self::CLAUDE_API_URL, [
+        $res = $this->claude->messages([
             'model' => config('services.anthropic.freshness_extract_model'),
             'max_tokens' => self::MAX_TOKENS,
             'system' => self::SYSTEM_PROMPT_MULTI,
             'messages' => [['role' => 'user', 'content' => $this->userMessage($course, $map, $existing)]],
-        ]);
+        ], ['feature' => 'freshness.topic_suggest']);
 
-        if (!$response->successful()) {
-            throw new RuntimeException(AnthropicError::message($response, 'suggerimento topic'));
+        if ($res->failed()) {
+            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'suggerimento topic'));
         }
 
-        $raw = $this->parseList($response->json('content.0.text'));
+        $raw = $this->parseList($res->text());
 
         $out = [];
         $seen = [];

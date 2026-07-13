@@ -13,6 +13,8 @@ class ClaudeResponse
         public readonly array $raw = [],
         public readonly ?int $status = null,
         public readonly ?string $error = null,
+        // Dettaglio leggibile dall'API (body error.message, es. "credit balance is too low").
+        public readonly ?string $errorDetail = null,
     ) {}
 
     public function failed(): bool

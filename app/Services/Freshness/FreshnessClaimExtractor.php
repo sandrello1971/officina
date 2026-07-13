@@ -21,6 +21,8 @@ use RuntimeException;
  */
 class FreshnessClaimExtractor
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const MAX_TOKENS = 4000;
 
@@ -226,24 +228,20 @@ class FreshnessClaimExtractor
      */
     private function callClaude(string $userPrompt): array
     {
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(120)->post(self::CLAUDE_API_URL, [
+        $res = $this->claude->messages([
             'model' => config('services.anthropic.freshness_extract_model'),
             'max_tokens' => self::MAX_TOKENS,
             'system' => self::SYSTEM_PROMPT,
             'messages' => [
                 ['role' => 'user', 'content' => "Blocchi del corso:\n\n" . $userPrompt],
             ],
-        ]);
+        ], ['feature' => 'freshness.claims']);
 
-        if (!$response->successful()) {
-            throw new RuntimeException(AnthropicError::message($response, 'Fase 1'));
+        if ($res->failed()) {
+            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'Fase 1'));
         }
 
-        $text = $response->json('content.0.text');
+        $text = $res->text();
         if (!is_string($text) || trim($text) === '') {
             throw new RuntimeException('Risposta Fase 1 vuota o malformata.');
         }

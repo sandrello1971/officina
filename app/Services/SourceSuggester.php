@@ -16,6 +16,8 @@ use RuntimeException;
  */
 class SourceSuggester
 {
+    public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
+
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const MAX_TOKENS = 1500;
 
@@ -44,24 +46,20 @@ class SourceSuggester
         // Topic SEMPRE slugificato (coerente coi topic dei corsi → lo Scout li fa combaciare).
         $topic = Str::slug($topic);
 
-        $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(60)->post(self::CLAUDE_API_URL, [
+        $res = $this->claude->messages([
             'model' => config('services.anthropic.freshness_extract_model'),
             'max_tokens' => self::MAX_TOKENS,
             'system' => self::SYSTEM_PROMPT,
             'messages' => [
                 ['role' => 'user', 'content' => "Dominio tematico: «{$topic}». Proponi fino a {$n} fonti."],
             ],
-        ]);
+        ], ['feature' => 'freshness.source_suggest']);
 
-        if (!$response->successful()) {
-            throw new RuntimeException(AnthropicError::message($response, 'proposta fonti'));
+        if ($res->failed()) {
+            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'proposta fonti'));
         }
 
-        $candidates = $this->parseSources($response->json('content.0.text'));
+        $candidates = $this->parseSources($res->text());
 
         $created = 0;
         $skipped = 0;

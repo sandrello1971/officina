@@ -13,9 +13,17 @@ class AnthropicError
 {
     public static function message(Response $response, string $phase): string
     {
-        $base = "Anthropic API errore {$phase}: HTTP " . $response->status();
+        return self::messageFrom($response->status(), $response->json('error.message'), $phase);
+    }
 
-        $detail = $response->json('error.message');
+    /**
+     * Variante disaccoppiata dalla Response, per i call-site migrati su ClaudeClient
+     * (che espone status + errorDetail invece dell'oggetto Response). Stesso formato.
+     */
+    public static function messageFrom(?int $status, ?string $detail, string $phase): string
+    {
+        $base = "Anthropic API errore {$phase}: HTTP " . ($status ?? '?');
+
         if (is_string($detail) && trim($detail) !== '') {
             return $base . ' — ' . trim($detail);
         }
