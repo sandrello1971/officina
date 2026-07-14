@@ -15,6 +15,16 @@
 #
 set -euo pipefail
 
+# SICUREZZA: `php artisan config:cache` (più sotto) legge le variabili d'ambiente
+# PRIMA del .env, quindi eventuali override di sviluppo/CI presenti nella shell
+# del deployer (es. SESSION_DRIVER=array, CACHE_STORE=array, ANTHROPIC_API_KEY=
+# ci-dummy-key) finirebbero BAKED nel config cache di produzione — rompendo
+# sessioni (login loop), cache e chiavi API. Le azzeriamo: la config deve venire
+# SOLO dal .env di produzione.
+unset ANTHROPIC_API_KEY ANTHROPIC_MODEL SESSION_DRIVER CACHE_STORE PPTX_PYTHON \
+      APP_ENV APP_KEY APP_URL DB_CONNECTION DB_DATABASE DB_USERNAME DB_PASSWORD \
+      DB_HOST DB_PORT SESSION_ENCRYPT MAIL_MAILER QUEUE_CONNECTION 2>/dev/null || true
+
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # root dell'app Laravel (= root del repo)
 REPO="$SRC"                                            # il .git vive qui (repo non più in sottocartella)
 DEST="/var/www/noscite-atheneum"
