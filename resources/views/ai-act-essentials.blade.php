@@ -29,7 +29,7 @@
             </a>
             <div class="flex items-center gap-5 sm:gap-8">
                 <a href="/" class="glitch-navlink text-glitch-ivory hidden sm:inline">Home</a>
-                <a href="{{ route('contatti') }}" class="glitch-navlink text-glitch-ivory hidden sm:inline">Contatti</a>
+                <a href="#contatti" class="glitch-navlink text-glitch-ivory hidden sm:inline">Contatti</a>
                 <a href="{{ route('student.login') }}" class="glitch-navlink text-glitch-red">Accedi</a>
             </div>
         </nav>
@@ -54,7 +54,7 @@
                 <span class="text-glitch-red">·</span> attestato finale
             </p>
             <div class="mt-12 flex flex-wrap items-center gap-6">
-                <a href="{{ route('contatti') }}" class="glitch-cta inline-block px-8 py-4">
+                <a href="#contatti" class="glitch-cta inline-block px-8 py-4">
                     Attiva il corso per la tua azienda
                 </a>
                 <a href="{{ route('student.login') }}" class="glitch-navlink text-glitch-ivory/70">
@@ -143,12 +143,37 @@
                     Conformità non è un modulo da spuntare. È sapere cosa stai facendo.
                 </p>
                 <div class="mt-12 flex flex-wrap items-center gap-6">
-                    <a href="{{ route('contatti') }}" class="glitch-cta inline-block px-8 py-4">
+                    <a href="#contatti" class="glitch-cta inline-block px-8 py-4">
                         Attiva il corso per la tua azienda
                     </a>
                     <span class="glitch-body text-sm text-glitch-ivory/60">
                         Formi il team e documenti l'Articolo 4.
                     </span>
+                </div>
+            </div>
+        </section>
+
+        {{-- ===================== CONTATTI (autosufficiente, on-page) ===================== --}}
+        <section id="contatti" class="border-t border-glitch-ivory/10" aria-labelledby="contatti-titolo">
+            <div class="mx-auto grid max-w-6xl gap-6 px-5 py-20 sm:grid-cols-[auto_1fr] sm:gap-12 sm:px-8 sm:py-24">
+                <span class="glitch-numeral" aria-hidden="true">04</span>
+                <div class="max-w-2xl">
+                    <p class="glitch-tag mb-4">Contatti</p>
+                    <h2 id="contatti-titolo" class="glitch-section-title text-glitch-ivory">Attiva AI ACT Essentials.</h2>
+                    <p class="glitch-body mt-6 text-glitch-ivory/80">
+                        Scrivici o chiamaci: attiviamo il corso per il tuo team e ti aiutiamo a
+                        documentare la formazione richiesta dall'Articolo 4.
+                    </p>
+                    <div class="mt-10 flex flex-col gap-6">
+                        <a href="mailto:rumore@effettoglitch.it?subject=AI%20ACT%20Essentials%20%E2%80%94%20richiesta%20attivazione&body=Salve%2C%20vorrei%20attivare%20il%20corso%20AI%20ACT%20Essentials%20per%20la%20mia%20azienda."
+                           class="glitch-cta inline-block px-8 py-4 self-start">
+                            Scrivi a rumore@effettoglitch.it
+                        </a>
+                        <p class="glitch-body text-glitch-ivory/80">
+                            Oppure chiama
+                            <a href="tel:+393476859801" class="glitch-navlink text-glitch-red">+39 347 685 9801</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -166,7 +191,7 @@
                 Un progetto <span class="text-glitch-ivory">Effetto Glitch</span> — effettoglitch.it
             </p>
             <p class="glitch-body text-sm text-glitch-ivory/60 sm:text-right">
-                <a href="{{ route('contatti') }}" class="glitch-navlink text-glitch-ivory">Contatti</a>
+                <a href="#contatti" class="glitch-navlink text-glitch-ivory">Contatti</a>
             </p>
         </div>
     </footer>
