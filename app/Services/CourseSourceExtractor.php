@@ -83,6 +83,27 @@ class CourseSourceExtractor
     }
 
     /**
+     * Estrae i blocchi da un file HTML. Gemello di extractFromDocx/extractFromMarkdown:
+     * cambia SOLO il convertitore davanti (html→json); mapAst() è riusato as-is
+     * (format-agnostic sull'AST pandoc) → block_id/claim hanno la STESSA forma.
+     * Usato per ricostruire il sorgente strutturato dal contenuto (HTML) dei moduli
+     * di un corso async che non ha un manuale .docx.
+     *
+     * @return array{blocks: list<array>, frontmatter: list<string>, warnings: list<string>}
+     */
+    public function extractFromHtml(string $htmlPath): array
+    {
+        if (!is_file($htmlPath)) {
+            throw new RuntimeException("File .html non trovato: {$htmlPath}");
+        }
+
+        $this->assertPandocAvailable();
+        $ast = $this->htmlToAst($htmlPath);
+
+        return $this->mapAst($ast);
+    }
+
+    /**
      * Verifica esplicita che pandoc sia installato e invocabile. Se manca, errore
      * CHIARO (non un crash oscuro più avanti nella pipeline).
      */
@@ -159,6 +180,34 @@ class CourseSourceExtractor
 
         if (!$process->isSuccessful()) {
             throw new RuntimeException('pandoc ha fallito la conversione .md→json: ' . $process->getErrorOutput());
+        }
+
+        $ast = json_decode($process->getOutput(), true);
+        if (!is_array($ast) || !isset($ast['blocks']) || !is_array($ast['blocks'])) {
+            throw new RuntimeException('Output pandoc non valido: AST senza chiave "blocks".');
+        }
+
+        return $ast;
+    }
+
+    /**
+     * Converte l'HTML in AST pandoc (JSON) con `--from=html`. Gemello di
+     * markdownToAst/docxToAst: stesso `--to=json`, stesso AST a valle.
+     *
+     * @return array AST pandoc decodificato (chiave 'blocks')
+     */
+    private function htmlToAst(string $htmlPath): array
+    {
+        $process = new Process([
+            'pandoc', $htmlPath,
+            '--from=html',
+            '--to=json',
+        ]);
+        $process->setTimeout(120);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            throw new RuntimeException('pandoc ha fallito la conversione .html→json: ' . $process->getErrorOutput());
         }
 
         $ast = json_decode($process->getOutput(), true);
