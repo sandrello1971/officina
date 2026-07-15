@@ -44,6 +44,11 @@ class PageController extends Controller
         return view('conformita-ai-act');
     }
 
+    public function aiActEssentials(): View
+    {
+        return view('ai-act-essentials');
+    }
+
     public function risorse(): View
     {
         return view('risorse');

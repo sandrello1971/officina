@@ -129,6 +129,7 @@
             <a href="/structura" class="nav-link text-sm font-medium {{ request()->is('structura') ? 'active' : '' }}">Circuito</a>
             <a href="/ai-agents-mcp" class="nav-link text-sm font-medium {{ request()->is('ai-agents-mcp') ? 'active' : '' }}">Frequenza</a>
             <a href="/conformita-ai-act" class="nav-link text-sm font-medium {{ request()->is('conformita-ai-act') ? 'active' : '' }}">Conformità AI Act</a>
+            <a href="/ai-act-essentials" class="nav-link text-sm font-medium {{ request()->is('ai-act-essentials') ? 'active' : '' }}">AI Act Essentials</a>
             <a href="/learn/login"
                style="display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid #55B1AE;color:#55B1AE;border-radius:6px;font-size:0.8rem;font-weight:600;text-decoration:none;transition:all 0.2s;"
                onmouseover="this.style.background='#55B1AE';this.style.color='white'"
@@ -150,6 +151,7 @@
             <a href="/structura" class="nav-link text-sm font-medium py-1">Circuito</a>
             <a href="/ai-agents-mcp" class="nav-link text-sm font-medium py-1">Frequenza</a>
             <a href="/conformita-ai-act" class="nav-link text-sm font-medium py-1">Conformità AI Act</a>
+            <a href="/ai-act-essentials" class="nav-link text-sm font-medium py-1">AI Act Essentials</a>
             <a href="/learn/login"
                style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 14px;border:1px solid #55B1AE;color:#55B1AE;border-radius:6px;font-size:0.8rem;font-weight:600;text-decoration:none;"
                onmouseover="this.style.background='#55B1AE';this.style.color='white'"
