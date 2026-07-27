@@ -29,8 +29,14 @@ class StudentClaimExtractorTest extends TestCase
 
     private function fakeLlm(array $claims): void
     {
+        // Output strutturato via tool-use (niente serializzazione JSON manuale).
         Http::fake(['api.anthropic.com/*' => Http::response([
-            'content' => [['type' => 'text', 'text' => json_encode(['claims' => $claims], JSON_UNESCAPED_UNICODE)]],
+            'stop_reason' => 'end_turn',
+            'content' => [[
+                'type' => 'tool_use',
+                'name' => 'registra_affermazioni',
+                'input' => ['claims' => $claims],
+            ]],
         ], 200)]);
     }
 

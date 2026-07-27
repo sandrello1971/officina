@@ -109,6 +109,40 @@
         </div>
 
         <div style="background:white; border-radius:10px; padding:20px; margin-bottom:20px;">
+            <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:4px;">Aggiornamento contenuti (Freshness)</h3>
+            <p style="font-size:0.78rem; color:#8A9696; margin-bottom:14px;">
+                Il controllo automatico dell'obsolescenza dei corsi effettua ricerche online e chiamate AI a pagamento.
+                Tienilo spento per controllare i costi: potrai comunque lanciare un controllo manuale sul singolo corso.
+            </p>
+            <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#1A1F1F; cursor:pointer;">
+                <input type="checkbox" name="freshness_auto_enabled" value="1"
+                       @checked(old('freshness_auto_enabled', $settings['freshness_auto_enabled'] ?? false))>
+                Abilita il monitoraggio automatico (scheduler) con ricerca online
+            </label>
+            <p style="font-size:0.72rem; color:#8A9696; margin-top:8px; font-style:italic;">
+                Se spento, lo scheduler non lancia alcun controllo automatico (nessuna spesa). Il pulsante
+                «Controlla ora» nella coda proposte resta sempre attivo per i test puntuali.
+            </p>
+        </div>
+
+        <div style="background:white; border-radius:10px; padding:20px; margin-bottom:20px;">
+            <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:4px;">News AI</h3>
+            <p style="font-size:0.78rem; color:#8A9696; margin-bottom:14px;">
+                La rassegna settimanale di news sull'AI usa la ricerca online (chiamate AI a pagamento).
+                Le news recuperate restano bozze finché non le pubblichi dalla sezione «News AI».
+            </p>
+            <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#1A1F1F; cursor:pointer;">
+                <input type="checkbox" name="ainews_auto_enabled" value="1"
+                       @checked(old('ainews_auto_enabled', $settings['ainews_auto_enabled'] ?? false))>
+                Abilita il recupero automatico settimanale delle news
+            </label>
+            <p style="font-size:0.72rem; color:#8A9696; margin-top:8px; font-style:italic;">
+                Se spento, non viene recuperata alcuna news in automatico (nessuna spesa). Il pulsante
+                «Recupera ora» nella sezione News AI resta sempre attivo per i test.
+            </p>
+        </div>
+
+        <div style="background:white; border-radius:10px; padding:20px; margin-bottom:20px;">
             <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:4px;">SMTP / Mail</h3>
             <p style="font-size:0.78rem; color:#8A9696; margin-bottom:14px;">
                 Se questi campi sono vuoti, viene usata la configurazione del file <code style="background:#F5F7F7; padding:1px 5px; border-radius:3px;">.env</code> (comportamento attuale).

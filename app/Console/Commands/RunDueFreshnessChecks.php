@@ -25,6 +25,14 @@ class RunDueFreshnessChecks extends Command
 
     public function handle(): int
     {
+        // Interruttore globale di costo (Impostazioni admin): finché OFF, lo scheduler NON
+        // lancia alcun run automatico (nessuna spesa API). Il "run now" manuale dell'admin
+        // resta comunque disponibile per test puntuali. Default: OFF.
+        if ((string) atheneum_setting('freshness_auto_enabled', '0') !== '1') {
+            $this->info('freshness:run-due — monitoraggio automatico DISABILITATO (Impostazioni → freshness_auto_enabled). Nessun run lanciato.');
+            return self::SUCCESS;
+        }
+
         $cap = (int) ($this->option('limit') ?: self::DEFAULT_CAP);
 
         $due = CourseFreshnessConfig::where('cadence', '!=', 'off')

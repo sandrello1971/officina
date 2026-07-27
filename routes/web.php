@@ -205,6 +205,9 @@ Route::prefix('learn')->name('student.')->group(function () {
         Route::post('/annunci',             [App\Http\Controllers\Student\AnnouncementController::class, 'store'])->name('announcements.store');
         Route::get('/annunci/{announcement}', [App\Http\Controllers\Student\AnnouncementController::class, 'show'])->name('announcements.show');
 
+        // News AI — rassegna settimanale (globale, solo news pubblicate dall'admin)
+        Route::get('/news', [App\Http\Controllers\Student\NewsController::class, 'index'])->name('news.index');
+
         // Messaggi (DM) — backend Fase A (UI Fase B, Reverb Fase C)
         Route::prefix('messaggi')->name('messages.')->group(function () {
             Route::get('/',                          [App\Http\Controllers\Student\ConversationController::class, 'index'])->name('index');
@@ -547,6 +550,13 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
     Route::patch('aggiornamenti/{proposal}/approva', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'approve'])->name('freshness.proposals.approve');
     Route::patch('aggiornamenti/{proposal}/rifiuta', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'reject'])->name('freshness.proposals.reject');
     Route::patch('aggiornamenti/{proposal}/conferma', [App\Http\Controllers\Admin\FreshnessProposalController::class, 'confirm'])->name('freshness.proposals.confirm');
+
+    // News AI — revisione HITL delle news recuperate settimanalmente.
+    Route::get('news', [App\Http\Controllers\Admin\NewsController::class, 'index'])->name('news.index');
+    Route::post('news/recupera', [App\Http\Controllers\Admin\NewsController::class, 'fetchNow'])->name('news.fetch');
+    Route::patch('news/{news}/pubblica', [App\Http\Controllers\Admin\NewsController::class, 'publish'])->name('news.publish');
+    Route::patch('news/{news}/scarta', [App\Http\Controllers\Admin\NewsController::class, 'reject'])->name('news.reject');
+    Route::put('news/{news}', [App\Http\Controllers\Admin\NewsController::class, 'update'])->name('news.update');
 
     // P26 Fase 0 — Registro fonti attendibili (gated da config services.p26.enabled nel controller).
     Route::get('fonti', [App\Http\Controllers\Admin\TrustedSourceController::class, 'index'])->name('sources.index');

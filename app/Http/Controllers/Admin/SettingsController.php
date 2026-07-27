@@ -49,6 +49,9 @@ class SettingsController extends Controller
             'assistant_domain_context' => Setting::resolve('assistant_domain_context', ''),
             'contact_email'            => Setting::resolve('contact_email', ''),
             'demo_user_email'          => Setting::resolve('demo_user_email', ''),
+            // freshness: interruttore globale del monitoraggio automatico (controllo costi)
+            'freshness_auto_enabled'   => (string) Setting::resolve('freshness_auto_enabled', '0') === '1',
+            'ainews_auto_enabled'      => (string) Setting::resolve('ainews_auto_enabled', '0') === '1',
             // mail
             'mail_host'         => Setting::resolve('mail_host', ''),
             'mail_port'         => Setting::resolve('mail_port', ''),
@@ -76,6 +79,8 @@ class SettingsController extends Controller
             'assistant_domain_context' => 'nullable|string|max:1000',
             'contact_email'            => 'nullable|email|max:255',
             'demo_user_email'          => 'nullable|email|max:255',
+            'freshness_auto_enabled'   => 'nullable|boolean',
+            'ainews_auto_enabled'      => 'nullable|boolean',
             'mail_host'          => 'nullable|string|max:255',
             'mail_port'          => 'nullable|integer|min:1|max:65535',
             'mail_username'      => 'nullable|string|max:255',
@@ -93,6 +98,11 @@ class SettingsController extends Controller
         foreach (self::BRANDING_KEYS as $key) {
             Setting::put($key, $data[$key] ?? '');
         }
+
+        // Interruttore freshness (checkbox): '1' abilita i run automatici, '0' li blocca.
+        Setting::put('freshness_auto_enabled', !empty($data['freshness_auto_enabled']) ? '1' : '0');
+        // Interruttore News AI (checkbox): '1' abilita il recupero settimanale automatico.
+        Setting::put('ainews_auto_enabled', !empty($data['ainews_auto_enabled']) ? '1' : '0');
 
         foreach (self::MAIL_KEYS as $key) {
             $value = $data[$key] ?? null;

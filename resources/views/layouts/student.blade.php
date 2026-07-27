@@ -87,6 +87,10 @@
             'active' => request()->routeIs('student.announcements.*'),
             'badgeId' => 'sidebar-announcements-badge', 'badgeCount' => $unreadAnnouncements ?? 0,
         ])
+        @include('layouts.partials._topbar-item', [
+            'href' => route('student.news.index'), 'label' => 'News AI', 'icon' => 'ai',
+            'active' => request()->routeIs('student.news.*'),
+        ])
     </div>
 
     <div class="topbar-actions">

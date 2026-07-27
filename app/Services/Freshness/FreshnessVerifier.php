@@ -128,12 +128,11 @@ class FreshnessVerifier
         if (preg_match('/^```(?:json)?\s*(.*?)\s*```$/is', $clean, $m)) {
             $clean = trim($m[1]);
         }
-        // Se c'è testo attorno, prova a isolare l'oggetto JSON.
-        if (!str_starts_with($clean, '{') && preg_match('/\{.*\}/s', $clean, $m)) {
-            $clean = $m[0];
-        }
-
         $decoded = json_decode($clean, true);
+        // Fallback: preamboli e/o testo di coda attorno all'oggetto → isola { … } e riprova.
+        if (!is_array($decoded) && preg_match('/\{.*\}/s', $clean, $m)) {
+            $decoded = json_decode($m[0], true);
+        }
         if (!is_array($decoded)) {
             throw new RuntimeException('Output Fase 2 non è JSON valido (atteso JSON puro).');
         }

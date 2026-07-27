@@ -92,6 +92,8 @@ return [
         'freshness_extract_model' => env('FRESHNESS_EXTRACT_MODEL', 'claude-sonnet-4-6'),
         // Verifica con web_search (Fase 2): Opus, qualità sui verdetti (costo superiore).
         'freshness_verify_model' => env('FRESHNESS_VERIFY_MODEL', 'claude-opus-4-8'),
+        // News AI — recupero settimanale con web_search. Sonnet: sufficiente e più economico.
+        'news_model' => env('NEWS_MODEL', 'claude-sonnet-4-5'),
     ],
 
     // Generazione .pptx (Schola P21): python-pptx nel venv condiviso.

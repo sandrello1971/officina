@@ -19,3 +19,8 @@ Schedule::command('schola:backfill-embeddings')->dailyAt('03:30')->withoutOverla
 // ma lancia SOLO i corsi con cadenza scaduta (default 'off' → opt-in), con cap per
 // esecuzione. Solo generazione di proposte; nessuna applicazione (HITL manuale).
 Schedule::command('freshness:run-due')->dailyAt('04:00')->withoutOverlapping();
+
+// News AI — rassegna settimanale via ricerca online. Gira il lunedì; recupera solo se
+// l'interruttore globale `ainews_auto_enabled` è ON (default OFF → nessuna spesa). Salva
+// bozze: la pubblicazione ai discenti è HITL (revisione admin).
+Schedule::command('ainews:fetch-weekly')->weeklyOn(1, '05:00')->withoutOverlapping();

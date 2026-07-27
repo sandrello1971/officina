@@ -49,7 +49,10 @@ class FreshnessAgentTest extends TestCase
                     ['block_id' => 'p1-cap3-sec1-p2', 'quote' => 'Il mercato AI italiano vale 1,8 miliardi di euro nel 2025', 'category' => 'prezzo'],
                     ['block_id' => 'p1-cap3', 'quote' => 'AI e PMI italiane nel 2026', 'category' => 'data'],
                 ]];
-                return Http::response(['content' => [['type' => 'text', 'text' => json_encode($claims, JSON_UNESCAPED_UNICODE)]]], 200);
+                return Http::response([
+                    'stop_reason' => 'end_turn',
+                    'content' => [['type' => 'tool_use', 'name' => 'registra_affermazioni', 'input' => $claims]],
+                ], 200);
             }
 
             // Fase 3 (proposta): editor didattico → after aggiornato.

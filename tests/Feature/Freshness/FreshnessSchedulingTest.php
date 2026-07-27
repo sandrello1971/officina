@@ -6,6 +6,7 @@ use App\Jobs\RunFreshnessAgentJob;
 use App\Models\Course;
 use App\Models\CourseFreshnessConfig;
 use App\Models\CourseSource;
+use App\Models\Setting;
 use App\Models\UpdateProposal;
 use App\Services\Freshness\FreshnessAgent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +21,15 @@ use Tests\TestCase;
 class FreshnessSchedulingTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Questi test verificano la meccanica dello scheduler: abilitiamo l'interruttore
+        // globale del monitoraggio automatico (default OFF per controllo costi). Il gate
+        // OFF ha il suo test dedicato.
+        Setting::put('freshness_auto_enabled', '1');
+    }
 
     private function course(string $name = 'Corso'): Course
     {
@@ -46,9 +56,12 @@ class FreshnessSchedulingTest extends TestCase
         Http::fake(function ($request) {
             $s = $request['system'] ?? '';
             if (str_contains($s, 'analista di obsolescenza')) {
-                return Http::response(['content' => [['type' => 'text', 'text' => json_encode(['claims' => [
-                    ['block_id' => 'b1', 'quote' => 'dato 2025', 'category' => 'data'],
-                ]], JSON_UNESCAPED_UNICODE)]]], 200);
+                return Http::response([
+                    'stop_reason' => 'end_turn',
+                    'content' => [['type' => 'tool_use', 'name' => 'registra_affermazioni', 'input' => ['claims' => [
+                        ['block_id' => 'b1', 'quote' => 'dato 2025', 'category' => 'data'],
+                    ]]]],
+                ], 200);
             }
             if (str_contains($s, 'editor didattico')) {
                 return Http::response(['content' => [['type' => 'text', 'text' => json_encode(['after' => 'dato 2026', 'reason' => 'aggiornato'])]]], 200);
@@ -165,5 +178,21 @@ class FreshnessSchedulingTest extends TestCase
         ]);
 
         $this->assertSame('off', $cfg->refresh()->cadence);
+    }
+
+    /**
+     * Interruttore globale di costo: se freshness_auto_enabled è OFF, lo scheduler NON
+     * lancia alcun run automatico, anche con corsi scaduti. Il "run now" manuale è a parte.
+     */
+    public function test_scheduler_non_lancia_nulla_se_il_flag_globale_e_off(): void
+    {
+        Setting::put('freshness_auto_enabled', '0'); // sovrascrive il setUp
+        $due = $this->course('Scaduto');
+        $this->config($due, 'monthly', null); // mai eseguito → scaduto
+
+        Queue::fake();
+        $this->artisan('freshness:run-due')->assertExitCode(0);
+
+        Queue::assertNothingPushed();
     }
 }

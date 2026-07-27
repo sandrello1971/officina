@@ -48,7 +48,10 @@ class StudentSourceRunTest extends TestCase
                 $claims = str_contains($user, 'Moduli del corso')
                     ? ['claims' => [['module_id' => $this->moduleId, 'quote' => 'Il dato studente è 1,8 miliardi nel 2025', 'category' => 'prezzo']]]
                     : ['claims' => [['block_id' => 'b1', 'quote' => 'Il dato formatore del 2025', 'category' => 'data']]];
-                return Http::response(['content' => [['type' => 'text', 'text' => json_encode($claims, JSON_UNESCAPED_UNICODE)]]], 200);
+                return Http::response([
+                    'stop_reason' => 'end_turn',
+                    'content' => [['type' => 'tool_use', 'name' => 'registra_affermazioni', 'input' => $claims]],
+                ], 200);
             }
             if (str_contains($system, 'editor didattico')) {
                 return Http::response(['content' => [['type' => 'text', 'text' => json_encode(['after' => 'aggiornato al 2026', 'reason' => 'x'])]]], 200);

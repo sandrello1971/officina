@@ -2,9 +2,7 @@
 
 namespace App\Services\Freshness;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 /**
  * P25.B-a — Fase 1 sul MATERIALE STUDENTE (modules.content, HTML). Per ogni modulo:
@@ -22,10 +20,12 @@ use RuntimeException;
  */
 class StudentClaimExtractor
 {
+    use StructuredClaudeCall;
+
     public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
 
-    private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-    private const MAX_TOKENS = 4000;
+    private const MAX_TOKENS = 8000;
+    private const TOOL_NAME = 'registra_affermazioni';
 
     private const ALLOWED_CATEGORIES = ['model', 'norma', 'data', 'prezzo', 'prodotto'];
 
@@ -161,37 +161,33 @@ class StudentClaimExtractor
     /** @return array{claims?: array} */
     private function callClaude(string $userPrompt): array
     {
-        $res = $this->claude->messages([
-            'model' => config('services.anthropic.freshness_extract_model'),
-            'max_tokens' => self::MAX_TOKENS,
-            'system' => self::SYSTEM_PROMPT,
-            'messages' => [
-                ['role' => 'user', 'content' => "Moduli del corso (materiale studente):\n\n" . $userPrompt],
+        return $this->callClaudeStructured(
+            model: config('services.anthropic.freshness_extract_model'),
+            maxTokens: self::MAX_TOKENS,
+            system: self::SYSTEM_PROMPT,
+            userMessage: "Moduli del corso (materiale studente):\n\n" . $userPrompt,
+            toolName: self::TOOL_NAME,
+            toolDescription: 'Registra le affermazioni databili estratte, ciascuna con module_id di provenienza, citazione VERBATIM e categoria.',
+            schema: [
+                'type' => 'object',
+                'properties' => [
+                    'claims' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'module_id' => ['type' => 'string', 'description' => 'Identificatore del modulo di provenienza.'],
+                                'quote' => ['type' => 'string', 'description' => 'Citazione copiata VERBATIM dal modulo, carattere per carattere.'],
+                                'category' => ['type' => 'string', 'enum' => self::ALLOWED_CATEGORIES],
+                            ],
+                            'required' => ['module_id', 'quote', 'category'],
+                        ],
+                    ],
+                ],
+                'required' => ['claims'],
             ],
-        ], ['feature' => 'freshness.student_claims']);
-
-        if ($res->failed()) {
-            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'Fase 1 (studente)'));
-        }
-
-        $text = $res->text();
-        if (!is_string($text) || trim($text) === '') {
-            throw new RuntimeException('Risposta Fase 1 (studente) vuota o malformata.');
-        }
-
-        return $this->decodeJson($text);
-    }
-
-    private function decodeJson(string $text): array
-    {
-        $clean = trim($text);
-        if (preg_match('/^```(?:json)?\s*(.*?)\s*```$/is', $clean, $m)) {
-            $clean = trim($m[1]);
-        }
-        $decoded = json_decode($clean, true);
-        if (!is_array($decoded)) {
-            throw new RuntimeException('Output Fase 1 (studente) non è JSON valido.');
-        }
-        return $decoded;
+            feature: 'freshness.student_claims',
+            errorLabel: 'Fase 1 (studente)',
+        );
     }
 }

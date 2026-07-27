@@ -62,6 +62,7 @@
                 <a href="{{ route('admin.course-categories.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.course-categories.*') ? 'active' : '' }}">Categorie</a>
                 <a href="{{ route('admin.course-tags.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.course-tags.*') ? 'active' : '' }}">Tag</a>
                 <a href="{{ route('admin.freshness.proposals.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.freshness.*') ? 'active' : '' }}">Aggiornamenti</a>
+                <a href="{{ route('admin.news.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.news.*') ? 'active' : '' }}">News AI</a>
                 @if(config('services.p26.enabled'))
                 <a href="{{ route('admin.sources.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.sources.*') ? 'active' : '' }}">Fonti attendibili</a>
                 <a href="{{ route('admin.coverage.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.coverage.*') ? 'active' : '' }}">Copertura</a>

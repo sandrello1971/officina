@@ -2,9 +2,7 @@
 
 namespace App\Services\Freshness;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 /**
  * P25.2 — Fase 1: estrazione delle affermazioni databili dal sorgente strutturato.
@@ -15,16 +13,19 @@ use RuntimeException;
  * citazione nel blocco con codice deterministico e ricalcoliamo sentence_ref,
  * SCARTANDO le citazioni non ritrovate (blocco inesistente o quote non presente).
  *
- * Output JSON validato: tollera i fence ```json ma fa reject su contenuto non-JSON.
- * Servizio PURO (nessuna scrittura DB): la persistenza in freshness_claims è
- * dell'orchestratore. Testabile con Http::fake.
+ * Output via TOOL-USE (structured output): l'API garantisce JSON valido, così le
+ * citazioni verbatim con virgolette doppie non rompono più la serializzazione. Servizio
+ * PURO (nessuna scrittura DB): la persistenza in freshness_claims è dell'orchestratore.
+ * Testabile con Http::fake (bloccare la risposta come blocco `tool_use`).
  */
 class FreshnessClaimExtractor
 {
+    use StructuredClaudeCall;
+
     public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
 
-    private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-    private const MAX_TOKENS = 4000;
+    private const MAX_TOKENS = 8000;
+    private const TOOL_NAME = 'registra_affermazioni';
 
     /** Categorie ammesse (allineate al CHECK di freshness_claims.category). */
     private const ALLOWED_CATEGORIES = ['model', 'norma', 'data', 'prezzo', 'prodotto'];
@@ -221,48 +222,41 @@ class FreshnessClaimExtractor
     }
 
     /**
-     * Chiamata all'API Anthropic + parsing JSON tollerante ai fence ```json.
-     * Reject (RuntimeException) su HTTP non ok o contenuto non-JSON.
+     * Chiamata all'API Anthropic in modalità TOOL-USE: il modello compila lo schema del
+     * tool e l'input torna già come array (niente parsing testo/fence né escaping). Questo
+     * elimina il JSON malformato dalle citazioni verbatim con virgolette doppie.
      *
      * @return array{claims?: array}
      */
     private function callClaude(string $userPrompt): array
     {
-        $res = $this->claude->messages([
-            'model' => config('services.anthropic.freshness_extract_model'),
-            'max_tokens' => self::MAX_TOKENS,
-            'system' => self::SYSTEM_PROMPT,
-            'messages' => [
-                ['role' => 'user', 'content' => "Blocchi del corso:\n\n" . $userPrompt],
+        return $this->callClaudeStructured(
+            model: config('services.anthropic.freshness_extract_model'),
+            maxTokens: self::MAX_TOKENS,
+            system: self::SYSTEM_PROMPT,
+            userMessage: "Blocchi del corso:\n\n" . $userPrompt,
+            toolName: self::TOOL_NAME,
+            toolDescription: 'Registra le affermazioni databili estratte, ciascuna con block_id di provenienza, citazione VERBATIM e categoria.',
+            schema: [
+                'type' => 'object',
+                'properties' => [
+                    'claims' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'block_id' => ['type' => 'string', 'description' => 'Identificatore del blocco di provenienza.'],
+                                'quote' => ['type' => 'string', 'description' => 'Citazione copiata VERBATIM dal blocco, carattere per carattere.'],
+                                'category' => ['type' => 'string', 'enum' => self::ALLOWED_CATEGORIES],
+                            ],
+                            'required' => ['block_id', 'quote', 'category'],
+                        ],
+                    ],
+                ],
+                'required' => ['claims'],
             ],
-        ], ['feature' => 'freshness.claims']);
-
-        if ($res->failed()) {
-            throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'Fase 1'));
-        }
-
-        $text = $res->text();
-        if (!is_string($text) || trim($text) === '') {
-            throw new RuntimeException('Risposta Fase 1 vuota o malformata.');
-        }
-
-        return $this->decodeJson($text);
-    }
-
-    /** Decodifica JSON tollerando i fence ```json … ```; reject su non-JSON. */
-    private function decodeJson(string $text): array
-    {
-        $clean = trim($text);
-        // Rimuove un eventuale blocco markdown ```json … ``` o ``` … ```.
-        if (preg_match('/^```(?:json)?\s*(.*?)\s*```$/is', $clean, $m)) {
-            $clean = trim($m[1]);
-        }
-
-        $decoded = json_decode($clean, true);
-        if (!is_array($decoded)) {
-            throw new RuntimeException('Output Fase 1 non è JSON valido (atteso JSON puro, niente preamboli/markdown).');
-        }
-
-        return $decoded;
+            feature: 'freshness.claims',
+            errorLabel: 'Fase 1',
+        );
     }
 }
