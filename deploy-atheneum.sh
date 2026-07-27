@@ -45,6 +45,14 @@ EXCLUDES=(
   --exclude='/noscite-videoai/' # videoai ha deploy separato (deploy-videoai.sh) e
                                # un venv proprio: MAI riversarlo in noscite-atheneum
   --exclude='.git/'
+  --exclude='/public/build'    # asset compilati in prod (npm run build gira LÌ). Senza
+                               # lo slash finale: intercetta anche un eventuale symlink,
+                               # che altrimenti sfugge all'exclude e --delete cancella
+                               # gli asset veri → sito senza CSS/JS.
+  --exclude='/public/storage'  # symlink verso storage/app/public
+  --exclude='/public/hot'      # marker di vite dev server
+  --exclude='/database/database.sqlite'
+  --exclude='/.env.bak.*'      # backup di .env: non devono finire nella web root
 )
 
 MODE="APPLY"
@@ -59,6 +67,17 @@ echo "REPO: $REPO"
 echo "SRC : $SRC"
 echo "DEST: $DEST"
 echo
+
+# GUARD: il deploy sincronizza il WORKING TREE, non il commit. Con modifiche non
+# committate (o file non tracciati) `git checkout main` le porta con sé e l'rsync
+# le riversa in produzione — lavoro in corso pubblicato per sbaglio. Si aborta.
+if [[ -n "$(git -C "$REPO" status --porcelain)" ]]; then
+  echo "ABORT: il repo ha modifiche non committate — l'rsync le porterebbe in produzione."
+  echo "       Committale, stashale, oppure deploya da un worktree pulito:"
+  echo "       git worktree add /tmp/deploy-atheneum $BRANCH  &&  cd /tmp/deploy-atheneum"
+  git -C "$REPO" status --short | head -20
+  exit 1
+fi
 
 echo "==> git pull ($BRANCH)"
 git -C "$REPO" fetch origin
