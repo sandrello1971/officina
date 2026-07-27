@@ -26,7 +26,7 @@ class VideoScriptReviewTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.anthropic.key' => 'test-key', 'services.pptx.model' => 'claude-sonnet-4-6']);
+        config(['services.anthropic.key' => 'test-key', 'services.anthropic.video_script_model' => 'claude-haiku-4-5']);
     }
 
     private function prof(): Student

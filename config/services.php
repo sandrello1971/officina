@@ -77,11 +77,36 @@ return [
         'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com/v1/messages'),
         'timeout' => (int) env('ANTHROPIC_TIMEOUT', 120),
         'max_retries' => (int) env('ANTHROPIC_MAX_RETRIES', 2),
-        // Prezzi USD per 1M token [input, output] — listino verificato 2026-07-12.
+        // Prezzi USD per 1M token [input, output] — listino verificato 2026-07-27.
+        // Un modello ASSENTE da qui non è un errore ma un buco nel metering:
+        // ClaudeClient scrive cost_usd = null e la chiamata sparisce dai conti.
         'prices' => [
+            'claude-haiku-4-5'  => ['in' => 1.0, 'out' => 5.0],
             'claude-sonnet-4-5' => ['in' => 3.0, 'out' => 15.0],
             'claude-sonnet-4-6' => ['in' => 3.0, 'out' => 15.0],
+            'claude-sonnet-5'   => ['in' => 3.0, 'out' => 15.0],
             'claude-opus-4-8'   => ['in' => 5.0, 'out' => 25.0],
+            'claude-opus-5'     => ['in' => 5.0, 'out' => 25.0],
+        ],
+        // Il tool server-side web_search si paga A RICERCA (USD per 1.000 ricerche),
+        // FUORI dal conteggio token. Senza questa voce il costo vero del freshness
+        // (fino a max_uses ricerche per singola affermazione) resta invisibile.
+        'web_search_price_per_1k' => (float) env('ANTHROPIC_WEB_SEARCH_PRICE_PER_1K', 10.0),
+
+        // Modelli che RIFIUTANO i sampling parameter (temperature/top_p/top_k): inviarli
+        // è un HTTP 400. ClaudeClient li rimuove da solo, così cambiare modello da .env
+        // non rompe i call-site che li impostano. Match per prefisso.
+        'no_sampling_models' => [
+            'claude-opus-4-7', 'claude-opus-4-8', 'claude-opus-5',
+            'claude-sonnet-5', 'claude-fable-5', 'claude-mythos-5',
+        ],
+
+        // Modelli che supportano il web_search con DYNAMIC FILTERING (_20260209): filtra
+        // i risultati prima che entrino in contesto → molti meno token di input. Sui
+        // modelli non elencati si usa la versione base (_20250305), che loro accettano.
+        'dynamic_web_search_models' => [
+            'claude-opus-4-6', 'claude-opus-4-7', 'claude-opus-4-8', 'claude-opus-5',
+            'claude-sonnet-4-6', 'claude-sonnet-5', 'claude-fable-5', 'claude-mythos-5',
         ],
 
         // Vision (OCR/trascrizione foto e PDF scansionati) — Schola pacchetto 4a
@@ -92,8 +117,15 @@ return [
         'freshness_extract_model' => env('FRESHNESS_EXTRACT_MODEL', 'claude-sonnet-4-6'),
         // Verifica con web_search (Fase 2): Opus, qualità sui verdetti (costo superiore).
         'freshness_verify_model' => env('FRESHNESS_VERIFY_MODEL', 'claude-opus-4-8'),
+        // Ricerche web per affermazione verificata. È la voce di costo dominante della
+        // Fase 2 (i risultati entrano in contesto come token di input): alzarla costa.
+        'freshness_web_search_max_uses' => (int) env('FRESHNESS_WEB_SEARCH_MAX_USES', 3),
         // News AI — recupero settimanale con web_search. Sonnet: sufficiente e più economico.
         'news_model' => env('NEWS_MODEL', 'claude-sonnet-4-5'),
+        // Copione dei video narrati: task semplice (punti slide → parlato) con output
+        // vincolato da tool-use, quindi Haiku basta e costa 1/3 di Sonnet. Alzare a
+        // Sonnet da .env se la resa in italiano non convince.
+        'video_script_model' => env('VIDEO_SCRIPT_MODEL', 'claude-haiku-4-5'),
     ],
 
     // Generazione .pptx (Schola P21): python-pptx nel venv condiviso.

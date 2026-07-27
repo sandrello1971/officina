@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Course;
 use App\Models\TrustedSource;
 use App\Services\Freshness\AnthropicError;
+use App\Support\WebSearchTool;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -23,7 +24,6 @@ class GapScout
     public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
 
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-    private const WEB_SEARCH_TOOL = 'web_search_20250305';
     private const MAX_TOKENS = 2500;
 
     private const SYSTEM_PROMPT = <<<SYS
@@ -98,10 +98,10 @@ class GapScout
             'max_tokens' => self::MAX_TOKENS,
             'system' => self::SYSTEM_PROMPT,
             'messages' => [['role' => 'user', 'content' => $this->userMessage($topics, $sourceLines, $map)]],
-            'tools' => [[
-                'type' => self::WEB_SEARCH_TOOL, 'name' => 'web_search', 'max_uses' => 6,
-                'allowed_domains' => $allowed,
-            ]],
+            'tools' => [
+                WebSearchTool::definition(config('services.anthropic.freshness_extract_model'), 6)
+                    + ['allowed_domains' => $allowed],
+            ],
         ];
 
         $res = $this->claude->messages($payload, ['feature' => 'freshness.gap_scout']);

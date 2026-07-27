@@ -32,10 +32,14 @@ class VideoScriptTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.anthropic.key' => 'test-key', 'services.pptx.model' => 'claude-sonnet-4-6']);
+        config(['services.anthropic.key' => 'test-key', 'services.anthropic.video_script_model' => 'claude-haiku-4-5']);
     }
 
-    /** Fake Claude: estrae i numeri di slide dal prompt e ritorna una riga per ciascuno. */
+    /**
+     * Fake Claude: estrae i numeri di slide dal prompt e ritorna una riga per ciascuno.
+     * Il copione arriva via TOOL-USE (blocco tool_use con input già strutturato), non
+     * come testo JSON da parsare.
+     */
     private function fakeClaude(): void
     {
         Http::fake(['api.anthropic.com/*' => function ($request) {
@@ -44,7 +48,12 @@ class VideoScriptTest extends TestCase
             $lines = array_map(fn ($n) => ['slide_number' => (int) $n, 'text' => "Narrazione slide {$n}"], $m[1]);
 
             return Http::response([
-                'content' => [['text' => json_encode($lines)]],
+                'stop_reason' => 'tool_use',
+                'content' => [[
+                    'type' => 'tool_use',
+                    'name' => 'copione_video',
+                    'input' => ['script' => $lines],
+                ]],
                 'usage' => ['input_tokens' => 10, 'output_tokens' => 20],
             ], 200);
         }]);

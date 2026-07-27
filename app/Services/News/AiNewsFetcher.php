@@ -6,6 +6,7 @@ use App\Models\NewsItem;
 use App\Models\NewsRun;
 use App\Services\Ai\ClaudeClient;
 use App\Services\Freshness\AnthropicError;
+use App\Support\WebSearchTool;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -27,7 +28,6 @@ class AiNewsFetcher
 {
     public function __construct(private ClaudeClient $claude) {}
 
-    private const WEB_SEARCH_TOOL = 'web_search_20250305';
     private const MAX_TOKENS = 4000;
     private const MAX_USES = 5;
     private const TARGET_ITEMS = 8;
@@ -122,7 +122,7 @@ class AiNewsFetcher
                 ['role' => 'user', 'content' => 'Prepara la rassegna delle principali notizie AI degli ultimi 7 giorni.'],
             ],
             'tools' => [
-                ['type' => self::WEB_SEARCH_TOOL, 'name' => 'web_search', 'max_uses' => self::MAX_USES],
+                WebSearchTool::definition(config('services.anthropic.news_model'), self::MAX_USES),
             ],
         ], ['feature' => 'news.fetch']);
 

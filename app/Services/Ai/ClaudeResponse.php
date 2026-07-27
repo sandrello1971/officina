@@ -49,4 +49,14 @@ class ClaudeResponse
     {
         return (int) ($this->raw['usage']['output_tokens'] ?? 0);
     }
+
+    /**
+     * Ricerche web effettuate dal tool server-side. Si pagano A RICERCA, fuori dal
+     * conteggio token: senza questo dato il costo delle chiamate con web_search
+     * risulta sottostimato nel metering.
+     */
+    public function webSearches(): int
+    {
+        return (int) ($this->raw['usage']['server_tool_use']['web_search_requests'] ?? 0);
+    }
 }

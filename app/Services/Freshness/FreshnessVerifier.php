@@ -3,6 +3,7 @@
 namespace App\Services\Freshness;
 
 use App\Models\CourseFreshnessConfig;
+use App\Support\WebSearchTool;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -27,7 +28,6 @@ class FreshnessVerifier
 
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const MAX_TOKENS = 1500;
-    private const WEB_SEARCH_TOOL = 'web_search_20250305';
 
     private const VERDICTS = ['attuale', 'obsoleto', 'incerto'];
 
@@ -36,8 +36,9 @@ class FreshnessVerifier
      */
     public function verify(string $claimText, string $category, CourseFreshnessConfig $config): array
     {
+        $model = (string) config('services.anthropic.freshness_verify_model');
         $payload = [
-            'model' => config('services.anthropic.freshness_verify_model'),
+            'model' => $model,
             'max_tokens' => self::MAX_TOKENS,
             'system' => $this->systemPrompt($config),
             'messages' => [
@@ -46,9 +47,13 @@ class FreshnessVerifier
         ];
 
         // Web search inclusa SOLO se abilitata per il corso (fallback, disattivabile).
+        // È QUI che si concentra il costo della Fase 2: i risultati della ricerca entrano
+        // in contesto come token di input (~20k per claim con la versione base del tool),
+        // e ogni ricerca si paga anche a parte. Da cui: versione con dynamic filtering
+        // quando il modello la supporta, e numero di ricerche configurabile.
         if ($config->web_search_enabled) {
             $payload['tools'] = [
-                ['type' => self::WEB_SEARCH_TOOL, 'name' => 'web_search', 'max_uses' => 5],
+                WebSearchTool::definition($model, (int) config('services.anthropic.freshness_web_search_max_uses', 3)),
             ];
         }
 

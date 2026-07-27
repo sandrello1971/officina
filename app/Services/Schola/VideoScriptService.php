@@ -4,7 +4,7 @@ namespace App\Services\Schola;
 
 use App\Models\LessonVideo;
 use App\Models\ModuleVideo;
-use Illuminate\Support\Facades\Http;
+use App\Services\Ai\StructuredClaudeCall;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -15,9 +15,15 @@ use RuntimeException;
  * uguale per lezioni e moduli. Nessun TTS/ffmpeg (V3): qui solo testo, salvato come
  * script=[{slide_number,text}] e script_status='draft'. Chunking per presentazioni
  * lunghe + cache su hash(spec+prompt_version) per non richiamare Claude inutilmente.
+ *
+ * MODELLO: il compito è meccanico (punti della slide → parlato di ~80-100 parole) e
+ * l'output è vincolato da tool-use, quindi gira su Haiku — un terzo del costo di Sonnet
+ * a parità di risultato. Override da .env con VIDEO_SCRIPT_MODEL.
  */
 class VideoScriptService
 {
+    use StructuredClaudeCall;
+
     // Param opzionale con fallback dal container: il servizio è talvolta istanziato
     // con `new` (test), oltre che risolto via DI.
     public function __construct(private ?\App\Services\Ai\ClaudeClient $claude = null)
@@ -25,12 +31,31 @@ class VideoScriptService
         $this->claude ??= app(\App\Services\Ai\ClaudeClient::class);
     }
 
-    private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const PROMPT_VERSION = 'video-script-v1';
     private const EDIT_PROMPT_VERSION = 'video-script-edit-v1';
     private const CHUNK = 10;
     private const TEMPERATURE = 0.5;
     private const MAX_TOKENS = 4000;
+
+    /** Schema del tool: una riga per slide, numero + testo narrato. */
+    private const SCRIPT_SCHEMA = [
+        'type' => 'object',
+        'properties' => [
+            'script' => [
+                'type' => 'array',
+                'description' => 'Una voce per ogni slide ricevuta, nello stesso ordine.',
+                'items' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'slide_number' => ['type' => 'integer', 'description' => 'Numero della slide, come ricevuto.'],
+                        'text' => ['type' => 'string', 'description' => 'Testo narrato, discorsivo, ~80-100 parole.'],
+                    ],
+                    'required' => ['slide_number', 'text'],
+                ],
+            ],
+        ],
+        'required' => ['script'],
+    ];
 
     /**
      * @return array{script: array<int,array{slide_number:int,text:string}>, meta: array, cached: bool}
@@ -73,7 +98,7 @@ class VideoScriptService
         $chunks = 0;
         foreach (array_chunk($summaries, self::CHUNK) as $chunk) {
             $chunks++;
-            [$lines, $ti, $to] = $this->callClaude($apiKey, $chunk);
+            [$lines, $ti, $to] = $this->callClaude($chunk);
             $tokensIn += $ti;
             $tokensOut += $to;
             foreach ($lines as $line) {
@@ -100,7 +125,7 @@ class VideoScriptService
             'script' => $script,
             'meta' => array_merge((array) $video->generation_meta, [
                 'prompt_version' => self::PROMPT_VERSION,
-                'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
+                'model' => $this->model(),
                 'tokens_in' => $tokensIn,
                 'tokens_out' => $tokensOut,
                 'slides' => count($slides),
@@ -203,7 +228,7 @@ class VideoScriptService
         $user = "Contesto della slide: {$context}\n\nTesto di narrazione attuale:\n{$current}\n\nIstruzione: {$instruction}";
 
         $res = $this->claude->messages([
-            'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
+            'model' => $this->model(),
             'max_tokens' => 800,
             'temperature' => self::TEMPERATURE,
             'system' => 'Riscrivi SOLO questo testo di narrazione secondo l\'istruzione. Mantieni '
@@ -225,8 +250,15 @@ class VideoScriptService
         return $text;
     }
 
-    /** @return array{0: array, 1: int, 2: int} [lines, tokensIn, tokensOut] */
-    private function callClaude(string $apiKey, array $chunk): array
+    /**
+     * Un chunk di slide → righe di copione. L'output arriva via TOOL-USE: il modello
+     * compila lo schema invece di serializzare JSON a mano, quindi non esistono più né
+     * fence markdown né virgolette non escapate a rompere il parsing (era il modo in cui
+     * questa chiamata falliva, perdendo l'intero copione).
+     *
+     * @return array{0: array, 1: int, 2: int} [lines, tokensIn, tokensOut]
+     */
+    private function callClaude(array $chunk): array
     {
         $list = '';
         foreach ($chunk as $c) {
@@ -236,35 +268,33 @@ class VideoScriptService
         $user = "Scrivi il copione narrato. Rispondi SOLO con le slide numerate {$numbers}, "
             . "una voce per slide:\n\n{$list}";
 
-        $res = $this->claude->messages([
-            'model' => config('services.pptx.model', 'claude-sonnet-4-6'),
-            'max_tokens' => self::MAX_TOKENS,
-            'temperature' => self::TEMPERATURE,
-            'system' => $this->systemPrompt(),
-            'messages' => [['role' => 'user', 'content' => $user]],
-        ], ['feature' => 'video.script']);
+        $usage = null;
+        $input = $this->callClaudeStructured(
+            model: $this->model(),
+            maxTokens: self::MAX_TOKENS,
+            system: $this->systemPrompt(),
+            userMessage: $user,
+            toolName: 'copione_video',
+            toolDescription: 'Registra il testo narrato di ogni slide del chunk ricevuto.',
+            schema: self::SCRIPT_SCHEMA,
+            feature: 'video.script',
+            errorLabel: 'Copione video',
+            usage: $usage,
+        );
 
-        if ($res->failed()) {
-            Log::error('Video script Claude API failed', ['status' => $res->status, 'error' => $res->error]);
-            throw new RuntimeException('Errore Claude API: ' . ($res->status ?? $res->error));
-        }
-
-        $text = (string) $res->text();
-        $text = preg_replace('/^```(?:json)?\s*/i', '', trim($text));
-        $text = preg_replace('/```\s*$/', '', $text);
-        $data = json_decode(trim($text), true);
-
-        if (!is_array($data)) {
-            throw new RuntimeException('Copione non valido (JSON atteso).');
-        }
-        // Accetta sia [...] sia {"script":[...]}.
-        $lines = (isset($data['script']) && is_array($data['script'])) ? $data['script'] : $data;
+        $lines = $input['script'] ?? [];
 
         return [
             is_array($lines) ? $lines : [],
-            $res->tokensIn(),
-            $res->tokensOut(),
+            (int) ($usage['in'] ?? 0),
+            (int) ($usage['out'] ?? 0),
         ];
+    }
+
+    /** Modello del copione: configurabile, default Haiku (vedi docblock di classe). */
+    private function model(): string
+    {
+        return (string) config('services.anthropic.video_script_model', 'claude-haiku-4-5');
     }
 
     private function systemPrompt(): string
@@ -275,8 +305,7 @@ class VideoScriptService
         lo direbbe a voce un narratore — NON un elenco di punti. Max ~80-100 parole per slide.
         La slide 1 (copertina) è una breve introduzione che presenta l'argomento.
         Lingua: italiano. Mantieni i numeri di slide ricevuti.
-        Restituisci SOLO JSON valido, nient'altro, nella forma:
-        [{"slide_number": <numero>, "text": "<testo narrato>"}]
+        Registra il risultato con il tool `copione_video`: una voce per OGNI slide.
         PROMPT;
     }
 

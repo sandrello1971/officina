@@ -2,6 +2,7 @@
 
 namespace App\Services\Freshness;
 
+use App\Services\Ai\StructuredClaudeCall;
 use Illuminate\Support\Facades\Log;
 
 /**

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Services\Freshness;
+namespace App\Services\Ai;
 
+use App\Services\Freshness\AnthropicError;
 use RuntimeException;
 
 /**
@@ -18,6 +19,9 @@ use RuntimeException;
  * il troncamento non si maschera più da errore di parsing.
  *
  * Richiede la proprietà `$this->claude` (App\Services\Ai\ClaudeClient) sul servizio host.
+ *
+ * Vive in `Services\Ai` (accanto a ClaudeClient) perché è l'idioma trasversale della
+ * piattaforma per ottenere JSON affidabile: lo usano sia il freshness sia Schola.
  */
 trait StructuredClaudeCall
 {
@@ -36,6 +40,8 @@ trait StructuredClaudeCall
         string $feature,
         ?string $errorLabel = null,
         int $attempts = 3,
+        // Token dell'ultimo tentativo riuscito, per chi li espone in generation_meta.
+        ?array &$usage = null,
     ): array {
         // Etichetta leggibile per i messaggi d'errore (es. "Fase 1"); `feature` resta
         // l'identificatore tecnico usato per il metering.
@@ -66,6 +72,8 @@ trait StructuredClaudeCall
 
             // Troncamento (max_tokens) → il tool_use può essere incompleto: scartalo e ritenta.
             if (is_array($input) && $stop !== 'max_tokens') {
+                $usage = ['in' => $res->tokensIn(), 'out' => $res->tokensOut()];
+
                 return $input;
             }
 

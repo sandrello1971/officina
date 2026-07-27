@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CoverageGap;
 use App\Services\Freshness\AnthropicError;
+use App\Support\WebSearchTool;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -21,7 +22,6 @@ class GapComposer
     public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
 
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-    private const WEB_SEARCH_TOOL = 'web_search_20250305';
     private const MAX_TOKENS = 4000;
 
     private const SYSTEM_PROMPT = <<<SYS
@@ -69,10 +69,10 @@ class GapComposer
         // Se c'è una fonte citata, consenti di rileggerla — SOLO quel dominio (mai web aperto).
         $host = $gap->source_url ? parse_url($gap->source_url, PHP_URL_HOST) : null;
         if ($host) {
-            $payload['tools'] = [[
-                'type' => self::WEB_SEARCH_TOOL, 'name' => 'web_search', 'max_uses' => 3,
-                'allowed_domains' => [strtolower((string) preg_replace('#^www\.#i', '', $host))],
-            ]];
+            $payload['tools'] = [
+                WebSearchTool::definition(config('services.anthropic.freshness_extract_model'), 3)
+                    + ['allowed_domains' => [strtolower((string) preg_replace('#^www\.#i', '', $host))]],
+            ];
         }
 
         $res = $this->claude->messages($payload, ['feature' => 'freshness.gap_compose']);

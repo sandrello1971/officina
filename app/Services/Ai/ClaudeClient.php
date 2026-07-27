@@ -36,6 +36,7 @@ class ClaudeClient
         $model = $params['model'] ?? $cfg['model'];
         $params['model'] = $model;
         $params['max_tokens'] ??= 4096;
+        $params = $this->stripUnsupportedSampling($params, $model);
 
         $maxRetries = (int) ($cfg['max_retries'] ?? 2);
         $attempt = 0;
@@ -88,9 +89,27 @@ class ClaudeClient
 
         $raw = $response->json();
         $res = new ClaudeResponse(ok: true, raw: is_array($raw) ? $raw : [], status: $response->status());
-        $this->meter($model, $res->tokensIn(), $res->tokensOut(), 'ok', $context);
+        $this->meter($model, $res->tokensIn(), $res->tokensOut(), 'ok', $context, null, $res->webSearches());
 
         return $res;
+    }
+
+    /**
+     * I sampling parameter sono stati RIMOSSI dai modelli recenti (Opus 4.7+, Sonnet 5,
+     * Fable/Mythos 5): inviarli è un 400. I call-site li impostano legittimamente per i
+     * modelli che li accettano, quindi la potatura sta qui — così cambiare modello da
+     * .env non rompe nulla.
+     */
+    private function stripUnsupportedSampling(array $params, string $model): array
+    {
+        foreach ((array) config('services.anthropic.no_sampling_models', []) as $prefix) {
+            if ($prefix !== '' && str_starts_with($model, (string) $prefix)) {
+                unset($params['temperature'], $params['top_p'], $params['top_k']);
+                break;
+            }
+        }
+
+        return $params;
     }
 
     /**
@@ -105,6 +124,7 @@ class ClaudeClient
         $params['model'] = $model;
         $params['stream'] = true;
         $params['max_tokens'] ??= 4096;
+        $params = $this->stripUnsupportedSampling($params, $model);
 
         $response = Http::withHeaders([
             'x-api-key' => $cfg['key'] ?? env('ANTHROPIC_API_KEY'),
@@ -205,7 +225,7 @@ class ClaudeClient
     }
 
     /** Scrive il metering. Non deve MAI far fallire la chiamata AI. */
-    private function meter(string $model, int $in, int $out, string $status, array $context, ?string $error = null): void
+    private function meter(string $model, int $in, int $out, string $status, array $context, ?string $error = null, int $searches = 0): void
     {
         try {
             AiUsage::create([
@@ -213,14 +233,16 @@ class ClaudeClient
                 'model'      => $model,
                 'tokens_in'  => $in,
                 'tokens_out' => $out,
-                'cost_usd'   => $this->cost($model, $in, $out),
+                'cost_usd'   => $this->cost($model, $in, $out, $searches),
                 'status'     => $status,
                 'error'      => $error ? mb_substr($error, 0, 255) : null,
                 'school_id'  => $context['school_id'] ?? null,
                 'course_id'  => $context['course_id'] ?? null,
                 'actor_type' => $context['actor_type'] ?? null,
                 'actor_id'   => $context['actor_id'] ?? null,
-                'meta'       => $context['meta'] ?? null,
+                'meta'       => $searches > 0
+                    ? array_merge((array) ($context['meta'] ?? []), ['web_searches' => $searches])
+                    : ($context['meta'] ?? null),
                 'created_at' => now(),
             ]);
         } catch (\Throwable $e) {
@@ -228,14 +250,25 @@ class ClaudeClient
         }
     }
 
-    /** Costo stimato USD dal listino config; null se il modello non è mappato. */
-    private function cost(string $model, int $in, int $out): ?float
+    /**
+     * Costo stimato USD: token dal listino + ricerche web (fatturate a parte, per
+     * migliaio). Null solo se non è calcolabile nessuna delle due componenti.
+     */
+    private function cost(string $model, int $in, int $out, int $searches = 0): ?float
     {
         $price = config("services.anthropic.prices.$model");
-        if (!$price) {
+        $searchPrice = (float) config('services.anthropic.web_search_price_per_1k', 0);
+        $billableSearches = $searches > 0 && $searchPrice > 0;
+
+        if (!$price && !$billableSearches) {
             return null;
         }
 
-        return round($in / 1_000_000 * $price['in'] + $out / 1_000_000 * $price['out'], 6);
+        $cost = $price ? ($in / 1_000_000 * $price['in'] + $out / 1_000_000 * $price['out']) : 0.0;
+        if ($billableSearches) {
+            $cost += $searches / 1_000 * $searchPrice;
+        }
+
+        return round($cost, 6);
     }
 }
