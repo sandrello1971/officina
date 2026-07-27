@@ -85,6 +85,10 @@ class ModuleSourceSyncTest extends TestCase
 
         $first = $this->sync()->ensureFresh($course);
         $m->update(['content' => '<h1>Capitolo 1</h1><p>Nel 2026 il mercato vale 2,3 miliardi.</p>']);
+        // course_sources.created_at ha precisione al SECONDO: due versioni create nello
+        // stesso secondo rendono ambiguo l'orderByDesc(created_at) di sources(). In
+        // esercizio i run sono distanti minuti; qui il salto rende il test deterministico.
+        $this->travel(1)->second();
         $second = $this->sync()->ensureFresh($course->fresh());
 
         $this->assertNotNull($first);

@@ -9,6 +9,7 @@ use App\Models\CourseSource;
 use App\Models\Setting;
 use App\Models\UpdateProposal;
 use App\Services\Freshness\FreshnessAgent;
+use App\Services\Freshness\ModuleSourceSync;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -143,7 +144,7 @@ class FreshnessSchedulingTest extends TestCase
         $this->config($course, 'monthly', now()->subMonths(2)->toDateTimeString());
         $this->sourceWithClaim($course);
 
-        (new RunFreshnessAgentJob($course->id))->handle(app(FreshnessAgent::class));
+        (new RunFreshnessAgentJob($course->id))->handle(app(FreshnessAgent::class), app(ModuleSourceSync::class));
 
         $cfg = CourseFreshnessConfig::where('course_id', $course->id)->first();
         $this->assertNotNull($cfg->last_run_at);
@@ -158,7 +159,7 @@ class FreshnessSchedulingTest extends TestCase
         $course = $this->course();
         $this->sourceWithClaim($course);
 
-        (new RunFreshnessAgentJob($course->id))->handle(app(FreshnessAgent::class));
+        (new RunFreshnessAgentJob($course->id))->handle(app(FreshnessAgent::class), app(ModuleSourceSync::class));
 
         // Proposta generata e PENDING; nessuna applicata; nessuna nuova versione del sorgente.
         $proposals = UpdateProposal::where('course_id', $course->id)->get();
