@@ -21,6 +21,14 @@ class TeachingDocumentTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // I servizi AI rifiutano di partire senza chiave: qui le chiamate sono fakeate,
+        // serve solo soddisfare il guard (nel .env di sviluppo la chiave non c'è).
+        config(['services.anthropic.key' => 'test-key']);
+    }
+
     private function prof(): Student
     {
         return Student::create([

@@ -32,6 +32,9 @@ class ArtifactPublicationTest extends TestCase
     {
         parent::setUp();
         atheneum_setting_put('schola.rag_min_similarity', 0.5);
+        // I servizi AI rifiutano di partire senza chiave: qui le chiamate sono fakeate,
+        // serve solo soddisfare il guard (nel .env di sviluppo la chiave non c'è).
+        config(['services.anthropic.key' => 'test-key']);
     }
 
     // embeddings finte (dim 768) per far andare a buon fine embedBestEffort
