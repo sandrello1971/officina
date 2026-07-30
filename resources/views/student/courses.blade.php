@@ -10,7 +10,9 @@
         <p style="color:#8A9696; font-size:0.875rem;">Tutti i corsi a cui hai accesso.</p>
     </div>
 
-    @if($courses->isEmpty())
+    @php $classLessons = $classLessons ?? collect(); @endphp
+
+    @if($courses->isEmpty() && $classLessons->isEmpty())
     <div style="background:white; border-radius:12px; padding:40px; text-align:center; border:2px dashed #C8D0D0;">
         <div style="font-size:3rem; margin-bottom:12px;">&#128218;</div>
         <h2 style="color:#1A1F1F; margin-bottom:8px;">Nessun corso attivo</h2>
@@ -20,9 +22,27 @@
         </p>
     </div>
     @else
+
+    {{-- Lezioni pubblicate dai docenti sulle classi (Schola): lo studente le
+         cerca qui, non solo sotto "Le mie classi". Prima dei corsi di catalogo
+         perché sono il materiale "vivo" del percorso scolastico in corso. --}}
+    @foreach($classLessons as $group)
+    <div style="margin:20px 0 10px; color:#4A5252; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em;">
+        Classe {{ $group['class']->name }}@if($group['class']->subject?->name) &middot; {{ $group['class']->subject->name }}@endif
+    </div>
+    <div style="display:grid; gap:16px; margin-bottom:8px;">
+        @foreach($group['lessons'] as $lesson)
+            @include('student.partials._lesson-card', ['lesson' => $lesson, 'class' => $group['class']])
+        @endforeach
+    </div>
+    @endforeach
+
+    @if($courses->isNotEmpty())
     {{-- Raggruppamento per categoria (tassonomia). Graceful degradation: con un
-         unico gruppo "Altri corsi" non mostro intestazioni. --}}
-    @php $showCategoryHeadings = !($coursesByCategory->count() === 1 && $coursesByCategory->keys()->first() === 'Altri corsi'); @endphp
+         unico gruppo "Altri corsi" non mostro intestazioni — a meno che sopra ci
+         siano già le classi, altrimenti le due liste si fondono visivamente. --}}
+    @php $showCategoryHeadings = $classLessons->isNotEmpty()
+        || !($coursesByCategory->count() === 1 && $coursesByCategory->keys()->first() === 'Altri corsi'); @endphp
     @foreach($coursesByCategory as $categoryName => $groupCourses)
     @if($showCategoryHeadings)
     <div style="margin:20px 0 10px; color:#4A5252; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em;">{{ $categoryName }}</div>
@@ -33,6 +53,8 @@
         @endforeach
     </div>
     @endforeach
+    @endif
+
     @endif
 
 </div>

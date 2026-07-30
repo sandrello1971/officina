@@ -7,12 +7,15 @@ use App\Models\QuizAttempt;
 use App\Models\Student;
 use App\Models\StudentModuleProgress;
 use App\Support\StudentCourseAccess;
+use App\Support\StudentScholaShelf;
 use Illuminate\Support\Collection;
 
 class DashboardController extends Controller
 {
-    public function __construct(private StudentCourseAccess $courseAccess)
-    {
+    public function __construct(
+        private StudentCourseAccess $courseAccess,
+        private StudentScholaShelf $scholaShelf,
+    ) {
     }
 
     /**
@@ -59,7 +62,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * Elenco completo dei corsi navigabili, raggruppati per categoria.
+     * Elenco completo dei corsi navigabili, raggruppati per categoria, più le
+     * lezioni pubblicate sulle classi Schola: lo studente cerca il materiale
+     * del suo docente qui, non solo sotto "Le mie classi".
      */
     public function courses()
     {
@@ -68,8 +73,11 @@ class DashboardController extends Controller
         $courses = $this->buildCourses($student);
         $coursesByCategory = $courses->groupBy(fn ($c) => $c->category?->name ?? 'Altri corsi');
         $myClasses = $this->myClasses($student);
+        $classLessons = $this->scholaShelf->lessonsByClass($student);
 
-        return view('student.courses', compact('student', 'courses', 'coursesByCategory', 'myClasses'));
+        return view('student.courses', compact(
+            'student', 'courses', 'coursesByCategory', 'myClasses', 'classLessons'
+        ));
     }
 
     /**
