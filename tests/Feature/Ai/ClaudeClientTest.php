@@ -76,6 +76,21 @@ class ClaudeClientTest extends TestCase
         $this->assertSame(1, AiUsage::where('feature', 'test.retry')->count());
     }
 
+    public function test_max_retries_override_non_ritenta_oltre_il_limite_passato(): void
+    {
+        // Default globale ritenta 2 volte sui 429; con override a 0 il primo 429 è definitivo.
+        Http::fake(['api.anthropic.com/*' => Http::response(['error' => ['message' => 'overloaded']], 429)]);
+
+        $res = app(ClaudeClient::class)->messages(
+            ['messages' => [['role' => 'user', 'content' => 'hi']]],
+            ['feature' => 'test.override'],
+            maxRetriesOverride: 0,
+        );
+
+        $this->assertTrue($res->failed());
+        Http::assertSentCount(1); // nessun retry, a differenza del default (max_retries=2)
+    }
+
     private function sse(string ...$events): string
     {
         return implode('', array_map(fn ($e) => $e . "\n\n", $events));

@@ -112,6 +112,76 @@ class FreshnessAgentTest extends TestCase
         $this->assertDatabaseCount('course_sources', 1);
     }
 
+    /**
+     * P25.4 — con QUEUE_CONNECTION=sync (phpunit.xml) ogni VerifyFreshnessClaimJob viene
+     * eseguito immediatamente al dispatch, in sequenza: l'ultimo claim verificato chiude
+     * la run (finishRun) prima che startAsync() ritorni. Stesso esito finale di run(),
+     * ma passando per il percorso a job-per-claim (P25.4) invece del loop sincrono.
+     */
+    public function test_start_async_end_to_end_equivalente_a_run(): void
+    {
+        $course = $this->makeCourse();
+        $this->makeSource($course);
+        $this->fakeAgent();
+
+        $run = app(FreshnessAgent::class)->startAsync($course);
+
+        $this->assertSame('completed', $run->status);
+        $this->assertSame(2, $run->claims_found);
+        $this->assertSame(1, $run->proposals_created);
+        $this->assertNotNull($run->finished_at);
+
+        $obsoleto = FreshnessClaim::where('run_id', $run->id)->where('block_id', 'p1-cap3-sec1-p2')->first();
+        $this->assertSame('obsoleto', $obsoleto->verdict);
+        $this->assertNotNull($obsoleto->verified_at);
+
+        $proposals = UpdateProposal::where('course_id', $course->id)->get();
+        $this->assertCount(1, $proposals);
+        $this->assertSame($obsoleto->id, $proposals->first()->freshness_claim_id);
+    }
+
+    public function test_start_async_dispatcha_un_job_per_claim(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        $course = $this->makeCourse();
+        $this->makeSource($course);
+        $this->fakeAgent(); // Fase 1 (estrazione) resta sincrona anche in startAsync()
+
+        $run = app(FreshnessAgent::class)->startAsync($course);
+
+        $this->assertSame('running', $run->status); // nessun job eseguito (Queue::fake): resta aperta
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\VerifyFreshnessClaimJob::class, 2);
+        $claimIds = FreshnessClaim::where('run_id', $run->id)->pluck('id')->all();
+        \Illuminate\Support\Facades\Queue::assertPushed(
+            \App\Jobs\VerifyFreshnessClaimJob::class,
+            fn ($job) => in_array($job->claimId, $claimIds, true)
+        );
+    }
+
+    public function test_start_async_senza_claim_chiude_subito_la_run(): void
+    {
+        $course = $this->makeCourse();
+        $this->makeSource($course); // sorgente presente ma Fase 1 non trova claim
+
+        Http::fake(function ($request) {
+            $system = $request['system'] ?? '';
+            if (str_contains($system, 'analista di obsolescenza')) {
+                return Http::response([
+                    'stop_reason' => 'end_turn',
+                    'content' => [['type' => 'tool_use', 'name' => 'registra_affermazioni', 'input' => ['claims' => []]]],
+                ], 200);
+            }
+            return Http::response(['content' => [['type' => 'text', 'text' => '{}']]], 200);
+        });
+
+        $run = app(FreshnessAgent::class)->startAsync($course);
+
+        $this->assertSame('completed', $run->status);
+        $this->assertSame(0, $run->claims_found);
+        $this->assertSame(0, $run->proposals_created);
+        $this->assertNotNull($run->finished_at);
+    }
+
     public function test_proposals_disabilitate_non_generano_proposte(): void
     {
         $course = $this->makeCourse();

@@ -31,6 +31,12 @@ class FreshnessVerifier
 
     private const VERDICTS = ['attuale', 'obsoleto', 'incerto'];
 
+    // Stretti rispetto al default globale (120s/2 retry = fino a 360s a chiamata): qui i
+    // claim sono verificati uno per job (P25.4), quindi un tentativo lento non deve
+    // comunque superare pochi minuti. Con 1 retry a 60s: max ~120s + backoff a chiamata.
+    private const VERIFY_TIMEOUT_SECONDS = 60;
+    private const VERIFY_MAX_RETRIES = 1;
+
     /**
      * @return array{verdict:string, source_url:?string, source_type:?string, source_date:?string, confidence:?float}
      */
@@ -57,7 +63,12 @@ class FreshnessVerifier
             ];
         }
 
-        $res = $this->claude->messages($payload, ['feature' => 'freshness.verify']);
+        $res = $this->claude->messages(
+            $payload,
+            ['feature' => 'freshness.verify'],
+            timeoutOverride: self::VERIFY_TIMEOUT_SECONDS,
+            maxRetriesOverride: self::VERIFY_MAX_RETRIES,
+        );
 
         if ($res->failed()) {
             throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'Fase 2'));

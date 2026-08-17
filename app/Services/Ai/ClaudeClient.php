@@ -29,8 +29,13 @@ class ClaudeClient
     /**
      * @param  array  $params   payload Anthropic (model opzionale → default da config)
      * @param  array  $context  ['feature','school_id','course_id','actor_type','actor_id','meta']
+     * @param  ?int   $timeoutOverride     secondi per singolo tentativo HTTP; default cfg['timeout'].
+     *                                     Per call-site con molte chiamate in sequenza (es. verifica
+     *                                     claim per claim), stringere qui evita che un tentativo lento
+     *                                     mangi tutto il budget del job che le orchestra.
+     * @param  ?int   $maxRetriesOverride  retry su 429/5xx/529; default cfg['max_retries'].
      */
-    public function messages(array $params, array $context = []): ClaudeResponse
+    public function messages(array $params, array $context = [], ?int $timeoutOverride = null, ?int $maxRetriesOverride = null): ClaudeResponse
     {
         $cfg = config('services.anthropic');
         $model = $params['model'] ?? $cfg['model'];
@@ -38,7 +43,8 @@ class ClaudeClient
         $params['max_tokens'] ??= 4096;
         $params = $this->stripUnsupportedSampling($params, $model);
 
-        $maxRetries = (int) ($cfg['max_retries'] ?? 2);
+        $timeout = $timeoutOverride ?? (int) ($cfg['timeout'] ?? 120);
+        $maxRetries = $maxRetriesOverride ?? (int) ($cfg['max_retries'] ?? 2);
         $attempt = 0;
         $response = null;
         $lastError = null;
@@ -49,7 +55,7 @@ class ClaudeClient
                     'x-api-key' => $cfg['key'] ?? env('ANTHROPIC_API_KEY'),
                     'anthropic-version' => $cfg['version'] ?? '2023-06-01',
                     'content-type' => 'application/json',
-                ])->timeout((int) ($cfg['timeout'] ?? 120))
+                ])->timeout($timeout)
                   ->post($cfg['base_url'] ?? 'https://api.anthropic.com/v1/messages', $params);
 
                 if ($response->successful()) {
