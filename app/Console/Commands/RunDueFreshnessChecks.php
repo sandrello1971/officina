@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Jobs\RunFreshnessAgentJob;
 use App\Models\CourseFreshnessConfig;
+use App\Models\FreshnessRun;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -42,13 +43,19 @@ class RunDueFreshnessChecks extends Command
             ->sortBy(fn (CourseFreshnessConfig $c) => $c->last_run_at?->timestamp ?? 0)
             ->values();
 
-        $toRun = $due->take($cap);
+        // Salta i corsi con una run già 'running' (lenta o bloccata): evita di impilarne
+        // un'altra sopra e di raddoppiare la spesa AI sullo stesso corso.
+        $runningCourseIds = FreshnessRun::where('status', 'running')->pluck('course_id')->all();
+        $eligible = $due->reject(fn (CourseFreshnessConfig $c) => in_array($c->course_id, $runningCourseIds, true));
+        $skippedRunning = $due->count() - $eligible->count();
+
+        $toRun = $eligible->take($cap);
         foreach ($toRun as $config) {
             RunFreshnessAgentJob::dispatch($config->course_id);
         }
 
-        $dropped = $due->count() - $toRun->count();
-        $this->info("freshness:run-due — scaduti: {$due->count()}, lanciati: {$toRun->count()}, rimandati (cap {$cap}): {$dropped}");
+        $dropped = $eligible->count() - $toRun->count();
+        $this->info("freshness:run-due — scaduti: {$due->count()}, già in corso (saltati): {$skippedRunning}, lanciati: {$toRun->count()}, rimandati (cap {$cap}): {$dropped}");
         if ($dropped > 0) {
             Log::info("[freshness:run-due] {$dropped} corsi oltre il cap {$cap}, rimandati al prossimo tick.");
         }

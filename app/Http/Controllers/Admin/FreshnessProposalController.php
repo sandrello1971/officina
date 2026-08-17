@@ -147,6 +147,11 @@ class FreshnessProposalController extends Controller
         $validated = $request->validate(['course_id' => 'required|uuid|exists:courses,id']);
         $course = Course::find($validated['course_id']);
 
+        $alreadyRunning = FreshnessRun::where('course_id', $course->id)->where('status', 'running')->exists();
+        if ($alreadyRunning) {
+            return back()->with('error', "Un'analisi per «{$course->name}» è già in corso: aspetta che finisca prima di lanciarne un'altra.");
+        }
+
         RunFreshnessAgentJob::dispatch($course->id);
 
         return back()->with('success', "Controllo avviato per «{$course->name}». L'estrazione fa chiamate AI e può richiedere qualche minuto: le proposte appariranno qui a breve.");

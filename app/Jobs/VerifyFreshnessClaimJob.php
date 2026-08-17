@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\Course;
-use App\Models\CourseFreshnessConfig;
 use App\Models\FreshnessClaim;
 use App\Models\FreshnessRun;
 use App\Services\Freshness\FreshnessAgent;
@@ -46,13 +45,13 @@ class VerifyFreshnessClaimJob implements ShouldQueue
         }
 
         $course = Course::find($claim->course_id);
-        $config = $course?->freshnessConfig ?? new CourseFreshnessConfig([
-            'web_search_enabled' => true,
-            'primary_sources' => [],
-            'audience' => 'adult',
-            'proposals_enabled' => true,
-            'student_proposals_enabled' => false,
-        ]);
+        if (!$course) {
+            Log::warning('[VerifyFreshnessClaimJob] corso inesistente, claim lasciato non verificato', ['claim_id' => $claim->id]);
+            $claim->update(['verified_at' => now()]);
+            $this->maybeFinishRun($claim->run_id, $agent);
+            return;
+        }
+        $config = $agent->configFor($course);
 
         try {
             $v = $verifier->verify($claim->claim_text, $claim->category, $config);
@@ -94,5 +93,28 @@ class VerifyFreshnessClaimJob implements ShouldQueue
         if ($run && $run->status === 'running') {
             $agent->finishRun($run);
         }
+    }
+
+    /**
+     * Se il job viene ucciso dal proprio timeout, Laravel intercetta il segnale e chiama
+     * questo hook PRIMA di terminare il processo (il `catch` dentro `handle()` non viene
+     * mai raggiunto in quel caso). Senza questo, il claim resterebbe senza `verified_at`
+     * per sempre e nessun altro job ricontrollerebbe più questa run: bloccata su 'running'
+     * esattamente come nel bug che P25.4 doveva eliminare, solo per un singolo claim
+     * invece che per l'intera run. Non copre un SIGKILL/OOM (nessun handler PHP può
+     * intercettarli), ma copre il caso comune del timeout.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        $claim = FreshnessClaim::find($this->claimId);
+        if (!$claim) {
+            return;
+        }
+
+        if ($claim->verified_at === null) {
+            $claim->update(['verified_at' => now()]);
+        }
+
+        $this->maybeFinishRun($claim->run_id, app(FreshnessAgent::class));
     }
 }

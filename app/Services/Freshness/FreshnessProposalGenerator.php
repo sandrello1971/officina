@@ -23,6 +23,13 @@ class FreshnessProposalGenerator
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const MAX_TOKENS = 1500;
 
+    // Stessa logica di FreshnessVerifier::VERIFY_TIMEOUT_SECONDS (P25.4): la generazione
+    // gira ora in un job dedicato per run (GenerateFreshnessProposalsJob) con un tetto
+    // fisso — stringere qui rende il worst-case per chiamata prevedibile invece di
+    // ereditare i 120s/2 retry (fino a ~360s) del default globale di ClaudeClient.
+    private const GENERATE_TIMEOUT_SECONDS = 60;
+    private const GENERATE_MAX_RETRIES = 1;
+
     private const SYSTEM_PROMPT = <<<SYS
     Sei un editor didattico. Ricevi UNA affermazione di un corso risultata OBSOLETA e
     devi proporre il testo aggiornato che la sostituirà.
@@ -62,7 +69,7 @@ class FreshnessProposalGenerator
             'max_tokens' => self::MAX_TOKENS,
             'system' => self::SYSTEM_PROMPT,
             'messages' => [['role' => 'user', 'content' => $user]],
-        ], ['feature' => 'freshness.proposal']);
+        ], ['feature' => 'freshness.proposal'], timeoutOverride: self::GENERATE_TIMEOUT_SECONDS, maxRetriesOverride: self::GENERATE_MAX_RETRIES);
 
         if ($res->failed()) {
             throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'Fase 3'));

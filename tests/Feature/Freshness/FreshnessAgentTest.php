@@ -182,6 +182,66 @@ class FreshnessAgentTest extends TestCase
         $this->assertNotNull($run->finished_at);
     }
 
+    /**
+     * Regressione: se l'estrazione lato studente fallisce, i claim formatore devono
+     * essere GIÀ verificati (verdetto assegnato) — non solo estratti. Prima del fix,
+     * estrazione formatore+studente avveniva entrambe prima di qualunque verifica: un
+     * crash nell'estrazione studente lasciava i claim formatore orfani senza verdetto
+     * sotto una run marcata 'failed'.
+     */
+    public function test_run_verifica_i_claim_formatore_prima_di_estrarre_quelli_studente(): void
+    {
+        $course = $this->makeCourse();
+        $this->makeSource($course);
+        \App\Models\CourseFreshnessConfig::create([
+            'course_id' => $course->id,
+            'web_search_enabled' => true,
+            'primary_sources' => [],
+            'audience' => 'adult',
+            'proposals_enabled' => true,
+            'student_proposals_enabled' => true, // attiva l'estrazione studente
+        ]);
+
+        Http::fake(function ($request) {
+            $system = $request['system'] ?? '';
+
+            // Estrazione STUDENTE (system più specifico): fallisce con una risposta HTTP 500.
+            if (str_contains($system, '[module_id]')) {
+                return Http::response(['error' => ['message' => 'boom studente']], 500);
+            }
+            // Estrazione FORMATORE (Fase 1).
+            if (str_contains($system, 'analista di obsolescenza')) {
+                $claims = ['claims' => [
+                    ['block_id' => 'p1-cap3-sec1-p2', 'quote' => 'Il mercato AI italiano vale 1,8 miliardi di euro nel 2025', 'category' => 'prezzo'],
+                ]];
+                return Http::response([
+                    'stop_reason' => 'end_turn',
+                    'content' => [['type' => 'tool_use', 'name' => 'registra_affermazioni', 'input' => $claims]],
+                ], 200);
+            }
+            // Verifica (Fase 2) del claim formatore.
+            return Http::response(['content' => [['type' => 'text', 'text' => json_encode(['verdict' => 'attuale', 'confidence' => 0.6])]]], 200);
+        });
+
+        // RuntimeException specifica (non \Throwable): così un fallimento di un'asserzione
+        // PHPUnit qui sotto (anch'essa un \Throwable) non verrebbe silenziosamente inglobata.
+        $threw = false;
+        try {
+            app(FreshnessAgent::class)->run($course);
+        } catch (RuntimeException $e) {
+            $threw = true;
+        }
+        $this->assertTrue($threw, 'Attesa RuntimeException per estrazione studente fallita.');
+
+        $this->assertDatabaseHas('freshness_runs', ['course_id' => $course->id, 'status' => 'failed']);
+
+        // Il claim FORMATORE deve avere già un verdetto, nonostante la run sia fallita.
+        $instructorClaim = FreshnessClaim::where('course_id', $course->id)->where('content_source', 'instructor')->first();
+        $this->assertNotNull($instructorClaim);
+        $this->assertSame('attuale', $instructorClaim->verdict);
+        $this->assertNotNull($instructorClaim->verified_at);
+    }
+
     public function test_proposals_disabilitate_non_generano_proposte(): void
     {
         $course = $this->makeCourse();

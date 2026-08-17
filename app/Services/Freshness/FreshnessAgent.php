@@ -8,6 +8,7 @@ use App\Models\CourseSource;
 use App\Models\FreshnessClaim;
 use App\Models\FreshnessRun;
 use App\Models\UpdateProposal;
+use App\Jobs\GenerateFreshnessProposalsJob;
 use App\Jobs\VerifyFreshnessClaimJob;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -44,19 +45,25 @@ class FreshnessAgent
             $source = $this->loadSource($course, $version);
             $config = $this->configFor($course);
 
-            $extracted = $this->extractClaims($run, $course, $source, $config);
-
+            // Formatore: estrai E verifica subito, PRIMA di passare allo studente. Se
+            // l'estrazione studente fallisce, i claim formatore hanno già un verdetto
+            // (non restano orfani senza verifica sotto una run marcata 'failed').
+            $instructorClaims = $this->extractInstructorClaims($run, $course, $source);
             $obsolete = [];
-            foreach ($extracted['instructor'] as $claim) {
+            foreach ($instructorClaims as $claim) {
                 if ($this->verifyClaim($claim, $config)) {
                     $obsolete[] = $claim;
                 }
             }
 
+            $studentClaims = [];
             $studentObsolete = [];
-            foreach ($extracted['student'] as $claim) {
-                if ($this->verifyClaim($claim, $config)) {
-                    $studentObsolete[] = $claim;
+            if ($config->student_proposals_enabled) {
+                $studentClaims = $this->extractStudentClaims($run, $course);
+                foreach ($studentClaims as $claim) {
+                    if ($this->verifyClaim($claim, $config)) {
+                        $studentObsolete[] = $claim;
+                    }
                 }
             }
 
@@ -72,7 +79,7 @@ class FreshnessAgent
             $run->update([
                 'status' => 'completed',
                 'finished_at' => now(),
-                'claims_found' => count($extracted['instructor']) + $extracted['studentClaimsFound'],
+                'claims_found' => count($instructorClaims) + count($studentClaims),
                 'proposals_created' => $proposalsCreated,
             ]);
         } catch (\Throwable $e) {
@@ -105,10 +112,11 @@ class FreshnessAgent
             $source = $this->loadSource($course, $version);
             $config = $this->configFor($course);
 
-            $extracted = $this->extractClaims($run, $course, $source, $config);
-            $allClaims = [...$extracted['instructor'], ...$extracted['student']];
+            $instructorClaims = $this->extractInstructorClaims($run, $course, $source);
+            $studentClaims = $config->student_proposals_enabled ? $this->extractStudentClaims($run, $course) : [];
+            $allClaims = [...$instructorClaims, ...$studentClaims];
 
-            $run->update(['claims_found' => count($extracted['instructor']) + $extracted['studentClaimsFound']]);
+            $run->update(['claims_found' => count($instructorClaims) + count($studentClaims)]);
 
             if ($allClaims === []) {
                 $this->finishRun($run->fresh());
@@ -131,15 +139,24 @@ class FreshnessAgent
     }
 
     /**
-     * Chiude una run avviata con `startAsync()`: Fase 3 (proposte sui claim obsoleti) +
-     * status finale. Chiamata dall'ultimo `VerifyFreshnessClaimJob` della run.
+     * Chiude la verifica di una run avviata con `startAsync()`: chiamata dall'ultimo
+     * `VerifyFreshnessClaimJob` della run. NON genera le proposte qui dentro — la Fase 3
+     * gira in un job a parte (`GenerateFreshnessProposalsJob`) con il suo tetto, così non
+     * eredita il timeout di `VerifyFreshnessClaimJob` (dimensionato per UNA verifica, non
+     * per N generazioni di proposte in sequenza sopra ad essa).
      *
-     * Idempotente: l'UPDATE condizionato (`status='running'`) fa da lock ottimistico,
-     * così se due job arrivano quasi insieme all'ultimo claim solo uno esegue la Fase 3.
+     * Idempotente: il lock ottimistico guarda E scrive LA STESSA colonna (`finished_at`
+     * IS NULL → now()). Sotto Postgres READ COMMITTED, un UPDATE che si blocca sul lock di
+     * riga rivaluta il WHERE contro la versione appena committata (EvalPlanQual): se la
+     * colonna guardata non è quella scritta (es. guardia su `status`, scrittura su
+     * `finished_at`), il secondo chiamante la trova invariata e "vince" anche lui, doppio.
+     * Verificato empiricamente in dev: con guardia/scrittura disallineate `UPDATE 1` su
+     * ENTRAMBI i lati concorrenti; con guardia e scrittura sulla stessa colonna, solo il
+     * primo vince.
      */
     public function finishRun(FreshnessRun $run): void
     {
-        $claimed = FreshnessRun::where('id', $run->id)->where('status', 'running')->update(['finished_at' => now()]);
+        $claimed = FreshnessRun::where('id', $run->id)->whereNull('finished_at')->update(['finished_at' => now()]);
         if ($claimed === 0) {
             return; // già chiusa (o mai stata 'running') da un altro job
         }
@@ -151,88 +168,25 @@ class FreshnessAgent
         }
         $config = $this->configFor($course);
 
-        $obsoleteInstructor = FreshnessClaim::where('run_id', $run->id)
-            ->where('content_source', 'instructor')->where('verdict', 'obsoleto')->get()->all();
-        $obsoleteStudent = FreshnessClaim::where('run_id', $run->id)
-            ->where('content_source', 'student')->where('verdict', 'obsoleto')->get()->all();
+        $hasObsolete = FreshnessClaim::where('run_id', $run->id)->where('verdict', 'obsoleto')->exists();
+        $wantsProposals = ($config->proposals_enabled || $config->student_proposals_enabled) && $hasObsolete;
 
-        $proposalsCreated = 0;
-        if ($config->proposals_enabled) {
-            $proposalsCreated += $this->generateProposals($run, $course, $config, $obsoleteInstructor);
-        }
-        if ($config->student_proposals_enabled) {
-            $proposalsCreated += $this->generateProposals($run, $course, $config, $obsoleteStudent);
+        if (!$wantsProposals) {
+            $run->update(['status' => 'completed', 'proposals_created' => 0]);
+            return;
         }
 
-        $run->update(['status' => 'completed', 'proposals_created' => $proposalsCreated]);
-    }
-
-    private function configFor(Course $course): CourseFreshnessConfig
-    {
-        return $course->freshnessConfig ?? new CourseFreshnessConfig([
-            'web_search_enabled' => true,
-            'primary_sources' => [],
-            'audience' => 'adult',
-            'proposals_enabled' => true,
-            'student_proposals_enabled' => false,
-        ]);
+        GenerateFreshnessProposalsJob::dispatch($run->id);
     }
 
     /**
-     * Fase 1 — estrae e PERSISTE i claim (formatore sempre, studente solo se opt-in).
-     * Nessuna verifica qui: la Fase 2 resta a carico del chiamante (sincrona in `run()`,
-     * distribuita su job in `startAsync()`).
-     *
-     * @return array{instructor:list<FreshnessClaim>, student:list<FreshnessClaim>, studentClaimsFound:int}
-     */
-    private function extractClaims(FreshnessRun $run, Course $course, CourseSource $source, CourseFreshnessConfig $config): array
-    {
-        // ===== Lato FORMATORE (instructor): Fase 1 sul sorgente strutturato. =====
-        $extracted = $this->extractor->extract($source->blocks ?? []);
-        $instructorClaims = [];
-        foreach ($extracted['claims'] as $c) {
-            $instructorClaims[] = FreshnessClaim::create([
-                'run_id' => $run->id,
-                'course_id' => $course->id,
-                'content_source' => 'instructor',
-                'block_id' => $c['block_id'],
-                'sentence_ref' => $c['sentence_ref'],
-                'claim_text' => $c['claim_text'],
-                'category' => $c['category'],
-            ]);
-        }
-
-        // ===== Lato STUDENTE (modules.content): solo se opt-in (student_proposals_enabled). =====
-        // È contenuto utente-finale: niente analisi finché non è esplicitamente attivata.
-        $studentClaims = [];
-        $studentClaimsFound = 0;
-        if ($config->student_proposals_enabled) {
-            $studentExtracted = $this->studentExtractor->extract($course->modules()->get());
-            $studentClaimsFound = count($studentExtracted['claims']);
-            foreach ($studentExtracted['claims'] as $c) {
-                $studentClaims[] = FreshnessClaim::create([
-                    'run_id' => $run->id,
-                    'course_id' => $course->id,
-                    'content_source' => 'student',
-                    'module_id' => $c['module_id'],
-                    'sentence_ref' => $c['sentence_ref'],
-                    'claim_text' => $c['claim_text'],
-                    'category' => $c['category'],
-                ]);
-            }
-        }
-
-        return ['instructor' => $instructorClaims, 'student' => $studentClaims, 'studentClaimsFound' => $studentClaimsFound];
-    }
-
-    /**
-     * Fase 3 — per ogni claim obsoleto genera l'`after` e scrive una proposta `pending`.
-     * Resiliente: una generazione fallita su un claim non ferma la run. Ritorna il numero
-     * di proposte create. NULLA viene applicato qui (solo pending; HITL non negoziabile).
+     * Fase 3 — genera le proposte per i claim obsoleti indicati e le persiste. Chiamata
+     * da `run()` (sincrono) e da `GenerateFreshnessProposalsJob` (asincrono). Pubblico
+     * perché il job vive in un'altra classe.
      *
      * @param  list<FreshnessClaim>  $obsoleteClaims
      */
-    private function generateProposals(FreshnessRun $run, Course $course, CourseFreshnessConfig $config, array $obsoleteClaims): int
+    public function generateProposals(FreshnessRun $run, Course $course, CourseFreshnessConfig $config, array $obsoleteClaims): int
     {
         $created = 0;
         foreach ($obsoleteClaims as $claim) {
@@ -268,6 +222,71 @@ class FreshnessAgent
         }
 
         return $created;
+    }
+
+    /** Config del corso, o i default impliciti se il corso non ne ha una propria. */
+    public function configFor(Course $course): CourseFreshnessConfig
+    {
+        return $course->freshnessConfig ?? new CourseFreshnessConfig([
+            'web_search_enabled' => true,
+            'primary_sources' => [],
+            'audience' => 'adult',
+            'proposals_enabled' => true,
+            'student_proposals_enabled' => false,
+        ]);
+    }
+
+    /**
+     * Fase 1 lato FORMATORE — estrae e PERSISTE i claim dal sorgente strutturato. Nessuna
+     * verifica qui: la Fase 2 resta a carico del chiamante (sincrona in `run()`,
+     * distribuita su job in `startAsync()`).
+     *
+     * @return list<FreshnessClaim>
+     */
+    private function extractInstructorClaims(FreshnessRun $run, Course $course, CourseSource $source): array
+    {
+        $extracted = $this->extractor->extract($source->blocks ?? []);
+        $claims = [];
+        foreach ($extracted['claims'] as $c) {
+            $claims[] = FreshnessClaim::create([
+                'run_id' => $run->id,
+                'course_id' => $course->id,
+                'content_source' => 'instructor',
+                'block_id' => $c['block_id'],
+                'sentence_ref' => $c['sentence_ref'],
+                'claim_text' => $c['claim_text'],
+                'category' => $c['category'],
+            ]);
+        }
+
+        return $claims;
+    }
+
+    /**
+     * Fase 1 lato STUDENTE (modules.content) — solo se opt-in (student_proposals_enabled).
+     * È contenuto utente-finale: niente analisi finché non è esplicitamente attivata.
+     * Chiamare SOLO dopo aver già estratto (e, in `run()`, verificato) il lato formatore:
+     * se l'estrazione qui lancia, i claim formatore devono essere già a posto.
+     *
+     * @return list<FreshnessClaim>
+     */
+    private function extractStudentClaims(FreshnessRun $run, Course $course): array
+    {
+        $extracted = $this->studentExtractor->extract($course->modules()->get());
+        $claims = [];
+        foreach ($extracted['claims'] as $c) {
+            $claims[] = FreshnessClaim::create([
+                'run_id' => $run->id,
+                'course_id' => $course->id,
+                'content_source' => 'student',
+                'module_id' => $c['module_id'],
+                'sentence_ref' => $c['sentence_ref'],
+                'claim_text' => $c['claim_text'],
+                'category' => $c['category'],
+            ]);
+        }
+
+        return $claims;
     }
 
     /**
