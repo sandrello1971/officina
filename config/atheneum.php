@@ -34,10 +34,23 @@ return [
     |--------------------------------------------------------------------------
     | Copyright — dicitura di tutela del diritto d'autore
     |--------------------------------------------------------------------------
-    | Stampata in piccolo nel footer di OGNI PDF, documento e slide generati
-    | dalla piattaforma (CourseSourcePdfBuilder, CertificatePdfBuilder e
-    | resources/python/build_pptx.py). Centralizzata qui per aggiornarla — es.
-    | l'anno — in un punto solo.
+    | Dicitura UNICA di piattaforma: stampata su OGNI contenuto prodotto —
+    | PDF e dispense (CourseSourcePdfBuilder), attestati (CertificatePdfBuilder),
+    | slide e video (resources/python/build_pptx.py) e ogni pagina a schermo
+    | (layouts.partials._copyright). Nessun testo di copyright va scritto a mano
+    | altrove: si legge SEMPRE da copyright_notice().
+    |
+    | L'anno NON è scritto qui: lo compone copyright_notice() a ogni render, così
+    | non resta indietro. Metterlo in config lo congelerebbe al momento del
+    | `config:cache` (è così che il sito pubblico è rimasto al "© 2025").
     */
-    'copyright' => env('ATHENEUM_COPYRIGHT', '© 2026 Stefano Domenico Andrello. Tutti i diritti riservati.'),
+    'copyright_holder' => env('ATHENEUM_COPYRIGHT_HOLDER', 'Stefano Domenico Andrello'),
+
+    /*
+    | Override completo della dicitura, anno compreso. Vuoto = si compone dal
+    | titolare qui sopra. Serve solo per casi eccezionali (es. una variante
+    | legale imposta): valorizzandolo si perde l'aggiornamento automatico
+    | dell'anno.
+    */
+    'copyright' => env('ATHENEUM_COPYRIGHT', ''),
 ];

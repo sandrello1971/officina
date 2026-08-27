@@ -8,9 +8,9 @@ use TCPDF;
  * TCPDF con footer di tutela del diritto d'autore stampato in piccolo, in
  * grigio, centrato in fondo a OGNI pagina di ogni documento/PDF generato.
  *
- * La dicitura arriva da config('atheneum.copyright') (fonte unica). Se vuota,
- * il footer non viene stampato. Il font 'dejavusans' è bundled in TCPDF ed è
- * unicode: rende il simbolo © e le lettere accentate senza registrazioni.
+ * La dicitura arriva da copyright_notice() (fonte unica di piattaforma). Se
+ * vuota, il footer non viene stampato. Il font 'dejavusans' è bundled in TCPDF
+ * ed è unicode: rende il simbolo © e le lettere accentate senza registrazioni.
  */
 class CopyrightTcpdf extends TCPDF
 {
@@ -18,7 +18,7 @@ class CopyrightTcpdf extends TCPDF
     // setPrintFooter(true). Nome PascalCase imposto dalla classe base.
     public function Footer(): void // phpcs:ignore PSR1.Methods.CamelCapsMethodName
     {
-        $notice = trim((string) config('atheneum.copyright', ''));
+        $notice = copyright_notice();
         if ($notice === '') {
             return;
         }

@@ -165,7 +165,7 @@ class CertificatePdfBuilder
         // In piccolo, grigio chiaro, centrato in fondo alla pagina. Scritto a
         // coordinate fisse (auto page-break è OFF) per non interferire col
         // layout del template importato. 'intervariable' (Inter) ha il glifo ©.
-        $notice = trim((string) config('atheneum.copyright', ''));
+        $notice = copyright_notice();
         if ($notice !== '') {
             $pageH = $isLandscape ? $portraitW : $portraitH;
             $pdf->SetFont('intervariable', '', 6);

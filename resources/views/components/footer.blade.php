@@ -46,7 +46,8 @@
         </div>
 
         <div class="mt-10 pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p class="text-gray-500 text-xs">&copy; {{ date('Y') }} {{ atheneum_setting('platform_owner', 'Effetto Glitch') }}. Tutti i diritti riservati.</p>
+            {{-- Dicitura unica di piattaforma: non ricomporla da platform_owner. --}}
+            <p class="text-gray-500 text-xs">{{ copyright_notice() }}</p>
             <a href="{{ route('privacy') }}" class="text-gray-500 hover:text-gray-300 text-xs transition-colors">Privacy Policy</a>
         </div>
     </div>

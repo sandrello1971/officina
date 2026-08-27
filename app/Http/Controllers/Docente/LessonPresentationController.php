@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\GenerateLessonPresentationJob;
 use App\Models\Lesson;
 use App\Models\LessonPresentation;
+use App\Services\PptxCopyrightStamper;
 use App\Services\Schola\SlidePreviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -134,8 +135,12 @@ class LessonPresentationController extends Controller
      * S3 — carica una propria versione .pptx come BOZZA. source='uploaded',
      * spec=null (niente correzione via prompt). Render immediato per contare le slide.
      */
-    public function upload(Request $request, Lesson $lesson, SlidePreviewService $preview)
-    {
+    public function upload(
+        Request $request,
+        Lesson $lesson,
+        SlidePreviewService $preview,
+        PptxCopyrightStamper $stamper
+    ) {
         $this->authorizeOwner($lesson);
         $request->validate([
             'presentation' => ['required', 'file', 'extensions:pptx',
@@ -145,6 +150,15 @@ class LessonPresentationController extends Controller
 
         $draft = $this->draftFor($lesson);
         $storagePath = "lesson-presentations/{$lesson->id}/{$draft->id}.pptx";
+
+        // Gemello dell'upload admin: le slide caricate non passano da build_pptx.py,
+        // quindi la dicitura si applica qui sul file temporaneo. Fail-closed: se non
+        // riesce, la bozza esistente resta intatta.
+        try {
+            $stamper->stamp($request->file('presentation')->getRealPath());
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         // Sostituzione bozza: via la vecchia anteprima e l'eventuale vecchio file.
         $preview->forget($draft->file_path ?? $storagePath);

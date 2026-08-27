@@ -10,6 +10,7 @@ use App\Models\ModulePresentation;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Topic;
+use App\Services\PptxCopyrightStamper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -19,12 +20,27 @@ use Tests\TestCase;
 /**
  * S3 — upload / cancella / sostituisci + campo source. Il render per il conteggio
  * slide è in try/catch (file fake → 0), quindi i test non dipendono da LibreOffice.
+ *
+ * Le fixture sono .pptx FINTI (byte a caso): la stampigliatura del copyright, che
+ * gira python-pptx su file veri, è neutralizzata qui con un doppio no-op. Il
+ * comportamento reale dello stampigliatore è coperto da CopyrightFooterTest, e il
+ * rifiuto dell'upload quando fallisce è verificato più sotto.
  */
 class SlidePresentationUploadTest extends TestCase
 {
     use RefreshDatabase;
 
     private const PPTX_MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->app->instance(PptxCopyrightStamper::class, new class extends PptxCopyrightStamper
+        {
+            public function stamp(string $absolutePath): void {}
+        });
+    }
 
     private function prof(): Student
     {
@@ -177,6 +193,36 @@ class SlidePresentationUploadTest extends TestCase
 
         $this->assertSame(1, ModulePresentation::where('module_id', $module->id)->count(), 'UNIQUE(module_id): resta un solo record');
         $this->assertSame('uploaded', ModulePresentation::where('module_id', $module->id)->first()->source);
+    }
+
+    // ===== Copyright: nessun contenuto pubblicato senza dicitura =====
+
+    /**
+     * Fail-closed: se la dicitura non si riesce ad applicare, l'upload viene
+     * rifiutato e la bozza PRECEDENTE resta intatta — meglio un errore visibile
+     * che slide in circolazione senza tutela.
+     */
+    public function test_upload_rifiutato_se_la_stampigliatura_fallisce(): void
+    {
+        Storage::fake('local');
+        $module = $this->makeModule();
+        $this->app->instance(PptxCopyrightStamper::class, new class extends PptxCopyrightStamper
+        {
+            public function stamp(string $absolutePath): void
+            {
+                throw new \RuntimeException('Impossibile applicare la dicitura di copyright alla presentazione.');
+            }
+        });
+
+        $this->asAdmin()
+            ->post(route('admin.courses.modules.presentation.upload', [$module->course, $module]), ['presentation' => $this->pptx()])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseMissing('module_presentations', [
+            'module_id' => $module->id,
+            'source' => 'uploaded',
+        ]);
     }
 
     public function test_destroy_modulo(): void

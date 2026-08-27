@@ -194,7 +194,8 @@
         </div>
     </div>
     <div class="border-t max-w-6xl mx-auto px-4 py-4 flex justify-between text-xs" style="border-color:#4A5252; color:#8A9696">
-        <span>&copy; 2025 Effetto Glitch di Stefano Andrello — Corsico (MI)</span>
+        {{-- Dicitura unica di piattaforma: mai riscriverla a mano (era ferma al 2025). --}}
+        <span>{{ copyright_notice() }}</span>
         <div class="flex gap-4">
             <a href="/privacy-policy" class="hover:text-white transition-colors">Privacy Policy</a>
         </div>

@@ -7,6 +7,7 @@ use App\Jobs\GenerateModulePresentationJob;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\ModulePresentation;
+use App\Services\PptxCopyrightStamper;
 use App\Services\Schola\SlidePreviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -123,8 +124,13 @@ class ModulePresentationController extends Controller
     }
 
     /** S3 — carica una propria versione .pptx come BOZZA. source='uploaded', spec=null. */
-    public function upload(Request $request, Course $course, Module $module, SlidePreviewService $preview)
-    {
+    public function upload(
+        Request $request,
+        Course $course,
+        Module $module,
+        SlidePreviewService $preview,
+        PptxCopyrightStamper $stamper
+    ) {
         $this->ensureInCourse($course, $module);
         $request->validate([
             'presentation' => ['required', 'file', 'extensions:pptx',
@@ -134,6 +140,16 @@ class ModulePresentationController extends Controller
 
         $draft = $this->draftFor($module);
         $storagePath = "module-presentations/{$module->id}/{$draft->id}.pptx";
+
+        // Le slide caricate non passano da build_pptx.py: la dicitura va applicata
+        // qui. Si stampiglia il file TEMPORANEO, prima di toccare lo storage:
+        // fail-closed senza danni collaterali — se non riesce, la bozza attuale
+        // resta quella di prima invece di essere sostituita da un file nudo.
+        try {
+            $stamper->stamp($request->file('presentation')->getRealPath());
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         $preview->forget($draft->file_path ?? $storagePath);
         $request->file('presentation')->storeAs(dirname($storagePath), basename($storagePath), 'local');
