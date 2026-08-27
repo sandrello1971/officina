@@ -34,6 +34,36 @@ if (!function_exists('atheneum_setting_put')) {
     }
 }
 
+if (!function_exists('copyright_notice')) {
+    /**
+     * Dicitura UNICA di tutela del diritto d'autore, valida per ogni contenuto
+     * prodotto dalla piattaforma: PDF, dispense, attestati, slide, video e
+     * pagine a schermo. Chi deve stampare un copyright chiama SEMPRE questa —
+     * mai una stringa scritta a mano, mai config('atheneum.copyright') diretta.
+     *
+     * L'anno è composto qui, a ogni chiamata: sopravvive a `config:cache`
+     * (dove un date('Y') dentro la config resterebbe congelato all'anno del
+     * cache) e quindi non invecchia da solo.
+     *
+     * Ritorna stringa vuota se non c'è titolare né override: i chiamanti
+     * trattano il vuoto come "non stampare nulla".
+     */
+    function copyright_notice(): string
+    {
+        $override = trim((string) config('atheneum.copyright', ''));
+        if ($override !== '') {
+            return $override;
+        }
+
+        $holder = trim((string) config('atheneum.copyright_holder', ''));
+        if ($holder === '') {
+            return '';
+        }
+
+        return '© ' . date('Y') . ' ' . $holder . '. Tutti i diritti riservati.';
+    }
+}
+
 if (!function_exists('schola_markdown')) {
     /**
      * Render Markdown SICURO per i contenuti Schola (artefatti, biblioteca,

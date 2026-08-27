@@ -95,6 +95,8 @@
     <div style="padding:24px;">
         @yield('content')
     </div>
+
+    @include('layouts.partials._copyright')
 </div>
 <script>
 document.addEventListener('submit', function (e) {

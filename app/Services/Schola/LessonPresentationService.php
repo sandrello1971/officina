@@ -333,7 +333,7 @@ class LessonPresentationService
         return [
             'theme' => $this->themePayload($theme),
             // Footer di copyright stampato in piccolo su ogni slide (build_pptx.py).
-            'copyright' => (string) config('atheneum.copyright', ''),
+            'copyright' => copyright_notice(),
             'slides' => array_merge([$cover], array_values($contentSlides)),
         ];
     }
