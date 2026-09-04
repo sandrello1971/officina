@@ -201,4 +201,66 @@ class AdminAuthAndSettingsTest extends TestCase
         $this->assertSame('sess@ente.it', session('admin_email'),
             'session(admin_email) must be set after login — read by audit logs throughout the app');
     }
+
+    // ============================================================
+    // Chiavi API (settings)
+    // ============================================================
+
+    public function test_api_key_is_encrypted_at_rest_and_never_shown_in_plain_text(): void
+    {
+        $this->withSession(['admin_logged_in' => true, 'admin_email' => 'x@ente.it'])
+            ->put(route('admin.settings.update'), [
+                'api_key_anthropic' => 'sk-ant-super-secret-123',
+            ])
+            ->assertRedirect();
+
+        $stored = Setting::resolve('api_key_anthropic_encrypted');
+        $this->assertNotNull($stored);
+        $this->assertStringNotContainsString('sk-ant-super-secret-123', $stored);
+        $this->assertSame(
+            'sk-ant-super-secret-123',
+            \Illuminate\Support\Facades\Crypt::decryptString($stored)
+        );
+
+        $response = $this->withSession(['admin_logged_in' => true, 'admin_email' => 'x@ente.it'])
+            ->get(route('admin.settings.index'));
+        $response->assertOk();
+        $response->assertDontSee('sk-ant-super-secret-123');
+        $response->assertSee('attualmente impostata');
+    }
+
+    public function test_api_key_override_is_applied_to_config(): void
+    {
+        Setting::put('api_key_anthropic_encrypted', \Illuminate\Support\Facades\Crypt::encryptString('sk-ant-override-999'));
+
+        (new \App\Providers\AppServiceProvider($this->app))->boot();
+
+        $this->assertSame('sk-ant-override-999', config('services.anthropic.key'));
+    }
+
+    public function test_clearing_api_key_removes_it_and_falls_back_to_env(): void
+    {
+        Setting::put('api_key_brevo_encrypted', \Illuminate\Support\Facades\Crypt::encryptString('xkeysib-to-clear'));
+        $this->assertNotNull(Setting::resolve('api_key_brevo_encrypted'));
+
+        $this->withSession(['admin_logged_in' => true, 'admin_email' => 'x@ente.it'])
+            ->put(route('admin.settings.update'), [
+                'clear_api_key_brevo' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertNull(Setting::resolve('api_key_brevo_encrypted'));
+    }
+
+    public function test_empty_api_key_field_leaves_existing_value_unchanged(): void
+    {
+        Setting::put('api_key_elevenlabs_encrypted', \Illuminate\Support\Facades\Crypt::encryptString('el-keep-me'));
+
+        $this->withSession(['admin_logged_in' => true, 'admin_email' => 'x@ente.it'])
+            ->put(route('admin.settings.update'), [])
+            ->assertRedirect();
+
+        $stored = Setting::resolve('api_key_elevenlabs_encrypted');
+        $this->assertSame('el-keep-me', \Illuminate\Support\Facades\Crypt::decryptString($stored));
+    }
 }

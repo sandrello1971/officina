@@ -34,6 +34,17 @@ class SettingsController extends Controller
         'demo_user_email',
     ];
 
+    /**
+     * Chiavi API di servizi terzi gestibili da UI, sostituendo il valore
+     * di .env a runtime (vedi AppServiceProvider::applyApiKeySettingsOverride).
+     * Ogni voce: nome campo form => chiave settings cifrata in DB.
+     */
+    private const API_KEYS = [
+        'api_key_anthropic'  => 'api_key_anthropic_encrypted',
+        'api_key_brevo'      => 'api_key_brevo_encrypted',
+        'api_key_elevenlabs' => 'api_key_elevenlabs_encrypted',
+    ];
+
     public function index()
     {
         $settings = [
@@ -61,6 +72,10 @@ class SettingsController extends Controller
             'mail_from_name'    => Setting::resolve('mail_from_name', ''),
             // password mai esposta in plain text
             'mail_password_set' => (bool) Setting::resolve('mail_password_encrypted'),
+            // chiavi API: mai esposte in chiaro, solo lo stato "impostata sì/no"
+            'api_key_anthropic_set'  => (bool) Setting::resolve('api_key_anthropic_encrypted'),
+            'api_key_brevo_set'      => (bool) Setting::resolve('api_key_brevo_encrypted'),
+            'api_key_elevenlabs_set' => (bool) Setting::resolve('api_key_elevenlabs_encrypted'),
         ];
 
         return view('admin.settings.index', compact('settings'));
@@ -89,6 +104,12 @@ class SettingsController extends Controller
             'mail_from_address'  => 'nullable|email',
             'mail_from_name'     => 'nullable|string|max:120',
             'clear_mail_password' => 'nullable|boolean',
+            'api_key_anthropic'         => 'nullable|string|max:500',
+            'clear_api_key_anthropic'   => 'nullable|boolean',
+            'api_key_brevo'             => 'nullable|string|max:500',
+            'clear_api_key_brevo'       => 'nullable|boolean',
+            'api_key_elevenlabs'        => 'nullable|string|max:500',
+            'clear_api_key_elevenlabs'  => 'nullable|boolean',
         ]);
 
         // instance_name + branding: salva sempre il valore inviato (anche
@@ -131,7 +152,23 @@ class SettingsController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Impostazioni salvate. L\'override mail sarà attivo dalla prossima request.');
+        // Chiavi API: stesso schema a tre stati della password mail (clear /
+        // nuovo valore cifrato / invariato). Loggato senza mai scrivere il valore.
+        foreach (self::API_KEYS as $field => $settingKey) {
+            if (!empty($data["clear_{$field}"])) {
+                Setting::forget($settingKey);
+                Log::warning("[settings] {$field} rimossa", [
+                    'by' => session('admin_email') ?? 'unknown',
+                ]);
+            } elseif (!empty($data[$field])) {
+                Setting::put($settingKey, Crypt::encryptString($data[$field]));
+                Log::warning("[settings] {$field} aggiornata", [
+                    'by' => session('admin_email') ?? 'unknown',
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Impostazioni salvate. Gli override sono attivi dalla prossima request.');
     }
 
     public function testMail(Request $request)

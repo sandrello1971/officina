@@ -44,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->registerBrevoMailTransport();
         $this->applyMailSettingsOverride();
+        $this->applyApiKeySettingsOverride();
 
         // Observability: logga in modo strutturato ogni job asincrono fallito
         // (visibile nei log e, quando configurato, inoltrabile a Sentry/Slack).
@@ -269,6 +270,41 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Config::set($overrides);
+    }
+
+    /**
+     * Override runtime delle chiavi API di servizi terzi dal settings store,
+     * SOLO per quelle valorizzate. Stesso principio difensivo di
+     * applyMailSettingsOverride: chiave assente/illeggibile → si continua a
+     * usare .env, nessuna regressione produzione.
+     */
+    private function applyApiKeySettingsOverride(): void
+    {
+        $map = [
+            'api_key_anthropic_encrypted'  => ['services.anthropic.key'],
+            'api_key_brevo_encrypted'      => ['services.brevo.key', 'mail.mailers.brevo.key'],
+            'api_key_elevenlabs_encrypted' => ['services.elevenlabs.key'],
+        ];
+
+        $overrides = [];
+        foreach ($map as $settingKey => $configPaths) {
+            $encrypted = Setting::resolve($settingKey);
+            if (!$encrypted) {
+                continue;
+            }
+            try {
+                $value = Crypt::decryptString($encrypted);
+            } catch (\Throwable $e) {
+                continue; // valore cifrato illeggibile → resta l'env
+            }
+            foreach ($configPaths as $path) {
+                $overrides[$path] = $value;
+            }
+        }
+
+        if ($overrides) {
+            Config::set($overrides);
+        }
     }
 
     private function shareInstanceName(): void

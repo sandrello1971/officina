@@ -212,6 +212,39 @@
             </div>
         </div>
 
+        <div style="background:white; border-radius:10px; padding:20px; margin-bottom:20px;">
+            <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:4px;">Chiavi API</h3>
+            <p style="font-size:0.78rem; color:#8A9696; margin-bottom:14px;">
+                Se un campo è vuoto viene usata la chiave del file <code style="background:#F5F7F7; padding:1px 5px; border-radius:3px;">.env</code> (comportamento attuale).
+                Le chiavi vengono cifrate a riposo e non sono mai mostrate in chiaro dopo il salvataggio.
+            </p>
+
+            @foreach([
+                ['field' => 'api_key_anthropic',  'label' => 'Anthropic (Claude)', 'set' => $settings['api_key_anthropic_set']],
+                ['field' => 'api_key_brevo',       'label' => 'Brevo (email transazionali)', 'set' => $settings['api_key_brevo_set']],
+                ['field' => 'api_key_elevenlabs',  'label' => 'ElevenLabs (sintesi vocale)', 'set' => $settings['api_key_elevenlabs_set']],
+            ] as $key)
+            <div style="margin-bottom:14px;">
+                <label style="font-size:0.75rem; color:#8A9696;">
+                    {{ $key['label'] }}
+                    @if($key['set'])
+                        <span style="color:#3A8C89; font-weight:600;">— attualmente impostata</span>
+                    @endif
+                </label>
+                <input type="password" name="{{ $key['field'] }}" maxlength="500"
+                       placeholder="{{ $key['set'] ? '(lascia vuoto per mantenere quella esistente)' : 'inserisci la chiave' }}"
+                       autocomplete="off"
+                       style="width:100%; padding:8px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.85rem;">
+                @if($key['set'])
+                <label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:0.75rem; color:#c97a45; cursor:pointer;">
+                    <input type="checkbox" name="clear_{{ $key['field'] }}" value="1">
+                    Rimuovi chiave salvata (ritorna a .env)
+                </label>
+                @endif
+            </div>
+            @endforeach
+        </div>
+
         <div style="display:flex; gap:12px; justify-content:flex-end; margin-bottom:24px;">
             <button type="submit" style="padding:10px 24px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer;">
                 Salva impostazioni
