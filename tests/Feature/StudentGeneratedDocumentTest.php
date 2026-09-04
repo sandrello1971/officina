@@ -234,7 +234,8 @@ class StudentGeneratedDocumentTest extends TestCase
         $course = $this->makeCourse();
         $module = $this->addModule($course);
 
-        $this->get($this->moduleUrl($course, $module))->assertRedirect('/learn/login');
+        $url = str_replace('http://', 'https://', $this->moduleUrl($course, $module));
+        $this->get($url)->assertRedirect($this->learnUrl('/login'));
     }
 
     // ============================================================

@@ -20,6 +20,9 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="APP_SITE_DOMAIN" value="officina.effettoglitch.it"/>
+        <env name="APP_ADMIN_DOMAIN" value="admin.officina.effettoglitch.it"/>
+        <env name="APP_LEARN_DOMAIN" value="learn.officina.effettoglitch.it"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>

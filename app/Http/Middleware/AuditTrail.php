@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Registra su audit_logs ogni richiesta MUTANTE (non-GET) nelle aree /admin e
- * /docente: chi (attore da sessione), cosa (route/metodo/path), su cosa (parametri
+ * Registra su audit_logs ogni richiesta MUTANTE (non-GET) nelle aree admin e
+ * docente (riconosciute dal nome di rotta): chi (attore da sessione), cosa (route/metodo/path), su cosa (parametri
  * di rotta), esito (status), IP, user-agent. NON registra MAI il body della
  * richiesta (niente password/token/PII). Registrato una sola volta in
  * bootstrap/app.php (web append); si auto-filtra, così non tocca i gruppi rotte.
@@ -40,7 +40,7 @@ class AuditTrail
         }
 
         $path = $request->path();
-        $area = $this->area($path);
+        $area = $this->area($request);
         if ($area === null) {
             return;
         }
@@ -72,13 +72,23 @@ class AuditTrail
         ]);
     }
 
-    private function area(string $path): ?string
+    /**
+     * L'area si deduce dal NOME della rotta, non dal path: da quando l'admin
+     * vive alla radice di admin.* il prefisso /admin non esiste più. Per le
+     * rotte senza nome resta l'host admin come discriminante.
+     */
+    private function area(Request $request): ?string
     {
-        if ($path === 'admin' || str_starts_with($path, 'admin/')) {
+        $name = (string) ($request->route()?->getName() ?? '');
+
+        if (str_starts_with($name, 'admin.')) {
             return 'admin';
         }
-        if ($path === 'docente' || str_starts_with($path, 'docente/')) {
+        if (str_starts_with($name, 'docente.')) {
             return 'docente';
+        }
+        if ($name === '' && $request->getHost() === config('domains.admin')) {
+            return 'admin';
         }
 
         return null;

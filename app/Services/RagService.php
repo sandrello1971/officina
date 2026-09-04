@@ -507,8 +507,8 @@ class RagService
                     $deepLink = null;
                     if ($courseSlug) {
                         $deepLink = $isCourseVideo
-                            ? "/learn/course/{$courseSlug}?t={$tsSeconds}"
-                            : "/learn/course/{$courseSlug}/module/{$module->id}?t={$tsSeconds}";
+                            ? route('student.course.show', ['course' => $courseSlug, 't' => $tsSeconds])
+                            : route('student.module.show', ['course' => $courseSlug, 'module' => $module->id, 't' => $tsSeconds]);
                     }
 
                     $title = $isCourseVideo

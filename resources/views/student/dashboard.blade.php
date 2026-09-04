@@ -58,7 +58,7 @@
             <div style="color:#1A1F1F; font-weight:700;">{{ $lastModule['title'] }}</div>
             <div style="color:#8A9696; font-size:0.8rem;">{{ $lastModule['course_name'] }}</div>
         </div>
-        <a href="/learn/course/{{ $lastModule['course_slug'] }}/module/{{ $lastModule['module_id'] }}"
+        <a href="/course/{{ $lastModule['course_slug'] }}/module/{{ $lastModule['module_id'] }}"
            style="padding:9px 18px; background:#55B1AE; color:white; border-radius:8px; font-size:0.85rem; font-weight:700; text-decoration:none; white-space:nowrap;">
             Riprendi &rarr;
         </a>
@@ -76,7 +76,7 @@
                 <a href="{{ route('student.courses.index') }}" style="font-size:0.8rem; color:#55B1AE; text-decoration:none; font-weight:600;">Vedi tutti &rarr;</a>
             </div>
             @foreach($coursePreview as $course)
-            <a href="/learn/course/{{ $course->slug }}" style="display:block; text-decoration:none; padding:10px 0; border-top:1px solid #F0F2F2;">
+            <a href="/course/{{ $course->slug }}" style="display:block; text-decoration:none; padding:10px 0; border-top:1px solid #F0F2F2;">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;">
                     <span style="color:#1A1F1F; font-weight:600; font-size:0.9rem;">{{ $course->name }}</span>
                     @if(!empty($course->is_teaching))

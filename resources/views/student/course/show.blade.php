@@ -146,7 +146,7 @@
                 if (!this.query.trim() || this.searching) return;
                 this.searching = true;
                 try {
-                    const res = await fetch(`/learn/course/${this.slug}/video-search?q=${encodeURIComponent(this.query)}`);
+                    const res = await fetch(`/course/${this.slug}/video-search?q=${encodeURIComponent(this.query)}`);
                     const data = await res.json();
                     this.results = data.results || [];
                 } catch(e) {
@@ -313,7 +313,7 @@
                     <span style="font-size:0.7rem; padding:3px 8px; background:#F5F7F7; color:#8A9696; border-radius:4px;">Non iniziato</span>
                     @endif
 
-                    <a href="/learn/course/{{ $course->slug }}/module/{{ $module->id }}"
+                    <a href="/course/{{ $course->slug }}/module/{{ $module->id }}"
                        style="padding:6px 14px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                         Apri
                     </a>
@@ -331,7 +331,7 @@
         <p style="color:#8A9696; font-size:0.875rem; margin-bottom:8px;">
             Hai ottenuto: <span style="color:#55B1AE; font-weight:600;">{{ $course->certification_name }}</span>
         </p>
-        <a href="/learn/certificate/{{ $course->slug }}"
+        <a href="/certificate/{{ $course->slug }}"
            style="display:inline-block; margin-top:12px; padding:10px 24px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:700; text-decoration:none;">
             ⬇ Scarica il tuo certificato
         </a>
@@ -340,7 +340,7 @@
         <p style="color:#8A9696; font-size:0.875rem; margin-bottom:16px;">
             Hai completato il {{ $progressPercent }}% del corso. Puoi sostenere l'esame finale.
         </p>
-        <a href="/learn/quiz/{{ $finalQuiz->id }}"
+        <a href="/quiz/{{ $finalQuiz->id }}"
            style="display:inline-block; padding:12px 32px; background:#55B1AE; color:white; border-radius:8px; font-weight:700; text-decoration:none; font-size:0.9rem;">
             Esame finale →
         </a>

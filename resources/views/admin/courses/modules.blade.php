@@ -4,12 +4,12 @@
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <div>
-        <a href="/admin/courses" style="color:#8A9696; font-size:0.8rem;">&larr; Corsi</a>
+        <a href="/courses" style="color:#8A9696; font-size:0.8rem;">&larr; Corsi</a>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin-top:4px;">
             {{ $course->icon }} {{ $course->name }} — Moduli
         </h2>
     </div>
-    <a href="/admin/courses/{{ $course->id }}/modules/create"
+    <a href="/courses/{{ $course->id }}/modules/create"
        style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">
         + Nuovo modulo
     </a>
@@ -33,11 +33,11 @@
                 </div>
             </div>
             <div style="display:flex; gap:8px;">
-                <a href="/admin/courses/{{ $course->id }}/modules/{{ $module->id }}/edit"
+                <a href="/courses/{{ $course->id }}/modules/{{ $module->id }}/edit"
                    style="padding:6px 14px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                     Modifica
                 </a>
-                <a href="/admin/courses/{{ $course->id }}/modules/{{ $module->id }}/edit#content"
+                <a href="/courses/{{ $course->id }}/modules/{{ $module->id }}/edit#content"
                    style="padding:6px 14px; background:#E8F5F5; color:#3A8C89; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                     Contenuto
                 </a>
@@ -46,7 +46,7 @@
     </div>
     @empty
     <div style="background:white; border-radius:10px; padding:32px; text-align:center; color:#8A9696;">
-        Nessun modulo. <a href="/admin/courses/{{ $course->id }}/modules/create" style="color:#55B1AE;">Crea il primo &rarr;</a>
+        Nessun modulo. <a href="/courses/{{ $course->id }}/modules/create" style="color:#55B1AE;">Crea il primo &rarr;</a>
     </div>
     @endforelse
 </div>
@@ -108,7 +108,7 @@
         <div style="color:#55B1AE; font-weight:700;">&#10022; Genera quiz con Claude AI</div>
         <div style="color:#8A9696; font-size:0.8rem;">Crea automaticamente domande basate sul contenuto dei moduli</div>
     </div>
-    <form method="POST" action="/admin/courses/{{ $course->id }}/generate-quiz">
+    <form method="POST" action="/courses/{{ $course->id }}/generate-quiz">
         @csrf
         <div style="display:flex; align-items:center; gap:10px;">
             <label style="color:#8A9696; font-size:0.75rem;">Pool</label>

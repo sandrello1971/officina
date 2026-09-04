@@ -98,7 +98,7 @@ class AnalyticsController extends Controller
     public function sendReminder(Student $student)
     {
         try {
-            Mail::to($student->email)->send(new \App\Mail\StudentReminderMail($student, request()->getSchemeAndHttpHost()));
+            Mail::to($student->email)->send(new \App\Mail\StudentReminderMail($student));
             return back()->with('success', "Reminder inviato a {$student->name}");
         } catch (\Exception $e) {
             return back()->with('error', 'Errore invio: ' . $e->getMessage());
@@ -113,12 +113,10 @@ class AnalyticsController extends Controller
                   ->orWhereNull('last_login_at');
             })->get();
 
-        $baseUrl = request()->getSchemeAndHttpHost();
-
         $sent = 0;
         foreach ($inactive as $student) {
             try {
-                Mail::to($student->email)->send(new \App\Mail\StudentReminderMail($student, $baseUrl));
+                Mail::to($student->email)->send(new \App\Mail\StudentReminderMail($student));
                 $sent++;
             } catch (\Exception $e) {
                 Log::error("Reminder fallito per {$student->email}: " . $e->getMessage());

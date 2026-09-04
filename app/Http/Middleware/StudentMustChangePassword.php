@@ -14,8 +14,8 @@ class StudentMustChangePassword
         if (session('student_id')) {
             $student = Student::find(session('student_id'));
             if ($student && $student->must_change_password
-                && !$request->is('learn/change-password*')
-                && !$request->is('learn/logout')) {
+                && !$request->routeIs('student.change-password*')
+                && !$request->routeIs('student.logout*')) {
                 return redirect()->route('student.change-password');
             }
         }

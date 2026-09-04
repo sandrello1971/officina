@@ -36,7 +36,7 @@ class StudentNewsVisibilityTest extends TestCase
         NewsItem::create(['title' => 'BOZZA', 'summary' => 's', 'status' => 'draft']);
         NewsItem::create(['title' => 'SCARTATA', 'summary' => 's', 'status' => 'rejected']);
 
-        $res = $this->actingAsStudent($this->student())->get('/learn/news');
+        $res = $this->actingAsStudent($this->student())->get($this->learnUrl('/news'));
 
         $res->assertOk();
         $res->assertSee('PUBBLICATA');
@@ -49,7 +49,7 @@ class StudentNewsVisibilityTest extends TestCase
         NewsItem::create(['title' => 'GOV', 'summary' => 's', 'status' => 'published', 'published_at' => now(), 'tags' => ['governance']]);
         NewsItem::create(['title' => 'RIC', 'summary' => 's', 'status' => 'published', 'published_at' => now(), 'tags' => ['ricerca']]);
 
-        $res = $this->actingAsStudent($this->student())->get('/learn/news?tag=governance');
+        $res = $this->actingAsStudent($this->student())->get($this->learnUrl('/news?tag=governance'));
 
         $res->assertOk();
         $res->assertSee('GOV');

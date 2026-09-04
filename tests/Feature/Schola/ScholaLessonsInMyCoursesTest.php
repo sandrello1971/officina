@@ -83,7 +83,7 @@ class ScholaLessonsInMyCoursesTest extends TestCase
 
         $this->assertSame(0, $stu->courses()->count(), 'nessuna iscrizione a corsi di catalogo');
 
-        $res = $this->asUser($stu)->get('/learn/corsi')->assertOk();
+        $res = $this->asUser($stu)->get($this->learnUrl('/corsi'))->assertOk();
         $res->assertSee('Biomolecole');
         $res->assertSee('Chimica organica');
         $res->assertSee('Classe 5AL &middot; Scienze', false);
@@ -117,7 +117,7 @@ class ScholaLessonsInMyCoursesTest extends TestCase
             'is_active' => true, 'sort_order' => 1]);
         $stu->courses()->attach($course->id, ['enrolled_at' => now(), 'is_active' => true]);
 
-        $this->asUser($stu)->get('/learn/corsi')->assertOk()
+        $this->asUser($stu)->get($this->learnUrl('/corsi'))->assertOk()
             ->assertSee('Biomolecole')
             ->assertSee('AI Literacy Essential');
     }
@@ -139,7 +139,7 @@ class ScholaLessonsInMyCoursesTest extends TestCase
         $foreign = $this->schoolClass($prof, '1CL');
         $this->publish($this->lesson($prof, 'Lezione altrui'), $foreign);
 
-        $this->asUser($stu)->get('/learn/corsi')->assertOk()
+        $this->asUser($stu)->get($this->learnUrl('/corsi'))->assertOk()
             ->assertDontSee('Lezione in attesa')
             ->assertDontSee('Lezione altrui')
             ->assertDontSee('Classe 4BL')
@@ -165,7 +165,7 @@ class ScholaLessonsInMyCoursesTest extends TestCase
         $this->publish($trashed, $class);
         $trashed->delete();
 
-        $res = $this->asUser($stu)->get('/learn/corsi')->assertOk();
+        $res = $this->asUser($stu)->get($this->learnUrl('/corsi'))->assertOk();
         $res->assertDontSee('Mai pubblicata');
         $res->assertDontSee('Generazione fallita');
         $res->assertDontSee('Cancellata dal docente');

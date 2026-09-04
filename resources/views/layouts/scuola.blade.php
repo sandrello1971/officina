@@ -76,7 +76,7 @@
                 @endif
                 @endif
                 <div class="um-label">Account</div>
-                <form method="POST" action="/learn/logout">
+                <form method="POST" action="/logout">
                     @csrf
                     <button type="submit" class="um-logout">@include('layouts.partials._icon', ['name' => 'logout', 'size' => 18]) Esci</button>
                 </form>

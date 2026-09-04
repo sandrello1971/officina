@@ -71,7 +71,7 @@ class QuizController extends Controller
 
         $quiz = Quiz::create($data);
 
-        return redirect("/admin/quizzes/{$quiz->id}/questions")
+        return redirect("/quizzes/{$quiz->id}/questions")
             ->with('success', 'Quiz creato. Aggiungi le domande.');
     }
 
@@ -133,7 +133,7 @@ class QuizController extends Controller
             ? "Pool di {$pool} domande generato; ogni tentativo ne estrae {$quiz->questions_per_attempt}."
             : "Quiz generato con {$pool} domande!";
 
-        return redirect("/admin/quizzes/{$quiz->id}/questions")->with('success', $msg);
+        return redirect("/quizzes/{$quiz->id}/questions")->with('success', $msg);
     }
 
     public function show(string $id)

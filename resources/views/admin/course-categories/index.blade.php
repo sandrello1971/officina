@@ -5,7 +5,7 @@
 <div style="max-width:820px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Categorie corsi</h2>
-        <a href="/admin/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
+        <a href="/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
     </div>
 
     @if(session('success'))

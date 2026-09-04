@@ -199,7 +199,7 @@ class CourseIngestController extends Controller
             session()->forget('course_ingest_job_id');
             Storage::disk('local')->deleteDirectory("ingest-staging/{$jobId}");
 
-            return redirect("/admin/courses/{$courseId}/edit")->with('success', 'Corso creato dai documenti!');
+            return redirect("/courses/{$courseId}/edit")->with('success', 'Corso creato dai documenti!');
         } catch (\Exception $e) {
             Log::error('Course ingest confirm failed: ' . $e->getMessage());
             return back()->withInput()->with('error', 'Creazione fallita: ' . $e->getMessage());

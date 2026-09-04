@@ -103,7 +103,7 @@
                         <template x-if="status==='ready'">
                             <span>
                                 <template x-if="type==='quiz' && quizId">
-                                    <a :href="'/learn/quiz/' + quizId" style="color:#3A8C89; font-weight:600; text-decoration:none;">Svolgi &rarr;</a>
+                                    <a :href="'/quiz/' + quizId" style="color:#3A8C89; font-weight:600; text-decoration:none;">Svolgi &rarr;</a>
                                 </template>
                                 <template x-if="type==='mindmap'">
                                     <a :href="'#mygen-' + id" @click.prevent="$dispatch('show-mindmap', {id})" style="color:#3A8C89; font-weight:600; text-decoration:none;">Apri</a>
@@ -182,7 +182,7 @@ function genRow(id, status, type, quizId) {
         id, status, type, quizId,
         init() { if (this.status === 'generating') this.poll(); },
         poll() {
-            const url = `/learn/classi/${@js($class->id)}/artefatti/${@js($publication->id)}/generati/${this.id}/stato`;
+            const url = `/classi/${@js($class->id)}/artefatti/${@js($publication->id)}/generati/${this.id}/stato`;
             const timer = setInterval(async () => {
                 try {
                     const r = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});

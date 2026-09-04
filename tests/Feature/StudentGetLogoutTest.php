@@ -20,7 +20,7 @@ class StudentGetLogoutTest extends TestCase
             'role' => 'student', 'is_active' => true, 'must_change_password' => false]);
 
         $this->withSession(['student_id' => $s->id, 'student_name' => $s->name, 'student_email' => $s->email])
-            ->get('/learn/logout')
+            ->get($this->learnUrl('/logout'))
             ->assertRedirect(route('student.login'));
 
         $this->assertNull(session('student_id'));

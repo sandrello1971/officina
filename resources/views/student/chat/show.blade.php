@@ -128,7 +128,7 @@ form.addEventListener('submit', async (e) => {
     input.value = '';
     addTyping();
     try {
-        const res = await fetch('/learn/chat/message', {
+        const res = await fetch('/chat/message', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

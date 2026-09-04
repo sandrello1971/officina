@@ -120,7 +120,7 @@ class VideoAIService
 
     public function getStreamUrl(string $videoId): string
     {
-        return "/learn/video/{$videoId}/stream";
+        return route('student.video.stream', ['videoId' => $videoId]);
     }
 
     public function deleteVideo(string $videoId): bool

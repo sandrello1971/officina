@@ -32,7 +32,7 @@
             <div style="font-size:0.75rem; color:#8A9696;">{{ $s->created_at?->diffForHumans() ?? '—' }}</div>
         </div>
         @endforeach
-        <a href="/admin/students" style="display:block; text-align:center; margin-top:12px; color:#55B1AE; font-size:0.8rem;">Vedi tutti &rarr;</a>
+        <a href="/students" style="display:block; text-align:center; margin-top:12px; color:#55B1AE; font-size:0.8rem;">Vedi tutti &rarr;</a>
     </div>
 
     <div style="background:white; border-radius:10px; padding:20px;">
@@ -46,7 +46,7 @@
                     <div style="font-size:0.75rem; color:#8A9696;">{{ $c->modules_count }} moduli</div>
                 </div>
             </div>
-            <a href="/admin/courses/{{ $c->id }}/edit" style="font-size:0.75rem; color:#55B1AE;">Modifica</a>
+            <a href="/courses/{{ $c->id }}/edit" style="font-size:0.75rem; color:#55B1AE;">Modifica</a>
         </div>
         @endforeach
     </div>

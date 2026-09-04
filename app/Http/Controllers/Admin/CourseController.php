@@ -83,7 +83,7 @@ class CourseController extends Controller
             $this->handleVideoUpload($course, $request->file('video_file'));
         }
 
-        return redirect("/admin/courses/{$course->id}/edit")
+        return redirect("/courses/{$course->id}/edit")
             ->with('success', 'Corso creato. Aggiungi i moduli.');
     }
 
@@ -209,7 +209,7 @@ class CourseController extends Controller
             ? "Pool di {$pool} domande generato; ogni tentativo ne estrae {$quiz->questions_per_attempt}."
             : "Quiz generato con {$pool} domande!";
 
-        return redirect("/admin/quizzes/{$quiz->id}/questions")->with('success', $msg);
+        return redirect("/quizzes/{$quiz->id}/questions")->with('success', $msg);
     }
 
     private function handleVideoUpload(Course $course, $file): ?string

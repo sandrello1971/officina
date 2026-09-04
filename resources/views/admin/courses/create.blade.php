@@ -4,13 +4,13 @@
 
 <div style="max-width:700px;">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
-        <a href="/admin/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
+        <a href="/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
         <span style="color:#C8D0D0;">|</span>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Nuovo corso</h2>
     </div>
 
     <div style="background:white; border-radius:10px; padding:24px;">
-        <form method="POST" action="/admin/courses" enctype="multipart/form-data">
+        <form method="POST" action="/courses" enctype="multipart/form-data">
             @csrf
 
             @if ($errors->any())
@@ -122,7 +122,7 @@
                 </div>
 
                 <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
-                    <a href="/admin/courses" style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>
+                    <a href="/courses" style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>
                     <button type="submit" style="padding:10px 24px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer;">
                         Crea corso
                     </button>

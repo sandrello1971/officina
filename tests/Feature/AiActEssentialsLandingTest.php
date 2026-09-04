@@ -14,7 +14,7 @@ class AiActEssentialsLandingTest extends TestCase
     {
         $this->withoutVite();
 
-        $res = $this->get('/ai-act-essentials');
+        $res = $this->get($this->siteUrl('/ai-act-essentials'));
 
         $res->assertOk();
         $res->assertSee('AI ACT Essentials');

@@ -3,25 +3,30 @@
 use App\Http\Controllers\PageController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [PageController::class, 'index'])->name('home');
-Route::get('/primus', [PageController::class, 'primus'])->name('primus');
-Route::get('/consilium', [PageController::class, 'consilium'])->name('consilium');
-Route::get('/initium', [PageController::class, 'initium'])->name('initium');
-Route::get('/structura', [PageController::class, 'structura'])->name('structura');
-Route::get('/ai-agents-mcp', [PageController::class, 'aiAgentsMcp'])->name('ai-agents-mcp');
-Route::get('/conformita-ai-act', [PageController::class, 'conformitaAiAct'])->name('conformita-ai-act');
-Route::get('/ai-act-essentials', [PageController::class, 'aiActEssentials'])->name('ai-act-essentials');
-Route::get('/risorse', [PageController::class, 'risorse'])->name('risorse');
-Route::get('/contatti', [PageController::class, 'contatti'])->name('contatti');
-Route::post('/contatti', [PageController::class, 'contatti'])->name('contatti.post');
-Route::get('/privacy-policy', [PageController::class, 'privacyPolicy'])->name('privacy');
-Route::get('/cookie-policy', [PageController::class, 'cookiePolicy'])->name('cookies');
+// ===== VETRINA PUBBLICA =====
+// Vincolata all'host di vetrina: le aree applicative vivono sui sottodomini
+// admin.* e learn.*, dove la radice deve portare all'area, non alla vetrina.
+Route::domain(config('domains.site'))->group(function () {
+    Route::get('/', [PageController::class, 'index'])->name('home');
+    Route::get('/primus', [PageController::class, 'primus'])->name('primus');
+    Route::get('/consilium', [PageController::class, 'consilium'])->name('consilium');
+    Route::get('/initium', [PageController::class, 'initium'])->name('initium');
+    Route::get('/structura', [PageController::class, 'structura'])->name('structura');
+    Route::get('/ai-agents-mcp', [PageController::class, 'aiAgentsMcp'])->name('ai-agents-mcp');
+    Route::get('/conformita-ai-act', [PageController::class, 'conformitaAiAct'])->name('conformita-ai-act');
+    Route::get('/ai-act-essentials', [PageController::class, 'aiActEssentials'])->name('ai-act-essentials');
+    Route::get('/risorse', [PageController::class, 'risorse'])->name('risorse');
+    Route::get('/contatti', [PageController::class, 'contatti'])->name('contatti');
+    Route::post('/contatti', [PageController::class, 'contatti'])->name('contatti.post');
+    Route::get('/privacy-policy', [PageController::class, 'privacyPolicy'])->name('privacy');
+    Route::get('/cookie-policy', [PageController::class, 'cookiePolicy'])->name('cookies');
 
-Route::get('/mappa-percorso', [PageController::class, 'mappaPercorso'])->name('lead-magnet.show');
-Route::get('/mappa-percorso/grazie', [PageController::class, 'mappaPercorsoGrazie'])->name('lead-magnet.thank-you');
+    Route::get('/mappa-percorso', [PageController::class, 'mappaPercorso'])->name('lead-magnet.show');
+    Route::get('/mappa-percorso/grazie', [PageController::class, 'mappaPercorsoGrazie'])->name('lead-magnet.thank-you');
 
-Route::get('/sitemap.xml', function () {
-    return response()->file(public_path('sitemap.xml'), ['Content-Type' => 'application/xml']);
+    Route::get('/sitemap.xml', function () {
+        return response()->file(public_path('sitemap.xml'), ['Content-Type' => 'application/xml']);
+    });
 });
 
 // Verifica pubblica del certificato — fuori da student.auth, accessibile a chiunque
@@ -35,7 +40,9 @@ Route::get('/certificato/verifica/{code}/pdf', [App\Http\Controllers\Certificate
     ->name('certificate.verify.pdf');
 
 // ===== AREA STUDENTI =====
-Route::prefix('learn')->name('student.')->group(function () {
+// Vive alla radice di learn.* (prima era il prefisso /learn sull'host unico).
+Route::domain(config('domains.learn'))->name('student.')->group(function () {
+    Route::get('/', fn () => redirect()->route('student.dashboard'))->name('home');
     Route::get('/demo', [App\Http\Controllers\Student\DemoController::class, 'start'])->name('demo.start');
     Route::get('/login', [App\Http\Controllers\Student\AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [App\Http\Controllers\Student\AuthController::class, 'login'])->middleware('throttle:login')->name('login.post');
@@ -222,7 +229,7 @@ Route::prefix('learn')->name('student.')->group(function () {
 
 // ===== AREA DOCENTE SCHOLA =====
 // Auth via sessione studente + gate professor. NON eredita gli accessi instructor.
-Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'professor'])->group(function () {
+Route::domain(config('domains.learn'))->prefix('docente')->name('docente.')->middleware(['student.auth', 'professor'])->group(function () {
     Route::get('/', [App\Http\Controllers\Docente\DashboardController::class, 'index'])->name('dashboard');
 
     // Classi (pacchetto 3)
@@ -371,7 +378,7 @@ Route::prefix('docente')->name('docente.')->middleware(['student.auth', 'profess
 
 // ===== AREA SEGRETERIA SCOLASTICA (fase 2, P12) =====
 // Gate school_admin + cambio password obbligatorio. Tutto scoped su school_id.
-Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.password'])->group(function () {
+Route::domain(config('domains.learn'))->prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.password'])->group(function () {
     Route::get('/', [App\Http\Controllers\Scuola\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'edit'])->name('anagrafica.edit');
     Route::patch('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'update'])->name('anagrafica.update');
@@ -438,10 +445,12 @@ Route::prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.p
 // (segreteria/docenti/studenti) e al platform admin, quindi fuori dal gate
 // school_admin ma sotto student.auth.
 Route::get('/branding/scuola/{school}/logo', [App\Http\Controllers\Scuola\BrandingController::class, 'logo'])
+    ->domain(config('domains.learn'))
     ->middleware('student.auth')->name('scuola.logo');
 
 // ===== AREA ADMIN OFFICINA =====
-Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(function () {
+// Vive alla radice di admin.* (prima era il prefisso /admin sull'host unico).
+Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Audit trail — chi ha fatto cosa nelle aree admin/docente.
@@ -709,7 +718,9 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth'])->group(functi
 // 2FA challenge: l'admin ha password OK ma non e' ancora "logged_in".
 // Fuori dal middleware admin.auth (sennò redirect a login infinito).
 // Throttle 5/min anti brute-force sul verify.
-Route::get('/admin/2fa/challenge', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'show'])->name('admin.2fa.challenge');
-Route::post('/admin/2fa/verify', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'verify'])
-    ->middleware('throttle:5,1')
-    ->name('admin.2fa.verify');
+Route::domain(config('domains.admin'))->group(function () {
+    Route::get('/2fa/challenge', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'show'])->name('admin.2fa.challenge');
+    Route::post('/2fa/verify', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'verify'])
+        ->middleware('throttle:5,1')
+        ->name('admin.2fa.verify');
+});

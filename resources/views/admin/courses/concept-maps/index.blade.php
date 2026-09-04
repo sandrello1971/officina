@@ -5,7 +5,7 @@
 <div style="max-width:980px;">
 
     <div style="margin-bottom:20px;">
-        <a href="/admin/courses/{{ $course->id }}" style="color:#8A9696; font-size:0.8rem;">&larr; {{ $course->name }}</a>
+        <a href="/courses/{{ $course->id }}" style="color:#8A9696; font-size:0.8rem;">&larr; {{ $course->name }}</a>
         <h2 style="font-size:1.3rem; font-weight:700; color:#1A1F1F; margin-top:4px;">
             🧭 Mappe concettuali — {{ $course->name }}
         </h2>
@@ -55,11 +55,11 @@
             </div>
             <div style="display:flex; gap:8px;">
                 @if($courseMap)
-                    <a href="/admin/courses/{{ $course->id }}/concept-maps/{{ $courseMap->id }}/edit"
+                    <a href="/courses/{{ $course->id }}/concept-maps/{{ $courseMap->id }}/edit"
                        style="padding:7px 14px; background:#55B1AE; color:white; border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
                         Editor
                     </a>
-                    <form action="/admin/courses/{{ $course->id }}/concept-maps/{{ $courseMap->id }}" method="POST"
+                    <form action="/courses/{{ $course->id }}/concept-maps/{{ $courseMap->id }}" method="POST"
                           onsubmit="return confirm('Eliminare la mappa &quot;intero corso&quot;?');">
                         @csrf @method('DELETE')
                         <button type="submit" style="padding:7px 14px; background:white; color:#991B1B; border:1px solid #991B1B; border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer;">
@@ -67,7 +67,7 @@
                         </button>
                     </form>
                 @else
-                    <form action="/admin/courses/{{ $course->id }}/concept-maps/auto-create" method="POST" class="cm-auto-create" style="display:inline-block;">
+                    <form action="/courses/{{ $course->id }}/concept-maps/auto-create" method="POST" class="cm-auto-create" style="display:inline-block;">
                         @csrf
                         <button type="submit" style="padding:7px 14px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer;">
                             ✨ Crea con AI
@@ -128,11 +128,11 @@
                         </div>
                         <div style="display:flex; gap:6px;">
                             @if($m)
-                                <a href="/admin/courses/{{ $course->id }}/concept-maps/{{ $m->id }}/edit"
+                                <a href="/courses/{{ $course->id }}/concept-maps/{{ $m->id }}/edit"
                                    style="padding:6px 12px; background:#55B1AE; color:white; border-radius:6px; font-size:0.75rem; font-weight:600; text-decoration:none;">
                                     Editor
                                 </a>
-                                <form action="/admin/courses/{{ $course->id }}/concept-maps/{{ $m->id }}" method="POST"
+                                <form action="/courses/{{ $course->id }}/concept-maps/{{ $m->id }}" method="POST"
                                       onsubmit="return confirm('Eliminare la mappa del modulo {{ $module->title }}?');">
                                     @csrf @method('DELETE')
                                     <button type="submit" style="padding:6px 12px; background:white; color:#991B1B; border:1px solid #991B1B; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer;">
@@ -140,7 +140,7 @@
                                     </button>
                                 </form>
                             @else
-                                <form action="/admin/courses/{{ $course->id }}/concept-maps/auto-create" method="POST" class="cm-auto-create" style="display:inline-block;">
+                                <form action="/courses/{{ $course->id }}/concept-maps/auto-create" method="POST" class="cm-auto-create" style="display:inline-block;">
                                     @csrf
                                     <input type="hidden" name="module_id" value="{{ $module->id }}">
                                     <button type="submit" style="padding:6px 12px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer;">
@@ -155,7 +155,7 @@
         @endif
 
         <div style="margin-top:14px; text-align:right;">
-            <a href="/admin/courses/{{ $course->id }}/concept-maps/create"
+            <a href="/courses/{{ $course->id }}/concept-maps/create"
                style="font-size:0.78rem; color:#55B1AE; text-decoration:underline;">
                 + Crea mappa manuale (senza AI)
             </a>

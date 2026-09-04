@@ -34,11 +34,11 @@
     </div>
     <div class="sidebar-scroll">
     <nav style="padding:12px 0;">
-        <a href="/admin" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">&#128202; Dashboard</a>
-        <a href="/admin/students" class="nav-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">&#128101; Discenti</a>
+        <a href="/" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">&#128202; Dashboard</a>
+        <a href="/students" class="nav-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">&#128101; Discenti</a>
         <a href="{{ route('admin.instructors.index') }}" class="nav-item {{ request()->routeIs('admin.instructors.*') ? 'active' : '' }}">&#127979; Formatori</a>
         <a href="{{ route('admin.scuole.index') }}" class="nav-item {{ request()->routeIs('admin.scuole.*') ? 'active' : '' }}">&#127979; Scuole</a>
-        <a href="/admin/certificates/signatures" class="nav-item {{ request()->routeIs('admin.certificates.signatures.*') ? 'active' : '' }}">&#9997; Firma Certificati</a>
+        <a href="/certificates/signatures" class="nav-item {{ request()->routeIs('admin.certificates.signatures.*') ? 'active' : '' }}">&#9997; Firma Certificati</a>
         {{-- Gruppo Corsi: espandibile (Alpine), auto-aperto se la rotta corrente
              è una di quelle raggruppate, così l'utente vede dov'è. --}}
         @php
@@ -58,7 +58,7 @@
                 <span x-show="open" x-cloak style="font-size:0.7rem;">&#9662;</span>
             </button>
             <div x-show="open" x-cloak>
-                <a href="/admin/courses" class="nav-item nav-subitem {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">Tutti i corsi</a>
+                <a href="/courses" class="nav-item nav-subitem {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">Tutti i corsi</a>
                 <a href="{{ route('admin.course-categories.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.course-categories.*') ? 'active' : '' }}">Categorie</a>
                 <a href="{{ route('admin.course-tags.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.course-tags.*') ? 'active' : '' }}">Tag</a>
                 <a href="{{ route('admin.freshness.proposals.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.freshness.*') ? 'active' : '' }}">Aggiornamenti</a>
@@ -69,10 +69,10 @@
                 @endif
             </div>
         </div>
-        <a href="/admin/quizzes" class="nav-item {{ request()->routeIs('admin.quizzes.*') ? 'active' : '' }}">&#128221; Quiz</a>
-        <a href="/admin/rag" class="nav-item {{ request()->routeIs('admin.rag.*') ? 'active' : '' }}">&#129504; Documenti AI</a>
-        <a href="/admin/knowledge-base" class="nav-item {{ request()->routeIs('admin.knowledge-base.*') ? 'active' : '' }}">📓 Knowledge Base</a>
-        <a href="/admin/analytics" class="nav-item {{ request()->routeIs('admin.analytics') ? 'active' : '' }}">&#128200; Analytics</a>
+        <a href="/quizzes" class="nav-item {{ request()->routeIs('admin.quizzes.*') ? 'active' : '' }}">&#128221; Quiz</a>
+        <a href="/rag" class="nav-item {{ request()->routeIs('admin.rag.*') ? 'active' : '' }}">&#129504; Documenti AI</a>
+        <a href="/knowledge-base" class="nav-item {{ request()->routeIs('admin.knowledge-base.*') ? 'active' : '' }}">📓 Knowledge Base</a>
+        <a href="/analytics" class="nav-item {{ request()->routeIs('admin.analytics') ? 'active' : '' }}">&#128200; Analytics</a>
         <a href="{{ route('admin.admins.index') }}" class="nav-item {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}">&#128737; Amministratori</a>
         <a href="{{ route('admin.security.2fa.show') }}" class="nav-item {{ request()->routeIs('admin.security.2fa.*') ? 'active' : '' }}">&#128274; Sicurezza 2FA</a>
         <a href="{{ route('admin.settings.index') }}" class="nav-item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">&#9881; Impostazioni</a>
@@ -80,7 +80,7 @@
     </div>{{-- /.sidebar-scroll --}}
     <div class="sidebar-footer">
         <div style="color:#8A9696; font-size:0.75rem; margin-bottom:8px;">{{ session('admin_email') }}</div>
-        <form method="POST" action="/admin/logout">
+        <form method="POST" action="/logout">
             @csrf
             <button type="submit" style="width:100%; padding:7px; background:rgba(226,138,83,0.1); color:#E28A53; border:1px solid rgba(226,138,83,0.3); border-radius:6px; font-size:0.8rem; cursor:pointer;">
                 Esci

@@ -6,7 +6,7 @@
 
     <div style="background:white; border-radius:10px; padding:24px;">
         <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:16px;">Carica documento</h3>
-        <form method="POST" action="/admin/rag/upload" enctype="multipart/form-data">
+        <form method="POST" action="/rag/upload" enctype="multipart/form-data">
             @csrf
             <div style="display:flex; flex-direction:column; gap:14px;">
                 <div>
@@ -57,7 +57,7 @@
                         {{ $doc->course?->name ?? '—' }} &middot; chunk {{ $doc->chunk_index }} &middot; {{ $doc->created_at?->format('d/m/Y') }}
                     </div>
                 </div>
-                <form method="POST" action="/admin/rag/{{ $doc->id }}">
+                <form method="POST" action="/rag/{{ $doc->id }}">
                     @csrf @method('DELETE')
                     <button type="submit" style="padding:4px 10px; background:#fff3ec; color:#E28A53; border:1px solid #E28A53; border-radius:6px; font-size:0.75rem; cursor:pointer;"
                             onclick="return confirm('Eliminare?')">

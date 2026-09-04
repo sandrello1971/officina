@@ -4,7 +4,7 @@
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Gestione Quiz</h2>
-    <a href="/admin/quizzes/create" style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">+ Nuovo quiz</a>
+    <a href="/quizzes/create" style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">+ Nuovo quiz</a>
 </div>
 
 <div style="background:white; border-radius:10px; overflow:hidden;">
@@ -50,16 +50,16 @@
                 </td>
                 <td style="padding:12px 16px;">
                     <div style="display:flex; gap:8px;">
-                        <a href="/admin/quizzes/{{ $quiz->id }}/edit" style="font-size:0.8rem; color:#55B1AE;">Modifica</a>
-                        <a href="/admin/quizzes/{{ $quiz->id }}/questions" style="font-size:0.8rem; color:#8A9696;">Domande</a>
-                        <a href="/admin/quizzes/{{ $quiz->id }}/results" style="font-size:0.8rem; color:#4A5252;">Risultati</a>
+                        <a href="/quizzes/{{ $quiz->id }}/edit" style="font-size:0.8rem; color:#55B1AE;">Modifica</a>
+                        <a href="/quizzes/{{ $quiz->id }}/questions" style="font-size:0.8rem; color:#8A9696;">Domande</a>
+                        <a href="/quizzes/{{ $quiz->id }}/results" style="font-size:0.8rem; color:#4A5252;">Risultati</a>
                     </div>
                 </td>
             </tr>
             @empty
             <tr>
                 <td colspan="7" style="padding:32px; text-align:center; color:#8A9696;">
-                    Nessun quiz creato. <a href="/admin/quizzes/create" style="color:#55B1AE;">Crea il primo &rarr;</a>
+                    Nessun quiz creato. <a href="/quizzes/create" style="color:#55B1AE;">Crea il primo &rarr;</a>
                 </td>
             </tr>
             @endforelse

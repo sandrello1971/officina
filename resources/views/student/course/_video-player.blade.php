@@ -21,7 +21,7 @@
                style="width:100%; max-height:400px; display:block;"
                controls
                preload="metadata">
-            <source src="/learn/video/{{ $vpId }}/stream" type="video/mp4">
+            <source src="/video/{{ $vpId }}/stream" type="video/mp4">
         </video>
 
         <div x-show="status !== 'ready'" x-cloak
@@ -212,7 +212,7 @@ if (typeof window.videoPlayer === 'undefined') {
 
             async checkStatus() {
                 try {
-                    const res = await fetch(`/learn/video/${this.videoId}/status`);
+                    const res = await fetch(`/video/${this.videoId}/status`);
                     const data = await res.json();
                     this.status = data.status;
                     this.progress = data.progress || 0;
@@ -230,7 +230,7 @@ if (typeof window.videoPlayer === 'undefined') {
 
             async loadTranscript() {
                 try {
-                    const res = await fetch(`/learn/video/${this.videoId}/transcript`);
+                    const res = await fetch(`/video/${this.videoId}/transcript`);
                     const data = await res.json();
                     this.transcript = data.segments || [];
                 } catch(e) {}
@@ -262,7 +262,7 @@ if (typeof window.videoPlayer === 'undefined') {
                 this.videoMessages.push({ id: Date.now(), role: 'user', content: question });
 
                 try {
-                    const res = await fetch(`/learn/video/${this.videoId}/chat`, {
+                    const res = await fetch(`/video/${this.videoId}/chat`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -305,9 +305,9 @@ if (typeof window.videoPlayer === 'undefined') {
                 this.searching = true;
                 let url;
                 if (this.activeScope === 'module' && this.moduleId) {
-                    url = `/learn/course/${this.courseSlug}/module/${this.moduleId}/video-search?q=${encodeURIComponent(this.searchQuery)}`;
+                    url = `/course/${this.courseSlug}/module/${this.moduleId}/video-search?q=${encodeURIComponent(this.searchQuery)}`;
                 } else {
-                    url = `/learn/course/${this.courseSlug}/video-search?q=${encodeURIComponent(this.searchQuery)}`;
+                    url = `/course/${this.courseSlug}/video-search?q=${encodeURIComponent(this.searchQuery)}`;
                 }
                 try {
                     const res = await fetch(url);

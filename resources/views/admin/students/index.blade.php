@@ -14,7 +14,7 @@
                 <span style="background:#F5F7F7; color:#1A1F1F; padding:1px 8px; border-radius:10px; font-size:0.75rem;">{{ $trashedCount }}</span>
             </a>
         @endif
-        <a href="/admin/students/create" style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">+ Nuovo studente</a>
+        <a href="/students/create" style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">+ Nuovo studente</a>
     </div>
 </div>
 
@@ -73,8 +73,8 @@
                 </td>
                 <td style="padding:12px 16px;">
                     <div style="display:flex; gap:8px; align-items:center;">
-                        <a href="/admin/students/{{ $student->id }}" style="font-size:0.8rem; color:#55B1AE;">Dettaglio</a>
-                        <a href="/admin/students/{{ $student->id }}/edit" style="font-size:0.8rem; color:#8A9696;">Modifica</a>
+                        <a href="/students/{{ $student->id }}" style="font-size:0.8rem; color:#55B1AE;">Dettaglio</a>
+                        <a href="/students/{{ $student->id }}/edit" style="font-size:0.8rem; color:#8A9696;">Modifica</a>
                         <form method="POST" action="{{ route('admin.students.destroy', $student->id) }}" style="display:inline;"
                               onsubmit="return confirm('Spostare {{ addslashes($student->name) }} nel cestino? Potrai ripristinarlo in seguito.');">
                             @csrf

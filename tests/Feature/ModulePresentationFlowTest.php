@@ -160,7 +160,8 @@ class ModulePresentationFlowTest extends TestCase
     {
         $module = $this->makeModule();
 
-        $this->post($this->genRoute($module))->assertRedirect('/admin/login');
+        $url = str_replace('http://', 'https://', $this->genRoute($module));
+        $this->post($url)->assertRedirect($this->adminUrl('/login'));
     }
 
     // ---- UI ----

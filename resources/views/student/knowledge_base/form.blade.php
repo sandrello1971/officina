@@ -221,8 +221,8 @@ function noteForm() {
                 this.modules = []; this.sections = []; return;
             }
             const [m, s] = await Promise.all([
-                fetch(`/learn/knowledge-base/modules/${this.courseId}`).then(r => r.json()),
-                fetch(`/learn/knowledge-base/sections/${this.courseId}`).then(r => r.json()),
+                fetch(`/knowledge-base/modules/${this.courseId}`).then(r => r.json()),
+                fetch(`/knowledge-base/sections/${this.courseId}`).then(r => r.json()),
             ]);
             this.modules = m; this.sections = s;
         },
@@ -263,7 +263,7 @@ function noteForm() {
             fd.append('_token', document.querySelector('meta[name=csrf-token]')?.content
                 || document.querySelector('input[name=_token]').value);
             try {
-                const res = await fetch('/learn/knowledge-base/upload-image', {
+                const res = await fetch('/knowledge-base/upload-image', {
                     method: 'POST', body: fd,
                 });
                 const data = await res.json();
@@ -286,7 +286,7 @@ function noteForm() {
 
         async suggestTags() {
             if (!this.tagDraft) { this.tagSuggestions = []; return; }
-            const res = await fetch(`/learn/knowledge-base/tag-suggest?q=${encodeURIComponent(this.tagDraft)}`);
+            const res = await fetch(`/knowledge-base/tag-suggest?q=${encodeURIComponent(this.tagDraft)}`);
             const tags = await res.json();
             this.tagSuggestions = tags.filter(t => !this.tagsList.includes(t));
         },

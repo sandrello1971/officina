@@ -4,7 +4,7 @@
 
 <div style="max-width:700px;">
     <div style="margin-bottom:20px;">
-        <a href="/admin/courses/{{ $course->id }}/modules" style="color:#8A9696; font-size:0.8rem;">
+        <a href="/courses/{{ $course->id }}/modules" style="color:#8A9696; font-size:0.8rem;">
             &larr; {{ $course->name }}
         </a>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin-top:4px;">Nuovo modulo</h2>
@@ -65,7 +65,7 @@
             </div>
 
             <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
-                <a href="/admin/courses/{{ $course->id }}/modules"
+                <a href="/courses/{{ $course->id }}/modules"
                    style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">
                     Annulla
                 </a>

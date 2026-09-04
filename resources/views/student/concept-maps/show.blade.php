@@ -65,13 +65,13 @@
         <p x-show="node?.description" style="font-size:0.82rem; color:#4A5252; margin-top:8px;" x-text="node?.description"></p>
         <div style="margin-top:10px;">
             <template x-if="node?.link_type === 'module' && node?.link_module_id">
-                <a :href="'/learn/course/{{ $course->slug }}/module/' + node.link_module_id"
+                <a :href="'/course/{{ $course->slug }}/module/' + node.link_module_id"
                    style="display:inline-block; padding:6px 12px; background:#55B1AE; color:white; border-radius:6px; text-decoration:none; font-size:0.78rem; font-weight:600;">
                     Apri modulo &rarr;
                 </a>
             </template>
             <template x-if="node?.link_type === 'material' && node?.link_material_id">
-                <a :href="'/learn/material/' + node.link_material_id + '/canvas'" target="_blank"
+                <a :href="'/material/' + node.link_material_id + '/canvas'" target="_blank"
                    style="display:inline-block; padding:6px 12px; background:#55B1AE; color:white; border-radius:6px; text-decoration:none; font-size:0.78rem; font-weight:600;">
                     Apri materiale &rarr;
                 </a>

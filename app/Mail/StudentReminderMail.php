@@ -13,7 +13,7 @@ class StudentReminderMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Student $student, public ?string $baseUrl = null) {}
+    public function __construct(public Student $student) {}
 
     public function envelope(): Envelope
     {
@@ -22,12 +22,11 @@ class StudentReminderMail extends Mailable
 
     public function content(): Content
     {
-        $base = rtrim($this->baseUrl ?? config('app.url'), '/');
 
         return new Content(
             markdown: 'emails.student-reminder',
             with: [
-                'dashboardUrl' => $base . '/learn/dashboard',
+                'dashboardUrl' => route('student.dashboard'),
             ],
         );
     }

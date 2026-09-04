@@ -4,7 +4,7 @@
 
 <div style="max-width:900px;">
     <div style="margin-bottom:20px;">
-        <a href="/admin/courses/{{ $course->id }}/modules" style="color:#8A9696; font-size:0.8rem;">
+        <a href="/courses/{{ $course->id }}/modules" style="color:#8A9696; font-size:0.8rem;">
             &larr; {{ $course->name }}
         </a>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin-top:4px;">
@@ -12,7 +12,7 @@
         </h2>
     </div>
 
-    <form method="POST" action="/admin/courses/{{ $course->id }}/modules/{{ $module->id }}" enctype="multipart/form-data">
+    <form method="POST" action="/courses/{{ $course->id }}/modules/{{ $module->id }}" enctype="multipart/form-data">
         @csrf @method('PUT')
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
@@ -65,7 +65,7 @@
                     </button>
                 </div>
                 @endforeach
-                <a href="/admin/courses/{{ $course->id }}/modules/{{ $module->id }}/materials/create"
+                <a href="/courses/{{ $course->id }}/modules/{{ $module->id }}/materials/create"
                    style="display:block; text-align:center; margin-top:12px; padding:6px; background:#E8F5F5; color:#55B1AE; border-radius:6px; font-size:0.8rem; text-decoration:none; font-weight:600;">
                     + Aggiungi materiale
                 </a>
@@ -175,7 +175,7 @@
         </div>
 
         <div style="display:flex; gap:12px; justify-content:flex-end;">
-            <a href="/admin/courses/{{ $course->id }}/modules"
+            <a href="/courses/{{ $course->id }}/modules"
                style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">
                 Annulla
             </a>
@@ -943,7 +943,7 @@ document.getElementById('image-upload').addEventListener('change', async (e) => 
     formData.append('image', file);
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
     try {
-        const res = await fetch('/admin/upload-image', { method: 'POST', body: formData });
+        const res = await fetch('/upload-image', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.url) {
             editor.chain().focus().setImage({ src: data.url }).run();

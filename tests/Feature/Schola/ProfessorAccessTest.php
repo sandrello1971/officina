@@ -38,25 +38,25 @@ class ProfessorAccessTest extends TestCase
 
     public function test_docente_denied_to_guest(): void
     {
-        $this->get('/docente')->assertRedirect(route('student.login'));
+        $this->get($this->learnUrl('/docente'))->assertRedirect(route('student.login'));
     }
 
     public function test_docente_denied_to_plain_student(): void
     {
         $student = $this->makeStudentWithRole('student');
-        $this->actingAsStudent($student)->get('/docente')->assertForbidden();
+        $this->actingAsStudent($student)->get($this->learnUrl('/docente'))->assertForbidden();
     }
 
     public function test_docente_denied_to_instructor(): void
     {
         $instructor = $this->makeStudentWithRole('instructor');
-        $this->actingAsStudent($instructor)->get('/docente')->assertForbidden();
+        $this->actingAsStudent($instructor)->get($this->learnUrl('/docente'))->assertForbidden();
     }
 
     public function test_docente_allowed_to_professor(): void
     {
         $prof = $this->makeStudentWithRole('professor');
-        $this->actingAsStudent($prof)->get('/docente')
+        $this->actingAsStudent($prof)->get($this->learnUrl('/docente'))
             ->assertOk()
             ->assertSee('Benvenuto')
             ->assertSee($prof->name);
@@ -84,7 +84,7 @@ class ProfessorAccessTest extends TestCase
         $prof = $this->makeStudentWithRole('professor');
         $prof->update(['password' => bcrypt('secret-pw'), 'must_change_password' => false]);
 
-        $this->post('/learn/login', [
+        $this->post($this->learnUrl('/login'), [
             'email' => $prof->email,
             'password' => 'secret-pw',
         ])->assertRedirect(route('docente.dashboard'));
@@ -113,6 +113,6 @@ class ProfessorAccessTest extends TestCase
     {
         $instructor = $this->makeStudentWithRole('instructor');
         $this->assertFalse($instructor->isProfessor());
-        $this->actingAsStudent($instructor)->get('/docente')->assertForbidden();
+        $this->actingAsStudent($instructor)->get($this->learnUrl('/docente'))->assertForbidden();
     }
 }

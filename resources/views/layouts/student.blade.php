@@ -59,14 +59,14 @@
     <button type="button" class="mobile-toggle" data-toggle="#student-nav" title="Menu" aria-label="Menu">
         @include('layouts.partials._icon', ['name' => 'dashboard', 'size' => 22])
     </button>
-    <a href="/learn/dashboard" class="topbar-brand" title="{{ atheneum_setting('instance_name', 'Officina') }} — Dashboard">
+    <a href="/dashboard" class="topbar-brand" title="{{ atheneum_setting('instance_name', 'Officina') }} — Dashboard">
         <span class="mono">GL</span>
     </a>
 
     {{-- Nav orizzontale. I corsi NON stanno più qui: tornano solo come card nella dashboard. --}}
     <div class="topbar-nav" id="student-nav">
         @include('layouts.partials._topbar-item', [
-            'href' => '/learn/dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard',
+            'href' => '/dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard',
             'active' => request()->routeIs('student.dashboard'),
         ])
         @include('layouts.partials._topbar-item', [
@@ -138,7 +138,7 @@
                 @endif
 
                 <div class="um-label">Account</div>
-                <form method="POST" action="/learn/logout">
+                <form method="POST" action="/logout">
                     @csrf
                     <button type="submit" class="um-logout">@include('layouts.partials._icon', ['name' => 'logout', 'size' => 18]) Esci</button>
                 </form>
@@ -349,7 +349,7 @@ function minervaBubble() {
             this.$nextTick(() => this.scrollBottom());
 
             try {
-                const res = await fetch('/learn/minerva/ask', {
+                const res = await fetch('/minerva/ask', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -381,7 +381,7 @@ function minervaBubble() {
 
             this.typing = true;
             try {
-                const res = await fetch('/learn/minerva/ask', {
+                const res = await fetch('/minerva/ask', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -452,7 +452,7 @@ function minervaBubble() {
         })
         .listen('.AnnouncementSent', (payload) => {
             // Nuovo annuncio: bump badge "Annunci" (skip se siamo gia' sulla pagina annunci)
-            const onAnnouncements = window.location.pathname.startsWith('/learn/annunci');
+            const onAnnouncements = window.location.pathname.startsWith('/annunci');
             if (!onAnnouncements) {
                 bumpAnnBadge(+1);
             }

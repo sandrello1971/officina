@@ -56,7 +56,7 @@
                     Esplora la piattaforma senza registrazione
                 </div>
             </div>
-            <a href="/learn/demo"
+            <a href="{{ route('student.demo.start') }}"
                style="padding:12px 24px; background:#E28A53; color:white; border-radius:10px;
                       font-size:0.9rem; font-weight:700; text-decoration:none; white-space:nowrap;
                       flex-shrink:0;">

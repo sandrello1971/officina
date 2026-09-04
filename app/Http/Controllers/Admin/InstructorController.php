@@ -101,7 +101,7 @@ class InstructorController extends Controller
         if ($request->boolean('send_email')) {
             try {
                 Mail::to($instructor->email)->send(
-                    new StudentWelcomeMail($instructor, $tempPassword, [], request()->getSchemeAndHttpHost())
+                    new StudentWelcomeMail($instructor, $tempPassword, [])
                 );
             } catch (\Throwable $e) {
                 session()->flash('warning', 'Formatore creato, ma invio email fallito: ' . $e->getMessage());

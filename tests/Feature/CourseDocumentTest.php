@@ -295,7 +295,8 @@ class CourseDocumentTest extends TestCase
     public function test_controller_corso_non_admin_bloccato(): void
     {
         $course = $this->makeCourseWithModules();
-        $this->post(route('admin.courses.document.generate', $course))->assertRedirect('/admin/login');
+        $url = str_replace('http://', 'https://', route('admin.courses.document.generate', $course));
+        $this->post($url)->assertRedirect($this->adminUrl('/login'));
     }
 
     // ============================================================

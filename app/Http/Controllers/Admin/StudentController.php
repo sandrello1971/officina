@@ -87,7 +87,7 @@ class StudentController extends Controller
         }
 
         try {
-            Mail::to($student->email)->send(new StudentWelcomeMail($student, $tempPassword, $courseNames, request()->getSchemeAndHttpHost()));
+            Mail::to($student->email)->send(new StudentWelcomeMail($student, $tempPassword, $courseNames));
         } catch (\Throwable $e) {
             session()->flash('warning', 'Studente creato, ma invio email fallito: ' . $e->getMessage());
         }
@@ -261,7 +261,7 @@ class StudentController extends Controller
         $courseNames = $student->courses()->pluck('courses.name')->toArray();
 
         try {
-            Mail::to($student->email)->send(new StudentWelcomeMail($student, $tempPassword, $courseNames, request()->getSchemeAndHttpHost()));
+            Mail::to($student->email)->send(new StudentWelcomeMail($student, $tempPassword, $courseNames));
             return back()->with('success', 'Nuove credenziali inviate.');
         } catch (\Throwable $e) {
             return back()->withErrors(['email' => 'Invio fallito: ' . $e->getMessage()]);

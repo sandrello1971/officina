@@ -32,7 +32,6 @@ class StudentInviteMail extends Mailable
 
     public function content(): Content
     {
-        $base = rtrim(config('app.url'), '/');
 
         return new Content(
             markdown: 'emails.student-invite',
@@ -40,7 +39,7 @@ class StudentInviteMail extends Mailable
                 'student' => $this->student,
                 'tempPassword' => $this->tempPassword,
                 'schoolName' => $this->school->name,
-                'loginUrl' => $base . '/learn/login',
+                'loginUrl' => route('student.login'),
             ],
         );
     }

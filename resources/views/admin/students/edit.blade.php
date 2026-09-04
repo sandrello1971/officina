@@ -4,7 +4,7 @@
 
 <div style="max-width:700px;">
     <div style="margin-bottom:20px;">
-        <a href="/admin/students/{{ $student->id }}" style="color:#8A9696; font-size:0.8rem; text-decoration:none;">&larr; Dettaglio studente</a>
+        <a href="/students/{{ $student->id }}" style="color:#8A9696; font-size:0.8rem; text-decoration:none;">&larr; Dettaglio studente</a>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin-top:4px;">Modifica: {{ $student->name }}</h2>
     </div>
 
@@ -16,7 +16,7 @@
 
     <div style="background:white; border-radius:10px; padding:24px; margin-bottom:16px;">
         <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:16px;">Dati anagrafici</h3>
-        <form method="POST" action="/admin/students/{{ $student->id }}">
+        <form method="POST" action="/students/{{ $student->id }}">
             @csrf @method('PUT')
             <div style="display:grid; gap:16px;">
                 <div>
@@ -62,7 +62,7 @@
                 </label>
 
                 <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
-                    <a href="/admin/students/{{ $student->id }}" style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>
+                    <a href="/students/{{ $student->id }}" style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>
                     <button type="submit" style="padding:10px 24px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer;">
                         Salva modifiche
                     </button>
@@ -283,7 +283,7 @@
         <p style="color:#8A9696; font-size:0.875rem; margin-bottom:16px;">
             Invia nuove credenziali temporanee via email. La vecchia password sarà invalidata.
         </p>
-        <form method="POST" action="/admin/students/{{ $student->id }}/send-credentials">
+        <form method="POST" action="/students/{{ $student->id }}/send-credentials">
             @csrf
             <button type="submit" onclick="return confirm('Inviare nuove credenziali a {{ $student->email }}?')"
                     style="padding:10px 20px; background:#E28A53; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer;">

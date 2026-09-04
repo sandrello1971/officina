@@ -4,7 +4,7 @@
 
 <div style="max-width:900px;">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
-        <a href="/admin/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
+        <a href="/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
         <span style="color:#C8D0D0;">|</span>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">{{ $course->name }}</h2>
     </div>
@@ -20,7 +20,7 @@
                     {{ $course->duration_hours }}h &middot; {{ $course->modules->count() }} moduli &middot; {{ $course->certification_name ?? '—' }}
                 </div>
             </div>
-            <a href="/admin/courses/{{ $course->id }}/edit" style="padding:8px 16px; background:rgba(255,255,255,0.2); color:white; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">Modifica</a>
+            <a href="/courses/{{ $course->id }}/edit" style="padding:8px 16px; background:rgba(255,255,255,0.2); color:white; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">Modifica</a>
         </div>
     </div>
 
@@ -58,12 +58,12 @@
             </div>
         </div>
         <div style="display:flex; gap:8px;">
-            <a href="/admin/courses/{{ $course->id }}/concept-maps"
+            <a href="/courses/{{ $course->id }}/concept-maps"
                style="padding:8px 16px; background:#55B1AE; color:white;
                       border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                 Gestisci mappe
             </a>
-            <a href="/admin/courses/{{ $course->id }}/concept-maps/create"
+            <a href="/courses/{{ $course->id }}/concept-maps/create"
                style="padding:8px 16px; background:white; color:#55B1AE;
                       border:1px solid #55B1AE; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                 + Nuova
@@ -75,7 +75,7 @@
     <div style="background:white; border-radius:10px; overflow:hidden;">
         <div style="padding:16px 20px; border-bottom:1px solid #F5F7F7; display:flex; align-items:center; justify-content:space-between;">
             <h3 style="font-weight:700; color:#1A1F1F;">Moduli ({{ $course->modules->count() }})</h3>
-            <a href="/admin/courses/{{ $course->id }}/modules/create" style="padding:6px 14px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">+ Nuovo modulo</a>
+            <a href="/courses/{{ $course->id }}/modules/create" style="padding:6px 14px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">+ Nuovo modulo</a>
         </div>
 
         @if($course->modules->isEmpty())
@@ -114,7 +114,7 @@
                         </span>
                     </td>
                     <td style="padding:10px 16px; text-align:right;">
-                        <a href="/admin/courses/{{ $course->id }}/modules/{{ $module->id }}/edit" style="font-size:0.8rem; color:#55B1AE;">Modifica</a>
+                        <a href="/courses/{{ $course->id }}/modules/{{ $module->id }}/edit" style="font-size:0.8rem; color:#55B1AE;">Modifica</a>
                     </td>
                 </tr>
                 @endforeach

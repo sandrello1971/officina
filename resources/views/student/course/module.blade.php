@@ -10,7 +10,7 @@
 <div style="display:grid; grid-template-columns:1fr 280px; gap:24px; max-width:1100px; margin:0 auto;">
 
     <div>
-        <a href="/learn/course/{{ $course->slug }}"
+        <a href="/course/{{ $course->slug }}"
            style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.8rem; font-weight:600; text-decoration:none; margin-bottom:12px;">
             ← Torna al corso
         </a>
@@ -23,7 +23,7 @@
 
         <div style="background:white; border-radius:12px; padding:24px; margin-bottom:20px;">
             <div style="color:#8A9696; font-size:0.75rem; margin-bottom:8px;">
-                <a href="/learn/course/{{ $course->slug }}" style="color:#55B1AE;">{{ $course->name }}</a>
+                <a href="/course/{{ $course->slug }}" style="color:#55B1AE;">{{ $course->name }}</a>
                 &rsaquo; {{ $module->title }}
             </div>
             <h1 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin-bottom:4px;">{{ $module->title }}</h1>
@@ -531,7 +531,7 @@
                 {{ $quiz->questions()->count() }} domande · Soglia: {{ $quiz->passing_score }}%
                 @if($quiz->time_limit_minutes) · ⏱ {{ $quiz->time_limit_minutes }} min @endif
             </p>
-            <a href="/learn/quiz/{{ $quiz->id }}"
+            <a href="/quiz/{{ $quiz->id }}"
                style="display:inline-block; padding:8px 20px; background:white; color:#c97a45; border-radius:6px; font-size:0.875rem; font-weight:700; text-decoration:none;">
                 Inizia il quiz →
             </a>
@@ -553,11 +553,11 @@
                     {{ $course->certification_name }}
                 </div>
                 <div style="display:flex; gap:10px; justify-content:center; margin-top:16px;">
-                    <a href="/learn/certificate/{{ $course->slug }}"
+                    <a href="/certificate/{{ $course->slug }}"
                        style="padding:10px 24px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:700; text-decoration:none;">
                         ⬇ Scarica certificato PDF
                     </a>
-                    <a href="/learn/certificate/{{ $course->slug }}/view" target="_blank"
+                    <a href="/certificate/{{ $course->slug }}/view" target="_blank"
                        style="padding:10px 24px; border:1px solid #55B1AE; color:#55B1AE; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">
                         👁 Anteprima
                     </a>
@@ -580,7 +580,7 @@
                     <p style="color:#8A9696; font-size:0.8rem; margin-bottom:16px;">
                         Al superamento ricevi: <span style="color:#55B1AE; font-weight:600;">{{ $course->certification_name }}</span>
                     </p>
-                    <a href="/learn/quiz/{{ $finalQuiz->id }}"
+                    <a href="/quiz/{{ $finalQuiz->id }}"
                        style="display:inline-block; padding:12px 28px; background:#55B1AE; color:white; border-radius:8px; font-size:0.9rem; font-weight:700; text-decoration:none;">
                         Sostieni l'esame →
                     </a>
@@ -592,7 +592,7 @@
 
         <div style="display:flex; justify-content:space-between; margin-top:8px; gap:12px;">
             @if($prevModule)
-            <a href="/learn/course/{{ $course->slug }}/module/{{ $prevModule->id }}" style="padding:10px 20px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.875rem; text-decoration:none;">
+            <a href="/course/{{ $course->slug }}/module/{{ $prevModule->id }}" style="padding:10px 20px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.875rem; text-decoration:none;">
                 &larr; {{ \Illuminate\Support\Str::limit($prevModule->title, 30) }}
             </a>
             @else
@@ -600,7 +600,7 @@
             @endif
 
             @if($nextModule)
-            <a href="/learn/course/{{ $course->slug }}/module/{{ $nextModule->id }}" style="padding:10px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">
+            <a href="/course/{{ $course->slug }}/module/{{ $nextModule->id }}" style="padding:10px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">
                 {{ \Illuminate\Support\Str::limit($nextModule->title, 30) }} &rarr;
             </a>
             @endif
@@ -691,7 +691,7 @@ async function completeModule() {
     btn.disabled = true;
     btn.textContent = 'Salvataggio...';
     try {
-        const response = await fetch('/learn/course/{{ $course->slug }}/module/{{ $module->id }}/complete', {
+        const response = await fetch('/course/{{ $course->slug }}/module/{{ $module->id }}/complete', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -727,7 +727,7 @@ if (noteTextarea) {
 async function saveNote() {
     if (!noteTextarea) return;
     try {
-        await fetch('/learn/notes/{{ $module->id }}', {
+        await fetch('/notes/{{ $module->id }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -838,7 +838,7 @@ function anchoredNotes(opts) {
             if (!this.popoverAnchor) return;
             this.popoverStatus = 'Salvataggio…';
             try {
-                const res = await fetch(`/learn/notes/${this.moduleId}`, {
+                const res = await fetch(`/notes/${this.moduleId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -880,7 +880,7 @@ function anchoredNotes(opts) {
 
         async deleteNote(anchor) {
             try {
-                const res = await fetch(`/learn/notes/${this.moduleId}`, {
+                const res = await fetch(`/notes/${this.moduleId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

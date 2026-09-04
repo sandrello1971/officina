@@ -99,7 +99,7 @@
                     <span style="font-size:0.78rem;">
                         <span x-show="status==='generating'" style="color:#E28A53; font-weight:600;">generazione in corso…</span>
                         <template x-if="status==='ready' && quizId">
-                            <a :href="'/learn/quiz/' + quizId" style="color:#3A8C89; font-weight:600; text-decoration:none;">Svolgi &rarr;</a>
+                            <a :href="'/quiz/' + quizId" style="color:#3A8C89; font-weight:600; text-decoration:none;">Svolgi &rarr;</a>
                         </template>
                         <span x-show="status==='failed'" style="color:#A8521F; font-weight:600;">non riuscita</span>
                     </span>
@@ -180,7 +180,7 @@ function lessonGenRow(id, status, quizId) {
         status, quizId,
         init() { if (this.status === 'generating') this.poll(); },
         poll() {
-            const url = `/learn/classi/{{ $class->id }}/lezioni/{{ $lesson->id }}/generati/${id}/stato`;
+            const url = `/classi/{{ $class->id }}/lezioni/{{ $lesson->id }}/generati/${id}/stato`;
             const timer = setInterval(async () => {
                 try {
                     const r = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});

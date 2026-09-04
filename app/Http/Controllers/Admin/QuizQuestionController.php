@@ -86,7 +86,7 @@ class QuizQuestionController extends Controller
 
         $question->save();
 
-        return redirect("/admin/quizzes/{$quiz->id}/questions")
+        return redirect("/quizzes/{$quiz->id}/questions")
             ->with('success', 'Domanda salvata.');
     }
 

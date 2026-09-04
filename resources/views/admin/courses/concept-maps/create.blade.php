@@ -3,7 +3,7 @@
 @section('content')
 
 <div style="max-width:720px;">
-    <a href="/admin/courses/{{ $course->id }}/concept-maps" style="color:#8A9696; font-size:0.8rem;">&larr; Mappe concettuali</a>
+    <a href="/courses/{{ $course->id }}/concept-maps" style="color:#8A9696; font-size:0.8rem;">&larr; Mappe concettuali</a>
     <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin-top:4px; margin-bottom:18px;">
         Nuova mappa concettuale &middot; {{ $course->name }}
     </h2>
@@ -16,7 +16,7 @@
         </div>
     @endif
 
-    <form action="/admin/courses/{{ $course->id }}/concept-maps" method="POST"
+    <form action="/courses/{{ $course->id }}/concept-maps" method="POST"
           style="background:white; border-radius:10px; padding:24px;">
         @csrf
         <div style="margin-bottom:14px;">
@@ -63,7 +63,7 @@
             </div>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end;">
-            <a href="/admin/courses/{{ $course->id }}/concept-maps"
+            <a href="/courses/{{ $course->id }}/concept-maps"
                style="padding:8px 18px; background:white; color:#1A1F1F; border:1px solid #D1D5DB; border-radius:6px; font-size:0.875rem; font-weight:600; text-decoration:none;">
                 Annulla
             </a>

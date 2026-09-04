@@ -27,7 +27,7 @@
         </div>
         @endif
 
-        <form method="POST" action="/admin/login">
+        <form method="POST" action="/login">
             @csrf
             <div style="margin-bottom:16px;">
                 <label style="color:#8A9696; font-size:0.8rem; display:block; margin-bottom:6px;">Email</label>

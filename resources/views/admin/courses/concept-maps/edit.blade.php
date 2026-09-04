@@ -35,7 +35,7 @@
     {{-- TOOLBAR --}}
     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;">
         <div>
-            <a href="/admin/courses/{{ $course->id }}/concept-maps" style="color:#8A9696; font-size:0.8rem;">&larr; Mappe concettuali</a>
+            <a href="/courses/{{ $course->id }}/concept-maps" style="color:#8A9696; font-size:0.8rem;">&larr; Mappe concettuali</a>
             <h2 style="font-size:1.15rem; font-weight:700; color:#1A1F1F; margin-top:4px;">
                 {{ $map->title }}
                 @if($map->isCourseLevel())
@@ -57,7 +57,7 @@
             <span x-show="status==='error'" class="cm-pill cm-pill-error">errore salvataggio</span>
 
             <form @submit.prevent="generateWithAI"
-                  action="/admin/courses/{{ $course->id }}/concept-maps/{{ $map->id }}/generate" method="POST"
+                  action="/courses/{{ $course->id }}/concept-maps/{{ $map->id }}/generate" method="POST"
                   style="display:inline-block;">
                 @csrf
                 <button type="submit" class="cm-btn cm-btn-orange" :disabled="generating"
@@ -271,7 +271,7 @@
                         visibility: this.meta.visibility,
                         data: this.editor.getData(),
                     };
-                    const res = await fetch('/admin/courses/{{ $course->id }}/concept-maps/{{ $map->id }}', {
+                    const res = await fetch('/courses/{{ $course->id }}/concept-maps/{{ $map->id }}', {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',

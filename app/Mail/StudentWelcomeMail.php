@@ -17,7 +17,6 @@ class StudentWelcomeMail extends Mailable
         public Student $student,
         public string $tempPassword,
         public array $courseNames = [],
-        public ?string $baseUrl = null,
     ) {
     }
 
@@ -30,7 +29,6 @@ class StudentWelcomeMail extends Mailable
 
     public function content(): Content
     {
-        $base = rtrim($this->baseUrl ?? config('app.url'), '/');
 
         return new Content(
             markdown: 'emails.student-welcome',
@@ -38,7 +36,7 @@ class StudentWelcomeMail extends Mailable
                 'student' => $this->student,
                 'tempPassword' => $this->tempPassword,
                 'courseNames' => $this->courseNames,
-                'loginUrl' => $base . '/learn/login',
+                'loginUrl' => route('student.login'),
             ],
         );
     }

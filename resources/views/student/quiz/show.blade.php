@@ -256,7 +256,7 @@
 
         <div style="display:flex; gap:12px; justify-content:center;">
             @if($course)
-            <a href="/learn/course/{{ $course->slug }}"
+            <a href="/course/{{ $course->slug }}"
                style="padding:10px 24px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">
                 ← Torna al corso
             </a>
@@ -266,7 +266,7 @@
                 Riprova
             </button>
             @if($course && $nextModule)
-            <a href="/learn/course/{{ $course->slug }}/module/{{ $nextModule->id }}"
+            <a href="/course/{{ $course->slug }}/module/{{ $nextModule->id }}"
                x-show="passed"
                style="padding:10px 24px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">
                 Modulo successivo →
@@ -300,7 +300,7 @@ function quizApp() {
 
         async startQuiz() {
             try {
-                const res = await fetch('/learn/quiz/{{ $quiz->id }}/start', {
+                const res = await fetch('/quiz/{{ $quiz->id }}/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                     body: JSON.stringify({})
@@ -424,7 +424,7 @@ function quizApp() {
             this.submitting = true;
 
             try {
-                const res = await fetch('/learn/quiz/{{ $quiz->id }}/submit', {
+                const res = await fetch('/quiz/{{ $quiz->id }}/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                     body: JSON.stringify({

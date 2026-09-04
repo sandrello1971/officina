@@ -57,7 +57,7 @@ class BrandingAndAssistantIdentityTest extends TestCase
     {
         atheneum_setting_put('instance_name', 'Accademia Rossi');
 
-        $html = $this->get('/admin/login')->getContent();
+        $html = $this->get($this->adminUrl('/login'))->getContent();
 
         $this->assertStringContainsString('Accademia Rossi', $html);
         // Non deve contenere 'Officina' come brand a schermo
@@ -70,7 +70,7 @@ class BrandingAndAssistantIdentityTest extends TestCase
     {
         atheneum_setting_put('instance_name', '');
 
-        $html = $this->get('/admin/login')->getContent();
+        $html = $this->get($this->adminUrl('/login'))->getContent();
         $this->assertStringContainsString('Officina Admin', $html);
     }
 

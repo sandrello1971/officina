@@ -22,7 +22,7 @@
     <div style="padding:16px 20px;">
         @if($student->is_demo)
         <div style="display:flex; align-items:center; justify-content:flex-end;">
-            <a href="/learn/course/{{ $course->slug }}"
+            <a href="/course/{{ $course->slug }}"
                style="padding:6px 16px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                 Entra nel corso &rarr;
             </a>
@@ -32,7 +32,7 @@
             <div style="color:#8A9696; font-size:0.8rem;">
                 {{ $course->modules_total }} {{ $course->modules_total === 1 ? 'modulo' : 'moduli' }} &middot; modalit&agrave; docenza
             </div>
-            <a href="/learn/course/{{ $course->slug }}"
+            <a href="/course/{{ $course->slug }}"
                style="padding:6px 16px; background:#E28A53; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                 Apri in docenza &rarr;
             </a>
@@ -51,7 +51,7 @@
                     &#10003; Completato
                 </span>
                 @endif
-                <a href="/learn/course/{{ $course->slug }}"
+                <a href="/course/{{ $course->slug }}"
                    style="padding:6px 16px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">
                     {{ $course->progress_pct == 0 ? 'Inizia' : ($course->progress_pct >= 100 ? 'Rivedi' : 'Continua') }} &rarr;
                 </a>

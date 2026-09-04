@@ -88,13 +88,13 @@
 
         <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
             @if($course)
-            <a href="/learn/course/{{ $course->slug }}"
+            <a href="/course/{{ $course->slug }}"
                style="padding:10px 24px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">
                 ← Torna al corso
             </a>
             @endif
             @if(!$passed)
-            <a href="/learn/quiz/{{ $quiz->id }}"
+            <a href="/quiz/{{ $quiz->id }}"
                style="padding:10px 24px; background:#E28A53; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">
                 Riprova
             </a>

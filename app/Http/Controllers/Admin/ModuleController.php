@@ -36,13 +36,13 @@ class ModuleController extends Controller
 
         $module = Module::create($data);
 
-        return redirect("/admin/courses/{$course->id}/modules/{$module->id}/edit")
+        return redirect("/courses/{$course->id}/modules/{$module->id}/edit")
             ->with('success', 'Modulo creato.');
     }
 
     public function show(Course $course, Module $module)
     {
-        return redirect("/admin/courses/{$course->id}/modules/{$module->id}/edit");
+        return redirect("/courses/{$course->id}/modules/{$module->id}/edit");
     }
 
     public function edit(Course $course, Module $module)
@@ -103,6 +103,6 @@ class ModuleController extends Controller
     public function destroy(Course $course, Module $module)
     {
         $module->delete();
-        return redirect("/admin/courses/{$course->id}/modules")->with('success', 'Modulo eliminato.');
+        return redirect("/courses/{$course->id}/modules")->with('success', 'Modulo eliminato.');
     }
 }

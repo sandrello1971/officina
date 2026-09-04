@@ -4,16 +4,16 @@
 
 <div style="max-width:700px;">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-        <a href="/admin/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
+        <a href="/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
         <span style="color:#C8D0D0;">|</span>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Modifica {{ $course->name }}</h2>
         <div style="margin-left:auto; display:flex; gap:6px;">
-            <a href="/admin/courses/{{ $course->id }}"
+            <a href="/courses/{{ $course->id }}"
                style="padding:6px 12px; background:white; color:#1A1F1F; border:1px solid #D1D5DB;
                       border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
                 &#128462; Dettaglio
             </a>
-            <a href="/admin/courses/{{ $course->id }}/concept-maps"
+            <a href="/courses/{{ $course->id }}/concept-maps"
                style="padding:6px 12px; background:#E8F5F5; color:#3D8B88; border:1px solid #55B1AE;
                       border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
                 🧭 Mappe concettuali
@@ -38,7 +38,7 @@
     @endif
 
     <div style="background:white; border-radius:10px; padding:24px;">
-        <form method="POST" action="/admin/courses/{{ $course->id }}" id="edit-course-form" enctype="multipart/form-data">
+        <form method="POST" action="/courses/{{ $course->id }}" id="edit-course-form" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -165,7 +165,7 @@
                 </div>
 
                 <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
-                    <a href="/admin/courses" style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>
+                    <a href="/courses" style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>
                     <button type="submit" style="padding:10px 24px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer;">
                         Salva modifiche
                     </button>
@@ -338,7 +338,7 @@
                 <div style="font-size:0.85rem; font-weight:600; color:#1A1F1F;">Zona pericolosa</div>
                 <div style="font-size:0.75rem; color:#8A9696;">Elimina definitivamente il corso e tutti i suoi moduli.</div>
             </div>
-            <form method="POST" action="/admin/courses/{{ $course->id }}" onsubmit="return confirm('Eliminare il corso {{ $course->name }}? Questa azione non e reversibile.')">
+            <form method="POST" action="/courses/{{ $course->id }}" onsubmit="return confirm('Eliminare il corso {{ $course->name }}? Questa azione non e reversibile.')">
                 @csrf
                 @method('DELETE')
                 <button type="submit" style="padding:8px 16px; border:1px solid #E28A53; color:#E28A53; background:white; border-radius:8px; font-size:0.8rem; cursor:pointer; font-weight:600;">Elimina corso</button>

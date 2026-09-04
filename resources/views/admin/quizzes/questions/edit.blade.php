@@ -3,7 +3,7 @@
 @section('title', $isEdit ? 'Modifica Domanda' : 'Nuova Domanda')
 @section('content')
 <div style="max-width:700px;">
-    <a href="/admin/quizzes/{{ $quiz->id }}/questions" style="color:#8A9696; font-size:0.8rem;">&larr; Domande</a>
+    <a href="/quizzes/{{ $quiz->id }}/questions" style="color:#8A9696; font-size:0.8rem;">&larr; Domande</a>
     <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin:8px 0 20px;">
         {{ $isEdit ? 'Modifica domanda' : 'Nuova domanda' }}
     </h2>
@@ -54,7 +54,7 @@
                 </div>
 
                 <div style="display:flex; gap:12px; justify-content:flex-end;">
-                    <a href="/admin/quizzes/{{ $quiz->id }}/questions"
+                    <a href="/quizzes/{{ $quiz->id }}/questions"
                        style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>
                     <button type="submit"
                             style="padding:10px 24px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer;">

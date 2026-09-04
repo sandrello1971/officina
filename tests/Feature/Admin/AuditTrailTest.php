@@ -19,7 +19,7 @@ class AuditTrailTest extends TestCase
 
     public function test_azione_admin_mutante_viene_registrata(): void
     {
-        $this->actingAdmin()->post('/admin/quizzes', ['title' => 'Quiz X', 'passing_score' => 70]);
+        $this->actingAdmin()->post($this->adminUrl('/quizzes'), ['title' => 'Quiz X', 'passing_score' => 70]);
 
         $log = AuditLog::where('area', 'admin')->first();
         $this->assertNotNull($log, 'La POST admin deve essere registrata');
@@ -32,7 +32,7 @@ class AuditTrailTest extends TestCase
 
     public function test_get_admin_non_viene_registrata(): void
     {
-        $this->actingAdmin()->get('/admin/quizzes');
+        $this->actingAdmin()->get($this->adminUrl('/quizzes'));
         $this->assertSame(0, AuditLog::count(), 'Le GET non vanno registrate');
     }
 
@@ -45,10 +45,10 @@ class AuditTrailTest extends TestCase
     public function test_vista_audit_admin_carica(): void
     {
         AuditLog::create(['area' => 'admin', 'actor_type' => 'admin', 'actor_label' => 'x@e.it',
-            'action' => 'admin.quizzes.store', 'method' => 'POST', 'path' => '/admin/quizzes',
+            'action' => 'admin.quizzes.store', 'method' => 'POST', 'path' => '/quizzes',
             'status' => 302, 'created_at' => now()]);
 
-        $this->actingAdmin()->get('/admin/audit')
+        $this->actingAdmin()->get($this->adminUrl('/audit'))
             ->assertOk()
             ->assertSee('admin.quizzes.store');
     }

@@ -5,13 +5,13 @@
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Gestione Corsi</h2>
     <div style="display:flex; gap:8px;">
-        <a href="/admin/courses/ingest" style="padding:8px 18px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">📥 Crea da documenti</a>
-        <a href="/admin/courses/create" style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">+ Nuovo corso</a>
+        <a href="/courses/ingest" style="padding:8px 18px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">📥 Crea da documenti</a>
+        <a href="/courses/create" style="padding:8px 20px; background:#55B1AE; color:white; border-radius:8px; font-size:0.875rem; font-weight:600; text-decoration:none;">+ Nuovo corso</a>
     </div>
 </div>
 
 {{-- Barra filtri: categoria + tag (AND) + ricerca testuale, combinabili --}}
-<form method="GET" action="/admin/courses" style="background:white; border-radius:10px; padding:16px; margin-bottom:16px; display:grid; gap:12px;">
+<form method="GET" action="/courses" style="background:white; border-radius:10px; padding:16px; margin-bottom:16px; display:grid; gap:12px;">
     <div style="display:grid; grid-template-columns:1fr 2fr auto auto; gap:12px; align-items:end;">
         <div>
             <label style="font-size:0.72rem; font-weight:600; color:#8A9696; text-transform:uppercase; display:block; margin-bottom:6px;">Categoria</label>
@@ -28,7 +28,7 @@
                    style="width:100%; padding:9px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.85rem; outline:none;">
         </div>
         <button type="submit" style="padding:9px 18px; background:#55B1AE; color:white; border:none; border-radius:8px; font-size:0.85rem; font-weight:700; cursor:pointer;">Filtra</button>
-        <a href="/admin/courses" style="padding:9px 16px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.85rem; text-decoration:none;">Azzera</a>
+        <a href="/courses" style="padding:9px 16px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.85rem; text-decoration:none;">Azzera</a>
     </div>
     @if($tags->isNotEmpty())
     <div>
@@ -94,8 +94,8 @@
                 </td>
                 <td style="padding:12px 16px;">
                     <div style="display:flex; gap:8px;">
-                        <a href="/admin/courses/{{ $course->id }}/edit" style="font-size:0.8rem; color:#55B1AE;">Modifica</a>
-                        <a href="/admin/courses/{{ $course->id }}/modules" style="font-size:0.8rem; color:#8A9696;">Moduli</a>
+                        <a href="/courses/{{ $course->id }}/edit" style="font-size:0.8rem; color:#55B1AE;">Modifica</a>
+                        <a href="/courses/{{ $course->id }}/modules" style="font-size:0.8rem; color:#8A9696;">Moduli</a>
                     </div>
                 </td>
             </tr>

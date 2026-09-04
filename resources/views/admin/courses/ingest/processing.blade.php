@@ -4,7 +4,7 @@
 
 <div style="max-width:680px; margin:0 auto;">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
-        <a href="/admin/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
+        <a href="/courses" style="color:#8A9696; text-decoration:none; font-size:0.85rem;">&larr; Corsi</a>
         <span style="color:#C8D0D0;">|</span>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Elaborazione documenti</h2>
     </div>

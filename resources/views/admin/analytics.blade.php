@@ -108,7 +108,7 @@
             ⏰ Studenti inattivi da 7+ giorni ({{ $inactiveStudents->count() }})
         </h3>
         @if($inactiveStudents->count() > 0)
-        <form method="POST" action="/admin/analytics/send-reminders">
+        <form method="POST" action="/analytics/send-reminders">
             @csrf
             <button type="submit"
                     style="padding:6px 16px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">
@@ -130,7 +130,7 @@
                     {{ $student->last_login_at ? $student->last_login_at->diffForHumans() : 'Mai connesso' }}
                 </div>
             </div>
-            <form method="POST" action="/admin/analytics/send-reminder/{{ $student->id }}">
+            <form method="POST" action="/analytics/send-reminder/{{ $student->id }}">
                 @csrf
                 <button type="submit"
                         style="padding:4px 12px; background:#fff3ec; color:#E28A53; border:1px solid #E28A53; border-radius:6px; font-size:0.75rem; cursor:pointer;">

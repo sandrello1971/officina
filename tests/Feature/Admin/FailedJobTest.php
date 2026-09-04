@@ -34,7 +34,7 @@ class FailedJobTest extends TestCase
     {
         $this->seedFailed((string) Str::uuid());
 
-        $this->actingAdmin()->get('/admin/failed-jobs')
+        $this->actingAdmin()->get($this->adminUrl('/failed-jobs'))
             ->assertOk()
             ->assertSee('GenerateVideoJob')
             ->assertSee('boom qualcosa');
@@ -46,7 +46,7 @@ class FailedJobTest extends TestCase
         $this->seedFailed($uuid);
         $this->assertSame(1, DB::table('failed_jobs')->count());
 
-        $this->actingAdmin()->post("/admin/failed-jobs/{$uuid}/forget");
+        $this->actingAdmin()->post($this->adminUrl("/failed-jobs/{$uuid}/forget"));
 
         $this->assertSame(0, DB::table('failed_jobs')->count());
     }
