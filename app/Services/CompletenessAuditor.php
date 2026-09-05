@@ -6,7 +6,6 @@ use App\Models\CompletenessFinding;
 use App\Models\Course;
 use App\Models\Module;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * Controllo di completezza della "consegna" di un corso: non verifica se un contenuto è
@@ -151,9 +150,13 @@ class CompletenessAuditor
     }
 
     /**
-     * Se il corso ha un manuale formatore, ogni modulo "capitolo" dovrebbe comparire in
-     * almeno una sezione del manuale. Match testuale semplice (titolo del modulo contenuto
-     * nell'HTML della sezione): nessuna IA, nessun costo.
+     * Se il corso ha un manuale formatore, il numero di sezioni dovrebbe essere ragionevolmente
+     * vicino al numero di moduli. Un match testuale per-modulo (titolo del capitolo cercato
+     * nell'HTML) è stato provato e SCARTATO: produce falsi positivi sistematici sui manuali
+     * organizzati per sessione/blocco invece che un capitolo = una sezione (osservato su corsi
+     * reali: 100% di falsi «non menzionato» dove il manuale raggruppa più capitoli per sessione).
+     * Resta un segnale grezzo ma onesto — un CONTEGGIO, non un'affermazione puntuale sbagliata —
+     * a livello di corso, non di modulo.
      */
     private function checkInstructorManualCoverage(Course $course, $modules): array
     {
@@ -162,23 +165,19 @@ class CompletenessAuditor
             return []; // corso senza manuale formatore: fuori scope di questo controllo
         }
 
-        $sections = $manualMaterial->instructorManualSections()->pluck('content_html')->implode(' ');
-        $haystack = Str::lower(strip_tags($sections));
-
-        $findings = [];
-        foreach ($modules as $module) {
-            $title = trim((string) $module->title);
-            if ($title === '') {
-                continue;
-            }
-            $needle = Str::lower(strip_tags($title));
-            if ($needle !== '' && !str_contains($haystack, $needle)) {
-                $findings[] = $this->finding('instructor_manual_missing_module', 'info',
-                    "Il manuale formatore non sembra menzionare «{$title}».", $module->id);
-            }
+        $sectionsCount = $manualMaterial->instructorManualSections()->count();
+        $modulesCount = $modules->count();
+        if ($modulesCount === 0) {
+            return [];
         }
 
-        return $findings;
+        if ($sectionsCount < (int) ceil($modulesCount / 2)) {
+            return [$this->finding('instructor_manual_low_coverage', 'info',
+                "Il manuale formatore ha {$sectionsCount} sezioni per {$modulesCount} moduli: verifica a mano se copre tutti i capitoli (i manuali organizzati per sessione, non per capitolo, sono normali e non sono un problema).",
+                null)];
+        }
+
+        return [];
     }
 
     /**

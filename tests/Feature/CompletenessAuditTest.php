@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Course;
 use App\Models\CompletenessFinding;
+use App\Models\InstructorManualSection;
+use App\Models\Material;
 use App\Models\Module;
 use App\Models\ModulePresentation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -181,6 +183,43 @@ class CompletenessAuditTest extends TestCase
 
         chmod("{$dir}/sotto", 0775);
         chmod($dir, 0775); // pulizia: non lasciare cartelle 0700 nell'ambiente di test
+    }
+
+    /**
+     * Regressione: bug reale trovato su un corso vero. Un manuale organizzato per
+     * SESSIONE (poche sezioni che raggruppano più capitoli) è normale, non un problema:
+     * il controllo non deve inventare per-modulo "non menzionato" (falso positivo
+     * osservato al 100% su un corso reale), solo segnalare un conteggio molto basso.
+     */
+    public function test_manuale_organizzato_per_sessione_non_genera_falsi_positivi_per_modulo(): void
+    {
+        $course = $this->makeCourse();
+        for ($i = 0; $i < 4; $i++) {
+            $this->addModule($course, "Capitolo {$i}", '<h1>Cap</h1><p>Testo.</p>', $i);
+            $module = Module::where('course_id', $course->id)->where('sort_order', $i)->first();
+            ModulePresentation::create(['module_id' => $module->id, 'status' => 'ready', 'source' => 'generated']);
+        }
+        $material = Material::create([
+            'course_id' => $course->id, 'title' => 'Manuale Formatore',
+            'is_instructor_only' => true, 'file_type' => 'md', 'sort_order' => 0,
+        ]);
+        // Un manuale per-sessione: 2 sezioni per 4 capitoli, nessuna contiene i titoli letterali.
+        InstructorManualSection::create([
+            'material_id' => $material->id, 'course_id' => $course->id, 'title' => 'Sessione 1',
+            'anchor' => 'sessione-1', 'heading_level' => 1, 'sort_order' => 0,
+            'content_html' => '<h1>Sessione 1</h1><p>Parliamo di configurazione e contesto insieme.</p>',
+        ]);
+        InstructorManualSection::create([
+            'material_id' => $material->id, 'course_id' => $course->id, 'title' => 'Sessione 2',
+            'anchor' => 'sessione-2', 'heading_level' => 1, 'sort_order' => 1,
+            'content_html' => '<h1>Sessione 2</h1><p>Parliamo di prompting e debug insieme.</p>',
+        ]);
+
+        $this->artisan('course:completeness-audit', ['course' => $course->slug])->assertExitCode(0);
+
+        $this->assertDatabaseMissing('completeness_findings', ['check_type' => 'instructor_manual_missing_module']);
+        // 2 sezioni per 4 moduli è >= metà: nessuna segnalazione, nemmeno aggregata.
+        $this->assertDatabaseMissing('completeness_findings', ['check_type' => 'instructor_manual_low_coverage']);
     }
 
     public function test_pulsante_verifica_ora_esegue_il_controllo(): void
