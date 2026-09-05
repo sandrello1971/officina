@@ -25,6 +25,12 @@ class GapScout
 
     private const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
     private const MAX_TOKENS = 2500;
+    // Bug reale trovato alla PRIMA esecuzione in assoluto di questo servizio (mai girato
+    // prima): senza override, il default di ClaudeClient (120s) non basta per una chiamata
+    // che può fare fino a 6 ricerche web su più domini prima di rispondere — timeout secco a
+    // 0 byte ricevuti, due volte su due corsi diversi. FreshnessVerifier (stesso pattern di
+    // ricerca web) ha lo stesso problema mitigato con un override esplicito: qui manca.
+    private const SCOUT_TIMEOUT_SECONDS = 180;
 
     private const SYSTEM_PROMPT = <<<SYS
     Sei un analista di COPERTURA didattica. Ricevi (1) la MAPPA di un corso (cosa già copre), (2) i
@@ -104,7 +110,7 @@ class GapScout
             ],
         ];
 
-        $res = $this->claude->messages($payload, ['feature' => 'freshness.gap_scout']);
+        $res = $this->claude->messages($payload, ['feature' => 'freshness.gap_scout'], timeoutOverride: self::SCOUT_TIMEOUT_SECONDS);
 
         if ($res->failed()) {
             throw new RuntimeException(AnthropicError::messageFrom($res->status, $res->errorDetail, 'scout copertura'));
