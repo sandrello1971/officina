@@ -583,6 +583,7 @@ Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'
     Route::post('copertura/{course}/topics', [App\Http\Controllers\Admin\CoverageGapController::class, 'setTopics'])->name('coverage.topics');
     Route::post('copertura/{course}/topics/suggerisci', [App\Http\Controllers\Admin\CoverageGapController::class, 'suggestTopicsAction'])->name('coverage.topics.suggest');
     Route::post('copertura/{course}/analizza', [App\Http\Controllers\Admin\CoverageGapController::class, 'analyze'])->name('coverage.analyze');
+    Route::post('copertura/{course}/cadenza', [App\Http\Controllers\Admin\CoverageGapController::class, 'setGapCadence'])->name('coverage.cadence');
     Route::patch('copertura/gap/{gap}/accetta', [App\Http\Controllers\Admin\CoverageGapController::class, 'accept'])->name('coverage.accept');
     Route::patch('copertura/gap/{gap}/scarta', [App\Http\Controllers\Admin\CoverageGapController::class, 'dismiss'])->name('coverage.dismiss');
 
@@ -598,6 +599,13 @@ Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'
     Route::put('copertura/gap/{gap}/posizione', [App\Http\Controllers\Admin\CoverageGapController::class, 'confirmPlace'])->name('coverage.place.confirm');
     Route::post('copertura/gap/{gap}/inserisci', [App\Http\Controllers\Admin\CoverageGapController::class, 'insert'])->name('coverage.insert');
     Route::post('copertura/inserimento/{insertion}/annulla', [App\Http\Controllers\Admin\CoverageGapController::class, 'revert'])->name('coverage.revert');
+
+    // Completezza della consegna: slide/materiali/manuale/permessi. NON gated da P26 (è un
+    // controllo strutturale, non un programma di AI a pagamento).
+    Route::get('completezza', [App\Http\Controllers\Admin\CompletenessController::class, 'index'])->name('completeness.index');
+    Route::get('completezza/{course}', [App\Http\Controllers\Admin\CompletenessController::class, 'show'])->name('completeness.show');
+    Route::post('completezza/{course}/verifica', [App\Http\Controllers\Admin\CompletenessController::class, 'run'])->name('completeness.run');
+    Route::patch('completezza/segnalazione/{finding}/ignora', [App\Http\Controllers\Admin\CompletenessController::class, 'dismiss'])->name('completeness.dismiss');
 
     Route::prefix('courses/{course}/instructor-materials')
         ->name('courses.instructor-materials.')

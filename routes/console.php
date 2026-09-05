@@ -20,6 +20,17 @@ Schedule::command('schola:backfill-embeddings')->dailyAt('03:30')->withoutOverla
 // esecuzione. Solo generazione di proposte; nessuna applicazione (HITL manuale).
 Schedule::command('freshness:run-due')->dailyAt('04:00')->withoutOverlapping();
 
+// P26.3 — Scout di copertura (argomenti mancanti, non solo obsoleti). Stessa disciplina di
+// costo della Freshness: cadenza opt-in per corso (default 'off'), interruttore globale
+// `gap_scout_auto_enabled` (default OFF), cap per esecuzione. Orario sfalsato di 30 minuti
+// rispetto a freshness:run-due per non sommare la spesa AI dei due controlli nello stesso istante.
+Schedule::command('gap:scout-run-due')->dailyAt('04:30')->withoutOverlapping();
+
+// Completezza della consegna (slide, materiali, manuale formatore, permessi file). Puro
+// controllo di struttura: nessuna chiamata AI, nessun interruttore di costo — può girare
+// su tutti i corsi ogni settimana senza cap.
+Schedule::command('course:completeness-audit')->weeklyOn(1, '05:30')->withoutOverlapping();
+
 // News AI — rassegna settimanale via ricerca online. Gira il lunedì; recupera solo se
 // l'interruttore globale `ainews_auto_enabled` è ON (default OFF → nessuna spesa). Salva
 // bozze: la pubblicazione ai discenti è HITL (revisione admin).

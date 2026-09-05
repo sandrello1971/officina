@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Course;
+use App\Models\CourseFreshnessConfig;
 use App\Models\CoverageGap;
 use App\Models\GapScoutRun;
 use App\Services\GapScout;
@@ -84,6 +85,13 @@ class RunGapScoutJob implements ShouldQueue
             Log::warning('[RunGapScoutJob] scout non completato', [
                 'course_id' => $course->id, 'error' => $e->getMessage(),
             ]);
+        } finally {
+            // Marca il tentativo per lo scheduler (anche in caso di fallimento, per non
+            // ritentare a ogni tick), gemello di RunFreshnessAgentJob.
+            CourseFreshnessConfig::updateOrCreate(
+                ['course_id' => $course->id],
+                ['gap_last_run_at' => now()]
+            );
         }
     }
 

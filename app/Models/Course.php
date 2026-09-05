@@ -164,6 +164,12 @@ class Course extends Model
         return $this->hasMany(CourseTopic::class);
     }
 
+    // Completezza della consegna: slide/materiali/manuale/permessi mancanti.
+    public function completenessFindings()
+    {
+        return $this->hasMany(CompletenessFinding::class);
+    }
+
     /** @return list<string> tutti gli slug dei topic del corso */
     public function topicSlugs(): array
     {

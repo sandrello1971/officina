@@ -24,6 +24,8 @@ class CourseFreshnessConfig extends Model
         'cadence',
         'last_run_at',
         'topic', // P26 — dominio tematico del corso, per lo Scout di copertura
+        'gap_cadence', // P26.3 — cadenza dello Scout di copertura, gemella di 'cadence'
+        'gap_last_run_at',
     ];
 
     protected $casts = [
@@ -33,6 +35,7 @@ class CourseFreshnessConfig extends Model
         'student_proposals_enabled' => 'boolean',
         'audience_overridden' => 'boolean',
         'last_run_at' => 'datetime',
+        'gap_last_run_at' => 'datetime',
     ];
 
     public function course(): BelongsTo

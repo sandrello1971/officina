@@ -78,9 +78,24 @@
             @endif
         @endforeach
         @if ($hasAnyApprovedSources)
-        <form method="POST" action="{{ route('admin.coverage.analyze', $course) }}" style="margin-top:8px;">@csrf
-            <button type="submit" style="padding:9px 18px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer;">&#128270; Analizza copertura</button>
-        </form>
+        <div style="display:flex; align-items:center; gap:14px; margin-top:8px; flex-wrap:wrap;">
+            <form method="POST" action="{{ route('admin.coverage.analyze', $course) }}" style="margin:0;">@csrf
+                <button type="submit" style="padding:9px 18px; background:#E28A53; color:white; border:none; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer;">&#128270; Analizza copertura</button>
+            </form>
+            <form method="POST" action="{{ route('admin.coverage.cadence', $course) }}" style="margin:0; display:flex; align-items:center; gap:6px;">
+                @csrf
+                <span style="font-size:0.76rem; color:#8A9696;">Analisi automatica:</span>
+                <select name="gap_cadence" style="padding:6px 8px; border:1px solid #C8D0D0; border-radius:6px; font-size:0.78rem;">
+                    @foreach (['off' => 'off', 'weekly' => 'settimanale', 'monthly' => 'mensile', 'quarterly' => 'trimestrale'] as $val => $label)
+                        <option value="{{ $val }}" @selected(optional($course->freshnessConfig)->gap_cadence === $val || (is_null(optional($course->freshnessConfig)->gap_cadence) && $val === 'off'))>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" style="padding:6px 12px; background:white; color:#55B1AE; border:1px solid #55B1AE; border-radius:6px; font-size:0.75rem; cursor:pointer;">Salva</button>
+            </form>
+            <span style="font-size:0.74rem; color:#8A9696;">
+                Ultima esecuzione automatica: {{ optional(optional($course->freshnessConfig)->gap_last_run_at)->format('d/m/Y H:i') ?? 'mai' }}
+            </span>
+        </div>
         @elseif ($courseTopics->isEmpty())
         <p style="color:#C26A2E; font-size:0.8rem; margin:6px 0 0;">⚠ Imposta i topic del corso prima di analizzare.</p>
         @endif

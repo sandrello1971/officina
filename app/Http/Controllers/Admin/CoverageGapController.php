@@ -120,6 +120,19 @@ class CoverageGapController extends Controller
         return back()->with('success', "Analisi di copertura avviata per «{$course->name}». Cerca nelle fonti approvate di tutti i topic: ricarica tra poco per vedere i gap candidati.");
     }
 
+    /** P26.3 — Cadenza dello scheduler dello Scout per questo corso. Gemella di FreshnessProposalController::setCadence. */
+    public function setGapCadence(Request $request, Course $course)
+    {
+        $validated = $request->validate(['gap_cadence' => 'required|in:off,weekly,monthly,quarterly']);
+
+        CourseFreshnessConfig::updateOrCreate(
+            ['course_id' => $course->id],
+            ['gap_cadence' => $validated['gap_cadence']]
+        );
+
+        return back()->with('success', "Cadenza dello Scout aggiornata per «{$course->name}»: {$validated['gap_cadence']}.");
+    }
+
     /** P26.2 — Imposta i topic del corso (multi, pesati) sostituendo la pivot. HITL. */
     public function setTopics(Request $request, Course $course)
     {

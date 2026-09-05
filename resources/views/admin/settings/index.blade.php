@@ -126,6 +126,25 @@
         </div>
 
         <div style="background:white; border-radius:10px; padding:20px; margin-bottom:20px;">
+            <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:4px;">Copertura corsi (Scout dei gap)</h3>
+            <p style="font-size:0.78rem; color:#8A9696; margin-bottom:14px;">
+                A differenza della Freshness (verifica se ciò che c'è è ancora vero), lo Scout cerca
+                <strong>argomenti che il corso non copre ancora</strong> confrontandolo con le fonti approvate
+                del suo topic. Effettua ricerche online e chiamate AI a pagamento.
+            </p>
+            <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#1A1F1F; cursor:pointer;">
+                <input type="checkbox" name="gap_scout_auto_enabled" value="1"
+                       @checked(old('gap_scout_auto_enabled', $settings['gap_scout_auto_enabled'] ?? false))>
+                Abilita l'analisi automatica (scheduler) dei corsi con cadenza impostata
+            </label>
+            <p style="font-size:0.72rem; color:#8A9696; margin-top:8px; font-style:italic;">
+                Se spento, lo scheduler non lancia alcuna analisi automatica (nessuna spesa). Il pulsante
+                «Analizza» in Copertura corsi resta sempre attivo per i test puntuali. Un corso partecipa
+                solo se ha un topic assegnato, fonti approvate per quel topic, e una cadenza diversa da «off».
+            </p>
+        </div>
+
+        <div style="background:white; border-radius:10px; padding:20px; margin-bottom:20px;">
             <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:4px;">News AI</h3>
             <p style="font-size:0.78rem; color:#8A9696; margin-bottom:14px;">
                 La rassegna settimanale di news sull'AI usa la ricerca online (chiamate AI a pagamento).
