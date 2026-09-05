@@ -160,7 +160,14 @@ class CompletenessAuditor
      */
     private function checkInstructorManualCoverage(Course $course, $modules): array
     {
-        $manualMaterial = $course->instructorMaterials()->where('file_type', '!=', 'canvas')->first();
+        // Un corso può avere PIÙ materiali instructor-only (es. "Soluzioni — Modulo N"
+        // per i corsi tecnici): senza questo filtro ->first() può prendere uno di quelli
+        // invece del vero manuale, leggendo "0 sezioni" e producendo un falso positivo
+        // (bug reale trovato lanciando l'audit su un corso con questo pattern).
+        $manualMaterial = $course->instructorMaterials()
+            ->where('file_type', '!=', 'canvas')
+            ->where('title', 'like', '%Manuale Formatore%')
+            ->first();
         if (!$manualMaterial) {
             return []; // corso senza manuale formatore: fuori scope di questo controllo
         }

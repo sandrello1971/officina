@@ -222,6 +222,43 @@ class CompletenessAuditTest extends TestCase
         $this->assertDatabaseMissing('completeness_findings', ['check_type' => 'instructor_manual_low_coverage']);
     }
 
+    /**
+     * Regressione: bug reale trovato su un corso tecnico con materiali "Soluzioni —
+     * Modulo N" (anch'essi is_instructor_only). Senza il filtro sul titolo, ->first()
+     * poteva prendere una "Soluzioni" invece del vero manuale, leggere 0 sezioni e
+     * segnalare un falso "manuale a bassa copertura" anche quando il vero manuale
+     * era completo.
+     */
+    public function test_altri_materiali_instructor_only_non_vengono_scambiati_per_il_manuale(): void
+    {
+        $course = $this->makeCourse();
+        for ($i = 0; $i < 2; $i++) {
+            $this->addModule($course, "Capitolo {$i}", '<h1>Cap</h1><p>Testo.</p>', $i);
+            $module = Module::where('course_id', $course->id)->where('sort_order', $i)->first();
+            ModulePresentation::create(['module_id' => $module->id, 'status' => 'ready', 'source' => 'generated']);
+        }
+
+        // Materiale "Soluzioni" instructor-only SENZA sezioni, creato prima del vero manuale.
+        Material::create([
+            'course_id' => $course->id, 'title' => 'Soluzioni — Modulo 0',
+            'is_instructor_only' => true, 'file_type' => 'md', 'sort_order' => 0,
+        ]);
+
+        $material = Material::create([
+            'course_id' => $course->id, 'title' => 'Manuale Formatore',
+            'is_instructor_only' => true, 'file_type' => 'md', 'sort_order' => 1,
+        ]);
+        InstructorManualSection::create([
+            'material_id' => $material->id, 'course_id' => $course->id, 'title' => 'Sessione 1',
+            'anchor' => 'sessione-1', 'heading_level' => 1, 'sort_order' => 0,
+            'content_html' => '<h1>Sessione 1</h1><p>Copre entrambi i capitoli.</p>',
+        ]);
+
+        $this->artisan('course:completeness-audit', ['course' => $course->slug])->assertExitCode(0);
+
+        $this->assertDatabaseMissing('completeness_findings', ['check_type' => 'instructor_manual_low_coverage']);
+    }
+
     public function test_pulsante_verifica_ora_esegue_il_controllo(): void
     {
         $course = $this->makeCourse();
