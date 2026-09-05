@@ -214,32 +214,40 @@ class CompletenessAuditor
         return $findings;
     }
 
-    /** @return list<string> percorsi assoluti di proprietà dell'utente corrente senza r-x di gruppo */
+    /**
+     * @return list<string> percorsi assoluti di proprietà di uno shell user (non www-data)
+     * senza r-x di gruppo. Una cartella posseduta da www-data è per definizione leggibile
+     * dal server web: non va né segnalata né APERTA (0700 www-data è corretto e voluto, e
+     * comunque un utente diverso da www-data — es. chi esegue questo comando — non può
+     * aprirla: tentarlo lancerebbe un warning fatale, esattamente ciò che questo controllo
+     * deve rilevare senza mai far crashare l'intero audit).
+     */
     private function findUnreadableDirs(string $absPath): array
     {
         $out = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($absPath, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
+        $ownerName = function_exists('posix_getpwuid') ? (posix_getpwuid(fileowner($absPath))['name'] ?? '') : '';
+        if ($ownerName === '' || $ownerName === 'www-data') {
+            return $out;
+        }
 
-        $check = function (string $dir) use (&$out) {
-            $perms = fileperms($dir);
-            $groupReadExec = ($perms & 0050) === 0050;
-            $ownerName = function_exists('posix_getpwuid') ? (posix_getpwuid(fileowner($dir))['name'] ?? '') : '';
-            // Le cartelle possedute da www-data sono sempre leggibili dal server web: a
-            // rischio sono solo quelle create da script CLI (shell user), qui prive di r-x
-            // di gruppo — indipendentemente da quale utente esegue QUESTO controllo.
-            if ($ownerName !== '' && $ownerName !== 'www-data' && !$groupReadExec) {
-                $out[] = $dir;
-            }
-        };
+        $perms = fileperms($absPath);
+        if (($perms & 0050) !== 0050) {
+            $out[] = $absPath;
+        }
 
-        $check($absPath);
-        foreach ($iterator as $item) {
-            if ($item->isDir()) {
-                $check($item->getPathname());
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($absPath, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+            foreach ($iterator as $item) {
+                if ($item->isDir()) {
+                    $out = array_merge($out, $this->findUnreadableDirs($item->getPathname()));
+                }
             }
+        } catch (\Throwable $e) {
+            // Non dovrebbe accadere (l'owner non-www-data è già verificato sopra), ma un
+            // controllo di completezza non deve MAI interrompere l'audit di un corso.
         }
 
         return $out;

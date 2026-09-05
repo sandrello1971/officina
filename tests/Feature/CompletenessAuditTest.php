@@ -7,6 +7,7 @@ use App\Models\CompletenessFinding;
 use App\Models\Module;
 use App\Models\ModulePresentation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -154,6 +155,32 @@ class CompletenessAuditTest extends TestCase
 
         $this->asAdmin()->get(route('admin.completeness.index'))->assertOk();
         $this->asAdmin()->get(route('admin.completeness.show', $course))->assertOk();
+    }
+
+    /**
+     * Regressione: bug reale trovato durante il primo giro su prod. Una cartella a 0700
+     * NON posseduta da www-data (creata da uno script CLI) deve essere segnalata SENZA
+     * mai far crashare l'audit — anche quando contiene sottocartelle che, per via degli
+     * stessi permessi, non è possibile aprire.
+     */
+    public function test_cartella_0700_viene_segnalata_senza_crash(): void
+    {
+        $course = $this->makeCourse();
+        $this->addModule($course, 'Capitolo 1', '<h1>Capitolo 1</h1><p>Testo.</p>', 0);
+
+        $dir = Storage::disk('local')->path("materials/{$course->slug}");
+        mkdir($dir, 0700, true);
+        mkdir("{$dir}/sotto", 0700, true);
+
+        $this->artisan('course:completeness-audit', ['course' => $course->slug])->assertExitCode(0);
+
+        $this->assertDatabaseHas('completeness_findings', [
+            'course_id' => $course->id,
+            'check_type' => 'bad_permissions',
+        ]);
+
+        chmod("{$dir}/sotto", 0775);
+        chmod($dir, 0775); // pulizia: non lasciare cartelle 0700 nell'ambiente di test
     }
 
     public function test_pulsante_verifica_ora_esegue_il_controllo(): void
