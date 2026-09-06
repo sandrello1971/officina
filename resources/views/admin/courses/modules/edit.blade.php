@@ -451,7 +451,12 @@
 
             {{-- V2 — revisione copione: anteprima slide + testo affiancati, a mano e via prompt --}}
             @if(in_array($modVideo?->script_status ?? 'none', ['draft', 'confirmed'], true) && !empty($modVideo->script))
-                <div style="margin-top:14px; border-top:1px solid #F0F2F2; padding-top:12px;" x-data="{ zoom: null }">
+                @php
+                    $scriptSlideImgs = collect($modVideo->script)
+                        ->map(fn($line) => route('admin.courses.modules.presentation.preview', [$course, $module, (int) ($line['slide_number'] ?? 0)]) . '?version=published')
+                        ->values()->all();
+                @endphp
+                <div style="margin-top:14px; border-top:1px solid #F0F2F2; padding-top:12px;" x-data="{ open: false, i: 0, imgs: @js($scriptSlideImgs) }">
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                         <div style="font-size:0.72rem; font-weight:700; color:#8A9696; text-transform:uppercase; letter-spacing:0.05em;">Copione per slide</div>
                         <span style="flex:1;"></span>
@@ -469,7 +474,7 @@
                     @foreach($modVideo->script as $line)
                         @php $sn = (int) ($line['slide_number'] ?? 0); $pv = route('admin.courses.modules.presentation.preview', [$course, $module, $sn]) . '?version=published'; @endphp
                         <div style="display:flex; gap:12px; padding:12px 0; border-top:1px solid #F4F6F6;">
-                            <img src="{{ $pv }}" alt="Slide {{ $sn }}" loading="lazy" @click="zoom = '{{ $pv }}'"
+                            <img src="{{ $pv }}" alt="Slide {{ $sn }}" loading="lazy" @click="open = true; i = {{ $loop->index }}"
                                  style="width:200px; aspect-ratio:16/9; object-fit:contain; background:#0A0A0A; border:1px solid #C8D0D0; border-radius:6px; cursor:zoom-in; flex-shrink:0;">
                             <div style="flex:1; min-width:0;">
                                 <div style="font-size:0.72rem; font-weight:700; color:#8A9696; margin-bottom:4px;">Slide {{ $sn }}</div>
@@ -493,9 +498,24 @@
                         </div>
                     @endforeach
 
-                    <div x-show="zoom" x-cloak @click="zoom = null" @keydown.escape.window="zoom = null"
-                         style="position:fixed; inset:0; z-index:1000; background:rgba(10,10,10,0.92); display:flex; align-items:center; justify-content:center;">
-                        <img :src="zoom" alt="" style="max-width:90vw; max-height:88vh; object-fit:contain;">
+                    {{-- lightbox slideshow: prev/next tra tutte le slide del copione --}}
+                    <div x-show="open" x-cloak x-transition.opacity
+                         @keydown.escape.window="open = false"
+                         @keydown.arrow-left.window="if (open && i > 0) i--"
+                         @keydown.arrow-right.window="if (open && i < imgs.length - 1) i++"
+                         @click.self="open = false"
+                         role="dialog" aria-modal="true" aria-label="Anteprima slide a schermo intero"
+                         style="position:fixed; top:0; left:0; right:0; bottom:0; z-index:1000; background:rgba(10,10,10,0.92); display:grid; place-items:center;">
+                        <button type="button" @click="open = false" aria-label="Chiudi anteprima"
+                                style="position:absolute; top:14px; right:18px; background:none; border:none; color:white; font-size:2.1rem; line-height:1; cursor:pointer;">&times;</button>
+                        <button type="button" x-show="i > 0" @click="i--" aria-label="Slide precedente"
+                                style="position:absolute; left:14px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.12); border:none; color:white; font-size:2.4rem; width:54px; height:54px; border-radius:50%; cursor:pointer;">&lsaquo;</button>
+                        <img :src="imgs[i]" :alt="`Slide ${i + 1}`"
+                             style="max-width:90vw; max-height:86vh; aspect-ratio:16/9; object-fit:contain; border:1px solid rgba(255,255,255,0.25); box-shadow:0 8px 40px rgba(0,0,0,0.5);">
+                        <button type="button" x-show="i < imgs.length - 1" @click="i++" aria-label="Slide successiva"
+                                style="position:absolute; right:14px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.12); border:none; color:white; font-size:2.4rem; width:54px; height:54px; border-radius:50%; cursor:pointer;">&rsaquo;</button>
+                        <div x-text="`Slide ${i + 1} / ${imgs.length}`"
+                             style="position:absolute; bottom:16px; left:50%; transform:translateX(-50%); color:white; font-size:0.85rem; background:rgba(0,0,0,0.45); padding:4px 12px; border-radius:12px;"></div>
                     </div>
                 </div>
             @endif

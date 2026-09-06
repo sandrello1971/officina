@@ -31,7 +31,7 @@
          @keydown.arrow-right.window="if (open && i < imgs.length - 1) i++"
          @click.self="open = false"
          role="dialog" aria-modal="true" aria-label="Anteprima slide a schermo intero"
-         style="position:fixed; inset:0; z-index:1000; background:rgba(10,10,10,0.92); display:flex; align-items:center; justify-content:center;">
+         style="position:fixed; top:0; left:0; right:0; bottom:0; z-index:1000; background:rgba(10,10,10,0.92); display:grid; place-items:center;">
 
         {{-- Chiudi --}}
         <button type="button" @click="open = false" aria-label="Chiudi anteprima"
@@ -43,7 +43,7 @@
 
         {{-- Immagine ingrandita (stesso src della thumbnail) --}}
         <img :src="imgs[i]" :alt="`Slide ${i + 1}`"
-             style="max-width:90vw; max-height:86vh; aspect-ratio:16/9; object-fit:contain; box-shadow:0 8px 40px rgba(0,0,0,0.5);">
+             style="max-width:90vw; max-height:86vh; aspect-ratio:16/9; object-fit:contain; border:1px solid rgba(255,255,255,0.25); box-shadow:0 8px 40px rgba(0,0,0,0.5);">
 
         {{-- Successiva (nascosto sull'ultima) --}}
         <button type="button" x-show="i < imgs.length - 1" @click="i++" aria-label="Slide successiva"
