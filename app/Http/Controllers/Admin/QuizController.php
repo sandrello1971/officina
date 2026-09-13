@@ -125,13 +125,19 @@ class QuizController extends Controller
         $pool = count($result['questions']);
         $data['questions_per_attempt'] = ($perAttempt !== null && $perAttempt < $pool) ? $perAttempt : null;
 
+        // Gate di revisione umana: la checkbox "attivo" del form è stata letta
+        // PRIMA che l'admin vedesse le domande generate, quindi non vale come
+        // revisione. Il quiz nasce sempre inattivo; si attiva da
+        // /quizzes/{id}/questions dopo averle controllate (QuizController::activate).
+        $data['is_active'] = false;
+
         // Attributi del form → prevalgono sui default del service.
         unset($data['generate_with_ai'], $data['num_questions']);
         $quiz = $generator->persistQuiz($data, $result['questions']);
 
         $msg = $quiz->questions_per_attempt
-            ? "Pool di {$pool} domande generato; ogni tentativo ne estrae {$quiz->questions_per_attempt}."
-            : "Quiz generato con {$pool} domande!";
+            ? "Pool di {$pool} domande generato; ogni tentativo ne estrae {$quiz->questions_per_attempt}. Rivedi le domande prima di attivarlo."
+            : "Quiz generato con {$pool} domande! Rivedi le domande prima di attivarlo.";
 
         return redirect("/quizzes/{$quiz->id}/questions")->with('success', $msg);
     }
@@ -196,6 +202,26 @@ class QuizController extends Controller
     {
         Quiz::findOrFail($id)->delete();
         return redirect()->route('admin.quizzes.index')->with('success', 'Quiz eliminato.');
+    }
+
+    /**
+     * Gate di revisione umana: attiva un quiz (visibile/somministrabile agli
+     * studenti) solo dopo che un admin ha guardato le domande. È l'unico punto
+     * che porta is_active a true per un quiz generato dall'AI nel mondo corsi;
+     * reviewed_by/reviewed_at restano come evidenza della revisione (Art. 6(4)
+     * AI Act — motivazione del "compito preparatorio" non ad alto rischio).
+     */
+    public function activate(string $id)
+    {
+        $quiz = Quiz::findOrFail($id);
+
+        $quiz->update([
+            'is_active' => true,
+            'reviewed_by' => session('admin_email') ?? 'unknown',
+            'reviewed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Quiz attivato: ora visibile agli studenti.');
     }
 
     public function results(string $id)

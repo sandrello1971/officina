@@ -16,6 +16,26 @@
     </a>
 </div>
 
+@if(!$quiz->is_active)
+<div style="display:flex; justify-content:space-between; align-items:center; gap:16px; background:#FFF3EC; border:1px solid #E28A53; border-radius:10px; padding:14px 18px; margin-bottom:20px;">
+    <div style="font-size:0.85rem; color:#8A4A1E;">
+        <strong>Quiz non attivo — gli studenti non lo vedono.</strong>
+        Rivedi le domande sopra, poi attivalo: da questo momento produce un esito (passa/non passa) e, se legato al corso, un certificato.
+    </div>
+    <form method="POST" action="/quizzes/{{ $quiz->id }}/activate" style="flex-shrink:0;">
+        @csrf
+        <button type="submit"
+                style="padding:8px 20px; background:#E28A53; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:600; cursor:pointer; white-space:nowrap;">
+            Attiva quiz
+        </button>
+    </form>
+</div>
+@elseif($quiz->reviewed_at)
+<div style="font-size:0.78rem; color:#8A9696; margin-bottom:16px;">
+    Attivato da {{ $quiz->reviewed_by }} il {{ $quiz->reviewed_at->format('d/m/Y H:i') }}.
+</div>
+@endif
+
 <div style="display:flex; flex-direction:column; gap:8px;">
     @forelse($questions as $i => $q)
     <div style="background:white; border-radius:10px; padding:20px;">

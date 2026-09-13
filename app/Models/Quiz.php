@@ -14,7 +14,7 @@ class Quiz extends Model
         'module_id', 'course_id', 'title', 'description',
         'passing_score', 'time_limit_minutes', 'max_attempts',
         'randomize_questions', 'questions_per_attempt', 'show_results_immediately', 'is_active',
-        'is_demo',
+        'is_demo', 'reviewed_by', 'reviewed_at',
     ];
 
     protected $casts = [
@@ -23,6 +23,7 @@ class Quiz extends Model
         'show_results_immediately' => 'boolean',
         'is_active' => 'boolean',
         'is_demo' => 'boolean',
+        'reviewed_at' => 'datetime',
     ];
 
     public function module()

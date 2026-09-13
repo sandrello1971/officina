@@ -78,6 +78,9 @@
                         <input type="checkbox" name="is_active" value="1" checked>
                         <span style="font-size:0.875rem; color:#4A5252;">Attivo</span>
                     </label>
+                    <span style="font-size:0.78rem; color:#8A9696; align-self:center;">
+                        Se generi con AI, questa casella viene ignorata: il quiz nasce sempre non attivo, lo attivi dalla pagina delle domande dopo averle riviste.
+                    </span>
                 </div>
                 <div style="display:flex; gap:12px; justify-content:flex-end;">
                     <a href="/quizzes" style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>

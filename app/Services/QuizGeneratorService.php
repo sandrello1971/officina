@@ -56,7 +56,10 @@ class QuizGeneratorService
             'title' => 'Quiz AI — ' . $course->name,
             'description' => 'Quiz generato automaticamente da Claude AI',
             'passing_score' => 70,
-            'is_active' => true,
+            // Gate di revisione umana: un quiz del mondo corsi generato dall'AI
+            // esce sempre inattivo. Un admin lo attiva solo dopo aver rivisto le
+            // domande su /quizzes/{id}/questions (vedi QuizController::activate).
+            'is_active' => false,
             'randomize_questions' => true,
             'questions_per_attempt' => $perAttempt,
             'show_results_immediately' => true,

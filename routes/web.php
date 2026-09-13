@@ -651,6 +651,7 @@ Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'
     Route::resource('quizzes.questions', App\Http\Controllers\Admin\QuizQuestionController::class);
     Route::get('quizzes/{quiz}/results', [App\Http\Controllers\Admin\QuizController::class, 'results'])->name('quizzes.results');
     Route::post('quizzes/{quiz}/grant-attempt', [App\Http\Controllers\Admin\QuizController::class, 'grantAttempt'])->name('quizzes.grant-attempt');
+    Route::post('quizzes/{quiz}/activate', [App\Http\Controllers\Admin\QuizController::class, 'activate'])->name('quizzes.activate');
 
     Route::get('rag', [App\Http\Controllers\Admin\RagController::class, 'index'])->name('rag.index');
     Route::post('rag/upload', [App\Http\Controllers\Admin\RagController::class, 'upload'])->name('rag.upload');
