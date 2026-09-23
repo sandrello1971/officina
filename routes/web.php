@@ -497,6 +497,19 @@ Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'
     Route::resource('courses.modules', App\Http\Controllers\Admin\ModuleController::class);
     Route::resource('courses.modules.materials', App\Http\Controllers\Admin\MaterialController::class);
 
+    // Motore generazione corsi da KB — brief (Fase 0) + revisione formatore.
+    Route::get('courses/{course}/generation/create', [App\Http\Controllers\Admin\CourseGenerationController::class, 'create'])->name('course-generation.create');
+    Route::post('courses/{course}/generation', [App\Http\Controllers\Admin\CourseGenerationController::class, 'store'])->name('course-generation.store');
+
+    Route::get('course-generation/{run}', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'show'])->name('course-generation.show');
+    Route::get('course-generation/{run}/status', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'status'])->name('course-generation.status');
+    Route::post('course-generation/{run}/outline/regenerate', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'regenerateOutline'])->name('course-generation.outline.regenerate');
+    Route::post('course-generation/{run}/outline/approve', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'approveOutline'])->name('course-generation.outline.approve');
+    Route::post('course-generation/artifacts/{artifact}/approve', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'approve'])->name('course-generation.artifacts.approve');
+    Route::post('course-generation/artifacts/{artifact}/reject', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'reject'])->name('course-generation.artifacts.reject');
+    Route::post('course-generation/{run}/modules/{module}/regenerate', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'regenerateModule'])->name('course-generation.modules.regenerate');
+    Route::post('course-generation/{run}/modules/{module}/publish', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'publishModule'])->name('course-generation.modules.publish');
+
     // Mappe mentali moduli (Claude API generated, markmap-compatible)
     Route::post('courses/{course}/modules/{module}/mindmap/generate', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'generate'])->name('courses.modules.mindmap.generate');
     Route::patch('courses/{course}/modules/{module}/mindmap', [App\Http\Controllers\Admin\ModuleMindMapController::class, 'update'])->name('courses.modules.mindmap.update');

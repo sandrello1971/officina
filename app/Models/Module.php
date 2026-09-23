@@ -11,7 +11,7 @@ class Module extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'course_id', 'title', 'description', 'content',
+        'course_id', 'title', 'description', 'content', 'content_draft',
         'duration_minutes', 'sort_order', 'is_active', 'video_url',
         'video_ai_id', 'video_filename', 'video_status',
         'mindmap_markdown', 'mindmap_content_hash', 'mindmap_generated_at',
@@ -94,6 +94,16 @@ class Module extends Model
     {
         return $this->hasMany(InstructorManualSection::class, 'module_id')
             ->orderBy('sort_order');
+    }
+
+    public function generationArtifacts()
+    {
+        return $this->hasMany(ModuleGenerationArtifact::class);
+    }
+
+    public function hasPendingContentDraft(): bool
+    {
+        return !empty(trim(strip_tags($this->content_draft ?? '')));
     }
 
     public function scopeActive($query)
