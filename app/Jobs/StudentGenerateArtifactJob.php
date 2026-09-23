@@ -57,7 +57,7 @@ class StudentGenerateArtifactJob implements ShouldQueue
                 $gen->update(['content' => $r['content'], 'status' => 'ready']);
             } elseif ($gen->type === 'quiz') {
                 $num = (int) ($this->options['num_questions'] ?? 8);
-                $res = $quiz->generateQuestions($source, $label, $num, [
+                $res = $quiz->generateQuestionSet($source, $label, $num, [
                     'audience' => 'studenti di scuola superiore (quiz di autoverifica, registro scolastico)',
                 ]);
                 if ($res === null) {

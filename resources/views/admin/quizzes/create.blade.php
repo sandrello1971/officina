@@ -29,6 +29,17 @@
                             @endforeach
                         </select>
                     </div>
+                    <div style="grid-column:1 / -1;">
+                        <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Modulo <span style="font-weight:400; color:#8A9494;">(opzionale — con l'AI genera le domande solo da questo modulo)</span></label>
+                        <select name="module_id" id="quiz-module-select" style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
+                            <option value="">— Tutto il corso —</option>
+                            @foreach($modules as $module)
+                            <option value="{{ $module->id }}" data-course="{{ $module->course_id }}" {{ old('module_id') == $module->id ? 'selected' : '' }}>
+                                {{ $module->course?->name }} — {{ $module->title }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div>
                         <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">Soglia superamento %</label>
                         <input type="number" name="passing_score" value="{{ old('passing_score', 70) }}" min="0" max="100"
@@ -89,4 +100,22 @@
         </form>
     </div>
 </div>
+<script>
+    // Mostra solo i moduli del corso scelto (e azzera un modulo di un altro corso).
+    (function () {
+        var course = document.querySelector('select[name="course_id"]');
+        var mod = document.getElementById('quiz-module-select');
+        if (!course || !mod) return;
+        function sync() {
+            Array.prototype.forEach.call(mod.options, function (o) {
+                if (!o.value) return;
+                o.hidden = !!course.value && o.dataset.course !== course.value;
+            });
+            var sel = mod.options[mod.selectedIndex];
+            if (sel && sel.hidden) mod.value = '';
+        }
+        course.addEventListener('change', sync);
+        sync();
+    })();
+</script>
 @endsection

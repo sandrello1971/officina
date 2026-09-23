@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Log;
 
 class QuizGeneratorService
 {
-    private const CLAUDE_MODEL = 'claude-sonnet-4-5';
     private const PROMPT_VERSION = 'quiz-2026-06';
 
     /** Domande per chiamata Claude nel pool: piccolo → niente troncamento JSON. */
@@ -18,6 +17,11 @@ class QuizGeneratorService
     private const POOL_MAX_ROUNDS = 12;
     /** Contenuto usato per i pool grandi (più materiale = più varietà). */
     private const POOL_CONTENT_CHARS = 16000;
+    /** Contenuto usato per la singola chiamata (≤ POOL_BATCH_SIZE domande). */
+    private const SINGLE_CONTENT_CHARS = 12000;
+    /** Finestre in cui l'estratto campiona un testo unico quando non ci sta tutto. */
+    private const EXCERPT_WINDOWS = 8;
+    private const EXCERPT_SEPARATOR = "\n[…]\n";
 
     public function __construct(private \App\Services\Ai\ClaudeClient $claude) {}
 
@@ -28,7 +32,7 @@ class QuizGeneratorService
      */
     public function generateFromContent(
         Course $course,
-        string $content,
+        string|array $content,
         int $numQuestions = 10,
         ?int $questionsPerAttempt = null
     ): ?Quiz {
@@ -71,7 +75,7 @@ class QuizGeneratorService
      *
      * @return array{questions: array, meta: array}|null
      */
-    public function generateQuestionSet(string $content, string $contextLabel, int $numQuestions, array $options = []): ?array
+    public function generateQuestionSet(string|array $content, string $contextLabel, int $numQuestions, array $options = []): ?array
     {
         return $numQuestions > self::POOL_BATCH_SIZE
             ? $this->generatePool($content, $contextLabel, $numQuestions, $options)
@@ -86,7 +90,7 @@ class QuizGeneratorService
      *
      * @return array{questions: array, meta: array}|null
      */
-    public function generatePool(string $content, string $contextLabel, int $target, array $options = []): ?array
+    public function generatePool(string|array $content, string $contextLabel, int $target, array $options = []): ?array
     {
         $collected = [];      // questions accumulate
         $seen = [];           // testo normalizzato → true (dedup)
@@ -101,6 +105,9 @@ class QuizGeneratorService
 
             $res = $this->generateQuestions($content, $contextLabel, $batch, array_merge($options, [
                 'content_chars' => self::POOL_CONTENT_CHARS,
+                // Finestre dell'estratto sfalsate a ogni round: i batch vedono
+                // porzioni diverse del corso → più copertura e varietà.
+                'excerpt_phase' => ($rounds - 1) / self::POOL_MAX_ROUNDS,
                 'avoid' => array_map(fn ($q) => $q['question'] ?? '', $collected),
             ]));
 
@@ -141,7 +148,7 @@ class QuizGeneratorService
         return [
             'questions' => array_slice($collected, 0, $target),
             'meta' => [
-                'model' => self::CLAUDE_MODEL,
+                'model' => config('services.anthropic.model'),
                 'tokens_in' => $tokensIn,
                 'tokens_out' => $tokensOut,
                 'prompt_version' => self::PROMPT_VERSION,
@@ -149,6 +156,157 @@ class QuizGeneratorService
                 'rounds' => $rounds,
             ],
         ];
+    }
+
+    /**
+     * Testo da mandare al modello, al massimo ~$maxBytes byte e sempre UTF-8 valido
+     * (mb_strcut: un substr a byte spezzava le lettere accentate → json_encode
+     * falliva → la richiesta non partiva mai, e sempre sullo stesso corso).
+     * Se il contenuto non ci sta, invece di tenere solo l'inizio (quiz sui soli
+     * primi moduli):
+     *  - elenco di sezioni (un elemento per modulo) → budget ripartito equamente,
+     *    le sezioni corte cedono il margine alle lunghe: ogni modulo è presente;
+     *  - testo unico → EXCERPT_WINDOWS finestre equidistanti su tutto il testo.
+     * $phase (0..1) sposta le finestre per variare l'estratto tra i batch del pool.
+     */
+    private function excerpt(string|array $content, int $maxBytes, float $phase = 0.0): string
+    {
+        $sections = array_values(array_filter(
+            array_map(fn ($c) => $this->plainText((string) $c), (array) $content),
+            fn ($t) => $t !== ''
+        ));
+        $phase = fmod(max($phase, 0.0), 1.0);
+        $joined = implode("\n\n", $sections);
+
+        if (strlen($joined) <= $maxBytes) {
+            return $joined;
+        }
+
+        if (count($sections) === 1) {
+            $text = $sections[0];
+            $sections = [];
+            $stride = intdiv(strlen($text), self::EXCERPT_WINDOWS);
+            for ($i = 0; $i < self::EXCERPT_WINDOWS; $i++) {
+                $sections[] = mb_strcut($text, $i * $stride, $stride, 'UTF-8');
+            }
+        }
+
+        // Ripartizione equa: dalla sezione più corta, ognuna prende al più la sua
+        // quota; l'avanzo passa alle successive.
+        $budget = $maxBytes - count($sections) * strlen(self::EXCERPT_SEPARATOR);
+        $lengths = array_map('strlen', $sections);
+        asort($lengths);
+        $alloc = [];
+        $left = count($sections);
+        foreach ($lengths as $i => $len) {
+            $alloc[$i] = min($len, intdiv(max($budget, 0), $left));
+            $budget -= $alloc[$i];
+            $left--;
+        }
+
+        $parts = [];
+        foreach ($sections as $i => $text) {
+            $shift = (int) ($phase * (strlen($text) - $alloc[$i]));
+            $parts[] = trim(mb_strcut($text, $shift, $alloc[$i], 'UTF-8'));
+        }
+
+        return implode(self::EXCERPT_SEPARATOR, array_filter($parts, fn ($p) => $p !== ''));
+    }
+
+    /** HTML → testo semplice (tag via, entità decodificate, spazi compattati). */
+    private function plainText(string $html): string
+    {
+        // mb_scrub: anche un testo sorgente già non-UTF-8 (es. estrazione PDF)
+        // farebbe fallire json_encode della richiesta.
+        $text = html_entity_decode(strip_tags(mb_scrub($html, 'UTF-8')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace("/[ \t]+/u", ' ', $text) ?? $text;
+        $text = preg_replace("/\n\s*\n\s*(\n\s*)+/u", "\n\n", $text) ?? $text;
+
+        return trim($text);
+    }
+
+    /**
+     * Tiene solo domande correggibili: testo non vuoto, esattamente 4 opzioni
+     * distinte, correct_answer IDENTICA a una delle opzioni (la correzione del
+     * discente confronta con ===). Riconduce le varianti tipiche del modello —
+     * lettera ("b", "B)"), indice, spazi/maiuscole diverse — al testo esatto
+     * dell'opzione; ciò che resta ambiguo viene scartato (meglio una domanda in
+     * meno che una a cui non si può rispondere giusto).
+     */
+    public function sanitizeQuestions(array $questions): array
+    {
+        $valid = [];
+
+        foreach ($questions as $q) {
+            if (!is_array($q)) {
+                continue;
+            }
+            $text = trim((string) ($q['question'] ?? ''));
+            $options = array_values(array_map(
+                fn ($o) => trim((string) $o),
+                array_filter($q['options'] ?? [], fn ($o) => is_scalar($o))
+            ));
+
+            if ($text === '' || count($options) !== 4 || in_array('', $options, true)
+                || count(array_unique(array_map('mb_strtolower', $options))) !== 4) {
+                continue;
+            }
+
+            $correct = $this->resolveCorrectAnswer($q['correct_answer'] ?? null, $options);
+            if ($correct === null) {
+                continue;
+            }
+
+            $valid[] = [
+                'question' => $text,
+                'options' => $options,
+                'correct_answer' => $correct,
+                'explanation' => isset($q['explanation']) ? trim((string) $q['explanation']) : null,
+            ];
+        }
+
+        if (count($valid) < count($questions)) {
+            Log::info('QuizGeneratorService: domande scartate in validazione', [
+                'received' => count($questions), 'valid' => count($valid),
+            ]);
+        }
+
+        return $valid;
+    }
+
+    /** Testo esatto dell'opzione corretta, o null se non determinabile senza ambiguità. */
+    public function resolveCorrectAnswer(mixed $answer, array $options): ?string
+    {
+        $options = array_values(array_map(fn ($o) => (string) $o, $options));
+        if (is_int($answer)) {
+            return $options[$answer] ?? null;
+        }
+        if (!is_string($answer)) {
+            return null;
+        }
+
+        $a = trim($answer);
+        if (in_array($a, $options, true)) {
+            return $a;
+        }
+
+        // Stesso testo a meno di maiuscole/spazi/punteggiatura finale.
+        $norm = fn (string $s) => rtrim(preg_replace('/\s+/u', ' ', mb_strtolower(trim($s))), " .;:");
+        $matches = array_values(array_filter($options, fn ($o) => $norm($o) === $norm($a)));
+        if (count($matches) === 1) {
+            return $matches[0];
+        }
+
+        // Lettera: "b", "B", "b)", "(b)", "b.", "b) testo opzione".
+        if (preg_match('/^\(?([a-d])[\).:]?(?:\s+(.*))?$/iu', $a, $m)) {
+            $candidate = $options[ord(strtolower($m[1])) - ord('a')] ?? null;
+            // Se dopo la lettera c'è del testo, deve combaciare con l'opzione.
+            if ($candidate !== null && (!isset($m[2]) || $m[2] === '' || $norm($m[2]) === $norm($candidate))) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     /** Chiave di dedup: testo domanda normalizzato (minuscole, spazi/punteggiatura collassati). */
@@ -165,12 +323,13 @@ class QuizGeneratorService
      * Core parametrizzato: interroga Claude e restituisce le domande a risposta
      * multipla (NON persiste nulla). Riusabile dal mondo corsi e da Schola.
      *
-     * @param  string  $content       testo sorgente su cui basare le domande
+     * @param  string|array  $content  testo sorgente, o elenco di sezioni (es. un
+     *                                 elemento per modulo: il budget è ripartito tra tutte)
      * @param  string  $contextLabel  titolo/etichetta del contesto (corso, documento, ecc.)
      * @param  array   $options       ['audience' => string, 'subject_noun' => string]
      * @return array{questions: array, meta: array}|null  null in caso di errore API/parse
      */
-    public function generateQuestions(string $content, string $contextLabel, int $numQuestions = 10, array $options = []): ?array
+    public function generateQuestions(string|array $content, string $contextLabel, int $numQuestions = 10, array $options = []): ?array
     {
         $audience = $options['audience']
             ?? 'studenti di scuola superiore (linguaggio chiaro, registro scolastico)';
@@ -202,12 +361,13 @@ Formato JSON richiesto:
 SYSTEM;
 
         // Limite contenuto configurabile: i pool grandi hanno bisogno di più
-        // materiale per varietà (default storico 6000 per il single-call).
-        $contentChars = (int) ($options['content_chars'] ?? 6000);
+        // materiale per varietà. Single-call 12000 (era 6000): ripartito su tutti i
+        // moduli, 6000 lasciava pochissimo testo per modulo nei corsi lunghi.
+        $contentChars = (int) ($options['content_chars'] ?? self::SINGLE_CONTENT_CHARS);
 
         $userPrompt = "Genera {$numQuestions} domande a risposta multipla per il {$subjectNoun} '{$contextLabel}'.\n\n";
         $userPrompt .= "Ecco il contenuto su cui basare le domande:\n\n";
-        $userPrompt .= substr(strip_tags($content), 0, $contentChars);
+        $userPrompt .= $this->excerpt($content, $contentChars, (float) ($options['excerpt_phase'] ?? 0.0));
 
         // Anti-ripetizione tra batch del pool: l'elenco delle domande già generate
         // viene passato perché il modello ne produca di NUOVE (riduce i duplicati a monte).
@@ -236,14 +396,20 @@ SYSTEM;
             return null;
         }
 
+        $questions = $this->sanitizeQuestions($data['questions']);
+        if (empty($questions)) {
+            Log::warning('QuizGeneratorService: nessuna domanda valida nella risposta', ['raw_count' => count($data['questions'])]);
+            return null;
+        }
+
         return [
-            'questions' => $data['questions'],
+            'questions' => $questions,
             'meta' => [
                 'model' => config('services.anthropic.model'),
                 'tokens_in' => $res->tokensIn(),
                 'tokens_out' => $res->tokensOut(),
                 'prompt_version' => self::PROMPT_VERSION,
-                'questions_count' => count($data['questions']),
+                'questions_count' => count($questions),
             ],
         ];
     }
