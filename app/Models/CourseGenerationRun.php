@@ -13,13 +13,14 @@ class CourseGenerationRun extends Model
     use HasUuids;
 
     protected $fillable = [
-        'course_id', 'status', 'phase', 'brief', 'outline',
+        'course_id', 'status', 'phase', 'brief', 'outline', 'selected_sources',
         'triggered_by', 'started_at', 'completed_at', 'error',
     ];
 
     protected $casts = [
         'brief' => 'array',
         'outline' => 'array',
+        'selected_sources' => 'array',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
@@ -42,5 +43,10 @@ class CourseGenerationRun extends Model
     public function isOutlinePending(): bool
     {
         return $this->phase === 'outline' && $this->status !== 'failed';
+    }
+
+    public function isSourcesPending(): bool
+    {
+        return $this->phase === 'sources';
     }
 }

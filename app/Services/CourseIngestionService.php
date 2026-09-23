@@ -48,6 +48,15 @@ class CourseIngestionService
             }
         }
 
+        if ($ext === 'pptx') {
+            try {
+                return app(PptxTextExtractorService::class)->extract($path);
+            } catch (\Exception $e) {
+                Log::warning('PPTX extract error: ' . $e->getMessage());
+                return '';
+            }
+        }
+
         return '';
     }
 

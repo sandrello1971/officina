@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\Course;
 use App\Models\TrustedSource;
+use App\Services\RagService;
 use App\Services\SourceSuggester;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -117,6 +121,42 @@ class TrustedSourceController extends Controller
         $source->update(['status' => 'rejected', 'reviewed_by' => $this->adminId(), 'reviewed_at' => now()]);
 
         return back()->with('success', "Fonte «{$source->label}» rifiutata: non verrà ri-proposta.");
+    }
+
+    /**
+     * Importa il contenuto di una fonte approvata mode=fetch (una pagina puntuale,
+     * non un dominio da monitorare) come DocumentRag del corso indicato — usata
+     * dalla tappa "Seleziona le fonti" del motore di generazione corsi. Le fonti
+     * mode=search restano fuori: sono per il monitoraggio nel tempo (gap-scout),
+     * non hanno un singolo URL statico da scaricare.
+     */
+    public function importAsDocument(Request $request, TrustedSource $source, RagService $rag)
+    {
+        abort_unless($source->mode === 'fetch' && $source->status === 'approved', 422,
+            'Solo fonti approvate con una pagina puntuale (non un dominio) sono importabili.');
+
+        $data = $request->validate(['course_id' => 'required|uuid|exists:courses,id']);
+        $course = Course::findOrFail($data['course_id']);
+
+        try {
+            $response = Http::timeout(20)->get($source->url_or_domain);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Recupero della pagina fallito: ' . $e->getMessage());
+        }
+
+        if ($response->failed()) {
+            return back()->with('error', 'Recupero della pagina fallito (HTTP ' . $response->status() . ').');
+        }
+
+        $text = trim(strip_tags($response->body()));
+        if ($text === '') {
+            Log::warning('[officina] importAsDocument: testo vuoto', ['source_id' => $source->id]);
+            return back()->with('error', 'La pagina non contiene testo estraibile.');
+        }
+
+        $rag->indexDocument($text, $source->label, $course->id, null, null);
+
+        return back()->with('success', "«{$source->label}» importata come documento del corso «{$course->name}».");
     }
 
     public function destroy(TrustedSource $source)

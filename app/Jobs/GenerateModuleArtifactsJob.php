@@ -51,7 +51,7 @@ class GenerateModuleArtifactsJob implements ShouldQueue
         }
 
         $brief = $run->brief ?? [];
-        $source = $aggregator->aggregate($run->course);
+        $source = $aggregator->aggregate($run->course, $run->selected_sources);
 
         $this->generateStudentManual($run, $module, $manuals, $brief, $source);
         $this->generateInstructorManual($run, $module, $manuals, $brief, $source);
