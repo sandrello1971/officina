@@ -81,6 +81,7 @@
                         <th style="padding:10px; font-weight:600; color:#5A6464; width:60px;">#</th>
                         <th style="padding:10px; font-weight:600; color:#5A6464;">Titolo sezione</th>
                         <th style="padding:10px; font-weight:600; color:#5A6464; width:80px;">Tipo</th>
+                        <th style="padding:10px; font-weight:600; color:#5A6464; width:100px;">Durata (min)</th>
                         <th style="padding:10px; font-weight:600; color:#5A6464; width:280px;">Modulo associato</th>
                     </tr>
                 </thead>
@@ -115,6 +116,12 @@
                                     ⚪ NESSUNO
                                 </span>
                             @endif
+                        </td>
+                        <td style="padding:10px;">
+                            <input type="number" name="minutes[{{ $section->id }}]" min="0" max="1440"
+                                   value="{{ $section->estimated_minutes }}"
+                                   style="width:70px; padding:6px 8px; border:1px solid #E8F5F5;
+                                          border-radius:6px; font-size:0.8rem;">
                         </td>
                         <td style="padding:10px;">
                             <select name="assignments[{{ $section->id }}]"

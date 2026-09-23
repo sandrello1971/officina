@@ -71,5 +71,8 @@
     border-radius:0 8px 8px 0; }
 .instructor-manual code { background:#F5F7F7; padding:2px 6px;
     border-radius:4px; font-size:0.9em; color:#E28A53; }
+.instructor-manual .manual-duration { display:inline-block; vertical-align:middle;
+    font-size:0.62em; font-weight:600; color:#3A8C89; background:rgba(85,177,174,0.12);
+    padding:2px 8px; border-radius:10px; margin-left:8px; white-space:nowrap; }
 </style>
 @endsection

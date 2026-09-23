@@ -10,6 +10,15 @@ use Illuminate\Support\Str;
 
 class InstructorManualSplitterService
 {
+    /**
+     * Ritmo di erogazione in aula (parole/minuto) su cui basare la stima.
+     * Più lento della sola lettura silenziosa: il formatore spiega, fa esempi
+     * e gestisce le attività, non legge il manuale parola per parola.
+     */
+    private const WORDS_PER_MINUTE = 110;
+
+    private const MIN_SECTION_MINUTES = 5;
+
     public function split(Material $material): int
     {
         if (!$material->is_instructor_only) {
@@ -23,7 +32,10 @@ class InstructorManualSplitterService
             ->orderBy('sort_order')->get();
 
         $manualOverrides = InstructorManualSection::where('material_id', $material->id)
-            ->where('module_assigned_manually', true)
+            ->where(function ($q) {
+                $q->where('module_assigned_manually', true)
+                    ->orWhere('duration_manually_set', true);
+            })
             ->get()
             ->keyBy('anchor');
 
@@ -40,16 +52,25 @@ class InstructorManualSplitterService
             'sections' => count($sections),
         ]);
 
+        $estimatedMinutes = $this->estimateMinutesForSections($sections, $material->course->duration_hours ?? null);
+
         $sortOrder = 0;
         foreach ($sections as $sec) {
             $anchor = $this->generateAnchor($sec['title'], $sortOrder);
 
             $moduleId = $this->autoMapToModule($sec['title'], $modules);
             $manuallyAssigned = false;
+            $minutes = $estimatedMinutes[$sortOrder];
+            $durationManuallySet = false;
 
-            if (isset($manualOverrides[$anchor])) {
-                $moduleId = $manualOverrides[$anchor]->module_id;
+            $override = $manualOverrides[$anchor] ?? null;
+            if ($override && $override->module_assigned_manually) {
+                $moduleId = $override->module_id;
                 $manuallyAssigned = true;
+            }
+            if ($override && $override->duration_manually_set) {
+                $minutes = $override->estimated_minutes;
+                $durationManuallySet = true;
             }
 
             InstructorManualSection::create([
@@ -62,6 +83,8 @@ class InstructorManualSplitterService
                 'sort_order'               => $sortOrder,
                 'content_html'             => $sec['content'],
                 'module_assigned_manually' => $manuallyAssigned,
+                'estimated_minutes'        => $minutes,
+                'duration_manually_set'    => $durationManuallySet,
             ]);
 
             $sortOrder++;
@@ -97,9 +120,15 @@ class InstructorManualSplitterService
                 $current = $matchCount++;
                 if ($current !== $cnt) return $m[0];
                 $attrs = $m[1];
-                if (str_contains($attrs, 'id=')) return $m[0];
-                $attrs .= ' id="' . $sec->anchor . '"';
-                return "<{$tag}" . $attrs . '>' . ($m[2] ?? '') . ' ' . strip_tags($sec->title);
+                $hasId = str_contains($attrs, 'id=');
+                if (!$hasId) {
+                    $attrs .= ' id="' . $sec->anchor . '"';
+                }
+                $badge = $sec->estimated_minutes
+                    ? ' <span class="manual-duration">⏱ ~' . $this->formatMinutes($sec->estimated_minutes) . '</span>'
+                    : '';
+                if (!$badge) return $m[0];
+                return "<{$tag}" . $attrs . '>' . ($m[2] ?? '') . ' ' . strip_tags($sec->title) . $badge;
             }, $html, 1);
         }
 
@@ -195,6 +224,80 @@ class InstructorManualSplitterService
         }
 
         return $sections;
+    }
+
+    /**
+     * Stima i minuti di erogazione di ciascuna sezione. Se il corso ha una
+     * durata_ore dichiarata (dato reale, affidabile), la distribuisce fra le
+     * sezioni in proporzione al loro peso testuale — così il totale resta
+     * ancorato alla verità del corso invece che a un ritmo di lettura astratto,
+     * che sottostima sistematicamente il tempo reale d'aula (spiegazione,
+     * demo, esercitazioni) rispetto al solo testo della guida di conduzione.
+     * Senza durata_ore dichiarata, ripiega sulla stima assoluta a parole/minuto.
+     *
+     * @param array<int, array{title:string, level:int, content:string}> $sections
+     * @return array<int, int> minuti stimati, stesso ordine/indice di $sections
+     */
+    private function estimateMinutesForSections(array $sections, ?float $courseDurationHours): array
+    {
+        $wordCounts = array_map(
+            fn ($sec) => str_word_count(strip_tags($sec['content'])),
+            $sections
+        );
+        $totalWords = array_sum($wordCounts);
+
+        if ($courseDurationHours && $totalWords > 0) {
+            $totalMinutes = $courseDurationHours * 60;
+
+            return array_map(
+                fn ($words) => $this->roundMinutes($totalMinutes * $words / $totalWords),
+                $wordCounts
+            );
+        }
+
+        return array_map(
+            fn ($words) => $this->roundMinutes($words / self::WORDS_PER_MINUTE),
+            $wordCounts
+        );
+    }
+
+    private function roundMinutes(float $minutes): int
+    {
+        return max(self::MIN_SECTION_MINUTES, (int) (round($minutes / 5) * 5));
+    }
+
+    /**
+     * Ricalcola estimated_minutes per le sezioni già esistenti di un manuale,
+     * senza toccare anchor/module_id: usato per il backfill sui manuali già
+     * splittati prima dell'introduzione della stima durata (evita di rompere
+     * note/snapshot legati alle sezioni, che split() invece ricrea da zero).
+     */
+    public function recalculateEstimatedMinutes(Material $material): int
+    {
+        $sections = InstructorManualSection::where('material_id', $material->id)
+            ->orderBy('sort_order')->get();
+
+        $toRecalc = $sections->reject(fn ($s) => $s->duration_manually_set);
+        $pseudoSections = $toRecalc->map(fn ($s) => ['content' => $s->content_html])->values()->all();
+        $minutes = $this->estimateMinutesForSections($pseudoSections, $material->course->duration_hours ?? null);
+
+        foreach ($toRecalc->values() as $i => $sec) {
+            $sec->update(['estimated_minutes' => $minutes[$i]]);
+        }
+
+        return $sections->count();
+    }
+
+    private function formatMinutes(int $minutes): string
+    {
+        if ($minutes < 60) {
+            return $minutes . ' min';
+        }
+
+        $h = intdiv($minutes, 60);
+        $rem = $minutes % 60;
+
+        return $rem === 0 ? "{$h} h" : "{$h} h {$rem} min";
     }
 
     private function generateAnchor(string $title, int $sortOrder): string

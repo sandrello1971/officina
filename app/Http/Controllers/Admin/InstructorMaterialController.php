@@ -191,6 +191,8 @@ class InstructorMaterialController extends Controller
         $data = $request->validate([
             'assignments' => 'required|array',
             'assignments.*' => 'nullable|string',
+            'minutes' => 'nullable|array',
+            'minutes.*' => 'nullable|integer|min:0|max:1440',
         ]);
 
         $sections = InstructorManualSection::where('material_id', $material->id)
@@ -219,6 +221,18 @@ class InstructorMaterialController extends Controller
                         'module_id' => $newModuleId,
                         'module_assigned_manually' => true,
                     ]);
+                    $changedCount++;
+                }
+            }
+
+            foreach ($data['minutes'] ?? [] as $sectionId => $newMinutes) {
+                $section = $sections->get($sectionId);
+                if (!$section) continue;
+
+                $newMinutes = $newMinutes === '' || $newMinutes === null ? null : (int) $newMinutes;
+
+                if ($section->estimated_minutes !== $newMinutes) {
+                    $section->update(['estimated_minutes' => $newMinutes]);
                     $changedCount++;
                 }
             }
