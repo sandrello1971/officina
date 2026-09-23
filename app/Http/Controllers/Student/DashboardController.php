@@ -70,7 +70,7 @@ class DashboardController extends Controller
     {
         $student = Student::findOrFail(session('student_id'));
 
-        $courses = $this->buildCourses($student);
+        $courses = $this->buildCourses($student, includeBrowsable: true);
         $coursesByCategory = $courses->groupBy(fn ($c) => $c->category?->name ?? 'Altri corsi');
         $myClasses = $this->myClasses($student);
         $classLessons = $this->scholaShelf->lessonsByClass($student);
@@ -82,17 +82,22 @@ class DashboardController extends Controller
 
     /**
      * Corsi navigabili dello studente arricchiti con progressi e flag docenza.
+     * $includeBrowsable=true aggiunge, per i formatori, TUTTI i corsi attivi
+     * non insegnati come access_kind='browsing' (sola consultazione): usato
+     * solo dall'elenco completo /corsi, mai dalla dashboard compatta (non
+     * deve alterarne statistiche/anteprima).
      */
-    private function buildCourses(Student $student): Collection
+    private function buildCourses(Student $student, bool $includeBrowsable = false): Collection
     {
-        return $this->courseAccess->navigableCourses($student)
+        return $this->courseAccess->navigableCourses($student, $includeBrowsable)
             ->loadMissing('modules', 'category')
             ->map(function ($course) use ($student) {
                 $totalModules = $course->modules->count();
                 $course->modules_total = $totalModules;
                 $course->is_teaching = ($course->access_kind ?? 'enrolled') === 'teaching';
+                $course->is_browsing = ($course->access_kind ?? 'enrolled') === 'browsing';
 
-                if ($course->is_teaching) {
+                if ($course->is_teaching || $course->is_browsing) {
                     $course->progress_pct = null;
                     $course->modules_done = null;
                     return $course;

@@ -8,8 +8,10 @@ use App\Models\Student;
 trait DeterminesTeachingMode
 {
     /**
-     * True se lo studente accede al corso come FORMATORE in docenza:
-     * insegna il corso ma NON vi è iscritto come discente.
+     * True se il formatore accede al corso SENZA esservi iscritto come
+     * discente reale: sia che lo insegni davvero, sia che lo stia solo
+     * consultando (accesso esteso a tutti i corsi attivi per i formatori).
+     * In questa modalità niente progressi/tentativi quiz vengono salvati.
      */
     protected function isTeachingMode(Student $student, Course $course): bool
     {
@@ -26,13 +28,7 @@ trait DeterminesTeachingMode
             ->wherePivot('is_active', true)
             ->exists();
 
-        if ($enrolledAsStudent) {
-            return false;
-        }
-
-        return $student->taughtCourses()
-            ->where('courses.id', $course->id)
-            ->exists();
+        return !$enrolledAsStudent;
     }
 
     /** True se il formatore insegna il corso (a prescindere dall'iscrizione). */
@@ -40,5 +36,17 @@ trait DeterminesTeachingMode
     {
         return $student->isInstructor()
             && $student->taughtCourses()->where('courses.id', $course->id)->exists();
+    }
+
+    /**
+     * True se il formatore può accedere in sola consultazione a QUALUNQUE
+     * corso attivo, anche uno che non insegna (accesso esteso richiesto per
+     * il portale learn.*: QA, supporto, verifica contenuti). Non sblocca
+     * materiali/privilegi riservati al formatore reale: quelli restano
+     * legati a teaches().
+     */
+    protected function browsesAnyCourse(Student $student, Course $course): bool
+    {
+        return $student->isInstructor() && $course->is_active;
     }
 }

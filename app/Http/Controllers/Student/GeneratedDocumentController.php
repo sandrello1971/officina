@@ -86,7 +86,7 @@ class GeneratedDocumentController extends Controller
             return $student;
         }
 
-        if ($this->teaches($student, $course) && $course->is_active) {
+        if ($this->browsesAnyCourse($student, $course)) {
             return $student;
         }
 

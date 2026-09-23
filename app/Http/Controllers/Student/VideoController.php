@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\Concerns\DeterminesTeachingMode;
 use App\Http\Controllers\Student\Concerns\EvaluatesExamState;
 use App\Models\Course;
 use App\Models\Module;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Http;
 class VideoController extends Controller
 {
     use EvaluatesExamState;
+    use DeterminesTeachingMode;
 
     public function __construct(private VideoAIService $videoAI) {}
 
@@ -32,7 +34,7 @@ class VideoController extends Controller
 
         if (!$courseId) return false;
 
-        if ($student->auto_enroll_all_courses) {
+        if ($student->auto_enroll_all_courses || $student->isInstructor()) {
             return Course::where('id', $courseId)->where('is_active', true)->exists();
         }
 
@@ -54,8 +56,12 @@ class VideoController extends Controller
             ->where('courses.id', $course->id)
             ->wherePivot('is_active', true)
             ->exists();
-        abort_unless($enrolled, 403, 'Non sei iscritto a questo corso.');
-        return $student;
+
+        if ($enrolled || $this->browsesAnyCourse($student, $course)) {
+            return $student;
+        }
+
+        abort(403, 'Non sei iscritto a questo corso.');
     }
 
     public function stream(Request $request, string $videoId)

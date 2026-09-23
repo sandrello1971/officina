@@ -10,13 +10,17 @@ class StudentCourseAccess
 {
     /**
      * Corsi navigabili dallo studente, ciascuno con ->access_kind:
-     *  - 'enrolled' : iscritto (o auto_enroll) → discente pieno
-     *  - 'teaching' : formatore che insegna il corso ma NON vi è iscritto
+     *  - 'enrolled'  : iscritto (o auto_enroll) → discente pieno
+     *  - 'teaching'  : formatore che insegna il corso ma NON vi è iscritto
+     *  - 'browsing'  : formatore in sola consultazione su un corso che non
+     *                  insegna (richiede $includeBrowsable=true; usato solo
+     *                  dall'elenco completo /corsi, non da sidebar/dashboard,
+     *                  per non affollarle con l'intero catalogo).
      *
      * Rispetta demo e auto_enroll_all_courses esattamente come la
      * dashboard. Ordinati per sort_order.
      */
-    public function navigableCourses(Student $student): Collection
+    public function navigableCourses(Student $student, bool $includeBrowsable = false): Collection
     {
         if ($student->auto_enroll_all_courses) {
             $enrolled = Course::where('is_active', true)
@@ -45,8 +49,20 @@ class StudentCourseAccess
                 ->orderBy('sort_order')->get()
                 ->each(fn ($c) => $c->access_kind = 'teaching');
 
-            $result = $enrolled->concat($taught)
-                ->sortBy('sort_order')->values();
+            $result = $enrolled->concat($taught)->values();
+
+            if ($includeBrowsable) {
+                $excludedIds = array_merge($enrolledIds, $taught->pluck('id')->all());
+
+                $browsable = Course::where('is_active', true)
+                    ->whereNotIn('id', $excludedIds)
+                    ->orderBy('sort_order')->get()
+                    ->each(fn ($c) => $c->access_kind = 'browsing');
+
+                $result = $result->concat($browsable)->values();
+            }
+
+            $result = $result->sortBy('sort_order')->values();
         }
 
         return $result;

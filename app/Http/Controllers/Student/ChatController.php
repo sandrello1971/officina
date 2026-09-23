@@ -32,7 +32,7 @@ class ChatController extends Controller
         abort_unless($studentId, 403);
 
         $student = Student::findOrFail($studentId);
-        $enrolled = $student->auto_enroll_all_courses
+        $enrolled = ($student->auto_enroll_all_courses || $student->isInstructor())
             ? $course->is_active
             : $student->courses()->where('courses.id', $course->id)->exists();
         abort_unless($enrolled, 403);

@@ -99,14 +99,52 @@ class InstructorTeachingModeTest extends TestCase
             ->assertSee('Modalit'); // banner "Modalità docenza"
     }
 
-    public function test_non_teaching_non_enrolled_instructor_gets_403(): void
+    public function test_non_teaching_non_enrolled_instructor_can_browse_course_read_only(): void
     {
+        // Requisito: i formatori hanno accesso in sola consultazione a
+        // QUALUNQUE corso attivo su learn.*, anche uno che non insegnano.
         $course = $this->makeCourse();
         $instructor = $this->makeStudent(['role' => 'instructor']); // NOT attached
 
         $this->actingAsStudent($instructor)
             ->get(route('student.course.show', $course))
-            ->assertForbidden();
+            ->assertOk()
+            ->assertSee('Modalit'); // stesso banner "non registriamo avanzamento"
+    }
+
+    public function test_browsing_instructor_does_not_see_instructor_only_material_of_untaught_course(): void
+    {
+        // L'accesso esteso è di sola visualizzazione: i materiali riservati
+        // al formatore restano legati alla docenza REALE (course_instructor).
+        $course = $this->makeCourse();
+        Material::create([
+            'course_id'          => $course->id,
+            'title'              => 'Manuale formatore',
+            'is_instructor_only' => true,
+            'sort_order'         => 1,
+        ]);
+        $instructor = $this->makeStudent(['role' => 'instructor']); // NOT attached, NOT teaching
+
+        $this->actingAsStudent($instructor)
+            ->get(route('student.course.show', $course))
+            ->assertOk()
+            ->assertDontSee('Manuale formatore');
+    }
+
+    public function test_browsing_instructor_gets_no_progress_on_module(): void
+    {
+        $course = $this->makeCourse();
+        $module = $this->makeModule($course);
+        $instructor = $this->makeStudent(['role' => 'instructor']); // NOT attached, NOT teaching
+
+        $countBefore = StudentModuleProgress::count();
+
+        $this->actingAsStudent($instructor)
+            ->get(route('student.module.show', [$course, $module]))
+            ->assertOk();
+
+        $this->assertSame($countBefore, StudentModuleProgress::count(),
+            'No StudentModuleProgress row must be created when an instructor browses a course they do not teach');
     }
 
     // ============================================================

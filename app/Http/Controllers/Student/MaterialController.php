@@ -52,7 +52,7 @@ class MaterialController extends Controller
         $courseId = $material->course_id ?? $material->module?->course_id;
         abort_unless($courseId, 404);
 
-        if ($student->auto_enroll_all_courses) {
+        if ($student->auto_enroll_all_courses || $student->isInstructor()) {
             abort_unless(
                 Course::where('id', $courseId)->where('is_active', true)->exists(),
                 403
