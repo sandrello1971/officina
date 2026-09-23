@@ -19,6 +19,7 @@ class CanvasDocument
 {
     public function prepareForStudent(string $html, string $csrfToken): string
     {
+        $legacyMaterialPath = $this->hasLegacyMaterialPath($html);
         $html = $this->rewriteDataEndpoint($html);
 
         $meta = '<meta name="csrf-token" content="' . e($csrfToken) . '">';
@@ -27,6 +28,17 @@ class CanvasDocument
             $html = preg_match('/<head[^>]*>/i', $html)
                 ? preg_replace('/<head([^>]*)>/i', '<head$1>' . $meta, $html, 1)
                 : $meta . $html;
+        }
+
+        // Canvas che ricavavano l'id dal path /learn/material/{id}/canvas: finora
+        // salvavano solo nel localStorage del browser. Al primo accesso il
+        // lavoro locale va mostrato e portato sul server, non perso.
+        if ($legacyMaterialPath && ($keys = $this->localStorageKeys($html))) {
+            $shim = $this->localToServerShim($keys);
+            $html = preg_replace('/(<meta name="csrf-token"[^>]*>)/i', '$1' . $shim, $html, 1, $count);
+            if (!$count) {
+                $html = $shim . $html;
+            }
         }
 
         if (str_contains($html, 'data-field')) {
@@ -38,13 +50,81 @@ class CanvasDocument
         return $html;
     }
 
-    /** Porta l'endpoint cablato nei canvas sul path reale della rotta student.canvas.get. */
+    /**
+     * Porta gli URL cablati nei canvas (pre-split sottodomini, prefisso /learn)
+     * sui path reali: l'endpoint dati e il path da cui alcuni canvas ricavano
+     * l'id del materiale (regex JS /\/learn\/material\/([^/]+)\/canvas/).
+     */
     public function rewriteDataEndpoint(string $html): string
     {
         $path = parse_url(route('student.canvas.get', ['material' => '__MID__']), PHP_URL_PATH) ?: '/canvas/__MID__/data';
         $prefix = substr($path, 0, strpos($path, '__MID__'));
+        if ($prefix !== '/learn/canvas/') {
+            $html = str_replace('/learn/canvas/', $prefix, $html);
+        }
 
-        return $prefix === '/learn/canvas/' ? $html : str_replace('/learn/canvas/', $prefix, $html);
+        $materialPath = parse_url(route('student.material.canvas', ['material' => '__MID__']), PHP_URL_PATH) ?: '/material/__MID__/canvas';
+        $materialPrefix = substr($materialPath, 0, strpos($materialPath, '__MID__'));
+        if ($materialPrefix !== '/learn/material/') {
+            $html = str_replace('\\/learn\\/material\\/', str_replace('/', '\\/', $materialPrefix), $html);
+        }
+
+        return $html;
+    }
+
+    private function hasLegacyMaterialPath(string $html): bool
+    {
+        return str_contains($html, '\\/learn\\/material\\/');
+    }
+
+    /** Chiavi localStorage usate dal canvas (letterali stringa). */
+    private function localStorageKeys(string $html): array
+    {
+        preg_match_all('/localStorage\.(?:getItem|setItem)\(\s*[\'"]([^\'"]+)[\'"]/', $html, $direct);
+        preg_match_all('/\b(?:const|let|var)\s+[A-Z_]*KEY\s*=\s*[\'"]([^\'"]+)[\'"]/', $html, $consts);
+
+        return array_values(array_unique(array_merge($direct[1], $consts[1])));
+    }
+
+    /**
+     * Intercetta la GET dei dati del canvas: se il server non ha nulla ma il
+     * browser ha una copia locale, la restituisce al canvas e la salva sul
+     * server (una volta, poi il server non è più vuoto).
+     */
+    private function localToServerShim(array $keys): string
+    {
+        $json = json_encode($keys, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+
+        return <<<HTML
+<script>
+(function(keys){
+  var of=window.fetch; if(!of) return;
+  function localCopy(){
+    for(var i=0;i<keys.length;i++){
+      try{var v=JSON.parse(localStorage.getItem(keys[i])||'null');if(v&&typeof v==='object'&&Object.keys(v).length)return v;}catch(e){}
+    }
+    return null;
+  }
+  window.fetch=function(input,init){
+    var url=typeof input==='string'?input:(input&&input.url)||'';
+    var method=((init&&init.method)||'GET').toUpperCase();
+    var p=of.apply(this,arguments);
+    if(method!=='GET'||!/\/canvas\/[^\/?#]+\/data(?:[?#]|$)/.test(url))return p;
+    return p.then(function(r){
+      if(!r.ok)return r;
+      return r.clone().json().then(function(j){
+        var d=j&&j.data;
+        if(d&&typeof d==='object'&&Object.keys(d).length)return r;
+        var local=localCopy(); if(!local)return r;
+        var t=(document.querySelector('meta[name=csrf-token]')||{}).content||'';
+        of(url,{method:'PATCH',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':t},body:JSON.stringify({data:local})}).catch(function(){});
+        return new Response(JSON.stringify({data:local}),{status:200,headers:{'Content-Type':'application/json'}});
+      }).catch(function(){return r;});
+    });
+  };
+})({$json});
+</script>
+HTML;
     }
 
     /**

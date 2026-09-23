@@ -92,6 +92,32 @@ HTML;
         $this->assertStringContainsString('officina-canvas-toolbar', $html);
     }
 
+    public function test_legacy_canvas_material_path_is_rewritten_and_gets_local_migration(): void
+    {
+        $legacy = '<html><head></head><body><input id="acc"><script>'
+            . 'function getMaterialId(){const m=location.pathname.match(/\/learn\/material\/([^/]+)\/canvas/);return m?m[1]:null;}'
+            . "const KEY='mltec_valutazione_modello';localStorage.getItem(KEY);"
+            . 'fetch(`/learn/canvas/${MID}/data`);</script></body></html>';
+        [$course, $canvas] = $this->courseWithCanvas($legacy);
+        $student = $this->enrolledStudent($course);
+
+        $html = $this->actingAsStudent($student)->get(route('student.material.canvas', $canvas))->assertOk()->getContent();
+
+        $this->assertStringContainsString('match(/\/material\/([^/]+)\/canvas/)', $html);
+        $this->assertStringNotContainsString('\/learn\/', $html);
+        $this->assertStringContainsString('["mltec_valutazione_modello"]', $html);
+    }
+
+    public function test_modern_canvas_gets_no_local_migration(): void
+    {
+        [$course, $canvas] = $this->courseWithCanvas();
+        $student = $this->enrolledStudent($course);
+
+        $html = $this->actingAsStudent($student)->get(route('student.material.canvas', $canvas))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('function localCopy()', $html);
+    }
+
     public function test_read_only_canvas_gets_no_toolbar(): void
     {
         [$course, $canvas] = $this->courseWithCanvas('<html><head></head><body><h1>Laboratorio 2</h1><p>Istruzioni</p></body></html>');
