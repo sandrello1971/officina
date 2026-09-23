@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Laboratorio 1 — Configurazione e comprensione del codice</title>
+<style>
+:root{--ink:#1a1a1a;--mid:#555;--muted:#888;--line:#e2e2e2;--bg:#fafafa;--card:#fff;--accentline:#0a7d40}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:24px;line-height:1.6}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:21px;margin:0 0 18px;padding-bottom:12px;border-bottom:2px solid var(--line)}
+p{font-size:14px;margin:0 0 14px}
+p strong{display:inline-block;margin-bottom:2px;color:var(--mid);font-size:13px;text-transform:uppercase;letter-spacing:.03em}
+ul{font-size:14px;padding-left:20px;margin:0 0 14px}
+li{margin-bottom:6px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:0 0 18px}
+th,td{text-align:left;padding:10px 12px;font-size:13.5px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#f2f5f3;color:var(--mid);font-weight:600}
+tr:last-child td{border-bottom:none}
+tr.odd,tr.even{background:var(--card)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Laboratorio 1 — Configurazione e comprensione del codice</h1>
+<p>Questo &egrave; il laboratorio della prima sessione. Serve a portare tutto il gruppo sullo stesso piano di partenza: configurare Claude Code su un progetto reale, dargli la memoria di progetto con il file CLAUDE.md, definire un profilo di permessi e usarlo subito per ci&ograve; su cui il corso &egrave; centrato &mdash; farsi spiegare del codice che non si conosce.</p>
+<table>
+<colgroup><col style="width: 30%"/><col style="width: 70%"/></colgroup>
+<tbody>
+<tr class="odd">
+<td><strong>Sessione</strong></td>
+<td>1 &mdash; Fondamenta: ambienti, configurazione, contesto</td>
+</tr>
+<tr class="even">
+<td><strong>Capitoli di riferimento</strong></td>
+<td>Capitoli 1, 2 e 3</td>
+</tr>
+<tr class="odd">
+<td><strong>Durata</strong></td>
+<td>circa 2 ore e 30 minuti</td>
+</tr>
+<tr class="even">
+<td><strong>Deliverable</strong></td>
+<td>un CLAUDE.md, un profilo di permessi, la comprensione verificata di un modulo</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Obiettivo</strong></p>
+<p>Configurare lo strumento e produrre i due artefatti che userete in tutte le sessioni successive: il CLAUDE.md che d&agrave; all'assistente le istruzioni permanenti del progetto, e il profilo di permessi che stabilisce cosa pu&ograve; fare in autonomia. Poi metterlo subito al lavoro su un modulo sconosciuto, verificando ci&ograve; che vi racconta.</p>
+<p><strong>Cosa vi serve</strong></p>
+<ul>
+<li>Claude Code installato e funzionante sulla vostra macchina (verificatelo prima di iniziare).</li>
+<li>Un repository reale, possibilmente con almeno un modulo che nessuno del gruppo conosce bene. Se non potete usare un repository vostro (per esempio per vincoli di riservatezza sul codice cliente), usate il repository di esercitazione &laquo;Magazzino&raquo;, scaricabile dal modulo del Capitolo 5: lo userete comunque nel Laboratorio 2.</li>
+<li>L'IDE che usate abitualmente, per provare l'estensione accanto alla CLI.</li>
+</ul>
+<p><strong>Svolgimento</strong></p>
+<table>
+<colgroup><col style="width: 14%"/><col style="width: 26%"/><col style="width: 60%"/></colgroup>
+<thead>
+<tr class="header">
+<th>Durata</th>
+<th>Fase</th>
+<th>Cosa fate</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>15 min</td>
+<td>Esplorazione</td>
+<td>Aprite Claude Code sul repository e osservate come esplora il progetto. Notate che non conosce il progetto a priori: lo legge.</td>
+</tr>
+<tr class="even">
+<td>50 min</td>
+<td>Scrittura del CLAUDE.md</td>
+<td>Scrivete il CLAUDE.md: stack e versioni, architettura, convenzioni di codice, comandi utili, vincoli e divieti. Curate in particolare le convenzioni di test e di documentazione: sono due aree centrali del corso e faranno la differenza nelle sessioni successive.</td>
+</tr>
+<tr class="odd">
+<td>35 min</td>
+<td>Profilo permessi</td>
+<td>Definite cosa lo strumento pu&ograve; fare in autonomia, cosa richiede approvazione e cosa &egrave; vietato sempre, con il principio del privilegio minimo. Discutete la differenza di cautela tra codice cliente e prototipo.</td>
+</tr>
+<tr class="even">
+<td>35 min</td>
+<td>Comprensione verificata</td>
+<td>Fatevi spiegare un modulo che non conoscete. Poi verificate: chiedete quali file ha considerato e cosa non ha potuto verificare, e controllate i punti che contano.</td>
+</tr>
+<tr class="odd">
+<td>15 min</td>
+<td>Confronto</td>
+<td>Confrontate i vostri artefatti con quelli degli altri gruppi.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A cosa fare attenzione</strong></p>
+<table>
+<colgroup><col style="width: 100%"/></colgroup>
+<tbody>
+<tr class="odd">
+<td><p><strong>Errori tipici da evitare:</strong></p><ul>
+<li>un CLAUDE.md troppo lungo e generico: meglio poche regole chiare e verificabili che pagine di prosa;</li>
+<li>preferenze personali nel file di progetto: quelle vanno sul livello locale, non nel file condiviso;</li>
+<li>permessi lasciati ai valori di default senza ragionarci;</li>
+<li>accettare la spiegazione del modulo senza verificarla: &egrave; l'errore che il corso combatte, e comincia qui.</li>
+</ul></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cosa consegnate</strong></p>
+<p>Un CLAUDE.md pronto per essere versionato, un profilo di permessi documentato e una nota sulla comprensione del modulo analizzato, con l'indicazione di ci&ograve; che avete verificato e di ci&ograve; che resta incerto.</p>
+
+</div>
+</body>
+</html>

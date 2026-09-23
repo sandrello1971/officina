@@ -162,6 +162,9 @@ Route::domain(config('domains.learn'))->name('student.')->group(function () {
         Route::get('/material/{material}/download', [App\Http\Controllers\Student\MaterialController::class, 'download'])->name('material.download');
         Route::get('/material/{material}/canvas', [App\Http\Controllers\Student\MaterialController::class, 'canvas'])->name('material.canvas');
 
+        // Schede dei discenti (canvas compilati) — sola lettura per il formatore
+        Route::get('/course/{course:slug}/schede', [App\Http\Controllers\Student\CanvasReviewController::class, 'index'])->name('course.canvas-review.index');
+        Route::get('/course/{course:slug}/schede/{material}', [App\Http\Controllers\Student\CanvasReviewController::class, 'show'])->name('course.canvas-review.show');
         Route::get('/course/{course:slug}/instructor/{material}', [App\Http\Controllers\Student\InstructorMaterialController::class, 'show'])->name('instructor.material.show');
         Route::get('/course/{course:slug}/instructor/{material}/download', [App\Http\Controllers\Student\InstructorMaterialController::class, 'download'])->name('instructor.material.download');
 

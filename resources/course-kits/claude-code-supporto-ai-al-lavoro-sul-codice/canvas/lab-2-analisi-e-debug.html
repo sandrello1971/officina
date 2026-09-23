@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Laboratorio 2 — Analisi del codice e debug</title>
+<style>
+:root{--ink:#1a1a1a;--mid:#555;--muted:#888;--line:#e2e2e2;--bg:#fafafa;--card:#fff;--accentline:#0a7d40}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:24px;line-height:1.6}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:21px;margin:0 0 18px;padding-bottom:12px;border-bottom:2px solid var(--line)}
+p{font-size:14px;margin:0 0 14px}
+p strong{display:inline-block;margin-bottom:2px;color:var(--mid);font-size:13px;text-transform:uppercase;letter-spacing:.03em}
+ul{font-size:14px;padding-left:20px;margin:0 0 14px}
+li{margin-bottom:6px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:0 0 18px}
+th,td{text-align:left;padding:10px 12px;font-size:13.5px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#f2f5f3;color:var(--mid);font-weight:600}
+tr:last-child td{border-bottom:none}
+tr.odd,tr.even{background:var(--card)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Laboratorio 2 — Analisi del codice e debug</h1>
+<p>Questo &egrave; il laboratorio della seconda sessione, dedicato alla prima area operativa del corso: capire il codice e trovare la causa dei bug. Userete il canvas &laquo;Scheda di analisi bug&raquo; per condurre il debug nell'ordine corretto.</p>
+<table>
+<colgroup><col style="width: 30%"/><col style="width: 70%"/></colgroup>
+<tbody>
+<tr class="odd">
+<td><strong>Sessione</strong></td>
+<td>2 &mdash; Prompting per l'analisi, codice e bug</td>
+</tr>
+<tr class="even">
+<td><strong>Capitoli di riferimento</strong></td>
+<td>Capitolo 4 (prompting) e Capitolo 5 (analisi del codice e dei bug)</td>
+</tr>
+<tr class="odd">
+<td><strong>Durata</strong></td>
+<td>circa 2 ore e 30 minuti</td>
+</tr>
+<tr class="even">
+<td><strong>Strumento</strong></td>
+<td>canvas &laquo;Scheda di analisi bug&raquo; e repository di esercitazione &laquo;Magazzino&raquo; (entrambi in questo modulo)</td>
+</tr>
+<tr class="odd">
+<td><strong>Deliverable</strong></td>
+<td>l'analisi di un codice sconosciuto e un debug documentato fino alla causa radice</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Obiettivo</strong></p>
+<p>Imparare a chiedere analisi verificabili e a condurre un debug con metodo. Il principio che governa tutto il laboratorio &egrave; che una conclusione senza il ragionamento che la sostiene &egrave; inverificabile, e ci&ograve; che &egrave; inverificabile non si accetta.</p>
+<p><strong>Cosa vi serve</strong></p>
+<ul>
+<li>Claude Code installato e funzionante, come nel Laboratorio 1.</li>
+<li>Il repository di esercitazione <strong>&laquo;Magazzino&raquo;</strong>, scaricabile da questo modulo: un piccolo gestionale in Python (serve Python 3.10 o superiore, nessuna dipendenza da installare). Scompattatelo, aprite Claude Code nella cartella e verificate che <code>python -m unittest</code> giri.</li>
+<li>In alternativa, un bug reale e gi&agrave; noto di un vostro repository, concordato con il formatore.</li>
+</ul>
+<p><strong>Il flusso di debug corretto</strong></p>
+<table>
+<colgroup><col style="width: 14%"/><col style="width: 26%"/><col style="width: 60%"/></colgroup>
+<thead>
+<tr class="header">
+<th>Passo</th>
+<th>Fase</th>
+<th>Cosa fate</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Passo 1</td>
+<td>Fenomeno</td>
+<td>Cosa succede esattamente: errore, stack trace, comportamento sbagliato. Quando si verifica e quando no.</td>
+</tr>
+<tr class="even">
+<td>Passo 2</td>
+<td>Contesto</td>
+<td>Portate nel contesto i file rilevanti. Un'analisi su file incompleti produce una spiegazione coerente e sbagliata.</td>
+</tr>
+<tr class="odd">
+<td>Passo 3</td>
+<td>Ipotesi</td>
+<td>Chiedete ipotesi sulla causa, pi&ugrave; di una, con il ragionamento che porta a ciascuna. Non chiedete la correzione.</td>
+</tr>
+<tr class="even">
+<td>Passo 4</td>
+<td>Verifica</td>
+<td>Provate l'ipotesi pi&ugrave; promettente: un test che la isoli, un controllo sul codice. La prova, non la plausibilit&agrave;.</td>
+</tr>
+<tr class="odd">
+<td>Passo 5</td>
+<td>Causa radice</td>
+<td>Confermate la causa. Se non riuscite a scriverla, non avete finito.</td>
+</tr>
+<tr class="even">
+<td>Passo 6</td>
+<td>Correzione</td>
+<td>Applicate la correzione e spiegate perch&eacute; risolve la causa, non solo il sintomo.</td>
+</tr>
+<tr class="odd">
+<td>Passo 7</td>
+<td>Residuo</td>
+<td>Chiedete all'assistente cosa non ha potuto verificare e annotatelo: &egrave; l&agrave; che si nascondono le sorprese.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Svolgimento</strong></p>
+<table>
+<colgroup><col style="width: 14%"/><col style="width: 26%"/><col style="width: 60%"/></colgroup>
+<thead>
+<tr class="header">
+<th>Durata</th>
+<th>Fase</th>
+<th>Cosa fate</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>20 min</td>
+<td>Prompting per l&#x27;analisi</td>
+<td>Provate la differenza tra una domanda vaga e una richiesta specifica con vincoli. Esercitate la richiesta del ragionamento e non della sola conclusione.</td>
+</tr>
+<tr class="even">
+<td>45 min</td>
+<td>Codice sconosciuto</td>
+<td>Analizzate un modulo che non conoscete (nel repository &laquo;Magazzino&raquo;: <code>magazzino/prezzi.py</code>, senza leggerlo prima voi) e produtene una comprensione verificata, usando le domande di controllo: quali file hai considerato, cosa non hai potuto verificare.</td>
+</tr>
+<tr class="odd">
+<td>70 min</td>
+<td>Debug completo</td>
+<td>Il formatore vi assegna una delle segnalazioni del file <code>SEGNALAZIONI.md</code> del repository. Conducete il debug seguendo i sette passi e compilate il canvas. Prima di correggere, scrivete un test che riproduce il bug: la suite &egrave; verde, ma il codice non &egrave; corretto.</td>
+</tr>
+<tr class="even">
+<td>15 min</td>
+<td>Confronto</td>
+<td>Mettete in comune le cause trovate e i percorsi seguiti.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A cosa fare attenzione</strong></p>
+<table>
+<colgroup><col style="width: 100%"/></colgroup>
+<tbody>
+<tr class="odd">
+<td><p><strong>L'errore pi&ugrave; costoso di questo laboratorio</strong> &egrave; accettare la prima correzione che fa sparire il sintomo. Un blocco che inghiotte l'eccezione fa sparire il messaggio d'errore e lascia il bug; un valore di default che copre un caso non gestito nasconde il fatto che quel caso arriva. Chiudete sempre chiedendovi: perch&eacute; il bug si verificava, e perch&eacute; questa correzione lo risolve?</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cosa consegnate</strong></p>
+<p>La scheda di analisi bug compilata in tutti i passi, con la causa radice confermata e la motivazione della correzione, pi&ugrave; la nota di comprensione del modulo analizzato. La scheda si salva da sola mentre scrivete: il formatore la vede sulla piattaforma, e con il pulsante <em>Scarica</em> ne tenete una copia.</p>
+
+</div>
+</body>
+</html>

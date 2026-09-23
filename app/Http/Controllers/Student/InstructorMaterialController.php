@@ -18,7 +18,15 @@ class InstructorMaterialController extends Controller
     {
         $this->authorizeAccess($course, $material);
 
-        $material->content_html = $splitter->injectAnchorsIntoMainHtml($material);
+        // Materiali riservati caricati come file HTML (es. chiavi dei laboratori):
+        // nessun content_html né sezioni, si mostra il file così com'è.
+        if (empty($material->content_html) && $material->file_path
+            && str_ends_with(strtolower($material->file_path), '.html')
+            && Storage::disk('local')->exists($material->file_path)) {
+            $material->content_html = Storage::disk('local')->get($material->file_path);
+        } else {
+            $material->content_html = $splitter->injectAnchorsIntoMainHtml($material);
+        }
 
         $student = Student::findOrFail(session('student_id'));
 
@@ -52,7 +60,7 @@ class InstructorMaterialController extends Controller
 
         return response()->download(
             Storage::disk('local')->path($material->file_path),
-            ($material->title ?? 'manuale') . '.docx'
+            ($material->title ?? 'manuale') . '.' . (pathinfo($material->file_path, PATHINFO_EXTENSION) ?: 'docx')
         );
     }
 

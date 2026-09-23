@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Material;
 use App\Models\Student;
+use App\Services\CanvasDocument;
 use Illuminate\Support\Facades\Storage;
 
 class MaterialController extends Controller
@@ -27,10 +28,15 @@ class MaterialController extends Controller
         abort_unless($material->file_type === 'canvas', 404);
         $this->ensureFileExists($material);
 
-        return response()->file(
-            Storage::disk('local')->path($material->file_path),
-            ['Content-Type' => 'text/html; charset=utf-8']
+        $html = app(CanvasDocument::class)->prepareForStudent(
+            Storage::disk('local')->get($material->file_path),
+            csrf_token()
         );
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Cache-Control' => 'no-store, private',
+        ]);
     }
 
     private function authorizeAccess(Material $material): void

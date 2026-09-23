@@ -1,0 +1,56 @@
+<h1>Laboratorio 2 — Chiave per il formatore</h1>
+
+<p><strong>Riservato al formatore.</strong> Soluzioni del repository di esercitazione «Magazzino» (materiale scaricabile del Capitolo 5). Non condividete questa pagina con i discenti: il valore del laboratorio sta nel percorso che fanno per arrivare alla causa.</p>
+
+<h2>Come organizzare il laboratorio</h2>
+<ul>
+<li><strong>Prima del laboratorio</strong> chiedete ai discenti di scaricare il repository e di verificare che <code>python -m unittest</code> giri (serve Python 3.10 o superiore, nessuna dipendenza).</li>
+<li><strong>Codice sconosciuto (45 min)</strong>: tutti analizzano <code>magazzino/prezzi.py</code> con Claude Code (domande di controllo più sotto).</li>
+<li><strong>Debug completo (70 min)</strong>: assegnate una segnalazione di <code>SEGNALAZIONI.md</code> a ogni coppia o gruppo. Difficoltà crescente: <strong>#3</strong> (la più guidata), <strong>#2</strong>, <strong>#1</strong> (la più ricca: ha due cause sovrapposte). Con gruppi numerosi assegnate la stessa segnalazione a due gruppi e confrontate i percorsi.</li>
+<li>Chi ha un repository proprio con un bug reale già noto può usarlo al posto del kit: il metodo e la scheda sono gli stessi.</li>
+<li><strong>Consegna</strong>: la «Scheda di analisi bug» si salva sulla piattaforma. La trovate compilata in <em>Materiali Formatore → Schede dei discenti</em>.</li>
+</ul>
+
+<h2>Codice sconosciuto: <code>prezzi.py</code></h2>
+<p>Una spiegazione verificata deve contenere almeno questi punti. Se mancano, fate chiedere all'assistente «quali regole non hai potuto verificare?».</p>
+<ul>
+<li>Sconto a scaglioni <strong>sulla singola riga</strong> (10 pezzi 5%, 50 pezzi 10%): non sulla quantità totale dell'ordine.</li>
+<li>Il rivenditore aggiunge il 3% ma con un <strong>tetto al 12%</strong>: a 60 pezzi un rivenditore ha il 12%, non il 13%. Il tetto non si applica ai privati (a cui non serve: il loro massimo è il 10%).</li>
+<li>L'IVA si calcola sul <strong>totale imponibile</strong>, non riga per riga.</li>
+<li>Gli importi sono <code>float</code> arrotondati con <code>round()</code>: è l'aggancio al bug #2. Premiate chi lo nota già in questa fase.</li>
+</ul>
+<p>Errore tipico da far emergere: l'assistente «inventa» la fonte delle regole (la docstring cita una circolare che nel repository non c'è). Una spiegazione che la descrive come verificata non va accettata.</p>
+
+<h2>Segnalazione #1 — Articoli mancanti e giacenza sbagliata</h2>
+<p><strong>Riproduzione:</strong> <code>python -m magazzino dati/giacenze_esempio.csv</code> mostra 6 articoli su 8 e B-010 con giacenza 1.</p>
+<p><strong>Causa radice (due cause sovrapposte):</strong></p>
+<ol>
+<li>Il gestionale esporta in <strong>formato numerico italiano</strong>: la virgola come separatore decimale nei prezzi (<code>2,15</code>) e il punto come separatore delle migliaia nelle quantità (<code>1.200</code>). <code>float()</code> non capisce la virgola e interpreta <code>1.200</code> come 1,2, che <code>int()</code> tronca a 1.</li>
+<li>Il blocco <code>except Exception: continue</code> in <code>importa.py</code> <strong>inghiotte l'errore</strong>: le righe con la virgola vengono scartate senza alcun messaggio. È il motivo per cui il bug è rimasto invisibile.</li>
+</ol>
+<p><strong>Correzione trappola</strong> (la più frequente): sostituire <code>","</code> con <code>"."</code> dentro <code>_numero()</code>. I due articoli mancanti ricompaiono, ma B-010 resta a 1 pezzo e l'<code>except</code> continua a nascondere qualunque altra riga malformata. Se un gruppo chiude qui, chiedete: «perché B-010 vale ancora 1?».</p>
+<p><strong>Correzione corretta:</strong> parser distinti per colonna, cioè le quantità intere senza separatore delle migliaia (<code>int(t.replace(".", ""))</code>) e i prezzi con la virgola decimale. Poi va <strong>rimosso l'<code>except</code> generico</strong>, oppure l'errore va segnalato con il numero di riga invece di scartare la riga in silenzio. Risultato atteso: 8 articoli, B-010 = 1.200, valore di magazzino 12.048,70 €.</p>
+<p><strong>Test che isola il bug:</strong> un CSV con una riga <code>X;prova;1.200;2,15</code> deve restituire quantità 1200 e prezzo 2.15. Oggi la riga sparisce.</p>
+
+<h2>Segnalazione #2 — Il totale non quadra di un centesimo</h2>
+<p><strong>Riproduzione:</strong> <code>importo_riga(3.90, 11)</code> restituisce 40,75. Il valore corretto è 40,76, perché 3,90 × 11 × 0,95 = 40,755 e l'arrotondamento commerciale porta a 40,76.</p>
+<p><strong>Causa radice:</strong> gli importi sono in virgola mobile binaria. 40,755 non è rappresentabile esattamente e viene memorizzato come 40,75499999…, quindi <code>round(…, 2)</code> arrotonda per difetto. Succede solo con i valori che finiscono esattamente a metà centesimo: per questo «capita solo ogni tanto».</p>
+<p><strong>Ipotesi sbagliate da smontare:</strong> «è un problema dello sconto» (lo sconto è giusto), «Excel sbaglia» (no: Excel mostra l'arrotondamento commerciale), «<code>round()</code> usa l'arrotondamento bancario». Questa è plausibile e va verificata, ma non è la causa: 40,755 non arriva mai a <code>round()</code> come metà esatta.</p>
+<p><strong>Correzione trappola:</strong> sommare un epsilon (<code>round(netto + 0.0001, 2)</code>). Sui casi del listino funziona, ma nasconde la causa: i soldi restano in <code>float</code> e la correttezza dipende dal caso. Chiedete: «potete dimostrare che non sbaglia mai?».</p>
+<p><strong>Correzione corretta:</strong> calcolare con <code>decimal.Decimal</code> e arrotondare con <code>quantize(Decimal("0.01"), ROUND_HALF_UP)</code>, convertendo prezzo e sconto con <code>Decimal(str(…))</code>. Per estensione, gli importi andrebbero tenuti in <code>Decimal</code> in tutto il programma: è una buona domanda da discutere nel confronto finale.</p>
+<p><strong>Test che isola il bug:</strong> <code>assertEqual(importo_riga(3.90, 11), 40.76)</code>.</p>
+
+<h2>Segnalazione #3 — Articoli di altri clienti negli ordini</h2>
+<p><strong>Riproduzione:</strong> <code>python -m magazzino.banco</code>. Il secondo e il terzo ordine contengono le righe dei precedenti.</p>
+<p><strong>Causa radice:</strong> in <code>nuovo_ordine()</code> il parametro <code>righe=[]</code> è un <strong>valore di default mutabile</strong>. Python crea quella lista una sola volta, quindi tutti gli ordini creati senza passare <code>righe</code> condividono la stessa lista. Il riavvio «risolve» il primo ordine perché ricrea la lista.</p>
+<p><strong>Perché i test sono verdi:</strong> i test passano sempre <code>righe=[]</code> in modo esplicito, cioè non esercitano il default. È un ottimo spunto sul limite di una suite verde.</p>
+<p><strong>Correzione trappola:</strong> passare <code>righe=[]</code> nella chiamata di <code>banco.py</code>. Il banco guarisce, ma qualunque altro chiamante ricade nel bug.</p>
+<p><strong>Correzione corretta:</strong> <code>righe=None</code> e poi <code>list(righe or [])</code>. La copia evita anche che l'ordine condivida la lista passata dal chiamante.</p>
+<p><strong>Test che isola il bug:</strong> creare due ordini con <code>nuovo_ordine("A")</code> e <code>nuovo_ordine("B")</code> senza passare <code>righe</code>, aggiungere una riga al primo e verificare che il secondo resti vuoto.</p>
+
+<h2>Domande per il confronto finale</h2>
+<ul>
+<li>Chi ha scritto il test che riproduce il bug <em>prima</em> di correggerlo? Cosa è cambiato nel percorso?</li>
+<li>In quale passo l'assistente ha proposto per primo la correzione trappola? L'avete riconosciuta subito?</li>
+<li>Cosa ha dichiarato di non aver verificato (passo 7 della scheda)? Era rilevante?</li>
+</ul>

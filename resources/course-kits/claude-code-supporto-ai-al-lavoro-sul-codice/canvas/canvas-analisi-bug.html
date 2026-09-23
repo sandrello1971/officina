@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Scheda di analisi bug — Canvas</title>
+<style>
+  :root{--ink:#1a1a1a;--mid:#555;--muted:#888;--line:#e2e2e2;--bg:#fafafa;--card:#fff;--accentline:#0a7d40;--warn:#b00}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:24px;line-height:1.5}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--mid);margin:0 0 18px;font-size:14px}
+  .rule{background:#f4f7f5;border-radius:8px;padding:10px 12px;font-size:13px;color:var(--mid);margin:0 0 18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+  .card.step{border-left:4px solid var(--accentline)}
+  .n{display:inline-block;background:var(--accentline);color:#fff;font-size:12px;font-weight:700;border-radius:12px;padding:2px 9px;margin-right:8px}
+  .card h2{display:inline;font-size:15px}
+  .hint{font-size:13px;color:var(--muted);margin:6px 0 8px}
+  label{display:block;font-size:13px;font-weight:600;color:var(--mid);margin:12px 0 4px}
+  textarea,input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px;font-family:inherit;min-height:56px;resize:vertical;background:#fff;color:var(--ink)}
+  input[type=text]{min-height:0}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:10px;font-size:13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f2f5f3;color:var(--mid);font-weight:600}
+  td textarea,td select{width:100%;border:1px solid var(--line);border-radius:6px;padding:7px;font-size:13px;min-height:38px;font-family:inherit;background:#fff}
+  .rm{cursor:pointer;color:var(--warn);font-weight:700;text-align:center;user-select:none}
+  .add{margin-top:12px;background:var(--accentline);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:14px;cursor:pointer}
+  .legend{font-size:12px;color:var(--muted);margin:14px 0 0}
+  .status{position:fixed;right:16px;bottom:16px;background:#222;color:#fff;font-size:12px;padding:8px 12px;border-radius:20px;opacity:0;transition:opacity .3s}
+  .status.show{opacity:.92}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px}
+  .grid3 h3{font-size:13px;margin:0 0 6px}
+  @media(max-width:640px){.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Scheda di analisi bug</h1>
+  <p class="sub">Laboratorio 2 — Conducete il debug nell'ordine corretto, un passo alla volta. Il testo si salva da solo mentre scrivete e il formatore lo vede sulla piattaforma. Non saltate alla correzione: la causa va confermata prima.</p>
+  <p class="rule"><strong>Regola:</strong> una correzione che fa sparire il sintomo senza spiegare la causa non è una soluzione, è un debito. Chiudete solo quando sapete rispondere a «perché il bug c'era» e «perché questa correzione lo risolve».</p>
+  <div class="card step">
+    <span class="n">1</span><h2>Fenomeno osservato</h2>
+    <p class="hint">Cosa succede esattamente: errore, stack trace, comportamento sbagliato. Quando si verifica e quando no.</p>
+    <textarea data-field="fenomeno"></textarea>
+  </div>
+  <div class="card step">
+    <span class="n">2</span><h2>Contesto caricato</h2>
+    <p class="hint">Quali file avete portato nel contesto e perché. Un'analisi su file incompleti produce spiegazioni coerenti e sbagliate.</p>
+    <textarea data-field="contesto"></textarea>
+  </div>
+  <div class="card step">
+    <span class="n">3</span><h2>Ipotesi sulla causa</h2>
+    <p class="hint">Le ipotesi formulate (chiedetene più di una) con il ragionamento che porta a ciascuna. Non solo la conclusione.</p>
+    <textarea data-field="ipotesi"></textarea>
+  </div>
+  <div class="card step">
+    <span class="n">4</span><h2>Verifica dell'ipotesi</h2>
+    <p class="hint">Come avete provato l'ipotesi più promettente: test che la isola, controllo sul codice, esperimento. La prova, non la plausibilità.</p>
+    <textarea data-field="verifica"></textarea>
+  </div>
+  <div class="card step">
+    <span class="n">5</span><h2>Causa radice confermata</h2>
+    <p class="hint">La causa vera, confermata. Se non riuscite a scriverla qui, non avete finito.</p>
+    <textarea data-field="causa"></textarea>
+  </div>
+  <div class="card step">
+    <span class="n">6</span><h2>Correzione e motivazione</h2>
+    <p class="hint">La correzione applicata e perché risolve la causa (non solo il sintomo). Segnate se maschera invece di rimuovere.</p>
+    <textarea data-field="correzione"></textarea>
+  </div>
+  <div class="card step">
+    <span class="n">7</span><h2>Cosa non è stato verificato</h2>
+    <p class="hint">Chiedete all'assistente cosa non ha potuto verificare, e annotatelo. È dove si nascondono le sorprese.</p>
+    <textarea data-field="residuo"></textarea>
+  </div>
+</div>
+<div class="status" id="status">Salvato</div>
+<script>
+(function(){
+  var MID=(function(){try{var q=new URLSearchParams(window.location.search).get('mid');if(q)return q;}catch(e){}var m=window.location.pathname.match(/canvas\/([^\/]+)/);return m?m[1]:(window.CANVAS_MID||null);})();
+  function csrfHeaders(){var h={'Content-Type':'application/json','Accept':'application/json'};var meta=(document.querySelector('meta[name=csrf-token]')||{}).content;if(meta){h['X-CSRF-TOKEN']=meta;return h;}var m=document.cookie.match('(?:^|; )XSRF-TOKEN=([^;]*)');if(m)h['X-XSRF-TOKEN']=decodeURIComponent(m[1]);return h;}
+  var fields=Array.prototype.slice.call(document.querySelectorAll('[data-field]'));
+  var status=document.getElementById('status');var t;
+  function flash(m){status.textContent=m;status.classList.add('show');clearTimeout(t);t=setTimeout(function(){status.classList.remove('show');},1400);}
+  function load(){
+    if(!MID)return;
+    fetch('/canvas/'+MID+'/data',{headers:{'Accept':'application/json'}})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(d){if(!d)return;var data=d.data||d;fields.forEach(function(el){var k=el.getAttribute('data-field');if(data[k]!=null)el.value=data[k];});})
+      .catch(function(){});
+  }
+  function collect(){var o={};fields.forEach(function(el){o[el.getAttribute('data-field')]=el.value;});return o;}
+  var st;
+  function save(){
+    if(!MID)return;
+    fetch('/canvas/'+MID+'/data',{method:'PATCH',headers:csrfHeaders(),body:JSON.stringify({data:collect()})})
+      .then(function(r){flash(r.ok?'Salvato':'Errore di salvataggio');}).catch(function(){flash('Errore di rete');});
+  }
+  fields.forEach(function(el){el.addEventListener('input',function(){clearTimeout(st);st=setTimeout(save,800);});});
+  load();
+})();
+</script>
+</body>
+</html>

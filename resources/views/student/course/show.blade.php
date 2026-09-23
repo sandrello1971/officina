@@ -194,7 +194,7 @@
     </div>
     @endif
 
-    @if($instructorMaterials->isNotEmpty())
+    @if($instructorMaterials->isNotEmpty() || !empty($canReviewCanvas))
     <div style="background:linear-gradient(135deg, rgba(226,138,83,0.08), rgba(226,138,83,0.12));
                 border:1px solid rgba(226,138,83,0.3);
                 border-radius:12px; padding:20px; margin-bottom:20px;">
@@ -231,14 +231,31 @@
                           font-size:0.8rem; font-weight:600;">
                     Consulta
                 </a>
+                @if($im->file_path && str_ends_with(strtolower($im->file_path), '.docx'))
                 <a href="{{ route('student.instructor.material.download', [$course->slug, $im->id]) }}"
                    style="padding:6px 12px; background:white; color:#E28A53;
                           border:1px solid #E28A53; border-radius:6px;
                           text-decoration:none; font-size:0.8rem; font-weight:600;">
                     📥 .docx
                 </a>
+                @endif
             </div>
             @endforeach
+            @if(!empty($canReviewCanvas))
+            <div style="display:flex; align-items:center; gap:12px;
+                        padding:10px 14px; background:white; border-radius:8px;">
+                <div style="flex:1;">
+                    <div style="font-weight:600; color:#1A1F1F; font-size:0.9rem;">Schede dei discenti</div>
+                    <div style="color:#8A9696; font-size:0.75rem; margin-top:2px;">I canvas dei laboratori compilati dagli iscritti</div>
+                </div>
+                <a href="{{ route('student.course.canvas-review.index', $course->slug) }}"
+                   style="padding:6px 12px; background:#E28A53; color:white;
+                          border-radius:6px; text-decoration:none;
+                          font-size:0.8rem; font-weight:600;">
+                    Apri
+                </a>
+            </div>
+            @endif
         </div>
     </div>
     @endif

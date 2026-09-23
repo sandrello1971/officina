@@ -62,6 +62,7 @@ class CourseController extends Controller
             : collect();
 
         $teaching = $this->isTeachingMode($student, $course);
+        $canReviewCanvas = $this->reviewsStudentWork($student, $course);
 
         // Mappa concettuale a livello CORSO (module_id NULL) — al massimo 1
         $courseConceptMap = $course->conceptMaps()->published()->whereNull('module_id')->first();
@@ -75,7 +76,7 @@ class CourseController extends Controller
         return view('student.course.show', compact(
             'course', 'modules', 'progressPercent',
             'completedModules', 'totalModules', 'finalQuiz', 'certificationPassed', 'progressByModule',
-            'hasAnyVideo', 'instructorMaterials', 'teaching',
+            'hasAnyVideo', 'instructorMaterials', 'teaching', 'canReviewCanvas',
             'courseConceptMap', 'courseConceptMapForked', 'hasCourseDocument'
         ));
     }

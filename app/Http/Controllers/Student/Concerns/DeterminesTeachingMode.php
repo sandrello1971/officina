@@ -62,6 +62,18 @@ trait DeterminesTeachingMode
     }
 
     /**
+     * True se il formatore può vedere il lavoro dei discenti del corso
+     * (canvas compilati): docente esplicito o formatore di piattaforma
+     * (auto_enroll_all_courses). Un formatore iscritto come discente NON
+     * vede le schede degli altri iscritti.
+     */
+    protected function reviewsStudentWork(Student $student, Course $course): bool
+    {
+        return $student->isInstructor()
+            && ($student->auto_enroll_all_courses || $this->teaches($student, $course));
+    }
+
+    /**
      * True se il formatore può accedere in sola consultazione a QUALUNQUE
      * corso attivo, anche uno che non insegna (accesso esteso richiesto per
      * il portale learn.*: QA, supporto, verifica contenuti). Non sblocca
