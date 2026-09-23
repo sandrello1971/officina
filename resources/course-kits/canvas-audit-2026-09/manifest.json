@@ -1,0 +1,718 @@
+{
+ "files": [
+  {
+   "path": "materials/consilium/canvas-1-mappa-processi.html",
+   "sha256_before": "6f85796726b78ecddf441e3d63e4e9681324448be1ae2ae232734dfea9912afa"
+  },
+  {
+   "path": "materials/consilium/canvas-2-caso-uso-ai.html",
+   "sha256_before": "2640fb3a4f466b26088c2aa718a5bacb697d51126a7320a4b316ad207132e331"
+  },
+  {
+   "path": "materials/consilium/canvas-3-matrice-impatto.html",
+   "sha256_before": "07e1894b1ebf7730de69787a680765f4d3b77d9967f7eb6f5a6ccb8cb375c0a8"
+  },
+  {
+   "path": "materials/consilium/canvas-4-progetto-prioritario.html",
+   "sha256_before": "3d66c3e5ae3ca201fc9dd46cfa021c11ef3f48120c143cf43e491d0d230ada9d"
+  },
+  {
+   "path": "materials/consilium/canvas-5-ai-usage-policy.html",
+   "sha256_before": "8f50ca827748b7f4490cf71cb9e873ff82ede2d59ca51ff8e2e1901801bc3011"
+  },
+  {
+   "path": "materials/consilium/canvas-6-roadmap-90gg.html",
+   "sha256_before": "88d90ae36daaa16faef00779c8d7918ed1ff4979d4b09908f32bee8b1f97e29b"
+  },
+  {
+   "path": "materials/agenti-ai-e-mcp-in-azienda-capire-progettare-e-governare-gli-agenti-ai-per-pmi/o1itNwdHZ6bJEwQstPtD3glaoH02A3XapIoofId3.html",
+   "sha256_before": "6be81746c80c7bad7c886b64132dace7ebb3d2d85ec11b002817d2e8c0e641ab"
+  },
+  {
+   "path": "materials/agenti-ai-e-mcp-in-azienda-capire-progettare-e-governare-gli-agenti-ai-per-pmi/WnvLS1OoSP13D0822Z5vh7Xp1C3ZhRII1VoslTpN.html",
+   "sha256_before": "2c47ec79585dcc2a7489783abafcf0045bf8212d0667daa99048fdf4f7fc2008"
+  },
+  {
+   "path": "materials/agenti-ai-e-mcp-in-azienda-capire-progettare-e-governare-gli-agenti-ai-per-pmi/JtHhXKEU4TmlYr7B3OnGrezjgYugq2Tx8YLdjnID.html",
+   "sha256_before": "7d71654213f6cf62ac68434a659ea2cbd5a6cd74aae560dc5e2e2a37d6043365"
+  },
+  {
+   "path": "materials/agenti-ai-e-mcp-in-azienda-capire-progettare-e-governare-gli-agenti-ai-per-pmi/Vbn5NmIqzexn1DbXWno9eHkZ9Zk5DmJSHxma1yCW.html",
+   "sha256_before": "215d8e351dfb7885fb08e293b02a78edc09195cbcd05cf921343f6c6b0276172"
+  },
+  {
+   "path": "materials/initium-fondamenta-ai-operativa/3BXc4Idm0KWWRa6CkNhSbcpgP6awY92llOY588Gg.html",
+   "sha256_before": "3784b250c242c9a846f1869805fe17edb01e1d1e85ef6fa5753728bcc052cb5d"
+  },
+  {
+   "path": "materials/initium-fondamenta-ai-operativa/2TAq4V29gOhi4Vg6UN69p5PfW0hXMoKUhhMNVVKS.html",
+   "sha256_before": "632eaf94d8aa551c5db3217158ba5e4b35cac5fb10d6396595f4d40cacad9e3c"
+  },
+  {
+   "path": "materials/initium-fondamenta-ai-operativa/N1FkeSNWlml9pqnmOYk6J9PVNEyun0LWKUlE2BZT.html",
+   "sha256_before": "c28dc585fa2e1f1c1cd91f1b895bdc30bf2de35c2d13d8f3d05bf1ad722bb883"
+  },
+  {
+   "path": "materials/initium-fondamenta-ai-operativa/jrz1EUAVUKxrwFuI3RNe4oZkvLJQCIrsBlaabMx7.html",
+   "sha256_before": "c32383167d53e62cf6337bf2a5cb0361ecb6bce555b5732fbd9fee0b6ac3c655"
+  },
+  {
+   "path": "materials/claude-code-supporto-ai-al-lavoro-sul-codice/BxgdzIQOauD6VgthWAQLZIAIBhnoS8GdZUUzwPaO.html",
+   "sha256_before": "ba91fc492c3908b1e15b10133ccceae957cc37c7be2ef61e4cafbbe9785bb0d3"
+  },
+  {
+   "path": "materials/claude-code-uso-professionale-per-team/CZJMRWxC37055cOJEWrvgzZISu0owXGSPVdECOB7.html",
+   "sha256_before": "ba91fc492c3908b1e15b10133ccceae957cc37c7be2ef61e4cafbbe9785bb0d3"
+  },
+  {
+   "path": "materials/claude-code-supporto-ai-al-lavoro-sul-codice/lgYYotpQkRM01ovz3kvRx9Uq8AxNtomC1LlfVYD1.html",
+   "sha256_before": "c36082885d09070c614f452b36ec82bb6c2c4aa33d6610c7b9423a98696ddfb6"
+  },
+  {
+   "path": "materials/claude-code-uso-professionale-per-team/Vuwb2yqqfKxcjUKpAfQRtHPbtigXHvznk8fm8ipy.html",
+   "sha256_before": "c36082885d09070c614f452b36ec82bb6c2c4aa33d6610c7b9423a98696ddfb6"
+  }
+ ],
+ "new_files": [
+  {
+   "path": "materials/ai-governance-executive/canvas-1-mappa-processi.html",
+   "from_kit": "materials/consilium/canvas-1-mappa-processi.html"
+  },
+  {
+   "path": "materials/ai-governance-executive/canvas-2-caso-uso-ai.html",
+   "from_kit": "materials/consilium/canvas-2-caso-uso-ai.html"
+  },
+  {
+   "path": "materials/ai-governance-executive/canvas-3-matrice-impatto.html",
+   "from_kit": "materials/consilium/canvas-3-matrice-impatto.html"
+  },
+  {
+   "path": "materials/ai-governance-executive/canvas-4-progetto-prioritario.html",
+   "from_kit": "materials/consilium/canvas-4-progetto-prioritario.html"
+  },
+  {
+   "path": "materials/ai-governance-executive/canvas-5-ai-usage-policy.html",
+   "from_kit": "materials/consilium/canvas-5-ai-usage-policy.html"
+  },
+  {
+   "path": "materials/ai-governance-executive/canvas-6-roadmap-90gg.html",
+   "from_kit": "materials/consilium/canvas-6-roadmap-90gg.html"
+  }
+ ],
+ "update": [
+  {
+   "id": "98820ef8-fbbb-461c-a7e5-a5ce04e1a965",
+   "expect": {
+    "title": "Canvas interattivo (canvas-costo-invisibilita.html)"
+   },
+   "set": {
+    "title": "Canvas — Il mio costo dell'invisibilità"
+   }
+  },
+  {
+   "id": "62e3f8fa-1a84-420b-8043-5faf2311677e",
+   "expect": {
+    "title": "Canvas interattivo (canvas-maturita-digitale.html)"
+   },
+   "set": {
+    "title": "Canvas — Mappa di maturità digitale"
+   }
+  },
+  {
+   "id": "019e6d4c-a1f3-7334-9841-22e5e11b86b4",
+   "expect": {
+    "title": "roadmap-90-giorni"
+   },
+   "set": {
+    "title": "Canvas — Roadmap a 90 giorni"
+   }
+  },
+  {
+   "id": "019e5dce-01cd-73c8-ba43-8101b544e590",
+   "expect": {
+    "title": "Checklist 15 punti in 7 aree con scoring"
+   },
+   "set": {
+    "title": "Canvas — Audit annuale HR-AI (checklist in 15 punti)"
+   }
+  },
+  {
+   "id": "019e6d4c-3367-7341-b9cf-17bc0fa9bc31",
+   "expect": {
+    "title": "ai-usage-policy"
+   },
+   "set": {
+    "title": "Canvas — AI Usage Policy (builder)"
+   }
+  },
+  {
+   "id": "019e6d4a-bae9-7166-b0d8-10979b1d5a66",
+   "expect": {
+    "title": "matrice-classificazione-dati"
+   },
+   "set": {
+    "title": "Canvas — Matrice di classificazione dei dati",
+    "module_id": "019ed9f2-ea3f-7022-b9ae-c52f1921cc34",
+    "sort_order": 3
+   }
+  },
+  {
+   "id": "019e6d4d-3919-7042-a343-5eeea2c212c3",
+   "expect": {
+    "title": "decision tree rischio AI act"
+   },
+   "set": {
+    "title": "Canvas — Classificazione del rischio AI Act (decision tree)",
+    "module_id": "019ed9f2-ea3f-7022-b9ae-c52f1921cc34",
+    "sort_order": 2
+   }
+  },
+  {
+   "id": "019e6d4d-b64e-7086-935f-44ccdd89de10",
+   "expect": {
+    "title": "checklist-sicurezza-codice"
+   },
+   "set": {
+    "title": "Canvas — Checklist di sicurezza del codice generato dall'AI"
+   }
+  },
+  {
+   "id": "019e5a65-b495-73a8-bf82-a6e811c9ad3a",
+   "expect": {
+    "title": "Governance interna"
+   },
+   "set": {
+    "title": "Canvas — Workflow di approvazione di un nuovo sistema AI"
+   }
+  },
+  {
+   "id": "019e5a64-dc7e-701f-8286-4569c98656bb",
+   "expect": {
+    "title": "Obblighi operativi del deployer"
+   },
+   "set": {
+    "title": "Canvas — HITL self-assessment (obblighi del deployer)"
+   }
+  },
+  {
+   "id": "019e5a66-1b21-7314-9e1f-50e2548ab132",
+   "expect": {
+    "title": "Workshop L2 Blocco A"
+   },
+   "set": {
+    "title": "Canvas — AI Inventory (Workshop L2, Blocco A)"
+   }
+  },
+  {
+   "id": "019e5dca-9f12-706a-b10e-5587fcaf3a0e",
+   "expect": {
+    "title": "Mappatura sistemi HR-AI"
+   },
+   "set": {
+    "title": "Canvas — AI Inventory HR"
+   }
+  },
+  {
+   "id": "019e5dcd-6cf6-73ad-8446-c64d81e94d17",
+   "expect": {
+    "title": "dati, lettera convocazione, sintesi tecnica"
+   },
+   "set": {
+    "title": "Canvas — Traccia di consultazione RSU/RSA"
+   }
+  },
+  {
+   "id": "019e9443-006c-70b9-b06b-5d61c33b7123",
+   "expect": {
+    "title": "Mappa processo"
+   },
+   "set": {
+    "title": "Canvas — Mappa il tuo processo candidato",
+    "module_id": "019edaf8-cd35-705b-a2ac-0aca1b5b75a7",
+    "sort_order": 1
+   }
+  },
+  {
+   "id": "019e9444-4bbe-72d8-b2f4-ea3f2451920a",
+   "expect": {
+    "title": "Architetto"
+   },
+   "set": {
+    "title": "Canvas — Architetto dell'agente"
+   }
+  },
+  {
+   "id": "019e9444-a4a1-7090-bd37-cf7c4d830dfb",
+   "expect": {
+    "title": "Make vs Buy"
+   },
+   "set": {
+    "title": "Canvas — Make vs Buy per agenti AI"
+   }
+  },
+  {
+   "id": "019e9443-d24e-72b0-91a5-a57f8b2f1055",
+   "expect": {
+    "title": "siete pronti?"
+   },
+   "set": {
+    "title": "Checklist — Il mio processo è pronto per un agente?"
+   }
+  },
+  {
+   "id": "019f1975-8456-70ca-af1b-d82764e708da",
+   "expect": {
+    "title": "SCHOLA_canvas-ai-inventory-scolastico"
+   },
+   "set": {
+    "title": "Canvas — AI Inventory scolastico"
+   }
+  },
+  {
+   "id": "019f1975-8458-7369-8a71-5a960208ee59",
+   "expect": {
+    "title": "SCHOLA_canvas-dialogo-strutturato-plagio"
+   },
+   "set": {
+    "title": "Canvas — Dialogo strutturato su sospetto plagio AI (procedura in 5 step)"
+   }
+  },
+  {
+   "id": "019f1975-845a-73e7-89a8-9c6a1fb5d233",
+   "expect": {
+    "title": "SCHOLA_canvas-protocollo-valutazione"
+   },
+   "set": {
+    "title": "Canvas — Protocollo di valutazione AI-aware"
+   }
+  },
+  {
+   "id": "019f1975-845c-72b2-8be3-30f6da14fb97",
+   "expect": {
+    "title": "SCHOLA_canvas-curriculum-ai-literacy"
+   },
+   "set": {
+    "title": "Canvas — Curriculum verticale di AI literacy"
+   }
+  },
+  {
+   "id": "019f1975-845e-73ce-8c3d-1980cc90440a",
+   "expect": {
+    "title": "SCHOLA_canvas-patto-educativo-ai"
+   },
+   "set": {
+    "title": "Canvas — Patto educativo AI"
+   }
+  },
+  {
+   "id": "019f1975-8460-7064-861f-d97331cee3c0",
+   "expect": {
+    "title": "SCHOLA_canvas-politica-ai-generativa"
+   },
+   "set": {
+    "title": "Canvas — Politica scolastica sull'IA generativa"
+   }
+  },
+  {
+   "id": "019f1975-8462-70ac-9efb-22048903d236",
+   "expect": {
+    "title": "TRONCO_canvas-dialogo-strutturato-docente"
+   },
+   "set": {
+    "title": "Canvas — Dialogo strutturato con il docente"
+   }
+  },
+  {
+   "id": "019f1975-8464-73df-a833-b9117eec3ce3",
+   "expect": {
+    "title": "DOCENTI_canvas-differenziazione-bes-dsa"
+   },
+   "set": {
+    "title": "Canvas — Stazione di differenziazione BES/DSA"
+   }
+  },
+  {
+   "id": "019f1975-8466-739c-95e9-228bc4b83c63",
+   "expect": {
+    "title": "DOCENTI_canvas-attivita-ai-aware"
+   },
+   "set": {
+    "title": "Canvas — Builder di attività AI-aware"
+   }
+  },
+  {
+   "id": "019f1975-8468-7214-9a69-d6c961df3f46",
+   "expect": {
+    "title": "DOCENTI_canvas-rubrica-processo"
+   },
+   "set": {
+    "title": "Canvas — Builder di rubrica di processo"
+   }
+  },
+  {
+   "id": "019f1975-846a-7229-809a-963e9e59877a",
+   "expect": {
+    "title": "DOCENTI_canvas-verifiche-ai-resistant"
+   },
+   "set": {
+    "title": "Canvas — Costruttore di verifiche AI-resistant"
+   }
+  },
+  {
+   "id": "019f1c7b-3865-7298-be22-d2cd30c5002e",
+   "expect": {
+    "title": "PACK_canvas-scheda-ruoli"
+   },
+   "set": {
+    "title": "Canvas — Scheda ruoli AI Act dell'azienda"
+   }
+  },
+  {
+   "id": "019f1c7b-3856-7302-8be2-5231fc451e40",
+   "expect": {
+    "title": "PACK_canvas-matrice-dati"
+   },
+   "set": {
+    "title": "Canvas — Matrice dei dati utilizzabili con l'AI"
+   }
+  },
+  {
+   "id": "019f1c7b-3859-718d-93fb-5189645965d0",
+   "expect": {
+    "title": "PACK_canvas-prompt-safety"
+   },
+   "set": {
+    "title": "Canvas — Checklist di sicurezza dei prompt"
+   }
+  },
+  {
+   "id": "019f1c7b-385c-7296-8eb2-458db3a1b891",
+   "expect": {
+    "title": "PACK_canvas-scheda-ruoli"
+   },
+   "set": {
+    "title": "Canvas — Scheda ruoli AI Act dell'azienda"
+   }
+  },
+  {
+   "id": "019f1c7b-385f-7022-af24-7f0fc53a5920",
+   "expect": {
+    "title": "PACK_canvas-human-oversight"
+   },
+   "set": {
+    "title": "Canvas — Test di supervisione umana sostanziale"
+   }
+  },
+  {
+   "id": "019f1c7b-3868-736c-a10e-3b670fee05c8",
+   "expect": {
+    "title": "PACK_canvas-human-oversight"
+   },
+   "set": {
+    "title": "Canvas — Test di supervisione umana sostanziale"
+   }
+  },
+  {
+   "id": "019f1c7b-386b-71ed-958d-b18f20c00cfd",
+   "expect": {
+    "title": "PACK_canvas-prompt-safety"
+   },
+   "set": {
+    "title": "Canvas — Checklist di sicurezza dei prompt"
+   }
+  },
+  {
+   "id": "019f1c7b-386e-73b4-b62b-c7ccde83e796",
+   "expect": {
+    "title": "PACK_canvas-matrice-dati"
+   },
+   "set": {
+    "title": "Canvas — Matrice dei dati utilizzabili con l'AI"
+   }
+  },
+  {
+   "id": "019f1c7b-3874-733f-bac5-d983a41fbcde",
+   "expect": {
+    "title": "PACK_canvas-scheda-ruoli"
+   },
+   "set": {
+    "title": "Canvas — Scheda ruoli AI Act dell'azienda",
+    "module_id": "019f1c37-c0b2-722c-82f9-bfe0801ac29c",
+    "sort_order": 110
+   }
+  },
+  {
+   "id": "019f1c7b-3877-7114-893f-21f4e260eb1b",
+   "expect": {
+    "title": "PACK_canvas-matrice-dati"
+   },
+   "set": {
+    "title": "Canvas — Matrice dei dati utilizzabili con l'AI",
+    "module_id": "019f1c37-c0b2-722c-82f9-bfe0801ac29c",
+    "sort_order": 111
+   }
+  },
+  {
+   "id": "019f1c7b-387a-7089-8b69-685885765bb4",
+   "expect": {
+    "title": "PACK_canvas-human-oversight"
+   },
+   "set": {
+    "title": "Canvas — Test di supervisione umana sostanziale",
+    "module_id": "019f1c37-c0b2-722c-82f9-bfe0801ac29c",
+    "sort_order": 112
+   }
+  },
+  {
+   "id": "019f1c7b-387d-7237-a3e3-a1cca2165af2",
+   "expect": {
+    "title": "PACK_canvas-prompt-safety"
+   },
+   "set": {
+    "title": "Canvas — Checklist di sicurezza dei prompt",
+    "module_id": "019f1c37-c0b2-722c-82f9-bfe0801ac29c",
+    "sort_order": 113
+   }
+  },
+  {
+   "id": "019f1c7b-3862-71ed-9d22-a4247534f796",
+   "expect": {
+    "title": "PACK_canvas-assessment"
+   },
+   "set": {
+    "title": "Canvas — AI literacy e risk profile"
+   }
+  },
+  {
+   "id": "019f1c7b-3871-70b3-92b2-a2586b52cc7e",
+   "expect": {
+    "title": "PACK_canvas-assessment"
+   },
+   "set": {
+    "title": "Canvas — AI literacy e risk profile"
+   }
+  },
+  {
+   "id": "019f1c7b-384d-73a0-bd3a-a2fcbd382537",
+   "expect": {
+    "title": "PACK_canvas-assessment"
+   },
+   "set": {
+    "title": "Canvas — AI literacy e risk profile"
+   }
+  },
+  {
+   "id": "019f21df-589d-70c5-95d0-7f8efe41dd56",
+   "expect": {
+    "title": "SCHOLAGOV_canvas-supervisione-sostanziale"
+   },
+   "set": {
+    "title": "Canvas — Test di supervisione umana sostanziale"
+   }
+  },
+  {
+   "id": "019f21df-58a2-72bc-842c-02b5a5230ea0",
+   "expect": {
+    "title": "SCHOLA_canvas-decision-tree-allegato3-3"
+   },
+   "set": {
+    "title": "Canvas — Decision tree Allegato III.3"
+   }
+  },
+  {
+   "id": "019f21df-58a4-71d2-9292-6cdb8fa073a5",
+   "expect": {
+    "title": "SCHOLAGOV_canvas-matrice-dati-istituto"
+   },
+   "set": {
+    "title": "Canvas — Matrice dei dati d'istituto utilizzabili con l'AI"
+   }
+  },
+  {
+   "id": "019f21df-58a8-71ef-a465-cdd39743c44a",
+   "expect": {
+    "title": "SCHOLAGOV_canvas-adozione-10-step"
+   },
+   "set": {
+    "title": "Canvas — Scheda di adozione in dieci step"
+   }
+  },
+  {
+   "id": "019f21df-58aa-7160-bd77-8e4b674a53ce",
+   "expect": {
+    "title": "SCHOLA_canvas-patto-educativo-ai"
+   },
+   "set": {
+    "title": "Canvas — Patto educativo AI"
+   }
+  },
+  {
+   "id": "019f21df-58ac-7182-baf4-9d75da08640a",
+   "expect": {
+    "title": "SCHOLAGOV_canvas-due-diligence-fornitore"
+   },
+   "set": {
+    "title": "Canvas — Verifica del fornitore EdTech"
+   }
+  },
+  {
+   "id": "019f21df-58ae-709a-995f-429166094c59",
+   "expect": {
+    "title": "SCHOLAGOV_canvas-informativa-ai-aware"
+   },
+   "set": {
+    "title": "Canvas — Informativa AI-aware per le famiglie"
+   }
+  },
+  {
+   "id": "019f21df-58b0-7395-a229-19c4fff56952",
+   "expect": {
+    "title": "SCHOLA_canvas-ai-inventory-scolastico"
+   },
+   "set": {
+    "title": "Canvas — AI Inventory scolastico"
+   }
+  },
+  {
+   "id": "019f21df-58b3-734f-b050-fcc92d2deeaf",
+   "expect": {
+    "title": "SCHOLA_canvas-audit-annuale-scuola"
+   },
+   "set": {
+    "title": "Canvas — Audit annuale AI scolastico"
+   }
+  },
+  {
+   "id": "019f21e0-5b53-7259-a5e9-7f4b117bd1a8",
+   "expect": {
+    "title": "SCHOLAGOV_canvas-matrice-dati-istituto"
+   },
+   "set": {
+    "title": "Canvas — Matrice dei dati d'istituto utilizzabili con l'AI"
+   }
+  },
+  {
+   "id": "086f88ae-de7f-45b7-a1bf-1d7126393df0",
+   "expect": {
+    "title": "Canvas 3 — Matrice impatto / fattibilità"
+   },
+   "set": {
+    "module_id": "019eda0c-4054-7237-847f-d74ba4e7694f"
+   }
+  }
+ ],
+ "create": [
+  {
+   "match": {
+    "module_id": "019f1c37-c0b1-73ec-b41c-586d35f9be7e",
+    "title": "Canvas 1 — Mappa dei processi per funzione"
+   },
+   "set": {
+    "course_id": "COURSE:ai-governance-executive",
+    "file_path": "materials/ai-governance-executive/canvas-1-mappa-processi.html",
+    "file_type": "canvas",
+    "sort_order": 100,
+    "is_downloadable": false,
+    "is_instructor_only": false
+   }
+  },
+  {
+   "match": {
+    "module_id": "019f1c37-c0b1-73ec-b41c-586d35f9be7e",
+    "title": "Canvas 2 — Scheda caso d'uso AI"
+   },
+   "set": {
+    "course_id": "COURSE:ai-governance-executive",
+    "file_path": "materials/ai-governance-executive/canvas-2-caso-uso-ai.html",
+    "file_type": "canvas",
+    "sort_order": 101,
+    "is_downloadable": false,
+    "is_instructor_only": false
+   }
+  },
+  {
+   "match": {
+    "module_id": "019f1c37-c0b1-73ec-b41c-586d35f9be7e",
+    "title": "Canvas 3 — Matrice impatto / fattibilità"
+   },
+   "set": {
+    "course_id": "COURSE:ai-governance-executive",
+    "file_path": "materials/ai-governance-executive/canvas-3-matrice-impatto.html",
+    "file_type": "canvas",
+    "sort_order": 102,
+    "is_downloadable": false,
+    "is_instructor_only": false
+   }
+  },
+  {
+   "match": {
+    "module_id": "019f1c37-c0b2-722c-82f9-bfe07fbf898e",
+    "title": "Canvas 4 — Scheda Progetto 1"
+   },
+   "set": {
+    "course_id": "COURSE:ai-governance-executive",
+    "file_path": "materials/ai-governance-executive/canvas-4-progetto-prioritario.html",
+    "file_type": "canvas",
+    "sort_order": 103,
+    "is_downloadable": false,
+    "is_instructor_only": false
+   }
+  },
+  {
+   "match": {
+    "module_id": "019f1c37-c0b2-722c-82f9-bfe07fbf898e",
+    "title": "Canvas 4 — Scheda Progetto 2"
+   },
+   "set": {
+    "course_id": "COURSE:ai-governance-executive",
+    "file_path": "materials/ai-governance-executive/canvas-4-progetto-prioritario.html",
+    "file_type": "canvas",
+    "sort_order": 104,
+    "is_downloadable": false,
+    "is_instructor_only": false
+   }
+  },
+  {
+   "match": {
+    "module_id": "019f1c37-c0b2-722c-82f9-bfe07fbf898e",
+    "title": "Canvas 4 — Scheda Progetto 3"
+   },
+   "set": {
+    "course_id": "COURSE:ai-governance-executive",
+    "file_path": "materials/ai-governance-executive/canvas-4-progetto-prioritario.html",
+    "file_type": "canvas",
+    "sort_order": 105,
+    "is_downloadable": false,
+    "is_instructor_only": false
+   }
+  },
+  {
+   "match": {
+    "module_id": "019f1c37-c0b2-722c-82f9-bfe0801ac29c",
+    "title": "Canvas 5 — AI Usage Policy essenziale"
+   },
+   "set": {
+    "course_id": "COURSE:ai-governance-executive",
+    "file_path": "materials/ai-governance-executive/canvas-5-ai-usage-policy.html",
+    "file_type": "canvas",
+    "sort_order": 106,
+    "is_downloadable": false,
+    "is_instructor_only": false
+   }
+  },
+  {
+   "match": {
+    "module_id": "019f1c37-c0b3-7146-b7e5-69d6fbb4cf06",
+    "title": "Canvas 6 — Roadmap 90 giorni"
+   },
+   "set": {
+    "course_id": "COURSE:ai-governance-executive",
+    "file_path": "materials/ai-governance-executive/canvas-6-roadmap-90gg.html",
+    "file_type": "canvas",
+    "sort_order": 107,
+    "is_downloadable": false,
+    "is_instructor_only": false
+   }
+  }
+ ]
+}

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Effetto Glitch · AI Usage Policy — INITIUM</title>
+<style>
+:root {
+  --teal: #55B1AE; --teal-dark: #3D8B88; --teal-light: #E8F5F5;
+  --orange: #E28A53; --gray-bg: #F5F7F7; --gray-border: #D1D5DB;
+  --text: #1F2937; --text-light: #6B7280; --white: #FFFFFF;
+  --red: #DC2626; --green: #059669; --green-light: #D1FAE5;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Calibri, 'Segoe UI', sans-serif; background: var(--gray-bg); color: var(--text); line-height: 1.5; padding: 20px; }
+.container { max-width: 1300px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.full { grid-column: 1 / -1; }
+.header { background: var(--white); border-left: 6px solid var(--teal); padding: 24px 28px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.tag { font-size: 11pt; letter-spacing: 2px; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 6px; }
+.header h1 { font-size: 24pt; margin-bottom: 4px; }
+.header p { color: var(--text-light); font-size: 11pt; }
+.motto { color: var(--orange); font-style: italic; font-size: 10pt; margin-top: 8px; }
+.intro-box { background: var(--teal-light); padding: 18px 22px; border-radius: 8px; font-size: 11pt; }
+.intro-box strong { color: var(--teal-dark); }
+.editor, .preview { background: var(--white); padding: 22px 26px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.editor h2, .preview h2 { font-size: 14pt; color: var(--teal-dark); margin-bottom: 14px; border-bottom: 2px solid var(--teal-light); padding-bottom: 8px; }
+.pillar { background: var(--gray-bg); padding: 14px 16px; border-radius: 6px; margin-bottom: 12px; border-left: 3px solid var(--gray-border); }
+.pillar.done { border-left-color: var(--green); }
+.pillar h3 { font-size: 11pt; margin-bottom: 8px; }
+.field { margin-bottom: 10px; }
+.field label { display: block; font-size: 10pt; font-weight: 600; margin-bottom: 4px; }
+.field input, .field textarea { width: 100%; font-family: Calibri; font-size: 11pt; padding: 8px 10px; border: 1px solid var(--gray-border); border-radius: 4px; }
+.field textarea { resize: vertical; min-height: 64px; }
+.field input:focus, .field textarea:focus { outline: 2px solid var(--teal); border-color: var(--teal); }
+.preview { position: sticky; top: 20px; }
+.preview-doc { background: white; padding: 20px; border: 1px solid var(--gray-border); border-radius: 4px; max-height: 720px; overflow-y: auto; font-size: 10pt; line-height: 1.6; }
+.preview-doc h4 { color: var(--teal-dark); margin-top: 14px; margin-bottom: 6px; font-size: 11pt; }
+.preview-doc .ph { color: var(--red); font-style: italic; }
+.progress { background: var(--gray-bg); height: 18px; border-radius: 9px; overflow: hidden; margin-bottom: 8px; }
+.progress-fill { background: linear-gradient(90deg, var(--teal), var(--teal-dark)); height: 100%; transition: width 0.3s; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; }
+button { font-family: Calibri; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 11pt; font-weight: 600; }
+.btn-primary { background: var(--teal); color: white; }
+.btn-secondary { background: var(--white); color: var(--text); border: 1px solid var(--gray-border); }
+.btn-cta { background: var(--orange); color: white; }
+.btn-danger { background: var(--white); color: var(--red); border: 1px solid var(--red); }
+.footer { margin-top: 24px; text-align: center; color: var(--text-light); font-size: 10pt; padding: 16px; }
+.footer .motto { color: var(--orange); }
+@media print { body { background: white; padding: 0; } .editor, .actions, .intro-box { display: none; } .container { display: block; } .preview { box-shadow: none; position: static; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header full">
+    <div class="tag">Canvas Effetto Glitch · INITIUM</div>
+    <h1>AI Usage Policy — Builder</h1>
+    <p>I cinque pilastri della policy aziendale (Parte quinta · Capitolo 14) — con il quadro regolatorio AI Act della v6</p>
+    <div class="motto">In digitālī nova virtūs</div>
+  </div>
+
+  <div class="intro-box full">
+    <strong>Come usarlo.</strong> Compilate i cinque pilastri sul contesto della vostra azienda. Il canvas genera la bozza di policy pronta da presentare al team. La policy è il sistema immunitario dell'organizzazione: istituzionalizza l'Umanesimo Digitale e il human-in-the-loop.
+  </div>
+
+  <div class="full" style="background: var(--white); padding: 14px 18px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font-size:11pt; font-weight:600;">Completezza</span><span id="ptext" style="font-size:11pt; color:var(--teal-dark); font-weight:600;">0 / 5 pilastri</span></div>
+    <div class="progress"><div class="progress-fill" id="pfill" style="width:0%;"></div></div>
+  </div>
+
+  <div class="editor">
+    <h2>📝 I cinque pilastri</h2>
+    <div class="field"><label>Azienda</label><input id="company" placeholder="Ragione sociale" oninput="upd()"></div>
+
+    <div class="pillar" id="p1">
+      <h3>Pilastro 1 — Classificazione dei dati</h3>
+      <div class="field"><label>Regole per i tre livelli (pubblici / interni / riservati)</label><textarea id="f1" placeholder="Es. Pubblici: qualsiasi strumento. Interni: solo piano professionale. Riservati: anonimizzazione o Enterprise con DPA." oninput="upd()"></textarea></div>
+    </div>
+    <div class="pillar" id="p2">
+      <h3>Pilastro 2 — Piattaforme autorizzate e AI con accesso ai sistemi</h3>
+      <div class="field"><label>Piattaforme autorizzate + regole sui connettori MCP / Cowork</label><textarea id="f2" placeholder="Es. Claude Pro e ChatGPT Team autorizzati. Connettori MCP a Drive/calendario per tutti; CRM solo 3 persone nominate; ERP non autorizzato." oninput="upd()"></textarea></div>
+    </div>
+    <div class="pillar" id="p3">
+      <h3>Pilastro 3 — Verifica degli output (HITL)</h3>
+      <div class="field"><label>Contesti critici e chi firma la verifica</label><textarea id="f3" placeholder="Es. Comunicazioni esterne, documenti legali, offerte economiche, report finanziari. Per ciascuno: responsabile che approva prima dell'uso." oninput="upd()"></textarea></div>
+    </div>
+    <div class="pillar" id="p4">
+      <h3>Pilastro 4 — Responsabilità</h3>
+      <div class="field"><label>Ruoli assegnati a persone specifiche</label><textarea id="f4" placeholder="Es. Proprietario policy: DG. Formatore nuovi assunti: HR. Punto di contatto: referente IT. Incidenti: DG. Approvazione nuovi strumenti: comitato DG+IT+dati." oninput="upd()"></textarea></div>
+    </div>
+    <div class="pillar" id="p5">
+      <h3>Pilastro 5 — Conformità GDPR e AI Act</h3>
+      <div class="field"><label>DPIA, dati categoria speciale, trasferimento extra-UE, AI literacy Art. 4</label><textarea id="f5" placeholder="Es. DPIA per usi ad alto rischio. DPA con clausole standard per trasferimento extra-UE. Attestati INITIUM conservati 5 anni come prova Art. 4." oninput="upd()"></textarea></div>
+      <div class="field"><label>Quadro AI Act (v6): pratiche vietate Art. 5, classificazione del rischio, trasparenza Art. 50</label><textarea id="f5b" placeholder="Es. Rifiuto delle pratiche vietate Art. 5 (es. emotion recognition sui dipendenti). Verifica Allegato III prima di adottare sistemi di selezione/valutazione. Etichettatura contenuti AI per il pubblico (Art. 50)." oninput="upd()"></textarea></div>
+    </div>
+
+    <div class="actions" style="margin-top:16px;">
+      <button class="btn-secondary" onclick="exportJSON()">📥 Esporta JSON</button>
+      <button class="btn-secondary" onclick="importJSON()">📤 Importa JSON</button>
+      <button class="btn-danger" onclick="resetAll()">🗑️ Svuota</button>
+    </div>
+  </div>
+
+  <div class="preview">
+    <h2>📄 Anteprima Policy</h2>
+    <div class="preview-doc" id="doc"></div>
+    <div class="actions" style="margin-top:14px;">
+      <button class="btn-primary" onclick="window.print()">🖨️ Stampa / PDF</button>
+      <button class="btn-cta" onclick="copyDoc()">📋 Copia testo</button>
+    </div>
+  </div>
+
+  <div class="footer full">
+    <div>Canvas Effetto Glitch · INITIUM v6.0 · AI Usage Policy Builder</div>
+    <div class="motto">In digitālī nova virtūs</div>
+    <div style="margin-top:6px; font-size:9pt;">Conservare per audit AI Act (min. 5 anni)</div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept=".json" style="display:none" onchange="loadJSON(event)">
+
+<script>
+// ─── Effetto Glitch Canvas: persistenza server-side per discente ─────────────────
+const Persistence = (() => {
+  const pathMatch = window.location.pathname.match(/\/material\/([^\/]+)\/canvas/);
+  const materialId = pathMatch ? pathMatch[1] : null;
+  const apiBase = materialId ? `/learn/canvas/${materialId}/data` : null;
+
+  const status = document.createElement('div');
+  status.style.cssText = 'position:fixed; top:12px; right:12px; padding:6px 12px; background:white; border:1px solid #C8D0D0; border-radius:6px; font:600 10pt -apple-system,Segoe UI,sans-serif; color:#4A5252; z-index:9999; box-shadow:0 2px 6px rgba(0,0,0,.08); transition:opacity .25s';
+  status.textContent = 'In attesa…';
+  document.body.appendChild(status);
+
+  function setStatus(text, color) {
+    status.textContent = text;
+    status.style.color = color || '#4A5252';
+  }
+
+  function getCsrf() {
+    const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  let saveTimer = null;
+
+  return {
+    async load() {
+      if (!apiBase) { setStatus('⚠ Apri dal corso', '#c44'); return null; }
+      setStatus('Caricamento…');
+      try {
+        const res = await fetch(apiBase, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+        if (!res.ok) {
+          setStatus(res.status === 403 || res.status === 401 ? '⚠ Login richiesto' : '⚠ Errore ' + res.status, '#c44');
+          return null;
+        }
+        const json = await res.json();
+        setStatus(json.updated_at ? 'Salvato ✓' : 'Pronto', '#3A8C89');
+        return json.data && Object.keys(json.data).length ? json.data : null;
+      } catch (e) {
+        setStatus('⚠ Errore rete', '#c44');
+        return null;
+      }
+    },
+    save(data) {
+      if (!apiBase) return;
+      clearTimeout(saveTimer);
+      setStatus('Modifica…');
+      saveTimer = setTimeout(async () => {
+        setStatus('Salvataggio…');
+        try {
+          const res = await fetch(apiBase, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrf() },
+            credentials: 'same-origin',
+            body: JSON.stringify({ data })
+          });
+          if (!res.ok) { setStatus('⚠ Errore ' + res.status, '#c44'); return; }
+          const json = await res.json();
+          setStatus(json.demo ? 'Demo — non salvato' : 'Salvato ✓', json.demo ? '#888' : '#3A8C89');
+        } catch (e) {
+          setStatus('⚠ Errore rete', '#c44');
+        }
+      }, 700);
+    }
+  };
+})();
+// ─────────────────────────────────────────────────────────────────────────
+
+function v(id){return document.getElementById(id).value;}
+function fmt(val,h){return (val&&val.trim())?val.split('\n').map(l=>'<p>'+l+'</p>').join(''):'<p><span class="ph">['+h+']</span></p>';}
+function ph(val,h){return (val&&val.trim())?val:'<span class="ph">['+h+']</span>';}
+function upd(){
+  document.getElementById('doc').innerHTML=`
+<h4 style="text-align:center;font-size:13pt;">AI USAGE POLICY</h4>
+<p style="text-align:center;">${ph(v('company'),'Azienda')}</p>
+<h4>1. Classificazione dei dati</h4>${fmt(v('f1'),'Regole sui tre livelli')}
+<h4>2. Piattaforme autorizzate e AI con accesso ai sistemi</h4>${fmt(v('f2'),'Piattaforme e connettori')}
+<h4>3. Verifica degli output (human-in-the-loop)</h4>${fmt(v('f3'),'Contesti critici e responsabili')}
+<p style="font-size:9pt;font-style:italic;">L'AI è un assistente, mai un decisore autonomo: ogni output in contesto critico è verificato da un responsabile umano prima dell'uso.</p>
+<h4>4. Responsabilità</h4>${fmt(v('f4'),'Ruoli e persone')}
+<h4>5. Conformità GDPR e AI Act</h4>${fmt(v('f5'),'GDPR e Art. 4')}
+${fmt(v('f5b'),'Quadro AI Act: Art. 5, rischio, Art. 50')}
+<p style="font-size:9pt;font-style:italic;">Documentazione (attestati, policy, esercitazioni) conservata per almeno 5 anni come prova di adempimento dell'Articolo 4 AI Act.</p>`;
+  const fields=['f1','f2','f3','f4','f5'];
+  let done=0; fields.forEach((f,i)=>{const ok=v(f).trim().length>0; if(ok)done++; document.getElementById('p'+(i+1)).classList.toggle('done',ok);});
+  document.getElementById('ptext').textContent=done+' / 5 pilastri';
+  document.getElementById('pfill').style.width=(done/5*100)+'%';
+  save();
+}
+function collect(){const o={};['company','f1','f2','f3','f4','f5','f5b'].forEach(k=>o[k]=v(k));return o;}
+function setAll(s){Object.entries(s).forEach(([k,val])=>{const e=document.getElementById(k);if(e)e.value=val||'';});upd();}
+function save(){Persistence.save(collect());}
+async function load(){const d=await Persistence.load();if(d)setAll(d);else upd();}
+function exportJSON(){const data={exported_at:new Date().toISOString(),canvas:'AI Usage Policy INITIUM v6.0',data:collect()};
+  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download='ai_usage_policy_'+(collect().company||'azienda')+'.json';a.click();URL.revokeObjectURL(u);}
+function importJSON(){document.getElementById('file-input').click();}
+function loadJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=ev=>{try{const j=JSON.parse(ev.target.result);if(j.data&&confirm('Importare?')){setAll(j.data);save();}}catch(err){alert('Errore: '+err.message);}};r.readAsText(f);}
+function resetAll(){if(confirm('Svuotare la policy?')){['company','f1','f2','f3','f4','f5','f5b'].forEach(k=>document.getElementById(k).value='');upd();}}
+function copyDoc(){navigator.clipboard.writeText(document.getElementById('doc').innerText).then(()=>alert('Testo copiato'));}
+load();
+</script>
+</body>
+</html>

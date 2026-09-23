@@ -41,10 +41,12 @@ class CanvasDocument
             }
         }
 
-        if (str_contains($html, 'data-field')) {
+        if ($this->hasFormControls($html)) {
+            // i canvas che hanno già una propria stampa ricevono solo "Scarica"
+            $toolbar = $this->toolbar(!str_contains($html, 'window.print'));
             $html = str_contains($html, '</body>')
-                ? str_replace('</body>', $this->toolbar() . '</body>', $html)
-                : $html . $this->toolbar();
+                ? str_replace('</body>', $toolbar . '</body>', $html)
+                : $html . $toolbar;
         }
 
         return $html;
@@ -70,6 +72,13 @@ class CanvasDocument
         }
 
         return $html;
+    }
+
+    /** Campi compilabili: data-field, oppure input/textarea/select identificati. */
+    public function hasFormControls(string $html): bool
+    {
+        return str_contains($html, 'data-field')
+            || (bool) preg_match('/<(?:textarea|select)\b|<input\b(?![^>]*type=["\']?(?:hidden|button|submit|reset|file|image)\b)/i', $html);
     }
 
     private function hasLegacyMaterialPath(string $html): bool
@@ -136,7 +145,7 @@ HTML;
      */
     public function fieldLabels(string $html): array
     {
-        if (!str_contains($html, 'data-field')) {
+        if (!$this->hasFormControls($html)) {
             return [];
         }
 
@@ -146,14 +155,23 @@ HTML;
         libxml_clear_errors();
         $xpath = new DOMXPath($dom);
 
+        // I canvas salvano per data-field, data-k, id o name: l'etichetta si
+        // registra sotto ciascuna chiave possibile, la vista usa quella salvata.
         $labels = [];
-        foreach ($xpath->query('//*[@data-field]') as $el) {
+        $query = '//*[@data-field] | //*[@data-k] | //input[@id or @name] | //textarea[@id or @name] | //select[@id or @name]';
+        foreach ($xpath->query($query) as $el) {
             /** @var DOMElement $el */
-            $key = $el->getAttribute('data-field');
-            if ($key === '' || isset($labels[$key])) {
+            if (in_array(strtolower($el->getAttribute('type')), ['hidden', 'button', 'submit', 'reset', 'file', 'image'], true)) {
                 continue;
             }
-            $labels[$key] = $this->labelFor($el, $xpath) ?? $this->humanize($key);
+            $keys = array_filter([$el->getAttribute('data-field'), $el->getAttribute('data-k'), $el->getAttribute('id'), $el->getAttribute('name')]);
+            if (!$keys) {
+                continue;
+            }
+            $label = $this->labelFor($el, $xpath);
+            foreach ($keys as $key) {
+                $labels[$key] ??= $label ?? $this->humanize($key);
+            }
         }
 
         return $labels;
@@ -206,13 +224,19 @@ HTML;
     }
 
     /** Barra "Scarica / Stampa" iniettata nei canvas compilabili. */
-    private function toolbar(): string
+    private function toolbar(bool $withPrint = true): string
     {
-        return <<<'HTML'
+        $print = $withPrint
+            ? '<button type="button" data-officina="print" style="background:#fff;color:#1a1a1a;border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:13px;cursor:pointer">🖨 Stampa</button>'
+            : '';
+
+        return <<<HTML
 <div id="officina-canvas-toolbar" style="position:fixed;top:12px;right:12px;display:flex;gap:6px;z-index:9999;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
   <button type="button" data-officina="download" style="background:#fff;color:#1a1a1a;border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:13px;cursor:pointer">⬇ Scarica</button>
-  <button type="button" data-officina="print" style="background:#fff;color:#1a1a1a;border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:13px;cursor:pointer">🖨 Stampa</button>
+  {$print}
 </div>
+HTML . <<<'HTML'
+
 <style>@media print{#officina-canvas-toolbar,.status{display:none!important}textarea{overflow:visible!important}}</style>
 <script>
 (function(){
@@ -222,7 +246,8 @@ HTML;
     if(el.id){var l=document.querySelector('label[for="'+el.id+'"]');if(l)return clean(l.textContent);}
     var p=el.previousElementSibling;if(p&&p.tagName==='LABEL')return clean(p.textContent);
     for(var n=el.parentElement;n&&n!==document.body;n=n.parentElement){var h=n.querySelector(':scope > h1, :scope > h2, :scope > h3, :scope > h4');if(h)return clean(h.textContent);}
-    return el.getAttribute('data-field');
+    if(el.placeholder)return clean(el.placeholder);
+    return el.getAttribute('data-field')||el.getAttribute('data-k')||el.id||el.name||'Campo';
   }
   function valueOf(el){
     if(el.type==='checkbox')return el.checked?'sì':'no';
@@ -233,7 +258,10 @@ HTML;
     var title=clean((document.querySelector('h1')||{}).textContent)||document.title||'Canvas';
     var out=['# '+title,'','_Esportato il '+new Date().toLocaleString('it-IT')+'_',''];
     var last=null;
-    document.querySelectorAll('[data-field]').forEach(function(el){
+    var sel=document.querySelector('[data-field]')?'[data-field]':'input,textarea,select';
+    document.querySelectorAll(sel).forEach(function(el){
+      if(el.closest('#officina-canvas-toolbar'))return;
+      if(/^(hidden|button|submit|reset|file|image)$/i.test(el.type||''))return;
       if(el.type==='radio'&&!el.checked)return;
       var label=labelOf(el);
       if(label!==last){out.push('## '+label,'');last=label;}
@@ -247,7 +275,8 @@ HTML;
   function fitTextareas(){document.querySelectorAll('textarea').forEach(function(t){t.style.height='auto';t.style.height=(t.scrollHeight+4)+'px';});}
   window.addEventListener('beforeprint',fitTextareas);
   document.querySelector('[data-officina=download]').addEventListener('click',download);
-  document.querySelector('[data-officina=print]').addEventListener('click',function(){fitTextareas();window.print();});
+  var pb=document.querySelector('[data-officina=print]');
+  if(pb)pb.addEventListener('click',function(){fitTextareas();window.print();});
 })();
 </script>
 HTML;

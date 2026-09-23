@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Effetto Glitch · Roadmap 90 Giorni — INITIUM</title>
+<style>
+:root {
+  --teal: #55B1AE; --teal-dark: #3D8B88; --teal-light: #E8F5F5;
+  --orange: #E28A53; --gray-bg: #F5F7F7; --gray-border: #D1D5DB;
+  --text: #1F2937; --text-light: #6B7280; --white: #FFFFFF;
+  --green: #059669; --red: #DC2626;
+  --blue: #2563EB; --blue-light: #DBEAFE;
+  --purple: #7C3AED; --purple-light: #EDE9FE;
+  --amber: #D97706; --amber-light: #FEF3C7;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Calibri, 'Segoe UI', sans-serif; background: var(--gray-bg); color: var(--text); line-height: 1.5; padding: 20px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { background: var(--white); border-left: 6px solid var(--teal); padding: 24px 28px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.tag { font-size: 11pt; letter-spacing: 2px; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 6px; }
+.header h1 { font-size: 24pt; margin-bottom: 4px; }
+.header p { color: var(--text-light); font-size: 11pt; }
+.motto { color: var(--orange); font-style: italic; font-size: 10pt; margin-top: 8px; }
+.intro-box { background: var(--teal-light); padding: 18px 22px; border-radius: 8px; margin-bottom: 20px; font-size: 11pt; }
+.intro-box strong { color: var(--teal-dark); }
+.meta { background: var(--white); padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.meta label { display: block; font-size: 10pt; font-weight: 600; margin-bottom: 4px; }
+.meta input { width: 100%; font-family: Calibri; font-size: 11pt; padding: 8px 10px; border: 1px solid var(--gray-border); border-radius: 4px; }
+.phase { background: var(--white); border-radius: 8px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
+.phase-head { padding: 14px 20px; color: white; font-size: 14pt; font-weight: 700; }
+.phase-1 .phase-head { background: var(--blue); }
+.phase-2 .phase-head { background: var(--amber); }
+.phase-3 .phase-head { background: var(--purple); }
+.phase-body { padding: 16px 20px; }
+table { width: 100%; border-collapse: collapse; }
+th { background: var(--teal-light); color: var(--teal-dark); padding: 8px 10px; text-align: left; font-size: 10pt; font-weight: 600; }
+td { padding: 5px; border-bottom: 1px solid var(--gray-border); vertical-align: top; }
+input.cell, select.cell { width: 100%; font-family: Calibri; font-size: 10pt; padding: 6px 8px; border: 1px solid var(--gray-border); border-radius: 4px; }
+input.cell:focus, select.cell:focus { outline: 2px solid var(--teal); border-color: var(--teal); }
+.delete-btn { background: none; border: none; color: var(--red); cursor: pointer; font-size: 16pt; padding: 0 6px; font-weight: bold; }
+.add-row { margin-top: 10px; background: var(--teal-light); color: var(--teal-dark); border: 1px dashed var(--teal); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-family: Calibri; font-size: 10pt; font-weight: 600; }
+.metrics { background: var(--white); border-radius: 8px; padding: 18px 22px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.metrics h2 { font-size: 13pt; color: var(--teal-dark); margin-bottom: 12px; }
+.metrics textarea { width: 100%; font-family: Calibri; font-size: 11pt; padding: 10px 12px; border: 1px solid var(--gray-border); border-radius: 4px; resize: vertical; min-height: 70px; }
+.actions { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+button { font-family: Calibri; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 11pt; font-weight: 600; }
+.btn-primary { background: var(--teal); color: white; }
+.btn-secondary { background: var(--white); color: var(--text); border: 1px solid var(--gray-border); }
+.btn-danger { background: var(--white); color: var(--red); border: 1px solid var(--red); }
+.footer { margin-top: 24px; text-align: center; color: var(--text-light); font-size: 10pt; padding: 16px; }
+.footer .motto { color: var(--orange); }
+@media print { body { background: white; padding: 0; } .actions, .add-row, .delete-btn { display: none; } .phase, .metrics, .meta { box-shadow: none; page-break-inside: avoid; } th, .phase-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="tag">Canvas Effetto Glitch · INITIUM</div>
+    <h1>Roadmap a 90 Giorni</h1>
+    <p>Dalla formazione all'azione — configurazione, abitudini, consolidamento e misurazione (Capitolo 16 — chiusura del percorso)</p>
+    <div class="motto">In digitālī nova virtūs</div>
+  </div>
+
+  <div class="intro-box">
+    <strong>Come usarlo.</strong> Trasformate il corso in azione concreta. Per ogni fase indicate le azioni, l'owner e la scadenza. La roadmap non sono buoni propositi: è un piano con responsabili e date. Definite le metriche per misurare i risultati reali.
+  </div>
+
+  <div class="meta">
+    <div><label>Azienda / Reparto</label><input id="company" placeholder="Ragione sociale"></div>
+    <div><label>Data di avvio (settimana 1)</label><input id="startdate" type="date"></div>
+  </div>
+
+  <div class="phase phase-1">
+    <div class="phase-head">📅 Settimana 1 — Configurazione</div>
+    <div class="phase-body">
+      <table><thead><tr><th style="width:50%">Azione</th><th style="width:25%">Owner</th><th style="width:21%">Scadenza</th><th style="width:4%"></th></tr></thead>
+      <tbody id="body-p1"></tbody></table>
+      <button class="add-row" onclick="addRow('p1')">+ Aggiungi azione</button>
+    </div>
+  </div>
+
+  <div class="phase phase-2">
+    <div class="phase-head">📅 Primo mese — Costruzione delle abitudini</div>
+    <div class="phase-body">
+      <table><thead><tr><th style="width:50%">Azione</th><th style="width:25%">Owner</th><th style="width:21%">Scadenza</th><th style="width:4%"></th></tr></thead>
+      <tbody id="body-p2"></tbody></table>
+      <button class="add-row" onclick="addRow('p2')">+ Aggiungi azione</button>
+    </div>
+  </div>
+
+  <div class="phase phase-3">
+    <div class="phase-head">📅 Mesi 2-3 — Consolidamento e misurazione</div>
+    <div class="phase-body">
+      <table><thead><tr><th style="width:50%">Azione</th><th style="width:25%">Owner</th><th style="width:21%">Scadenza</th><th style="width:4%"></th></tr></thead>
+      <tbody id="body-p3"></tbody></table>
+      <button class="add-row" onclick="addRow('p3')">+ Aggiungi azione</button>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <h2>📊 Metriche di successo</h2>
+    <textarea id="metrics" placeholder="Es. Ore risparmiate a settimana per collaboratore; numero di automazioni attive; qualità degli output (errori evitati); n. di colleghi formati; adozione della AI Usage Policy."></textarea>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" onclick="window.print()">🖨️ Stampa / PDF</button>
+    <button class="btn-secondary" onclick="exportJSON()">📥 Esporta JSON</button>
+    <button class="btn-secondary" onclick="importJSON()">📤 Importa JSON</button>
+    <button class="btn-danger" onclick="resetAll()">🗑️ Ripristina esempio</button>
+  </div>
+
+  <div class="footer">
+    <div>Canvas Effetto Glitch · INITIUM v6.0 · Roadmap 90 Giorni</div>
+    <div class="motto">In digitālī nova virtūs</div>
+    <div style="margin-top:6px; font-size:9pt;">Conservare per audit AI Act (min. 5 anni)</div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept=".json" style="display:none" onchange="loadJSON(event)">
+
+<script>
+// ─── Effetto Glitch Canvas: persistenza server-side per discente ─────────────────
+const Persistence = (() => {
+  const pathMatch = window.location.pathname.match(/\/material\/([^\/]+)\/canvas/);
+  const materialId = pathMatch ? pathMatch[1] : null;
+  const apiBase = materialId ? `/learn/canvas/${materialId}/data` : null;
+
+  const status = document.createElement('div');
+  status.style.cssText = 'position:fixed; top:12px; right:12px; padding:6px 12px; background:white; border:1px solid #C8D0D0; border-radius:6px; font:600 10pt -apple-system,Segoe UI,sans-serif; color:#4A5252; z-index:9999; box-shadow:0 2px 6px rgba(0,0,0,.08); transition:opacity .25s';
+  status.textContent = 'In attesa…';
+  document.body.appendChild(status);
+
+  function setStatus(text, color) {
+    status.textContent = text;
+    status.style.color = color || '#4A5252';
+  }
+
+  function getCsrf() {
+    const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  let saveTimer = null;
+
+  return {
+    async load() {
+      if (!apiBase) { setStatus('⚠ Apri dal corso', '#c44'); return null; }
+      setStatus('Caricamento…');
+      try {
+        const res = await fetch(apiBase, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+        if (!res.ok) {
+          setStatus(res.status === 403 || res.status === 401 ? '⚠ Login richiesto' : '⚠ Errore ' + res.status, '#c44');
+          return null;
+        }
+        const json = await res.json();
+        setStatus(json.updated_at ? 'Salvato ✓' : 'Pronto', '#3A8C89');
+        return json.data && Object.keys(json.data).length ? json.data : null;
+      } catch (e) {
+        setStatus('⚠ Errore rete', '#c44');
+        return null;
+      }
+    },
+    save(data) {
+      if (!apiBase) return;
+      clearTimeout(saveTimer);
+      setStatus('Modifica…');
+      saveTimer = setTimeout(async () => {
+        setStatus('Salvataggio…');
+        try {
+          const res = await fetch(apiBase, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrf() },
+            credentials: 'same-origin',
+            body: JSON.stringify({ data })
+          });
+          if (!res.ok) { setStatus('⚠ Errore ' + res.status, '#c44'); return; }
+          const json = await res.json();
+          setStatus(json.demo ? 'Demo — non salvato' : 'Salvato ✓', json.demo ? '#888' : '#3A8C89');
+        } catch (e) {
+          setStatus('⚠ Errore rete', '#c44');
+        }
+      }, 700);
+    }
+  };
+})();
+// ─────────────────────────────────────────────────────────────────────────
+
+const SAMPLE={
+  company:'', startdate:'',
+  p1:[
+    {a:'Attivare account professionali (Claude Pro, ChatGPT Team)',o:'Referente IT',s:''},
+    {a:'Installare Obsidian e creare il vault iniziale',o:'Ogni partecipante',s:''},
+    {a:'Redigere la bozza della AI Usage Policy',o:'DG + referente dati',s:''},
+    {a:'Identificare le 3 attività quotidiane più ripetitive da automatizzare',o:'Ogni partecipante',s:''}
+  ],
+  p2:[
+    {a:'Uso sistematico del framework COFT per i prompt',o:'Ogni partecipante',s:''},
+    {a:'Cattura giornaliera nel Second Brain',o:'Ogni partecipante',s:''},
+    {a:'Prima automazione con vibe coding (+ checklist sicurezza)',o:'Referente IT',s:''},
+    {a:'Configurazione del primo connettore MCP',o:'Referente IT',s:''},
+    {a:'Presentazione della AI Usage Policy al team e raccolta feedback',o:'DG',s:''}
+  ],
+  p3:[
+    {a:'Estensione dell\'uso a nuove attività',o:'Tutti',s:''},
+    {a:'Seconda e terza automazione',o:'Referente IT',s:''},
+    {a:'Misurazione dei risultati (ore risparmiate, qualità, errori evitati)',o:'DG',s:''},
+    {a:'Formazione dei colleghi sulle competenze base',o:'HR',s:''},
+    {a:'Raffinamento della AI Usage Policy sulla base dell\'esperienza',o:'DG + dati',s:''}
+  ],
+  metrics:''
+};
+function rowHTML(d={}){
+  return `<tr>
+    <td><input class="cell" data-f="a" value="${(d.a||'').replace(/"/g,'&quot;')}"></td>
+    <td><input class="cell" data-f="o" value="${(d.o||'').replace(/"/g,'&quot;')}"></td>
+    <td><input class="cell" type="date" data-f="s" value="${d.s||''}"></td>
+    <td><button class="delete-btn" onclick="this.closest('tr').remove();save()">×</button></td></tr>`;
+}
+function addRow(p,d){const tb=document.getElementById('body-'+p);tb.insertAdjacentHTML('beforeend',rowHTML(d));
+  tb.querySelectorAll('tr:last-child input').forEach(i=>i.addEventListener('input',save));save();}
+function render(data){
+  ['p1','p2','p3'].forEach(p=>{document.getElementById('body-'+p).innerHTML='';(data[p]||[]).forEach(d=>addRow(p,d));});
+  document.getElementById('company').value=data.company||'';
+  document.getElementById('startdate').value=data.startdate||'';
+  document.getElementById('metrics').value=data.metrics||'';
+}
+function collect(){const o={company:document.getElementById('company').value,startdate:document.getElementById('startdate').value,metrics:document.getElementById('metrics').value};
+  ['p1','p2','p3'].forEach(p=>{o[p]=Array.from(document.querySelectorAll('#body-'+p+' tr')).map(tr=>{const x={};tr.querySelectorAll('[data-f]').forEach(i=>x[i.dataset.f]=i.value);return x;});});return o;}
+function save(){Persistence.save(collect());}
+async function load(){const d=await Persistence.load();render(d||SAMPLE);}
+function exportJSON(){const data={exported_at:new Date().toISOString(),canvas:'Roadmap 90gg INITIUM v6.0',data:collect()};
+  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download='roadmap90_'+(collect().company||'azienda')+'.json';a.click();URL.revokeObjectURL(u);}
+function importJSON(){document.getElementById('file-input').click();}
+function loadJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=ev=>{try{const j=JSON.parse(ev.target.result);if(j.data&&confirm('Importare?')){render(j.data);save();}}catch(err){alert('Errore: '+err.message);}};r.readAsText(f);}
+function resetAll(){if(confirm('Ripristinare l\'esempio?')){render(SAMPLE);save();}}
+['company','startdate','metrics'].forEach(id=>document.getElementById(id).addEventListener('input',save));
+load();
+</script>
+</body>
+</html>

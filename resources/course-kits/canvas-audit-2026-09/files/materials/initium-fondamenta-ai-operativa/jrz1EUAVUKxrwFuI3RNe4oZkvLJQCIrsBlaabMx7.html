@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Effetto Glitch · Checklist Sicurezza Codice AI — INITIUM</title>
+<style>
+:root {
+  --teal: #55B1AE; --teal-dark: #3D8B88; --teal-light: #E8F5F5;
+  --orange: #E28A53; --gray-bg: #F5F7F7; --gray-border: #D1D5DB;
+  --text: #1F2937; --text-light: #6B7280; --white: #FFFFFF;
+  --green: #059669; --green-light: #D1FAE5;
+  --amber: #D97706; --amber-light: #FEF3C7;
+  --red: #DC2626; --red-light: #FEE2E2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Calibri, 'Segoe UI', sans-serif; background: var(--gray-bg); color: var(--text); line-height: 1.5; padding: 20px; }
+.container { max-width: 1000px; margin: 0 auto; }
+.header { background: var(--white); border-left: 6px solid var(--teal); padding: 24px 28px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.tag { font-size: 11pt; letter-spacing: 2px; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 6px; }
+.header h1 { font-size: 24pt; margin-bottom: 4px; }
+.header p { color: var(--text-light); font-size: 11pt; }
+.motto { color: var(--orange); font-style: italic; font-size: 10pt; margin-top: 8px; }
+.intro-box { background: var(--teal-light); padding: 18px 22px; border-radius: 8px; margin-bottom: 20px; font-size: 11pt; }
+.intro-box strong { color: var(--teal-dark); }
+.meta { background: var(--white); padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.meta label { display: block; font-size: 10pt; font-weight: 600; margin-bottom: 4px; }
+.meta input { width: 100%; font-family: Calibri; font-size: 11pt; padding: 8px 10px; border: 1px solid var(--gray-border); border-radius: 4px; }
+.verdict { padding: 18px 24px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 14pt; font-weight: 700; }
+.verdict.ok { background: var(--green-light); color: var(--green); }
+.verdict.warn { background: var(--amber-light); color: var(--amber); }
+.verdict.block { background: var(--red-light); color: var(--red); }
+.verdict.idle { background: var(--gray-bg); color: var(--text-light); }
+.check { background: var(--white); border-radius: 8px; padding: 18px 22px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-left: 4px solid var(--gray-border); }
+.check.pass { border-left-color: var(--green); }
+.check.fail { border-left-color: var(--red); }
+.check-head { display: flex; align-items: flex-start; gap: 14px; }
+.check-num { background: var(--teal); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+.check-body { flex: 1; }
+.check-title { font-size: 12pt; font-weight: 600; margin-bottom: 4px; }
+.check-desc { font-size: 10pt; color: var(--text-light); margin-bottom: 10px; }
+.check-opts { display: flex; gap: 8px; }
+.opt { padding: 6px 16px; border: 1px solid var(--gray-border); background: white; cursor: pointer; border-radius: 4px; font-size: 10pt; font-weight: 600; font-family: Calibri; }
+.opt.pass.sel { background: var(--green); color: white; border-color: var(--green); }
+.opt.fail.sel { background: var(--red); color: white; border-color: var(--red); }
+.opt.na.sel { background: var(--text-light); color: white; border-color: var(--text-light); }
+.note-input { width: 100%; margin-top: 8px; font-family: Calibri; font-size: 10pt; padding: 6px 8px; border: 1px solid var(--gray-border); border-radius: 4px; }
+.actions { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+button { font-family: Calibri; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 11pt; font-weight: 600; }
+.btn-primary { background: var(--teal); color: white; }
+.btn-secondary { background: var(--white); color: var(--text); border: 1px solid var(--gray-border); }
+.btn-danger { background: var(--white); color: var(--red); border: 1px solid var(--red); }
+.footer { margin-top: 24px; text-align: center; color: var(--text-light); font-size: 10pt; padding: 16px; }
+.footer .motto { color: var(--orange); }
+@media print { body { background: white; padding: 0; } .actions { display: none; } .check, .meta { box-shadow: none; page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="tag">Canvas Effetto Glitch · INITIUM</div>
+    <h1>Checklist Sicurezza del Codice AI-generated</h1>
+    <p>I cinque controlli prima di eseguire codice generato dall'AI (Parte quarta · Capitolo 11 — Il vibe coding)</p>
+    <div class="motto">In digitālī nova virtūs</div>
+  </div>
+
+  <div class="intro-box">
+    <strong>Come usarlo.</strong> Prima di eseguire o mettere in produzione codice generato dall'AI, verificate i cinque punti. Anche un solo punto critico non risolto blocca l'esecuzione: è il human-in-the-loop applicato al codice. Compilate una scheda per ogni script generato.
+  </div>
+
+  <div class="meta">
+    <div><label>Script / automazione</label><input id="script" placeholder="es. organizza_fatture.py"></div>
+    <div><label>Generato con</label><input id="tool" placeholder="es. Claude / ChatGPT"></div>
+    <div><label>Verificato da</label><input id="reviewer"></div>
+  </div>
+
+  <div class="verdict idle" id="verdict">Compilate i 5 controlli</div>
+
+  <div id="checks"></div>
+
+  <div class="actions">
+    <button class="btn-primary" onclick="window.print()">🖨️ Stampa / PDF</button>
+    <button class="btn-secondary" onclick="exportJSON()">📥 Esporta JSON</button>
+    <button class="btn-secondary" onclick="importJSON()">📤 Importa JSON</button>
+    <button class="btn-danger" onclick="resetAll()">🗑️ Nuova verifica</button>
+  </div>
+
+  <div class="footer">
+    <div>Canvas Effetto Glitch · INITIUM v6.0 · Checklist Sicurezza Codice AI-generated</div>
+    <div class="motto">In digitālī nova virtūs</div>
+    <div style="margin-top:6px; font-size:9pt;">Conservare per audit AI Act (min. 5 anni)</div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept=".json" style="display:none" onchange="loadJSON(event)">
+
+<script>
+// ─── Effetto Glitch Canvas: persistenza server-side per discente ─────────────────
+const Persistence = (() => {
+  const pathMatch = window.location.pathname.match(/\/material\/([^\/]+)\/canvas/);
+  const materialId = pathMatch ? pathMatch[1] : null;
+  const apiBase = materialId ? `/learn/canvas/${materialId}/data` : null;
+
+  const status = document.createElement('div');
+  status.style.cssText = 'position:fixed; top:12px; right:12px; padding:6px 12px; background:white; border:1px solid #C8D0D0; border-radius:6px; font:600 10pt -apple-system,Segoe UI,sans-serif; color:#4A5252; z-index:9999; box-shadow:0 2px 6px rgba(0,0,0,.08); transition:opacity .25s';
+  status.textContent = 'In attesa…';
+  document.body.appendChild(status);
+
+  function setStatus(text, color) {
+    status.textContent = text;
+    status.style.color = color || '#4A5252';
+  }
+
+  function getCsrf() {
+    const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  let saveTimer = null;
+
+  return {
+    async load() {
+      if (!apiBase) { setStatus('⚠ Apri dal corso', '#c44'); return null; }
+      setStatus('Caricamento…');
+      try {
+        const res = await fetch(apiBase, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+        if (!res.ok) {
+          setStatus(res.status === 403 || res.status === 401 ? '⚠ Login richiesto' : '⚠ Errore ' + res.status, '#c44');
+          return null;
+        }
+        const json = await res.json();
+        setStatus(json.updated_at ? 'Salvato ✓' : 'Pronto', '#3A8C89');
+        return json.data && Object.keys(json.data).length ? json.data : null;
+      } catch (e) {
+        setStatus('⚠ Errore rete', '#c44');
+        return null;
+      }
+    },
+    save(data) {
+      if (!apiBase) return;
+      clearTimeout(saveTimer);
+      setStatus('Modifica…');
+      saveTimer = setTimeout(async () => {
+        setStatus('Salvataggio…');
+        try {
+          const res = await fetch(apiBase, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrf() },
+            credentials: 'same-origin',
+            body: JSON.stringify({ data })
+          });
+          if (!res.ok) { setStatus('⚠ Errore ' + res.status, '#c44'); return; }
+          const json = await res.json();
+          setStatus(json.demo ? 'Demo — non salvato' : 'Salvato ✓', json.demo ? '#888' : '#3A8C89');
+        } catch (e) {
+          setStatus('⚠ Errore rete', '#c44');
+        }
+      }, 700);
+    }
+  };
+})();
+// ─────────────────────────────────────────────────────────────────────────
+
+const CHECKS=[
+  {t:'URL e domini esterni', d:'Il codice contatta URL o domini esterni? Sono noti e attesi? Nessun indirizzo sospetto o offuscato?'},
+  {t:'Server e connessioni remote', d:'Il codice apre connessioni a server remoti? Invia dati all\'esterno? È giustificato dal compito?'},
+  {t:'Accessi a file e cartelle', d:'A quali file/cartelle accede? Solo a quelle necessarie? Nessuna cancellazione o sovrascrittura non prevista?'},
+  {t:'Credenziali e segreti', d:'Il codice contiene o richiede credenziali, password, API key? Sono gestite in modo sicuro e non hard-coded?'},
+  {t:'Comportamenti inattesi', d:'Eseguendolo su dati di test, fa solo ciò che dichiara? Nessun effetto collaterale, nessun comando inatteso?'}
+];
+let states={}, notes={};
+function render(){
+  const c=document.getElementById('checks'); c.innerHTML='';
+  CHECKS.forEach((ch,i)=>{
+    const id='c'+i; const st=states[id]||'';
+    const div=document.createElement('div');
+    div.className='check '+(st==='pass'?'pass':st==='fail'?'fail':'');
+    div.innerHTML=`<div class="check-head">
+      <div class="check-num">${i+1}</div>
+      <div class="check-body">
+        <div class="check-title">${ch.t}</div>
+        <div class="check-desc">${ch.d}</div>
+        <div class="check-opts">
+          <button class="opt pass ${st==='pass'?'sel':''}" onclick="setS('${id}','pass')">✓ OK</button>
+          <button class="opt fail ${st==='fail'?'sel':''}" onclick="setS('${id}','fail')">✗ Problema</button>
+          <button class="opt na ${st==='na'?'sel':''}" onclick="setS('${id}','na')">N/A</button>
+        </div>
+        <input class="note-input" placeholder="Note (es. URL trovato, azione correttiva)" value="${(notes[id]||'').replace(/"/g,'&quot;')}" oninput="setN('${id}',this.value)">
+      </div></div>`;
+    c.appendChild(div);
+  });
+  updateVerdict();
+}
+function setS(id,s){states[id]=s;render();save();}
+function setN(id,val){notes[id]=val;save();}
+function updateVerdict(){
+  const v=document.getElementById('verdict');
+  const vals=CHECKS.map((_,i)=>states['c'+i]);
+  const answered=vals.filter(x=>x).length;
+  const fails=vals.filter(x=>x==='fail').length;
+  if(answered<CHECKS.length){v.className='verdict idle';v.textContent=`Compilate i 5 controlli (${answered}/5)`;return;}
+  if(fails>0){v.className='verdict block';v.textContent=`⛔ NON ESEGUIRE — ${fails} controllo/i con problemi da risolvere`;}
+  else{v.className='verdict ok';v.textContent='✓ Codice verificato — esecuzione consentita';}
+}
+function collect(){return {meta:{script:val('script'),tool:val('tool'),reviewer:val('reviewer')},states,notes};}
+function val(id){return document.getElementById(id).value;}
+function setAll(s){if(s.meta){['script','tool','reviewer'].forEach(k=>{if(document.getElementById(k))document.getElementById(k).value=s.meta[k]||'';});}states=s.states||{};notes=s.notes||{};render();}
+function save(){Persistence.save(collect());}
+async function load(){const d=await Persistence.load();if(d)setAll(d);else render();}
+function exportJSON(){const data={exported_at:new Date().toISOString(),canvas:'Checklist Sicurezza Codice INITIUM v6.0',...collect()};
+  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download='checklist_codice_'+(val('script')||'script')+'.json';a.click();URL.revokeObjectURL(u);}
+function importJSON(){document.getElementById('file-input').click();}
+function loadJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=ev=>{try{const j=JSON.parse(ev.target.result);if(confirm('Importare?')){setAll(j);save();}}catch(err){alert('Errore: '+err.message);}};r.readAsText(f);}
+function resetAll(){if(confirm('Nuova verifica?')){['script','tool','reviewer'].forEach(k=>document.getElementById(k).value='');states={};notes={};render();save();}}
+document.querySelectorAll('.meta input').forEach(i=>i.addEventListener('input',save));
+load();
+</script>
+</body>
+</html>

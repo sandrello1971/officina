@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Effetto Glitch · Decision Tree Rischio AI Act — INITIUM</title>
+<style>
+:root {
+  --teal: #55B1AE; --teal-dark: #3D8B88; --teal-light: #E8F5F5;
+  --orange: #E28A53; --gray-bg: #F5F7F7; --gray-border: #D1D5DB;
+  --text: #1F2937; --text-light: #6B7280; --white: #FFFFFF;
+  --red: #DC2626; --red-light: #FEE2E2;
+  --amber: #D97706; --amber-light: #FEF3C7;
+  --green: #059669; --green-light: #D1FAE5;
+  --blue: #2563EB; --blue-light: #DBEAFE;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Calibri, 'Segoe UI', sans-serif; background: var(--gray-bg); color: var(--text); line-height: 1.5; padding: 20px; }
+.container { max-width: 1000px; margin: 0 auto; }
+.header { background: var(--white); border-left: 6px solid var(--teal); padding: 24px 28px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.tag { font-size: 11pt; letter-spacing: 2px; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 6px; }
+.header h1 { font-size: 24pt; margin-bottom: 4px; }
+.header p { color: var(--text-light); font-size: 11pt; }
+.motto { color: var(--orange); font-style: italic; font-size: 10pt; margin-top: 8px; }
+.intro-box { background: var(--teal-light); padding: 18px 22px; border-radius: 8px; margin-bottom: 20px; font-size: 11pt; }
+.intro-box strong { color: var(--teal-dark); }
+.system-input { background: var(--white); padding: 18px 22px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.system-input label { display: block; font-size: 11pt; font-weight: 600; margin-bottom: 8px; }
+.system-input input { width: 100%; font-family: Calibri; font-size: 12pt; padding: 10px 14px; border: 1px solid var(--gray-border); border-radius: 6px; }
+.system-input input:focus { outline: 2px solid var(--teal); border-color: var(--teal); }
+.step { background: var(--white); border-radius: 8px; padding: 22px 26px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-left: 4px solid var(--gray-border); }
+.step.active { border-left-color: var(--teal); }
+.step.answered { border-left-color: var(--teal-dark); opacity: 0.9; }
+.step-header { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.step-num { background: var(--teal); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+.step-title { font-size: 14pt; font-weight: 600; }
+.step-note { font-size: 10pt; color: var(--text-light); margin-bottom: 12px; }
+.options { display: flex; flex-direction: column; gap: 10px; }
+.opt-btn { padding: 12px 18px; border: 2px solid var(--gray-border); background: var(--white); cursor: pointer; border-radius: 6px; font-size: 11pt; font-weight: 600; font-family: Calibri; text-align: left; }
+.opt-btn:hover { border-color: var(--teal); background: var(--teal-light); }
+.opt-btn.selected { background: var(--teal); border-color: var(--teal); color: white; }
+.result { border-radius: 8px; padding: 28px 32px; margin-top: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.result.hidden { display: none; }
+.result-vietato { background: var(--red-light); border: 2px solid var(--red); }
+.result-alto { background: var(--amber-light); border: 2px solid var(--amber); }
+.result-limitato { background: var(--blue-light); border: 2px solid var(--blue); }
+.result-minimo { background: var(--green-light); border: 2px solid var(--green); }
+.result h2 { font-size: 20pt; margin-bottom: 10px; text-align: center; }
+.result-vietato h2 { color: var(--red); }
+.result-alto h2 { color: var(--amber); }
+.result-limitato h2 { color: var(--blue); }
+.result-minimo h2 { color: var(--green); }
+.result p { font-size: 12pt; text-align: center; margin-bottom: 14px; }
+.result h3 { font-size: 13pt; margin-bottom: 8px; }
+.result ol { padding-left: 22px; }
+.result li { padding: 5px 0; font-size: 11pt; }
+.actions-bar { display: flex; gap: 12px; margin-top: 20px; justify-content: center; flex-wrap: wrap; }
+button.action { font-family: Calibri; padding: 10px 22px; border: none; border-radius: 6px; cursor: pointer; font-size: 11pt; font-weight: 600; }
+.btn-primary { background: var(--teal); color: white; }
+.btn-secondary { background: var(--white); color: var(--text); border: 1px solid var(--gray-border); }
+.footer { margin-top: 24px; text-align: center; color: var(--text-light); font-size: 10pt; padding: 16px; }
+.footer .motto { color: var(--orange); }
+@media print { body { background: white; padding: 0; } .actions-bar, .step:not(.answered) { display: none; } .step.answered, .result { box-shadow: none; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="tag">Canvas Effetto Glitch · INITIUM</div>
+    <h1>Decision Tree — Classificazione del Rischio AI Act</h1>
+    <p>Inquadrate un sistema AI nei quattro livelli di rischio del Reg. UE 2024/1689 (blocco regolatorio · Parte quinta, Capitolo 14)</p>
+    <div class="motto">In digitālī nova virtūs</div>
+  </div>
+
+  <div class="intro-box">
+    <strong>Come usarlo.</strong> Prima di adottare o continuare a usare un sistema AI, rispondete alle domande per identificarne il livello di rischio. L'obiettivo non è fare i giuristi, ma riconoscere le linee rosse e gli obblighi. Di fronte a un fornitore, la domanda giusta è sempre: "questo sistema in quale livello di rischio ricade?".
+  </div>
+
+  <div class="system-input">
+    <label for="sysname">Sistema AI da classificare</label>
+    <input type="text" id="sysname" placeholder="es. strumento di screening CV per le assunzioni">
+  </div>
+
+  <div id="steps"></div>
+  <div id="result" class="result hidden"></div>
+
+  <div class="actions-bar">
+    <button class="action btn-primary" onclick="resetTree()">↻ Nuova classificazione</button>
+    <button class="action btn-secondary" onclick="window.print()">🖨️ Stampa risultato</button>
+  </div>
+
+  <div class="footer">
+    <div>Canvas Effetto Glitch · INITIUM v6.0 · Decision Tree Rischio AI Act</div>
+    <div class="motto">In digitālī nova virtūs</div>
+    <div style="margin-top:6px; font-size:9pt;">Conservare per audit AI Act (min. 5 anni)</div>
+  </div>
+</div>
+
+<script>
+// ─── Effetto Glitch Canvas: persistenza server-side per discente ─────────────────
+const Persistence = (() => {
+  const pathMatch = window.location.pathname.match(/\/material\/([^\/]+)\/canvas/);
+  const materialId = pathMatch ? pathMatch[1] : null;
+  const apiBase = materialId ? `/learn/canvas/${materialId}/data` : null;
+
+  const status = document.createElement('div');
+  status.style.cssText = 'position:fixed; top:12px; right:12px; padding:6px 12px; background:white; border:1px solid #C8D0D0; border-radius:6px; font:600 10pt -apple-system,Segoe UI,sans-serif; color:#4A5252; z-index:9999; box-shadow:0 2px 6px rgba(0,0,0,.08); transition:opacity .25s';
+  status.textContent = 'In attesa…';
+  document.body.appendChild(status);
+
+  function setStatus(text, color) {
+    status.textContent = text;
+    status.style.color = color || '#4A5252';
+  }
+
+  function getCsrf() {
+    const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  let saveTimer = null;
+
+  return {
+    async load() {
+      if (!apiBase) { setStatus('⚠ Apri dal corso', '#c44'); return null; }
+      setStatus('Caricamento…');
+      try {
+        const res = await fetch(apiBase, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+        if (!res.ok) {
+          setStatus(res.status === 403 || res.status === 401 ? '⚠ Login richiesto' : '⚠ Errore ' + res.status, '#c44');
+          return null;
+        }
+        const json = await res.json();
+        setStatus(json.updated_at ? 'Salvato ✓' : 'Pronto', '#3A8C89');
+        return json.data && Object.keys(json.data).length ? json.data : null;
+      } catch (e) {
+        setStatus('⚠ Errore rete', '#c44');
+        return null;
+      }
+    },
+    save(data) {
+      if (!apiBase) return;
+      clearTimeout(saveTimer);
+      setStatus('Modifica…');
+      saveTimer = setTimeout(async () => {
+        setStatus('Salvataggio…');
+        try {
+          const res = await fetch(apiBase, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrf() },
+            credentials: 'same-origin',
+            body: JSON.stringify({ data })
+          });
+          if (!res.ok) { setStatus('⚠ Errore ' + res.status, '#c44'); return; }
+          const json = await res.json();
+          setStatus(json.demo ? 'Demo — non salvato' : 'Salvato ✓', json.demo ? '#888' : '#3A8C89');
+        } catch (e) {
+          setStatus('⚠ Errore rete', '#c44');
+        }
+      }, 700);
+    }
+  };
+})();
+// ─────────────────────────────────────────────────────────────────────────
+
+const steps=[
+  {
+    title:"Il sistema rientra in una pratica vietata (Art. 5)?",
+    note:"Manipolazione subliminale dannosa; sfruttamento di vulnerabilità; social scoring; scraping non mirato di volti; riconoscimento delle emozioni sul lavoro o a scuola; categorizzazione biometrica per inferire dati sensibili.",
+    options:["Sì, rientra in una di queste pratiche","No, nessuna di queste"],
+    onSelect:v=>v.startsWith("Sì")?{r:'vietato'}:null
+  },
+  {
+    title:"Il sistema opera in un ambito ad alto rischio (Allegato III)?",
+    note:"Selezione/valutazione del personale; accesso all'istruzione e valutazione degli studenti; merito creditizio; servizi essenziali; infrastrutture critiche; identificazione biometrica; giustizia e processi democratici.",
+    options:["Sì, opera in uno di questi ambiti","No"],
+    onSelect:v=>v.startsWith("Sì")?{r:'alto'}:null
+  },
+  {
+    title:"Il sistema interagisce con persone o genera contenuti per il pubblico?",
+    note:"Chatbot rivolti a clienti; generazione di testi, immagini, audio o video destinati al pubblico; deepfake; contenuti che potrebbero essere scambiati per autentici o per opera umana.",
+    options:["Sì, interagisce o genera contenuti per il pubblico","No, uso puramente interno"],
+    onSelect:v=>v.startsWith("Sì")?{r:'limitato'}:{r:'minimo'}
+  }
+];
+const meta={
+  vietato:{title:'⛔ RISCHIO INACCETTABILE — Pratica vietata',msg:'Il sistema rientra tra le pratiche vietate dall\'Articolo 5 dell\'AI Act. Non può essere utilizzato nell\'Unione Europea.',
+    items:['Non adottare il sistema; se in uso, disattivarlo immediatamente','Comunicare al fornitore il rifiuto e la motivazione','Verbalizzare la decisione (HITL sostanziale documentato)','Cercare alternative che producano valore equivalente senza ricadere in Art. 5','Riferimento: Art. 5 Reg. UE 2024/1689']},
+  alto:{title:'⚠️ ALTO RISCHIO — Allegato III',msg:'Il sistema ricade tra quelli ad alto rischio dell\'Allegato III. È soggetto agli obblighi più stringenti dell\'AI Act.',
+    items:['Verificare con il fornitore la conformità del sistema (valutazione di conformità, marcatura CE)','Garantire la sorveglianza umana sostanziale (human-in-the-loop) sulle decisioni','Effettuare la DPIA (Art. 35 GDPR) per il trattamento dei dati personali','Conservare la documentazione e i log d\'uso','Informare le persone interessate dalle decisioni del sistema','Attenzione: gli obblighi per l\'alto rischio Allegato III sono pienamente applicabili dal 2 agosto 2026','Per una PMI: valutare con attenzione se l\'adozione è davvero necessaria e proporzionata']},
+  limitato:{title:'🔵 RISCHIO LIMITATO — Obblighi di trasparenza (Art. 50)',msg:'Il sistema è soggetto principalmente agli obblighi di trasparenza dell\'Articolo 50.',
+    items:['Dichiarare che l\'interazione avviene con un sistema AI (per i chatbot rivolti al pubblico)','Rendere riconoscibili i contenuti generati o manipolati dall\'AI destinati al pubblico','Etichettare chiaramente i deepfake come contenuti artificiali','Mantenere il presidio umano sui contenuti pubblicati (HITL)','Riferimento: Art. 50 Reg. UE 2024/1689']},
+  minimo:{title:'🟢 RISCHIO MINIMO',msg:'Il sistema rientra nella categoria a rischio minimo, la più comune per le PMI. Nessun obbligo specifico oltre l\'alfabetizzazione del personale.',
+    items:['Garantire l\'alfabetizzazione AI del personale che lo usa (Art. 4) — questo corso','Applicare comunque la AI Usage Policy aziendale (classificazione dati, verifica output)','Rispettare il GDPR per gli eventuali dati personali trattati','Mantenere il human-in-the-loop sostanziale sugli output in contesti critici','Riferimento: Art. 4 Reg. UE 2024/1689']}
+};
+
+let cur=0, ans={}, lastR=null;
+function getState(){return {sysname:document.getElementById('sysname').value||'',cur:cur,ans:ans,lastR:lastR};}
+function setState(s){if(s.sysname!==undefined)document.getElementById('sysname').value=s.sysname;if(typeof s.cur==='number')cur=s.cur;if(s.ans&&typeof s.ans==='object')ans=s.ans;if(s.lastR)lastR=s.lastR;}
+function save(){Persistence.save(getState());}
+function renderSteps(){const c=document.getElementById('steps');c.innerHTML='';for(let i=0;i<=cur&&i<steps.length;i++)c.appendChild(renderStep(i));}
+function renderStep(idx){const s=steps[idx];const d=document.createElement('div');
+  d.className='step '+(idx===cur?'active':(ans[idx]!==undefined?'answered':''));
+  d.innerHTML=`<div class="step-header"><div class="step-num">${idx+1}</div><div class="step-title">${s.title}</div></div>
+    <div class="step-note">${s.note}</div>
+    <div class="options">${s.options.map(o=>`<button class="opt-btn ${ans[idx]===o?'selected':''}" onclick="answer(${idx},'${o.replace(/'/g,"\\'")}')">${o}</button>`).join('')}</div>`;
+  return d;}
+function answer(idx,val){ans[idx]=val;const res=steps[idx].onSelect(val);if(res){showResult(res.r);return;}cur++;if(cur>=steps.length){showResult('minimo');return;}renderSteps();save();}
+function showResult(r){lastR=r;const el=document.getElementById('result');el.className='result result-'+r;const m=meta[r];
+  const name=document.getElementById('sysname').value||'[sistema senza nome]';
+  el.innerHTML=`<h2>${m.title}</h2><p><strong>${name}</strong></p><p>${m.msg}</p>
+    <h3>Azioni operative</h3><ol>${m.items.map(i=>`<li>${i}</li>`).join('')}</ol>
+    <p style="margin-top:16px;font-size:10pt;color:var(--text-light);">Classificazione effettuata il ${new Date().toLocaleString('it-IT')}</p>`;
+  el.classList.remove('hidden');el.scrollIntoView({behavior:'smooth',block:'start'});save();}
+function resetTree(){cur=0;ans={};lastR=null;document.getElementById('sysname').value='';document.getElementById('result').classList.add('hidden');renderSteps();save();}
+document.getElementById('sysname').addEventListener('input',save);
+async function load(){const d=await Persistence.load();if(d){setState(d);if(lastR)showResult(lastR);}renderSteps();}
+load();
+</script>
+</body>
+</html>

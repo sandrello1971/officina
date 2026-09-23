@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLAUDE.md fatto bene</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@18..144,400;18..144,600;18..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#faf8f4; --ink:#20201c; --ink-soft:#57544c; --line:#ddd7cb; --card:#ffffff;
+  --good:#3c6e4f; --good-bg:#eaf3ec; --good-line:#b9d6c3;
+  --code-bg:#211f1a; --code-ink:#e9e4d8; --code-muted:#8f8a7c; --accent:#b8752e; --chip-bg:#f1ece0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#171613; --ink:#eeece4; --ink-soft:#a8a397; --line:#3a372f; --card:#1f1e19;
+    --good:#8fc9a2; --good-bg:#182821; --good-line:#345444;
+    --code-bg:#0e0d0b; --code-ink:#e9e4d8; --code-muted:#7d7869; --accent:#d99a52; --chip-bg:#26241d;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#171613; --ink:#eeece4; --ink-soft:#a8a397; --line:#3a372f; --card:#1f1e19;
+  --good:#8fc9a2; --good-bg:#182821; --good-line:#345444;
+  --code-bg:#0e0d0b; --code-ink:#e9e4d8; --code-muted:#7d7869; --accent:#d99a52; --chip-bg:#26241d;
+}
+*{box-sizing:border-box;}
+body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;margin:0;padding:0 20px;line-height:1.55;}
+.wrap{max-width:900px;margin:0 auto;padding-block:40px 64px;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--good);font-weight:600;}
+h1{font-family:'Literata',Georgia,serif;font-weight:700;font-size:clamp(24px,4vw,34px);margin:10px 0 8px;text-wrap:balance;letter-spacing:-.01em;}
+.dek{color:var(--ink-soft);font-size:15px;max-width:66ch;margin-bottom:32px;}
+.codecard{background:var(--code-bg);border-radius:10px;overflow:hidden;border:1px solid var(--line);margin-bottom:28px;}
+.codecard .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.08);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--code-muted);}
+.codecard .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.15);}
+.codecard pre{margin:0;padding:18px 16px 20px;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:12.6px;line-height:1.68;color:var(--code-ink);}
+.ln{display:inline-block;width:1.8em;color:var(--code-muted);user-select:none;text-align:right;margin-right:12px;}
+.hl-good{background:rgba(143,201,162,.14);box-shadow:inset 3px 0 0 var(--good);}
+.hl-line{display:block;padding:0 8px 0 4px;margin:0 -8px;border-radius:3px;}
+h2.st{font-family:'Literata',Georgia,serif;font-weight:600;font-size:20px;margin:0 0 14px;}
+.notes{display:flex;flex-direction:column;gap:12px;}
+.note{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-size:13.8px;}
+.note .num{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;margin-right:8px;vertical-align:middle;background:var(--good-bg);color:var(--good);}
+.note b{font-weight:600;}
+.note .why{color:var(--ink-soft);display:block;margin-top:3px;}
+table.compare{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:28px;}
+table.compare th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);padding:8px 10px;border-bottom:1px solid var(--line);}
+table.compare td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+table.compare td:first-child{font-weight:600;white-space:nowrap;color:var(--ink-soft);font-size:12.5px;}
+.overflow{overflow-x:auto;}
+.callout{background:var(--chip-bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:16px 18px;margin-top:36px;font-size:14px;color:var(--ink-soft);}
+.callout b{color:var(--ink);}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Materiale &middot; Capitolo 2 &middot; Come scriverlo</div>
+  <h1>CLAUDE.md fatto bene</h1>
+  <p class="dek">Stesso progetto (piattaforma Officina), riscritto come briefing operativo: comandi verificati, gotcha reali con data e causa, percorsi precisi, niente segreti nel file.</p>
+
+  <div class="codecard">
+    <div class="bar"><span class="dot"></span> CLAUDE.md</div>
+<pre><span class="ln">1</span># Officina — piattaforma didattica (monorepo Laravel)
+
+<span class="ln">2</span>Laravel 11 + Inertia/React. Postgres. Coda su Redis.
+<span class="ln">3</span>Multi-tenant (stancl/tenancy, DB-per-tenant).
+
+<span class="ln">4</span>## Setup locale
+<span class="ln">5</span>composer install
+<span class="ln">6</span>cp .env.example .env && php artisan key:generate
+<span class="ln">7</span>php artisan migrate --seed
+<span class="ln">8</span>npm install && npm run dev
+
+<span class="hl-line hl-good"><span class="ln">9</span>## ATTENZIONE: deploy in prod NON usa git
+<span class="ln">10</span>Prod è su rsync manuale, non su pull. Script: deploy/prod.sh
+<span class="ln">11</span>Escludi sempre bootstrap/cache e il servizio videoai/
+<span class="ln">12</span>(un rsync completo di questi ha causato un 500 il 2026-06).</span>
+
+<span class="hl-line hl-good"><span class="ln">13</span>## ATTENZIONE: config:cache in deploy
+<span class="ln">14</span>Non lanciare artisan config:cache con env di test esportate
+<span class="ln">15</span>in shell (SESSION_DRIVER, CACHE_STORE, ANTHROPIC_API_KEY=dummy):
+<span class="ln">16</span>finiscono congelate in prod e rompono login/cache/AI.
+<span class="ln">17</span>Usa sempre deploy/prod.sh, non i comandi a mano.</span>
+
+<span class="ln">18</span>## Struttura
+<span class="ln">19</span>app/Services/        logica di dominio (no logica nei controller)
+<span class="ln">20</span>app/Http/Controllers/Api/V1/   API versionata, non toccare v1 legacy
+<span class="ln">21</span>database/migrations/  MAI modificare una migration già in prod
+
+<span class="ln">22</span>## Test e verifica
+<span class="ln">23</span>php artisan test --testsuite=Feature   (604 test, ~90s)
+<span class="ln">24</span>Prima di ogni PR: php artisan test && npm run lint
+
+<span class="ln">25</span>## Segreti
+<span class="ln">26</span>Mai in questo file. Vivono in .env (locale) o nel vault
+<span class="ln">27</span>del deploy (vedi docs/deploy.md).</pre>
+  </div>
+
+  <h2 class="st">Perché è fatto bene</h2>
+  <div class="notes">
+    <div class="note"><span class="num">1</span><b>Gotcha reali, con data e causa.</b> "rsync completo ha causato un 500 il 2026-06" trasmette un'esperienza già pagata dal team, non una regola astratta.<span class="why">Perché conta: un incidente raccontato con contesto viene rispettato molto più di un "fai attenzione" generico.</span></div>
+    <div class="note"><span class="num">2</span><b>Comandi copiabili e verificati.</b> Ogni riga sotto "Setup" e "Test" è un comando che funziona così com'è, non una traccia da adattare.<span class="why">Perché conta: l'agente esegue senza dover indovinare varianti, e il file resta verificabile da chiunque lo legga.</span></div>
+    <div class="note"><span class="num">3</span><b>Percorsi reali del repo.</b> Cartelle e file nominati esplicitamente (deploy/prod.sh, app/Services/) trasformano il file in una mappa, non in una descrizione.<span class="why">Perché conta: l'agente parte già orientato invece di dover esplorare la struttura da zero a ogni sessione.</span></div>
+    <div class="note"><span class="num">4</span><b>Nessun segreto — solo il puntatore.</b> Il file dice dove vivono le credenziali, non quali sono.<span class="why">Perché conta: CLAUDE.md finisce nel repo e viene letto a ogni sessione — deve poter essere condiviso senza rischio.</span></div>
+    <div class="note"><span class="num">5</span><b>Regole con un motivo, non un'esortazione.</b> "Mai modificare una migration già in prod" spiega una conseguenza operativa, non un principio da manuale.<span class="why">Perché conta: una regola con la sua ragione resiste anche ai casi limite non previsti esplicitamente.</span></div>
+  </div>
+
+  <div class="overflow">
+  <table class="compare">
+    <tr><th>Criterio</th><th style="color:var(--good)">In questo esempio</th></tr>
+    <tr><td>Comandi</td><td>Copiabili e verificati, non varianti da indovinare</td></tr>
+    <tr><td>Gotcha di prod</td><td>Documentati con data e causa dell'incidente</td></tr>
+    <tr><td>Percorsi</td><td>Cartelle e file reali del repo</td></tr>
+    <tr><td>Segreti</td><td>Solo puntatore a dove vivono, mai il valore</td></tr>
+    <tr><td>Tono delle regole</td><td>Causale ("perché ha rotto X il giorno Y")</td></tr>
+    <tr><td>Lunghezza</td><td>Sezioni brevi, scremabili in 30 secondi</td></tr>
+  </table>
+  </div>
+
+  <div class="callout"><b>Da portare in aula:</b> CLAUDE.md non va scritto una volta e dimenticato. Ogni volta che un incidente di deploy o un bug ricorrente viene risolto, quella lezione appartiene al file — catturare il "perché", non solo il "cosa".</div>
+
+  <footer>Officina &middot; Capitolo 2 — Configurare Claude Code per il team</footer>
+</div>
+</body>
+</html>

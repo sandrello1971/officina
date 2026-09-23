@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLAUDE.md fatto male</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@18..144,400;18..144,600;18..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#faf8f4; --ink:#20201c; --ink-soft:#57544c; --line:#ddd7cb; --card:#ffffff;
+  --bad:#a83232; --bad-bg:#fbeae8; --bad-line:#e3b9b3;
+  --code-bg:#211f1a; --code-ink:#e9e4d8; --code-muted:#8f8a7c; --accent:#b8752e; --chip-bg:#f1ece0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#171613; --ink:#eeece4; --ink-soft:#a8a397; --line:#3a372f; --card:#1f1e19;
+    --bad:#e08d82; --bad-bg:#2c1c1a; --bad-line:#5a332e;
+    --code-bg:#0e0d0b; --code-ink:#e9e4d8; --code-muted:#7d7869; --accent:#d99a52; --chip-bg:#26241d;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#171613; --ink:#eeece4; --ink-soft:#a8a397; --line:#3a372f; --card:#1f1e19;
+  --bad:#e08d82; --bad-bg:#2c1c1a; --bad-line:#5a332e;
+  --code-bg:#0e0d0b; --code-ink:#e9e4d8; --code-muted:#7d7869; --accent:#d99a52; --chip-bg:#26241d;
+}
+*{box-sizing:border-box;}
+body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;margin:0;padding:0 20px;line-height:1.55;}
+.wrap{max-width:900px;margin:0 auto;padding-block:40px 64px;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--bad);font-weight:600;}
+h1{font-family:'Literata',Georgia,serif;font-weight:700;font-size:clamp(24px,4vw,34px);margin:10px 0 8px;text-wrap:balance;letter-spacing:-.01em;}
+.dek{color:var(--ink-soft);font-size:15px;max-width:66ch;margin-bottom:32px;}
+.codecard{background:var(--code-bg);border-radius:10px;overflow:hidden;border:1px solid var(--line);margin-bottom:28px;}
+.codecard .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.08);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--code-muted);}
+.codecard .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.15);}
+.codecard pre{margin:0;padding:18px 16px 20px;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:12.6px;line-height:1.68;color:var(--code-ink);}
+.ln{display:inline-block;width:1.8em;color:var(--code-muted);user-select:none;text-align:right;margin-right:12px;}
+.hl-bad{background:rgba(224,141,130,.16);box-shadow:inset 3px 0 0 var(--bad);}
+.hl-line{display:block;padding:0 8px 0 4px;margin:0 -8px;border-radius:3px;}
+h2.st{font-family:'Literata',Georgia,serif;font-weight:600;font-size:20px;margin:0 0 14px;}
+.notes{display:flex;flex-direction:column;gap:12px;}
+.note{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-size:13.8px;}
+.note .num{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;margin-right:8px;vertical-align:middle;background:var(--bad-bg);color:var(--bad);}
+.note b{font-weight:600;}
+.note .why{color:var(--ink-soft);display:block;margin-top:3px;}
+.callout{background:var(--chip-bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:16px 18px;margin-top:36px;font-size:14px;color:var(--ink-soft);}
+.callout b{color:var(--ink);}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Materiale &middot; Capitolo 2 &middot; Esempio da evitare</div>
+  <h1>CLAUDE.md fatto male</h1>
+  <p class="dek">Stesso progetto (piattaforma Officina), scritto senza pensare a cosa un agente deve poter fare con questo file. Wall of text, comandi da indovinare, un'istruzione di deploy sbagliata lasciata "per ora", e un segreto in chiaro.</p>
+
+  <div class="codecard">
+    <div class="bar"><span class="dot"></span> CLAUDE.md</div>
+<pre><span class="ln">1</span># Progetto
+
+<span class="ln">2</span>Questo è il progetto principale dell'azienda, è scritto in PHP
+<span class="ln">3</span>e usa Laravel. Il frontend è in React. Ci sono anche alcuni script
+<span class="ln">4</span>Python per l'AI. Il database è Postgres ma a volte anche MySQL nei
+<span class="ln">5</span>vecchi moduli. Cerca di scrivere codice pulito e seguire le best
+<span class="ln">6</span>practice. Usa sempre i design pattern giusti e scrivi test quando
+<span class="ln">7</span>possibile. Il progetto è abbastanza grande quindi fai attenzione.
+
+<span class="ln">8</span>## Setup
+<span class="hl-line hl-bad"><span class="ln">9</span>composer install && npm install && npm run dev
+<span class="ln">10</span># se non funziona prova con --ignore-platform-reqs
+<span class="ln">11</span># il db si chiama officina_db credo, o forse officina_prod</span>
+
+<span class="ln">12</span>## Deploy
+<span class="hl-line hl-bad"><span class="ln">13</span>Il deploy si fa con git push, Forge fa il resto automaticamente
+<span class="ln">14</span>(nota: non è più vero da quando siamo passati a rsync manuale,
+<span class="ln">15</span>ma lasciamo scritto così per ora)</span>
+
+<span class="ln">16</span>## Regole
+<span class="ln">17</span>- Scrivi sempre codice SOLID
+<span class="ln">18</span>- Non rompere niente
+<span class="ln">19</span>- Chiedi conferma se non sei sicuro
+<span class="ln">20</span>- Segui lo stile del progetto
+<span class="ln">21</span>- Ottimizza le query quando puoi
+
+<span class="hl-line hl-bad"><span class="ln">22</span>## Config di test
+<span class="ln">23</span>ANTHROPIC_API_KEY=sk-ant-api03-Xz9...pE7Q
+<span class="ln">24</span>DB_PASSWORD=officina_dev_2024!</span>
+
+<span class="ln">25</span>Se hai dubbi guarda il codice, è abbastanza leggibile.</pre>
+  </div>
+
+  <h2 class="st">Perché è fatto male</h2>
+  <div class="notes">
+    <div class="note"><span class="num">1</span><b>Nessun comando eseguibile con certezza.</b> "Prova con --ignore-platform-reqs", "il db si chiama credo" — l'agente non ha modo di distinguere un fatto da un'ipotesi, e ripete gli stessi tentativi a ogni sessione.<span class="why">Perché conta: un agente che deve indovinare i comandi spreca turni e token su tentativi falliti invece di lavorare.</span></div>
+    <div class="note"><span class="num">2</span><b>Informazione contraddetta ma non corretta.</b> Il file dice "git push, Forge fa il resto" e subito dopo ammette che non è più vero. Un'istruzione sbagliata lasciata "per ora" verrà seguita alla lettera.<span class="why">Perché conta: Claude Code non ha modo di sapere quale delle due frasi è quella vera — segue quella che sembra un'istruzione diretta.</span></div>
+    <div class="note"><span class="num">3</span><b>Segreti in chiaro nel file.</b> Una chiave API e una password di ambiente committate in un file che finisce nel repo (e quindi potenzialmente nella history di git, nei fork, negli screenshot).<span class="why">Perché conta: CLAUDE.md è testo di progetto come un altro — le stesse regole su segreti/credenziali si applicano.</span></div>
+    <div class="note"><span class="num">4</span><b>Prosa invece di struttura.</b> "Fai attenzione", "cerca di", "quando possibile": indicazioni non azionabili che non cambiano nessun comportamento concreto dell'agente.<span class="why">Perché conta: regole vaghe non sono seguibili né verificabili — occupano spazio nel contesto senza restituire valore.</span></div>
+    <div class="note"><span class="num">5</span><b>Zero riferimenti a percorsi reali.</b> Nessun file, cartella o modulo citato per nome: l'agente deve esplorare da zero la struttura a ogni sessione invece di partire da una mappa.<span class="why">Perché conta: è esattamente il lavoro che CLAUDE.md dovrebbe evitargli di rifare ogni volta.</span></div>
+  </div>
+
+  <div class="callout"><b>Da portare in aula:</b> ognuno di questi difetti è comune perché sembra "scrivere in fretta e andare avanti" — ma un CLAUDE.md scritto così genera più lavoro di rilavorazione di quanto ne risparmi.</div>
+
+  <footer>Officina &middot; Capitolo 2 — Configurare Claude Code per il team</footer>
+</div>
+</body>
+</html>

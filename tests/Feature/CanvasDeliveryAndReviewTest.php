@@ -118,6 +118,34 @@ HTML;
         $this->assertStringNotContainsString('function localCopy()', $html);
     }
 
+    public function test_canvas_with_own_print_gets_download_only(): void
+    {
+        [$course, $canvas] = $this->courseWithCanvas('<html><head></head><body><h1>X</h1><textarea data-field="a"></textarea><button onclick="window.print()">Stampa</button></body></html>');
+        $html = $this->actingAsStudent($this->enrolledStudent($course))->get(route('student.material.canvas', $canvas))->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-officina="download"', $html);
+        $this->assertStringNotContainsString('data-officina="print"', $html);
+    }
+
+    public function test_id_based_canvas_gets_toolbar_and_reviewer_labels(): void
+    {
+        $html = '<html><head></head><body><div class="card"><h2>Accuratezza sul test</h2><input id="acc" type="text"></div>'
+            . '<script>const campi=["acc"];</script></body></html>';
+        [$course, $canvas] = $this->courseWithCanvas($html);
+        $student = $this->enrolledStudent($course);
+        StudentCanvasData::create(['student_id' => $student->id, 'material_id' => $canvas->id, 'data' => ['acc' => '0,91']]);
+
+        $served = $this->actingAsStudent($student)->get(route('student.material.canvas', $canvas))->assertOk()->getContent();
+        $this->assertStringContainsString('officina-canvas-toolbar', $served);
+
+        $instructor = $this->makeStudent(['role' => 'instructor', 'auto_enroll_all_courses' => true]);
+        $this->actingAsStudent($instructor)
+            ->get(route('student.course.canvas-review.show', [$course->slug, $canvas]))
+            ->assertOk()
+            ->assertSee('Accuratezza sul test')
+            ->assertSee('0,91');
+    }
+
     public function test_read_only_canvas_gets_no_toolbar(): void
     {
         [$course, $canvas] = $this->courseWithCanvas('<html><head></head><body><h1>Laboratorio 2</h1><p>Istruzioni</p></body></html>');
