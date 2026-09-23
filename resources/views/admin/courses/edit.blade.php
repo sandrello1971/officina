@@ -31,7 +31,7 @@
         </div>
     </div>
 
-    @php($lastRun = $course->generationRuns()->latest()->first())
+    @php $lastRun = $course->generationRuns()->latest()->first(); @endphp
     @if($lastRun && $lastRun->phase !== 'done')
     <div style="background:#FFF8EE; border:1px solid rgba(226,138,83,0.45); color:#C26A2E; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:0.85rem; display:flex; align-items:center; justify-content:space-between; gap:10px;">
         <span>Generazione AI in corso o in attesa di revisione ({{ $lastRun->status }} / {{ $lastRun->phase }}).</span>

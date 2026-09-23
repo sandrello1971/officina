@@ -70,4 +70,44 @@
     </div>
 </div>
 
+@if($selectedCourseId)
+<div style="background:white; border-radius:10px; padding:24px; margin-top:24px;">
+    <h3 style="font-weight:700; color:#1A1F1F; margin-bottom:4px;">Riusa un documento già caricato su un altro corso</h3>
+    <p style="font-size:0.8rem; color:#8A9696; margin-bottom:14px;">
+        Invece di ricaricare lo stesso file, aggiungilo direttamente a questo corso.
+    </p>
+
+    @if($existingElsewhere->isEmpty())
+        <p style="font-size:0.82rem; color:#8A9696;">Nessun documento presente su altri corsi.</p>
+    @else
+        <input type="text" id="existing-elsewhere-filter" placeholder="Filtra per titolo o corso..."
+               oninput="document.querySelectorAll('[data-existing-row]').forEach(function(row){
+                   row.style.display = row.dataset.search.includes(this.value.toLowerCase()) ? '' : 'none';
+               }.bind(this))"
+               style="width:100%; padding:8px 12px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.85rem; margin-bottom:12px;">
+
+        <div style="display:flex; flex-direction:column; gap:6px; max-height:320px; overflow-y:auto;">
+            @foreach($existingElsewhere as $item)
+            <div data-existing-row data-search="{{ \Illuminate\Support\Str::lower($item['title'] . ' ' . $item['course_name']) }}"
+                 style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:#F5F7F7; border-radius:8px;">
+                <div>
+                    <div style="font-size:0.83rem; font-weight:600; color:#1A1F1F;">{{ \Illuminate\Support\Str::limit($item['title'], 50) }}</div>
+                    <div style="font-size:0.72rem; color:#8A9696;">da: {{ $item['course_name'] }}</div>
+                </div>
+                <form method="POST" action="{{ route('admin.rag.attach') }}">
+                    @csrf
+                    <input type="hidden" name="source_course_id" value="{{ $item['course_id'] }}">
+                    <input type="hidden" name="title" value="{{ $item['title'] }}">
+                    <input type="hidden" name="target_course_id" value="{{ $selectedCourseId }}">
+                    <button type="submit" style="padding:5px 12px; background:#55B1AE; color:white; border:none; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        Aggiungi a questo corso
+                    </button>
+                </form>
+            </div>
+            @endforeach
+        </div>
+    @endif
+</div>
+@endif
+
 @endsection

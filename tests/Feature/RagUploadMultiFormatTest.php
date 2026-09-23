@@ -76,4 +76,32 @@ class RagUploadMultiFormatTest extends TestCase
         Bus::assertDispatched(IngestRagVideoJob::class, fn ($job) => $job->courseId === $course->id);
         $this->assertSame(0, DocumentRag::where('course_id', $course->id)->count());
     }
+
+    public function test_riusa_documento_di_un_altro_corso_lo_ricompone_e_reindicizza(): void
+    {
+        $sourceCourse = $this->makeCourse();
+        $targetCourse = $this->makeCourse();
+
+        // Simula 2 chunk sovrapposti (200 char), come RagService::chunkText.
+        DocumentRag::create(['course_id' => $sourceCourse->id, 'title' => 'Manuale condiviso', 'content' => str_repeat('A', 800) . str_repeat('X', 200), 'chunk_index' => 0]);
+        DocumentRag::create(['course_id' => $sourceCourse->id, 'title' => 'Manuale condiviso', 'content' => str_repeat('X', 200) . str_repeat('B', 600), 'chunk_index' => 1]);
+
+        $this->asAdmin()->get(route('admin.rag.index', ['course_id' => $targetCourse->id]))
+            ->assertOk()
+            ->assertSee('Manuale condiviso');
+
+        $this->asAdmin()->post(route('admin.rag.attach'), [
+            'source_course_id' => $sourceCourse->id,
+            'title' => 'Manuale condiviso',
+            'target_course_id' => $targetCourse->id,
+        ])->assertRedirect();
+
+        $copied = DocumentRag::where('course_id', $targetCourse->id)->where('title', 'Manuale condiviso')->get();
+        $this->assertNotEmpty($copied);
+        $fullText = DocumentRag::reassembleGroup($copied->sortBy('chunk_index'));
+        $this->assertSame(1, substr_count($fullText, str_repeat('X', 200)));
+
+        // Il corso sorgente non viene toccato.
+        $this->assertSame(2, DocumentRag::where('course_id', $sourceCourse->id)->count());
+    }
 }

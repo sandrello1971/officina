@@ -671,6 +671,7 @@ Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'
 
     Route::get('rag', [App\Http\Controllers\Admin\RagController::class, 'index'])->name('rag.index');
     Route::post('rag/upload', [App\Http\Controllers\Admin\RagController::class, 'upload'])->name('rag.upload');
+    Route::post('rag/attach', [App\Http\Controllers\Admin\RagController::class, 'attachExisting'])->name('rag.attach');
     Route::delete('rag/{document}', [App\Http\Controllers\Admin\RagController::class, 'destroy'])->name('rag.destroy');
 
     Route::get('analytics', [App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics');

@@ -84,7 +84,7 @@
             </div>
 
             @foreach (['student_manual', 'instructor_manual', 'slides'] as $type)
-                @php($artifact = $artifacts->get($type))
+                @php $artifact = $artifacts->get($type); @endphp
                 <div style="border:1px solid #F5F7F7; border-radius:8px; padding:14px; margin-bottom:10px;">
                     <div style="display:flex; align-items:center; justify-content:between; gap:10px; margin-bottom:8px;">
                         <strong style="font-size:0.85rem; color:#1A1F1F;">{{ $typeLabels[$type] }}</strong>

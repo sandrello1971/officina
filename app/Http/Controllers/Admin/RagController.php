@@ -23,7 +23,26 @@ class RagController extends Controller
         $courses = Course::orderBy('sort_order')->get();
         $selectedCourseId = $request->query('course_id');
 
-        return view('admin.rag.index', compact('documents', 'courses', 'selectedCourseId'));
+        // Riuso tra corsi: documenti già caricati su ALTRI corsi, raggruppati
+        // per (corso, titolo) — così non serve ricaricare lo stesso file per
+        // ogni corso. Ha senso solo quando si arriva qui da un corso preciso.
+        $existingElsewhere = collect();
+        if ($selectedCourseId) {
+            $existingElsewhere = DocumentRag::with('course:id,name,icon')
+                ->where('course_id', '!=', $selectedCourseId)
+                ->whereNotNull('course_id')
+                ->orderBy('title')
+                ->get(['id', 'title', 'course_id'])
+                ->groupBy(fn ($d) => $d->course_id . '|' . $d->title)
+                ->map(fn ($group) => [
+                    'course_id' => $group->first()->course_id,
+                    'course_name' => optional($group->first()->course)->name ?? '—',
+                    'title' => $group->first()->title,
+                ])
+                ->values();
+        }
+
+        return view('admin.rag.index', compact('documents', 'courses', 'selectedCourseId', 'existingElsewhere'));
     }
 
     public function upload(Request $request)
@@ -92,6 +111,30 @@ class RagController extends Controller
         }
 
         return back()->with('success', $successMsg . '.');
+    }
+
+    /** Riusa un documento già indicizzato su un ALTRO corso: ricompone il testo dai suoi chunk e lo re-indicizza per il corso di destinazione (nessun riferimento condiviso: righe DocumentRag indipendenti, stesso trattamento di un upload). */
+    public function attachExisting(Request $request)
+    {
+        $data = $request->validate([
+            'source_course_id' => 'required|uuid',
+            'title' => 'required|string',
+            'target_course_id' => 'required|uuid|different:source_course_id',
+        ]);
+
+        $chunks = DocumentRag::where('course_id', $data['source_course_id'])
+            ->where('title', $data['title'])
+            ->orderBy('chunk_index')
+            ->get(['content', 'chunk_index', 'file_path']);
+
+        if ($chunks->isEmpty()) {
+            return back()->with('error', 'Documento sorgente non trovato (forse è stato rimosso nel frattempo).');
+        }
+
+        $text = DocumentRag::reassembleGroup($chunks);
+        app(RagService::class)->indexDocument($text, $data['title'], $data['target_course_id'], null, $chunks->first()->file_path);
+
+        return back()->with('success', "«{$data['title']}» aggiunto a questo corso.");
     }
 
     private function extractText($file): string

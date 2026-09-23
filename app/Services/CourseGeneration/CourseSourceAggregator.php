@@ -18,9 +18,6 @@ class CourseSourceAggregator
 {
     private const MAX_CHARS = 40000;
 
-    /** Overlap di RagService::chunkText() — va tolto per non duplicare testo in fase di ricomposizione. */
-    private const CHUNK_OVERLAP = 200;
-
     /**
      * @param  ?array<int, array{source_type:string, id?:string, title?:string}>  $selectedSources
      *         Selezione confermata dal formatore nella tappa "Seleziona le fonti"
@@ -64,7 +61,7 @@ class CourseSourceAggregator
         return $query->orderBy('title')->orderBy('chunk_index')
             ->get(['title', 'chunk_index', 'content'])
             ->groupBy('title')
-            ->map(fn (Collection $chunks, string $title) => '## ' . $title . "\n" . $this->reassembleChunks($chunks))
+            ->map(fn (Collection $chunks, string $title) => '## ' . $title . "\n" . DocumentRag::reassembleGroup($chunks->sortBy('chunk_index')))
             ->implode("\n\n---\n\n");
     }
 
@@ -84,17 +81,5 @@ class CourseSourceAggregator
             ->map(fn ($m) => '## ' . $m->title . "\n" . trim(strip_tags((string) $m->content_html)))
             ->filter(fn ($chunk) => trim(explode("\n", $chunk, 2)[1] ?? '') !== '')
             ->implode("\n\n---\n\n");
-    }
-
-    /** Ricompone i chunk sovrapposti (200 char) in testo continuo: primo intero, successivi troncati dell'overlap. */
-    private function reassembleChunks(Collection $chunks): string
-    {
-        $sorted = $chunks->sortBy('chunk_index')->values();
-        $out = '';
-        foreach ($sorted as $i => $chunk) {
-            $out .= $i === 0 ? $chunk->content : mb_substr((string) $chunk->content, self::CHUNK_OVERLAP);
-        }
-
-        return trim($out);
     }
 }
