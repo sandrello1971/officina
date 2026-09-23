@@ -181,10 +181,11 @@ class CourseController extends Controller
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->pluck('content')
-            ->filter()
-            ->join("\n\n");
+            ->filter(fn ($c) => trim(strip_tags((string) $c)) !== '')
+            ->values()
+            ->all(); // un elemento per modulo: il generatore ripartisce l'estratto su tutti
 
-        if (empty(trim($content))) {
+        if (empty($content)) {
             return back()->with('error', 'Nessun contenuto nei moduli. Aggiungi prima il testo dei moduli.');
         }
 
@@ -208,6 +209,9 @@ class CourseController extends Controller
         $msg = $quiz->questions_per_attempt
             ? "Pool di {$pool} domande generato; ogni tentativo ne estrae {$quiz->questions_per_attempt}."
             : "Quiz generato con {$pool} domande!";
+        if ($pool < $numQuestions) {
+            $msg .= " Attenzione: richieste {$numQuestions}, l'AI ne ha prodotte solo {$pool} valide e non ripetute — verificale o aggiungine a mano.";
+        }
 
         return redirect("/quizzes/{$quiz->id}/questions")->with('success', $msg);
     }

@@ -83,6 +83,13 @@ class QuizController extends Controller
      */
     private function storeGenerated(Request $request, array $data, \App\Services\QuizGeneratorService $generator)
     {
+        // Modulo selezionato → le domande nascono dal SOLO modulo (prima veniva
+        // salvato sul quiz ma il contenuto era comunque quello dell'intero corso).
+        $module = !empty($data['module_id']) ? Module::find($data['module_id']) : null;
+        if ($module && empty($data['course_id'])) {
+            $data['course_id'] = $module->course_id;
+        }
+
         if (empty($data['course_id'])) {
             return back()->withInput()->with('error',
                 'Seleziona un corso per generare le domande con l\'AI.');
@@ -90,16 +97,24 @@ class QuizController extends Controller
 
         $course = Course::findOrFail($data['course_id']);
 
-        $content = $course->modules()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->pluck('content')
-            ->filter()
-            ->join("\n\n");
-
-        if (empty(trim($content))) {
+        if ($module && $module->course_id !== $course->id) {
             return back()->withInput()->with('error',
-                'Nessun contenuto nei moduli del corso. Aggiungi prima il testo dei moduli.');
+                'Il modulo selezionato non appartiene al corso scelto.');
+        }
+
+        // Un elemento per modulo: il generatore ripartisce l'estratto su tutti.
+        $content = ($module ? collect([$module->content]) : $course->modules()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->pluck('content'))
+            ->filter(fn ($c) => trim(strip_tags((string) $c)) !== '')
+            ->values()
+            ->all();
+
+        if (empty($content)) {
+            return back()->withInput()->with('error', $module
+                ? 'Il modulo selezionato non ha contenuto testuale.'
+                : 'Nessun contenuto nei moduli del corso. Aggiungi prima il testo dei moduli.');
         }
 
         $numQuestions = (int) ($data['num_questions'] ?? 10);
@@ -111,9 +126,10 @@ class QuizController extends Controller
         }
 
         $brand = atheneum_setting('instance_name', 'aziende e PMI');
-        $result = $generator->generateQuestionSet($content, $course->name, $numQuestions, [
+        $result = $generator->generateQuestionSet($content, $module ? $module->title : $course->name, $numQuestions, [
             'audience' => "formazione aziendale per {$brand}",
-            'subject_noun' => 'corso',
+            'subject_noun' => $module ? 'modulo' : 'corso',
+            'meter' => ['feature' => 'quiz.generate', 'course_id' => $course->id],
         ]);
 
         if ($result === null) {
@@ -132,6 +148,9 @@ class QuizController extends Controller
         $msg = $quiz->questions_per_attempt
             ? "Pool di {$pool} domande generato; ogni tentativo ne estrae {$quiz->questions_per_attempt}."
             : "Quiz generato con {$pool} domande!";
+        if ($pool < $numQuestions) {
+            $msg .= " Attenzione: richieste {$numQuestions}, l'AI ne ha prodotte solo {$pool} valide e non ripetute — verificale o aggiungine a mano.";
+        }
 
         return redirect("/quizzes/{$quiz->id}/questions")->with('success', $msg);
     }

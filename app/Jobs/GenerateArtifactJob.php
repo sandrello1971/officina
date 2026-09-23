@@ -104,7 +104,7 @@ class GenerateArtifactJob implements ShouldQueue
 
                 case 'quiz':
                     $num = (int) ($this->options['num_questions'] ?? 10);
-                    $res = $quizGenerator->generateQuestions($source, $label, $num);
+                    $res = $quizGenerator->generateQuestionSet($source, $label, $num);
                     if ($res === null) {
                         throw new RuntimeException('Generazione quiz fallita: risposta API non valida.');
                     }

@@ -37,6 +37,16 @@ class ClaudeResponse
         $t = trim(preg_replace('/```(?:json)?\s*|\s*```/i', '', $this->text()));
         $data = json_decode($t, true);
 
+        // Fallback: testo di cortesia prima/dopo il JSON ("Ecco le domande: {...}")
+        // → prova l'oggetto tra la prima '{' e l'ultima '}'.
+        if (!is_array($data)) {
+            $start = strpos($t, '{');
+            $end = strrpos($t, '}');
+            if ($start !== false && $end !== false && $end > $start) {
+                $data = json_decode(substr($t, $start, $end - $start + 1), true);
+            }
+        }
+
         return is_array($data) ? $data : null;
     }
 
