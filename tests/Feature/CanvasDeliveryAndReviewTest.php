@@ -146,6 +146,28 @@ HTML;
             ->assertSee('0,91');
     }
 
+    public function test_dynamic_table_rows_are_shown_with_column_headers(): void
+    {
+        $html = '<html><head></head><body><div class="card"><h2>Ruoli per reparto</h2><table><thead><tr>'
+            . '<th>Reparto</th><th>Strumenti AI usati</th><th>Categoria AI Act</th><th></th></tr></thead>'
+            . '<tbody id="rows"></tbody></table></div><script>function collect(){return {rep:a.value, tool:b.value, cat:c.value};}</script>'
+            . '<input type="text" data-field="x_rep" style="display:none"></body></html>';
+        [$course, $canvas] = $this->courseWithCanvas($html);
+        $student = $this->enrolledStudent($course);
+        StudentCanvasData::create(['student_id' => $student->id, 'material_id' => $canvas->id, 'data' => ['rows' => [
+            ['rep' => 'Commerciale', 'tool' => 'ChatGPT', 'cat' => 'Rischio limitato'],
+            ['rep' => 'HR', 'tool' => 'Workable', 'cat' => 'Alto rischio'],
+        ]]]);
+        $instructor = $this->makeStudent(['role' => 'instructor', 'auto_enroll_all_courses' => true]);
+
+        $this->actingAsStudent($instructor)
+            ->get(route('student.course.canvas-review.show', [$course->slug, $canvas]))
+            ->assertOk()
+            ->assertSee('Ruoli per reparto')
+            ->assertSeeInOrder(['Reparto', 'Strumenti AI usati', 'Categoria AI Act', 'Commerciale', 'ChatGPT', 'Rischio limitato', 'HR', 'Workable', 'Alto rischio'])
+            ->assertDontSee('>Rep<', false);
+    }
+
     public function test_read_only_canvas_gets_no_toolbar(): void
     {
         [$course, $canvas] = $this->courseWithCanvas('<html><head></head><body><h1>Laboratorio 2</h1><p>Istruzioni</p></body></html>');

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Effetto Glitch · AI Inventory Scolastico — SCHOLA</title>
+<style>
+:root {
+  --teal: #55B1AE; --teal-dark: #3D8B88; --teal-light: #E8F5F5;
+  --orange: #E28A53; --gray-bg: #F5F7F7; --gray-border: #D1D5DB;
+  --text: #1F2937; --text-light: #6B7280; --white: #FFFFFF;
+  --red: #DC2626; --red-light: #FEE2E2;
+  --amber: #D97706; --amber-light: #FEF3C7;
+  --green: #059669; --green-light: #D1FAE5;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Calibri, 'Segoe UI', sans-serif; background: var(--gray-bg); color: var(--text); line-height: 1.5; padding: 20px; }
+.container { max-width: 1600px; margin: 0 auto; }
+.header { background: var(--white); border-left: 6px solid var(--teal); padding: 24px 28px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.tag { font-size: 11pt; letter-spacing: 2px; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 6px; }
+.header h1 { font-size: 24pt; margin-bottom: 4px; }
+.header p { color: var(--text-light); font-size: 11pt; }
+.motto { color: var(--orange); font-style: italic; font-size: 10pt; margin-top: 8px; }
+.intro-box { background: var(--teal-light); padding: 18px 22px; border-radius: 8px; margin-bottom: 20px; font-size: 11pt; }
+.intro-box strong { color: var(--teal-dark); }
+.actions { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+button { font-family: Calibri, 'Segoe UI', sans-serif; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 11pt; font-weight: 600; }
+.btn-primary { background: var(--teal); color: white; }
+.btn-primary:hover { background: var(--teal-dark); }
+.btn-secondary { background: var(--white); color: var(--text); border: 1px solid var(--gray-border); }
+.btn-danger { background: var(--white); color: var(--red); border: 1px solid var(--red); }
+.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--white); padding: 14px 18px; border-radius: 8px; border-left: 4px solid var(--teal); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.stat-card.vietato { border-left-color: var(--red); }
+.stat-card.high { border-left-color: var(--amber); }
+.stat-card.limited { border-left-color: #3B82F6; }
+.stat-card.minimal { border-left-color: var(--green); }
+.stat-card.compliance { border-left-color: var(--orange); }
+.stat-number { font-size: 22pt; font-weight: 700; }
+.stat-label { font-size: 9pt; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; }
+.table-wrapper { background: var(--white); border-radius: 8px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+table { width: 100%; border-collapse: collapse; min-width: 1800px; }
+th { background: var(--teal); color: white; padding: 12px 8px; text-align: left; font-size: 9pt; font-weight: 600; white-space: nowrap; position: sticky; top: 0; z-index: 10; }
+td { padding: 5px; border-bottom: 1px solid var(--gray-border); vertical-align: top; font-size: 9pt; }
+tr:hover td { background: var(--teal-light); }
+input, select, textarea { width: 100%; font-family: Calibri, 'Segoe UI', sans-serif; font-size: 9pt; padding: 5px 6px; border: 1px solid var(--gray-border); border-radius: 4px; background: var(--white); }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--teal); outline-offset: -1px; border-color: var(--teal); }
+.delete-btn { background: none; border: none; color: var(--red); cursor: pointer; font-size: 16pt; padding: 4px 8px; font-weight: bold; }
+.risk-vietato { background: var(--red-light); color: var(--red); font-weight: 600; }
+.risk-high { background: var(--amber-light); color: var(--amber); font-weight: 600; }
+.risk-limited { background: #DBEAFE; color: #1E40AF; font-weight: 600; }
+.risk-minimal { background: var(--green-light); color: var(--green); font-weight: 600; }
+.compliance-ok { background: var(--green-light); color: var(--green); font-weight: 600; }
+.compliance-no { background: var(--red-light); color: var(--red); font-weight: 600; }
+.compliance-partial { background: var(--amber-light); color: var(--amber); font-weight: 600; }
+.footer { margin-top: 24px; text-align: center; color: var(--text-light); font-size: 10pt; padding: 16px; }
+.footer .motto { color: var(--orange); }
+@media print { body { background: white; padding: 0; } .actions { display: none; } th { background: var(--teal) !important; -webkit-print-color-adjust: exact; } }
+.save-status{position:fixed;top:14px;right:14px;background:var(--white);border:1px solid var(--gray-border);border-radius:20px;padding:6px 16px;font-size:10pt;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,.1);z-index:999}
+.save-status.saved{color:var(--green);border-color:var(--green)}
+.save-status.saving{color:var(--amber);border-color:var(--amber)}
+.save-status.error{color:var(--red);border-color:var(--red)}
+@media print{.save-status{display:none}}
+
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="tag">Canvas Effetto Glitch · SCHOLA</div>
+    <h1>AI Inventory Scolastico</h1>
+    <p>Mappatura dei sistemi AI applicati all'istituto — Allegato III.3 + Statuto delle studentesse + Codice Privacy + GDPR Art. 8 + Linee Guida MIM</p>
+    
+  </div>
+
+  <div class="intro-box">
+    <strong>Come usarlo.</strong> Per ogni sistema AI applicato all'istituto (registro elettronico, piattaforma didattica, detector di plagio, adaptive learning, proctoring, videosorveglianza con AI, AI per BES/DSA), una riga. Verificate quattro dimensioni di compliance scolastica: DPIA per minori, deliberazione collegio docenti, informativa famiglie, HITL del docente. Sistemi pre-popolati a titolo di esempio.
+  </div>
+
+  <div class="stats">
+    <div class="stat-card vietato"><div class="stat-number" id="count-vietato">0</div><div class="stat-label">Vietati Art. 5</div></div>
+    <div class="stat-card high"><div class="stat-number" id="count-high">0</div><div class="stat-label">High-Risk III.3</div></div>
+    <div class="stat-card limited"><div class="stat-number" id="count-limited">0</div><div class="stat-label">Limited Risk</div></div>
+    <div class="stat-card minimal"><div class="stat-number" id="count-minimal">0</div><div class="stat-label">Minimal Risk</div></div>
+    <div class="stat-card compliance"><div class="stat-number" id="count-compliance">0%</div><div class="stat-label">Compliance Score</div></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" onclick="addRow()">+ Aggiungi sistema AI</button>
+    <button class="btn-secondary" onclick="exportJSON()">📥 Esporta JSON</button>
+    <button class="btn-secondary" onclick="importJSON()">📤 Importa JSON</button>
+    <button class="btn-secondary" onclick="window.print()">🖨️ Stampa / PDF</button>
+    <button class="btn-danger" onclick="clearAll()">🗑️ Svuota</button>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 60px;">ID</th>
+          <th style="width: 160px;">Sistema</th>
+          <th style="width: 110px;">Vendor</th>
+          <th style="width: 130px;">Famiglia</th>
+          <th style="width: 160px;">Categoria rischio</th>
+          <th style="width: 130px;">Studenti interessati</th>
+          <th style="width: 100px;">Tratta dati minori</th>
+          <th style="width: 110px;">DPIA effettuata</th>
+          <th style="width: 120px;">Delibera collegio</th>
+          <th style="width: 120px;">Informativa famiglie</th>
+          <th style="width: 110px;">HITL docente</th>
+          <th style="width: 110px;">Stato</th>
+          <th style="width: 50px;"></th>
+        </tr>
+      </thead>
+      <tbody id="inventory-body"></tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <div>Canvas Effetto Glitch · SCHOLA v1.0 · AI Inventory Scolastico</div>
+    
+    <div style="margin-top: 6px; font-size: 9pt;">Conservare per audit AI Act (min. 5 anni)</div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept=".json" style="display:none" onchange="loadJSON(event)">
+
+<script>
+const STORAGE_KEY = 'noscite_schola_ai_inventory';
+let rowCounter = 0;
+
+const categories = [
+  { value: '', label: '—' },
+  { value: 'Vietato Art. 5(e)', label: '⛔ Vietato Art. 5(e)' },
+  { value: 'High-Risk III.3 Ammissione', label: 'High-Risk III.3 Ammissione' },
+  { value: 'High-Risk III.3 Valutazione', label: 'High-Risk III.3 Valutazione' },
+  { value: 'High-Risk III.3 Orientamento', label: 'High-Risk III.3 Orientamento' },
+  { value: 'High-Risk III.3 Proctoring', label: 'High-Risk III.3 Proctoring' },
+  { value: 'High-Risk III.1 Biometria', label: 'High-Risk III.1 Biometria' },
+  { value: 'Limited Risk Art. 50', label: 'Limited Risk Art. 50' },
+  { value: 'Minimal Risk', label: 'Minimal Risk' }
+];
+
+const families = ['Registro elettronico', 'Piattaforma didattica', 'LMS', 'Detector plagio', 'Sistema di valutazione', 'Adaptive learning', 'Tutor AI / Chatbot', 'Iscrizioni online', 'Videosorveglianza AI', 'AI per BES/DSA', 'Generative AI', 'Altro'];
+
+function createRow(data = {}) {
+  rowCounter++;
+  const id = data.id || `SCH-AI-${String(rowCounter).padStart(3, '0')}`;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" value="${id}" data-field="id"></td>
+    <td><input type="text" value="${data.name || ''}" data-field="name" placeholder="es. Argo Predict"></td>
+    <td><input type="text" value="${data.vendor || ''}" data-field="vendor"></td>
+    <td><select data-field="family">${families.map(f => `<option value="${f}" ${data.family === f ? 'selected' : ''}>${f}</option>`).join('')}</select></td>
+    <td><select data-field="category" onchange="updateStats()">${categories.map(c => `<option value="${c.value}" ${data.category === c.value ? 'selected' : ''}>${c.label}</option>`).join('')}</select></td>
+    <td><input type="text" value="${data.subjects || ''}" data-field="subjects" placeholder="es. 800 studenti"></td>
+    <td><select data-field="minors">
+      <option value="" ${!data.minors ? 'selected' : ''}>—</option>
+      <option value="Sì" ${data.minors === 'Sì' ? 'selected' : ''}>Sì</option>
+      <option value="No" ${data.minors === 'No' ? 'selected' : ''}>No</option>
+      <option value="Misto" ${data.minors === 'Misto' ? 'selected' : ''}>Misto</option>
+    </select></td>
+    <td><select data-field="dpia" onchange="updateStats()">
+      <option value="" ${!data.dpia ? 'selected' : ''}>—</option>
+      <option value="Sì - effettuata" ${data.dpia === 'Sì - effettuata' ? 'selected' : ''}>Sì effettuata</option>
+      <option value="In corso" ${data.dpia === 'In corso' ? 'selected' : ''}>In corso</option>
+      <option value="No - urgente" ${data.dpia === 'No - urgente' ? 'selected' : ''}>No urgente</option>
+      <option value="N/A" ${data.dpia === 'N/A' ? 'selected' : ''}>N/A</option>
+    </select></td>
+    <td><select data-field="collegio" onchange="updateStats()">
+      <option value="" ${!data.collegio ? 'selected' : ''}>—</option>
+      <option value="Sì - deliberato" ${data.collegio === 'Sì - deliberato' ? 'selected' : ''}>Sì deliberato</option>
+      <option value="In discussione" ${data.collegio === 'In discussione' ? 'selected' : ''}>In discussione</option>
+      <option value="No - urgente" ${data.collegio === 'No - urgente' ? 'selected' : ''}>No urgente</option>
+    </select></td>
+    <td><select data-field="informativa" onchange="updateStats()">
+      <option value="" ${!data.informativa ? 'selected' : ''}>—</option>
+      <option value="Sì - erogata" ${data.informativa === 'Sì - erogata' ? 'selected' : ''}>Sì erogata</option>
+      <option value="In preparazione" ${data.informativa === 'In preparazione' ? 'selected' : ''}>In preparazione</option>
+      <option value="No - urgente" ${data.informativa === 'No - urgente' ? 'selected' : ''}>No urgente</option>
+    </select></td>
+    <td><select data-field="hitl" onchange="updateStats()">
+      <option value="" ${!data.hitl ? 'selected' : ''}>—</option>
+      <option value="Sì - sostanziale" ${data.hitl === 'Sì - sostanziale' ? 'selected' : ''}>Sì sostanziale</option>
+      <option value="Parziale" ${data.hitl === 'Parziale' ? 'selected' : ''}>Parziale</option>
+      <option value="No - simbolico" ${data.hitl === 'No - simbolico' ? 'selected' : ''}>Simbolico</option>
+    </select></td>
+    <td><select data-field="status">
+      <option value="Attivo" ${(data.status || 'Attivo') === 'Attivo' ? 'selected' : ''}>Attivo</option>
+      <option value="Da regolarizzare" ${data.status === 'Da regolarizzare' ? 'selected' : ''}>Da regolarizzare</option>
+      <option value="Da sospendere" ${data.status === 'Da sospendere' ? 'selected' : ''}>Da sospendere</option>
+      <option value="Dismesso" ${data.status === 'Dismesso' ? 'selected' : ''}>Dismesso</option>
+    </select></td>
+    <td><button class="delete-btn" onclick="deleteRow(this)" title="Elimina">×</button></td>
+  `;
+  document.getElementById('inventory-body').appendChild(tr);
+  tr.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('change', () => { saveState(); updateStats(); });
+    el.addEventListener('input', () => saveState());
+  });
+  applyStyle(tr);
+}
+
+function applyStyle(tr) {
+  const catSel = tr.querySelector('[data-field="category"]');
+  const cat = catSel.value;
+  catSel.classList.remove('risk-vietato', 'risk-high', 'risk-limited', 'risk-minimal');
+  if (cat.startsWith('Vietato')) catSel.classList.add('risk-vietato');
+  else if (cat.startsWith('High-Risk')) catSel.classList.add('risk-high');
+  else if (cat.startsWith('Limited')) catSel.classList.add('risk-limited');
+  else if (cat.startsWith('Minimal')) catSel.classList.add('risk-minimal');
+
+  ['dpia', 'collegio', 'informativa', 'hitl'].forEach(f => {
+    const el = tr.querySelector(`[data-field="${f}"]`);
+    el.classList.remove('compliance-ok', 'compliance-no', 'compliance-partial');
+    const v = el.value;
+    if (v.startsWith('Sì') || v.startsWith('N/A')) el.classList.add('compliance-ok');
+    else if (v.startsWith('No') || v.includes('simbolico')) el.classList.add('compliance-no');
+    else if (v.startsWith('In') || v.includes('Parziale')) el.classList.add('compliance-partial');
+  });
+}
+
+function addRow() { createRow(); saveState(); }
+function deleteRow(btn) { if (confirm('Eliminare questa riga?')) { btn.closest('tr').remove(); saveState(); updateStats(); } }
+
+function updateStats() {
+  const rows = document.querySelectorAll('#inventory-body tr');
+  let vietato = 0, high = 0, limited = 0, minimal = 0;
+  let complianceOK = 0, complianceTotal = 0;
+  rows.forEach(tr => {
+    const cat = tr.querySelector('[data-field="category"]').value;
+    if (cat.startsWith('Vietato')) vietato++;
+    else if (cat.startsWith('High-Risk')) high++;
+    else if (cat.startsWith('Limited')) limited++;
+    else if (cat.startsWith('Minimal')) minimal++;
+
+    ['dpia', 'collegio', 'informativa', 'hitl'].forEach(f => {
+      const v = tr.querySelector(`[data-field="${f}"]`).value;
+      if (v && v !== '') {
+        complianceTotal++;
+        if (v.startsWith('Sì') || v.startsWith('N/A')) complianceOK++;
+      }
+    });
+    applyStyle(tr);
+  });
+  document.getElementById('count-vietato').textContent = vietato;
+  document.getElementById('count-high').textContent = high;
+  document.getElementById('count-limited').textContent = limited;
+  document.getElementById('count-minimal').textContent = minimal;
+  const score = complianceTotal > 0 ? Math.round((complianceOK / complianceTotal) * 100) : 0;
+  document.getElementById('count-compliance').textContent = score + '%';
+}
+
+function getData() {
+  return Array.from(document.querySelectorAll('#inventory-body tr')).map(tr => {
+    const data = {};
+    tr.querySelectorAll('[data-field]').forEach(el => { data[el.dataset.field] = el.value; });
+    return data;
+  });
+}
+
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(getData())); } catch (e) {} }
+
+function loadState() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    data.forEach(row => createRow(row));
+    if (data.length === 0) {
+      createRow({ id: 'SCH-AI-001', name: 'Argo Predict', vendor: 'Argo Software', family: 'Registro elettronico', category: 'High-Risk III.3 Valutazione', subjects: '800 studenti', minors: 'Sì', dpia: 'No - urgente', collegio: 'No - urgente', informativa: 'No - urgente', hitl: 'Parziale', status: 'Da regolarizzare' });
+      createRow({ id: 'SCH-AI-002', name: 'SafeSchool behavioral', vendor: 'SafeSchool', family: 'Videosorveglianza AI', category: 'Vietato Art. 5(e)', subjects: 'Tutti studenti', minors: 'Sì', dpia: 'No', collegio: 'No', informativa: 'No', hitl: 'No - simbolico', status: 'Da sospendere' });
+      createRow({ id: 'SCH-AI-003', name: 'MathPath AI', vendor: 'MathPath', family: 'Adaptive learning', category: 'High-Risk III.3 Valutazione', subjects: '500 studenti primaria+sec', minors: 'Sì', dpia: 'In corso', collegio: 'In discussione', informativa: 'In preparazione', hitl: 'Sì - sostanziale', status: 'Da regolarizzare' });
+      createRow({ id: 'SCH-AI-004', name: 'Google Workspace + Gemini', vendor: 'Google', family: 'Generative AI', category: 'Limited Risk Art. 50', subjects: 'Docenti + sec. I grado', minors: 'Misto', dpia: 'In corso', collegio: 'No - urgente', informativa: 'In preparazione', hitl: 'Parziale', status: 'Da regolarizzare' });
+    }
+    updateStats();
+  } catch (e) { console.warn(e); }
+}
+
+function exportJSON() {
+  const data = { exported_at: new Date().toISOString(), canvas: 'AI Inventory Scolastico SCHOLA v1.0', items: getData() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ai_inventory_scolastico_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON() { document.getElementById('file-input').click(); }
+
+function loadJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.items || !Array.isArray(data.items)) throw new Error('Formato non valido');
+      if (confirm(`Importare ${data.items.length} sistemi?`)) {
+        document.getElementById('inventory-body').innerHTML = '';
+        rowCounter = 0;
+        data.items.forEach(item => createRow(item));
+        saveState(); updateStats();
+      }
+    } catch (err) { alert('Errore: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+
+function clearAll() {
+  if (confirm('Eliminare TUTTI i sistemi?')) {
+    document.getElementById('inventory-body').innerHTML = '';
+    rowCounter = 0;
+    localStorage.removeItem(STORAGE_KEY);
+    updateStats();
+  }
+}
+
+loadState();
+</script>
+<div id="save-status" class="save-status">Pronto</div>
+<script>
+(function() {
+    // Persistenza portale: salva TUTTE le righe dell'inventario come {items:[...]}.
+    // (La versione precedente salvava i campi per nome: con più righe restava solo l'ultima.)
+    const status = document.getElementById('save-status');
+    const body = document.getElementById('inventory-body');
+    const params = new URLSearchParams(window.location.search);
+    const materialId = params.get('mid');
+    if (!materialId) { status.textContent = '⚠ Apri questo canvas dal corso (manca mid)'; status.className = 'save-status error'; return; }
+    let saveTimer = null, loading = true;
+    function getCsrf() { const meta = document.querySelector('meta[name=csrf-token]'); if (meta) return { 'X-CSRF-TOKEN': meta.content }; const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/); return m ? { 'X-XSRF-TOKEN': decodeURIComponent(m[1]) } : {}; }
+    function setStatus(text, cls) { status.textContent = text; status.className = 'save-status ' + (cls || ''); }
+    function rowsData() { return Array.from(body.querySelectorAll('tr')).map(tr => { const o = {}; tr.querySelectorAll('[data-field]').forEach(el => { o[el.dataset.field] = el.type === 'checkbox' ? el.checked : el.value; }); return o; }); }
+    function applyRows(items) { body.innerHTML = ''; items.forEach(r => createRow(r)); if (typeof updateStats === 'function') updateStats(); if (typeof saveState === 'function') saveState(); }
+    async function load() { setStatus('Caricamento…'); try { const res = await fetch(`/canvas/${materialId}/data`, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }); if (!res.ok) { setStatus(res.status === 403 || res.status === 401 ? '⚠ Devi essere loggato' : '⚠ Errore caricamento (' + res.status + ')', 'error'); return; } const json = await res.json(); const items = json.data && Array.isArray(json.data.items) ? json.data.items : []; if (items.length) applyRows(items); setStatus(json.updated_at ? 'Salvato ✓' : 'Pronto', 'saved'); } catch (e) { setStatus('⚠ Errore rete: ' + e.message, 'error'); } finally { loading = false; } }
+    async function save() { setStatus('Salvataggio…', 'saving'); try { const res = await fetch(`/canvas/${materialId}/data`, { method: 'PATCH', headers: Object.assign({ 'Content-Type': 'application/json', 'Accept': 'application/json' }, getCsrf()), credentials: 'same-origin', body: JSON.stringify({ data: { items: rowsData() } }) }); if (!res.ok) { setStatus('⚠ Errore salvataggio (' + res.status + ')', 'error'); return; } const json = await res.json(); setStatus(json.demo ? 'Demo — non salvato' : 'Salvato ✓', json.demo ? 'saving' : 'saved'); } catch (e) { setStatus('⚠ Errore rete: ' + e.message, 'error'); } }
+    function debouncedSave() { if (loading) return; clearTimeout(saveTimer); setStatus('Modifica…', 'saving'); saveTimer = setTimeout(save, 700); }
+    body.addEventListener('input', debouncedSave);
+    body.addEventListener('change', debouncedSave);
+    new MutationObserver(debouncedSave).observe(body, { childList: true });
+    load();
+})();
+</script>
+
+</body>
+</html>

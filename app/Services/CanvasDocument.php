@@ -177,6 +177,81 @@ HTML;
         return $labels;
     }
 
+    /**
+     * Intestazioni delle tabelle compilabili (thead), senza le colonne vuote
+     * dei pulsanti: servono a dare un nome alle colonne delle righe salvate
+     * come array (inventari, matrici, registri).
+     *
+     * @return array<int, array{title:?string, headers:array<int,string>}>
+     */
+    public function tableHeaders(string $html): array
+    {
+        if (!str_contains($html, '<thead')) {
+            return [];
+        }
+
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8"?>' . $html, LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_clear_errors();
+        $xpath = new DOMXPath($dom);
+
+        $tables = [];
+        foreach ($xpath->query('//table[thead]') as $table) {
+            /** @var DOMElement $table */
+            $headers = [];
+            foreach ($xpath->query('./thead//th', $table) as $th) {
+                $headers[] = $this->clean($th->textContent);
+            }
+            while ($headers && end($headers) === '') {
+                array_pop($headers);
+            }
+            if ($headers) {
+                $tables[] = ['title' => $this->labelFor($table, $xpath), 'headers' => $headers];
+            }
+        }
+
+        return $tables;
+    }
+
+    /**
+     * Ordine di colonna delle chiavi di una riga salvata. Il DB (jsonb) non
+     * conserva l'ordine delle chiavi, quindi lo si ricava dal sorgente del
+     * canvas: la prima occorrenza di ciascuna chiave come data-field/data-f/
+     * data-k (anche a suffisso, es. data-field="r1_rep") o come proprietà
+     * in un oggetto letterale (collect/seed) segue l'ordine delle colonne.
+     * Null se anche una sola chiave non si trova.
+     */
+    public function columnOrder(array $keys, string $html): ?array
+    {
+        // Prima il modello di riga (attributi): i dati di esempio/seed in un
+        // oggetto letterale possono comparire prima e con meno colonne.
+        $attr = [
+            '/data-(?:field|f|k)\s*=\s*["\']?(?:[\w$\{\}-]*_)?%s["\'\s>\]]/',
+            '/\[data-(?:field|f|k)\$?=["\']?_?%s["\']?\]/',
+        ];
+        $literal = ['/[\{,]\s*["\']?%s["\']?\s*:/'];
+
+        foreach ([$attr, $literal] as $patterns) {
+            $pos = [];
+            foreach ($keys as $key) {
+                $k = preg_quote((string) $key, '/');
+                foreach ($patterns as $re) {
+                    if (preg_match(sprintf($re, $k), $html, $m, PREG_OFFSET_CAPTURE)) {
+                        $pos[$key] = min($pos[$key] ?? PHP_INT_MAX, $m[0][1]);
+                    }
+                }
+            }
+            if (count($pos) === count($keys)) {
+                asort($pos);
+
+                return array_keys($pos);
+            }
+        }
+
+        return null;
+    }
+
     private function labelFor(DOMElement $el, DOMXPath $xpath): ?string
     {
         if ($el->hasAttribute('aria-label')) {
@@ -257,10 +332,41 @@ HTML . <<<'HTML'
   function download(){
     var title=clean((document.querySelector('h1')||{}).textContent)||document.title||'Canvas';
     var out=['# '+title,'','_Esportato il '+new Date().toLocaleString('it-IT')+'_',''];
-    var last=null;
+    var last=null, done=new Set();
+    function cellValue(td){
+      var c=td.querySelectorAll('input,textarea,select');
+      if(!c.length)return clean(td.textContent);
+      return Array.prototype.map.call(c,function(el){done.add(el);
+        if(el.type==='checkbox')return el.checked?'sì':'no';
+        if(el.tagName==='SELECT'&&el.selectedIndex>=0)return clean(el.options[el.selectedIndex].text);
+        return (el.value||'').replace(/\s*\n\s*/g,' ');}).join(' ');
+    }
+    function tableTitle(t){
+      for(var n=t;n&&n!==document.body;n=n.parentElement){
+        for(var p=n.previousElementSibling;p;p=p.previousElementSibling){
+          if(p.tagName==='HEADER'||p.querySelector('h1')||p.id==='officina-canvas-toolbar')continue;
+          if(/^H[2-4]$/.test(p.tagName)||/(^|[-_ ])(head|title|heading)([-_ ]|$)/i.test(p.className||''))
+            return clean((p.firstElementChild||p).textContent).slice(0,90);
+        }
+      }
+      return null;
+    }
+    var fillTables=Array.prototype.filter.call(document.querySelectorAll('table'),function(t){return t.querySelector('tbody input, tbody textarea, tbody select');});
+    fillTables.forEach(function(t,ti){
+      var hs=Array.prototype.map.call(t.querySelectorAll('thead th'),function(th){return clean(th.textContent);});
+      var keep=hs.map(function(h,i){return h!=='';});
+      var rows=Array.prototype.map.call(t.querySelectorAll('tbody tr'),function(tr){
+        return Array.prototype.map.call(tr.children,cellValue).filter(function(v,i){return keep[i]!==false;});});
+      var head=hs.filter(function(h){return h!=='';});
+      var title=tableTitle(t)||('Tabella compilata'+(fillTables.length>1?' '+(ti+1):''));
+      out.push('## '+title,'');
+      if(head.length){out.push('| '+head.join(' | ')+' |','|'+head.map(function(){return ' --- ';}).join('|')+'|');}
+      rows.forEach(function(r){out.push('| '+r.map(function(v){return (v||'—').replace(/\|/g,'/');}).join(' | ')+' |');});
+      out.push('');last=title;
+    });
     var sel=document.querySelector('[data-field]')?'[data-field]':'input,textarea,select';
     document.querySelectorAll(sel).forEach(function(el){
-      if(el.closest('#officina-canvas-toolbar'))return;
+      if(done.has(el)||el.closest('#officina-canvas-toolbar'))return;
       if(/^(hidden|button|submit|reset|file|image)$/i.test(el.type||''))return;
       if(el.type==='radio'&&!el.checked)return;
       var label=labelOf(el);

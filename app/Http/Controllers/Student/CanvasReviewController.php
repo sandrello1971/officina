@@ -54,6 +54,7 @@ class CanvasReviewController extends Controller
             ? Storage::disk('local')->get($material->file_path)
             : '';
         $labels = $canvas->fieldLabels($html);
+        $tables = $canvas->tableHeaders($html);
 
         $rows = StudentCanvasData::where('material_id', $material->id)
             ->whereIn('student_id', $this->enrolledStudentIds($course))
@@ -64,7 +65,7 @@ class CanvasReviewController extends Controller
         $submissions = $rows->map(fn (StudentCanvasData $row) => [
             'student' => $row->student,
             'updated_at' => $row->updated_at,
-            'fields' => $this->presentFields((array) $row->data, $labels),
+            'fields' => $this->presentFields((array) $row->data, $labels, $tables, $html, $canvas),
         ]);
 
         return view('student.course.canvas-review.show', [
@@ -114,7 +115,7 @@ class CanvasReviewController extends Controller
      *
      * @return array<int, array{label:string, text:?string, rows:?array}>
      */
-    private function presentFields(array $data, array $labels): array
+    private function presentFields(array $data, array $labels, array $tables = [], string $html = '', ?CanvasDocument $canvas = null): array
     {
         $keys = array_values(array_unique(array_merge(array_keys($labels), array_keys($data))));
         $fields = [];
@@ -129,14 +130,48 @@ class CanvasReviewController extends Controller
                 $value = is_array($decoded) ? $decoded : $value;
             }
 
+            $rows = is_array($value) ? $this->normalizeRows($value) : null;
+            $table = $rows ? $this->matchTable($rows, $tables) : null;
+            $order = $table && $canvas ? $canvas->columnOrder(array_keys(array_merge(...array_values($rows))), $html) : null;
+
             $fields[] = [
-                'label' => $labels[$key] ?? ucfirst(str_replace(['_json', '_'], ['', ' '], $key)),
+                'label' => $labels[$key] ?? match (true) {
+                    in_array($key, ['rows', 'items', 'data'], true) && $table && $table['title'] => $table['title'],
+                    in_array($key, ['rows', 'items', 'data'], true) => 'Tabella compilata',
+                    default => ucfirst(str_replace(['_json', '_'], ['', ' '], $key)),
+                },
                 'text' => is_array($value) ? null : (string) $value,
-                'rows' => is_array($value) ? $this->normalizeRows($value) : null,
+                'rows' => $table && $order ? $this->renameColumns($rows, $order, $table['headers']) : $rows,
             ];
         }
 
         return $fields;
+    }
+
+    /** Tabella del canvas con tante colonne quante le chiavi delle righe salvate. */
+    private function matchTable(array $rows, array $tables): ?array
+    {
+        $keys = array_keys(array_merge(...array_values($rows)));
+        foreach ($tables as $t) {
+            if (count($t['headers']) === count($keys)) {
+                return $t;
+            }
+        }
+
+        return null;
+    }
+
+    /** Chiavi abbreviate (rep, cat, lvl…) → intestazioni di colonna, nell'ordine del canvas. */
+    private function renameColumns(array $rows, array $order, array $headers): array
+    {
+        return array_map(function (array $row) use ($order, $headers) {
+            $out = [];
+            foreach ($order as $i => $key) {
+                $out[$headers[$i] ?? $key] = $row[$key] ?? '';
+            }
+
+            return $out;
+        }, $rows);
     }
 
     private function normalizeRows(array $value): array
