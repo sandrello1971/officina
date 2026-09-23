@@ -13,28 +13,63 @@ class CertificatePdfBuilder
      * Path relativo al base_path() del template PDF vettoriale.
      * Il template è caricato come "pagina importata" da FPDI e gli
      * elementi dinamici sono scritti sopra con TCPDF a coordinate in mm.
+     * Il template stesso è generato da `php artisan certificates:build-template`
+     * (App\Console\Commands\BuildCertificateTemplate), che usa le stesse
+     * costanti di palette e layout definite qui: si modifica il layout in un
+     * posto solo e si rigenera il template.
      */
-    private const TEMPLATE_PATH = 'resources/pdf/templates/certificate-default.pdf';
+    public const TEMPLATE_PATH = 'resources/pdf/templates/certificate-default.pdf';
 
     /**
-     * Coordinate Y (in mm) dei campi dinamici sul template A4 landscape
-     * (297×210mm). Aggiustabili senza toccare altro codice.
+     * Palette Effetto Glitch (RGB). INDIGO/VIOLET sono i due estremi del
+     * gradiente del logo; INK è il fondo viola scurissimo del sito, usato
+     * qui come colore del testo (il certificato si stampa: fondo bianco).
+     */
+    public const INK    = [20, 12, 49];
+    public const MUTED  = [97, 94, 132];
+    public const INDIGO = [87, 63, 255];
+    public const VIOLET = [128, 28, 255];
+    public const HAZE   = [205, 196, 255];
+
+    /** Colonne del blocco dettagli (x centro in mm, larghezza). */
+    public const COLUMNS = [
+        'date'  => ['cx' => 88.5,  'w' => 58.0],
+        'code'  => ['cx' => 148.5, 'w' => 58.0],
+        'owner' => ['cx' => 208.5, 'w' => 58.0],
+    ];
+
+    /** Riga delle etichette del blocco dettagli (disegnate nel template). */
+    public const DETAILS_LABEL_Y = 130.0;
+
+    /**
+     * Campi dinamici sul template A4 landscape (297×210mm).
+     *  - y/h: cella in mm (testo centrato verticalmente nella cella);
+     *  - col: colonna di self::COLUMNS (default: tutta la pagina);
+     *  - fit: larghezza massima in mm; il corpo scende fino a min_size
+     *    finché il testo ci sta (nomi e titoli di corso lunghi).
      * Font names = chiavi di self::FONTS.
      */
-    private const COORDS = [
-        'student_name'   => ['y' => 72.0,  'font' => 'cormorantgaramondivariable', 'size' => 36, 'color' => [26, 31, 31]],
-        'course_name'    => ['y' => 96.0,  'font' => 'cormorantgaramondvariable',  'size' => 22, 'color' => [85, 177, 174], 'uppercase' => true, 'spacing' => 0.8],
-        'cert_subtitle'  => ['y' => 110.0, 'font' => 'cormorantgaramondivariable', 'size' => 13, 'color' => [226, 138, 83]],
-        'score'          => ['y' => 124.0, 'font' => 'cormorantgaramondivariable', 'size' => 13, 'color' => [85, 177, 174]],
-        'date_value'     => ['y' => 150.0, 'font' => 'cormorantgaramondvariable',  'size' => 12, 'color' => [26, 31, 31]],
-        'code_value'     => ['y' => 166.0, 'font' => 'intervariable',              'size' => 11, 'color' => [26, 31, 31], 'spacing' => 0.3],
-        'owner_value'    => ['y' => 183.0, 'font' => 'cormorantgaramondvariable',  'size' => 12, 'color' => [26, 31, 31]],
+    private const FIELDS = [
+        'student_name'  => ['y' => 55.0,  'h' => 14.0, 'font' => 'spacegroteskb',       'size' => 32,   'color' => self::INK,    'fit' => 240.0, 'min_size' => 20],
+        'course_name'   => ['y' => 80.0,  'h' => 10.0, 'font' => 'spacegroteskmedium',  'size' => 19,   'color' => self::VIOLET, 'fit' => 240.0, 'min_size' => 11, 'uppercase' => true, 'spacing' => 0.6],
+        'cert_subtitle' => ['y' => 91.0,  'h' => 6.0,  'font' => 'spacegrotesk',        'size' => 11.5, 'color' => self::INDIGO, 'fit' => 240.0, 'min_size' => 8],
+        'score'         => ['y' => 102.0, 'h' => 9.0,  'font' => 'spacegroteskmedium',  'size' => 11,   'color' => self::VIOLET],
+        'date_value'    => ['y' => 135.5, 'h' => 6.0,  'font' => 'spacegroteskmedium',  'size' => 12,   'color' => self::INK, 'col' => 'date'],
+        'code_value'    => ['y' => 135.5, 'h' => 6.0,  'font' => 'jetbrainsmonomedium', 'size' => 11,   'color' => self::INK, 'col' => 'code', 'spacing' => 0.2],
+        'owner_value'   => ['y' => 135.5, 'h' => 6.0,  'font' => 'spacegroteskmedium',  'size' => 12,   'color' => self::INK, 'col' => 'owner', 'min_size' => 8],
     ];
+
+    /** Blocco QR + URL di verifica (basso a sinistra). */
+    public const QR = ['x' => 36.5, 'y' => 155.0, 'size' => 22.0, 'block_x' => 25.0, 'block_w' => 45.0];
+
+    /** Y della riga copyright: dentro la cornice interna del template. */
+    public const COPYRIGHT_Y = 193.0;
 
     /**
      * Font custom: nome TCPDF => .ttf sorgente (relativo a base_path()).
-     * Sono variable font: TCPDF ignora l'asse, quindi regular/bold coincidono.
-     * Il nome TCPDF è derivato dal nome interno del font, non scelto da noi:
+     * Font del brand (business.effettoglitch.it): Space Grotesk + JetBrains
+     * Mono, statici da Google Fonts, licenza OFL (accanto ai .ttf).
+     * Il nome TCPDF è derivato dal nome del file, non scelto da noi:
      * ensureFonts() verifica che coincida.
      *
      * Le definizioni generate vivono in storage/fonts/tcpdf, NON in
@@ -42,9 +77,11 @@ class CertificatePdfBuilder
      * deploy le aveva cancellate, rompendo l'emissione di tutti i certificati.
      */
     public const FONTS = [
-        'cormorantgaramondvariable'  => 'resources/fonts/cormorant-garamond/CormorantGaramond-Variable.ttf',
-        'cormorantgaramondivariable' => 'resources/fonts/cormorant-garamond/CormorantGaramond-Italic-Variable.ttf',
-        'intervariable'              => 'resources/fonts/inter/Inter-Variable.ttf',
+        'spacegrotesk'        => 'resources/fonts/space-grotesk/SpaceGrotesk-Regular.ttf',
+        'spacegroteskmedium'  => 'resources/fonts/space-grotesk/SpaceGrotesk-Medium.ttf',
+        'spacegroteskb'       => 'resources/fonts/space-grotesk/SpaceGrotesk-Bold.ttf',
+        'jetbrainsmono'       => 'resources/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf',
+        'jetbrainsmonomedium' => 'resources/fonts/jetbrains-mono/JetBrainsMono-Medium.ttf',
     ];
 
     public static function fontDir(): string
@@ -54,7 +91,7 @@ class CertificatePdfBuilder
 
     /**
      * Genera le definizioni TCPDF dei font mancanti. Idempotente: se sono già
-     * su disco non fa nulla. Chiamata a ogni build (costo: tre file_exists) e
+     * su disco non fa nulla. Chiamata a ogni build (costo: un file_exists per font) e
      * dal comando pdf:register-tcpdf-fonts.
      *
      * @return array<string, string> nome TCPDF => path della definizione .php
@@ -120,139 +157,149 @@ class CertificatePdfBuilder
             throw new \RuntimeException("Template PDF mancante: {$templateAbsPath}");
         }
 
-        $pdf = new Fpdi();
-        foreach (self::ensureFonts() as $name => $def) {
-            $pdf->AddFont($name, '', $def);
-        }
+        $pdf = self::newDocument();
         $pdf->setSourceFile($templateAbsPath);
         $tplId = $pdf->importPage(1);
         $size = $pdf->getTemplateSize($tplId);
 
-        $pdf->SetCreator('Officina');
-        $pdf->SetAuthor(atheneum_setting('platform_owner', 'Stefano Andrello'));
         $pdf->SetTitle("Certificato {$cert->code}");
-        $pdf->setPrintHeader(false);
-        $pdf->setPrintFooter(false);
-        $pdf->SetAutoPageBreak(false, 0);
-        $pdf->SetMargins(0, 0, 0);
-
-        // Per AddPage: TCPDF si aspetta format in ordine PORTRAIT [smaller,
-        // larger]; per orientation 'L' swappa. Passare già un format in
-        // ordine landscape porta a una pagina con dimensioni invertite.
-        $isLandscape = $size['width'] >= $size['height'];
-        $portraitW = min($size['width'], $size['height']);
-        $portraitH = max($size['width'], $size['height']);
-        $orientation = $isLandscape ? 'L' : 'P';
+        [$portraitW, $portraitH, $orientation] = self::pageFormat($size['width'], $size['height']);
         $pdf->AddPage($orientation, [$portraitW, $portraitH]);
         $pdf->useTemplate($tplId);
 
-        $pageW = $isLandscape ? $portraitH : $portraitW;
-
-        // Helper inline per scrivere testo centrato orizzontalmente a y dato
-        $writeCentered = function (string $text, array $cfg) use ($pdf, $pageW): void {
-            $renderText = !empty($cfg['uppercase']) ? mb_strtoupper($text) : $text;
-            $pdf->SetFont($cfg['font'], '', $cfg['size']);
-            [$r, $g, $b] = $cfg['color'];
-            $pdf->SetTextColor($r, $g, $b);
-            $pdf->setFontSpacing($cfg['spacing'] ?? 0);
-            $pdf->SetXY(0, $cfg['y']);
-            $pdf->Cell($pageW, 8, $renderText, 0, 0, 'C');
-            $pdf->setFontSpacing(0); // reset
-        };
+        $pageW = $orientation === 'L' ? $portraitH : $portraitW;
+        $owner = atheneum_setting('platform_owner', 'Stefano Andrello');
 
         // === Campi dinamici ===
-        $writeCentered($student->name, self::COORDS['student_name']);
+        self::writeField($pdf, $student->name, self::FIELDS['student_name'], $pageW);
 
         $courseName = $course?->name ?? $cert->certification_name;
-        $writeCentered($courseName, self::COORDS['course_name']);
+        self::writeField($pdf, $courseName, self::FIELDS['course_name'], $pageW);
 
         if ($cert->certification_name && $cert->certification_name !== $courseName) {
-            $writeCentered($cert->certification_name, self::COORDS['cert_subtitle']);
+            self::writeField($pdf, $cert->certification_name, self::FIELDS['cert_subtitle'], $pageW);
         }
 
-        // Score: il template ha un oval grande con placeholder "Punteggio".
-        // Strategia in 3 step:
-        //   1. eraser bianco rettangolare per coprire l'oval del template
-        //      (e cancellare il watermark in quella zona, accettabile);
-        //   2. nuovo pill più piccolo disegnato via codice (stroke teal,
-        //      fill bianco) — più compatto per scelta UI dell'utente;
-        //   3. testo "Punteggio: NN%" centrato nel nuovo pill, stesso font.
+        // Score: pill compatta disegnata qui (non nel template) perché esiste
+        // solo se c'è un punteggio. Fill bianco = fondo del template.
         if ($cert->score) {
-            // 1. Eraser sopra l'oval del template
+            $cfg = self::FIELDS['score'];
+            $pillW = 52.0;
+            $pillX = ($pageW - $pillW) / 2.0;
             $pdf->SetFillColor(255, 255, 255);
-            $pdf->Rect(95.0, 120.0, 110.0, 18.0, 'F');
-
-            // 2. Nuovo pill compatto, centrato sulla pagina
-            $pillW = 55.0;
-            $pillH = 10.0;
-            $pillX = (297.0 - $pillW) / 2.0;
-            $pillY = 124.0;
-            $pdf->SetFillColor(255, 255, 255);
-            $pdf->SetDrawColor(85, 177, 174);
-            $pdf->SetLineWidth(0.4);
-            $pdf->RoundedRect($pillX, $pillY, $pillW, $pillH, $pillH / 2.0, '1111', 'DF');
-
-            // 3. Testo
-            $cfg = self::COORDS['score'];
-            $pdf->SetFont($cfg['font'], '', $cfg['size']);
-            [$r, $g, $b] = $cfg['color'];
-            $pdf->SetTextColor($r, $g, $b);
-            $pdf->SetXY($pillX, $pillY);
-            $pdf->Cell($pillW, $pillH, "Punteggio: {$cert->score}%", 0, 0, 'C');
+            $pdf->SetDrawColor(...self::VIOLET);
+            $pdf->SetLineWidth(0.35);
+            $pdf->RoundedRect($pillX, $cfg['y'], $pillW, $cfg['h'], $cfg['h'] / 2.0, '1111', 'DF');
+            self::writeField($pdf, "Punteggio: {$cert->score}%", $cfg + ['x' => $pillX, 'w' => $pillW], $pageW);
         }
 
-        $writeCentered($date, self::COORDS['date_value']);
-        $writeCentered($cert->code, self::COORDS['code_value']);
-        $writeCentered(atheneum_setting('platform_owner', 'Stefano Andrello'), self::COORDS['owner_value']);
+        self::writeField($pdf, $date, self::FIELDS['date_value'], $pageW);
+        self::writeField($pdf, $cert->code, self::FIELDS['code_value'], $pageW);
+        self::writeField($pdf, $owner, self::FIELDS['owner_value'], $pageW);
 
         // === QR + verify URL (basso a sinistra) ===
-        // CSS spec: verify-block left:25mm, top:162mm, width:45mm;
-        // QR interno 22mm × 22mm centrato → x=36.5, y=162.
-        $qrX = 36.5;
-        $qrY = 162.0;
-        $qrSize = 22.0;
-        $pdf->write2DBarcode($verifyUrl, 'QRCODE,M', $qrX, $qrY, $qrSize, $qrSize, [
+        $qr = self::QR;
+        $pdf->write2DBarcode($verifyUrl, 'QRCODE,M', $qr['x'], $qr['y'], $qr['size'], $qr['size'], [
             'border'  => 0,
             'padding' => 0,
-            'fgcolor' => [26, 31, 31],
+            'fgcolor' => self::INK,
             'bgcolor' => false,
         ], 'N');
 
-        // Label "VERIFICA ONLINE" sotto QR (centrata nel verify-block 45mm)
-        $blockX = 25.0;
-        $blockW = 45.0;
-        $pdf->SetFont('intervariable', '', 6);
-        $pdf->SetTextColor(138, 150, 150);
+        $pdf->SetFont('jetbrainsmonomedium', '', 6);
+        $pdf->SetTextColor(...self::MUTED);
         $pdf->setFontSpacing(0.5);
-        $pdf->SetXY($blockX, $qrY + $qrSize + 1.5);
-        $pdf->Cell($blockW, 3, mb_strtoupper('Verifica online'), 0, 0, 'C');
+        $pdf->SetXY($qr['block_x'], $qr['y'] + $qr['size'] + 1.5);
+        $pdf->Cell($qr['block_w'], 3, mb_strtoupper('Verifica online'), 0, 0, 'C');
 
-        // URL sotto label (wrappato, font più piccolo)
-        $pdf->SetFont('intervariable', '', 5.5);
-        $pdf->SetTextColor(74, 82, 82);
+        $pdf->SetFont('jetbrainsmono', '', 5);
         $pdf->setFontSpacing(0);
-        $pdf->SetXY($blockX, $qrY + $qrSize + 5.0);
-        $pdf->MultiCell($blockW, 2.5, $verifyUrl, 0, 'C');
+        $pdf->SetXY($qr['block_x'], $qr['y'] + $qr['size'] + 5.0);
+        $pdf->MultiCell($qr['block_w'], 2.5, $verifyUrl, 0, 'C');
 
         // === Copyright (tutela diritto d'autore) ===
-        // In piccolo, grigio chiaro, centrato in fondo alla pagina. Scritto a
-        // coordinate fisse (auto page-break è OFF) per non interferire col
-        // layout del template importato. 'intervariable' (Inter) ha il glifo ©.
-        // Y dentro la cornice: sotto "Rilasciato da" (~191mm) e sopra il filo
-        // arancione interno del template (201.6mm). A pageH-6 finiva sul
-        // bordo teal esterno ed era illeggibile.
+        // In piccolo, centrato, dentro la cornice interna del template
+        // (auto page-break OFF: coordinate fisse). Space Grotesk ha il glifo ©.
         $notice = copyright_notice();
         if ($notice !== '') {
-            $pdf->SetFont('intervariable', '', 6);
-            $pdf->SetTextColor(150, 158, 158);
+            $pdf->SetFont('spacegrotesk', '', 6);
+            $pdf->SetTextColor(...self::MUTED);
             $pdf->setFontSpacing(0);
-            $pdf->SetXY(0, 195.5);
+            $pdf->SetXY(0, self::COPYRIGHT_Y);
             $pdf->Cell($pageW, 4, $notice, 0, 0, 'C');
         }
 
         // === Output bytes ===
         // 'S' = ritorna come stringa (i bytes del PDF)
         return $pdf->Output('', 'S');
+    }
+
+    /**
+     * Documento TCPDF/FPDI con font del brand e impostazioni comuni a
+     * certificato e template (nessun header/footer, niente page-break).
+     */
+    public static function newDocument(): Fpdi
+    {
+        $pdf = new Fpdi();
+        foreach (self::ensureFonts() as $name => $def) {
+            $pdf->AddFont($name, '', $def);
+        }
+        $pdf->SetCreator('Officina — Effetto Glitch');
+        $pdf->SetAuthor(atheneum_setting('platform_owner', 'Stefano Andrello'));
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetAutoPageBreak(false, 0);
+        $pdf->SetMargins(0, 0, 0);
+
+        return $pdf;
+    }
+
+    /**
+     * AddPage vuole il format in ordine PORTRAIT [minore, maggiore] e swappa
+     * da sé con orientation 'L': passare un format già landscape produce una
+     * pagina con dimensioni invertite.
+     *
+     * @return array{0: float, 1: float, 2: string}
+     */
+    public static function pageFormat(float $width, float $height): array
+    {
+        return [min($width, $height), max($width, $height), $width >= $height ? 'L' : 'P'];
+    }
+
+    /**
+     * Scrive un campo centrato nella sua cella: tutta la pagina, una colonna
+     * di self::COLUMNS, oppure x/w espliciti. Con 'fit' (o in colonna) il
+     * corpo scende di mezzo punto alla volta fino a min_size finché il testo
+     * sta nella larghezza.
+     */
+    public static function writeField(Fpdi $pdf, string $text, array $cfg, float $pageW): void
+    {
+        if (isset($cfg['col'])) {
+            $col = self::COLUMNS[$cfg['col']];
+            $x = $col['cx'] - $col['w'] / 2.0;
+            $w = $col['w'];
+        } else {
+            $x = $cfg['x'] ?? 0.0;
+            $w = $cfg['w'] ?? $pageW;
+        }
+
+        $text = !empty($cfg['uppercase']) ? mb_strtoupper($text) : $text;
+        $spacing = $cfg['spacing'] ?? 0;
+        $maxW = min($cfg['fit'] ?? $w, $w);
+        $size = $cfg['size'];
+        $minSize = $cfg['min_size'] ?? $size;
+
+        $pdf->setFontSpacing($spacing);
+        $pdf->SetFont($cfg['font'], '', $size);
+        while ($size > $minSize && $pdf->GetStringWidth($text) > $maxW) {
+            $size -= 0.5;
+            $pdf->SetFont($cfg['font'], '', $size);
+        }
+
+        $pdf->SetTextColor(...$cfg['color']);
+        $pdf->SetXY($x, $cfg['y']);
+        $pdf->Cell($w, $cfg['h'], $text, 0, 0, 'C', false, '', 1); // stretch=1: comprime solo se ancora troppo largo
+        $pdf->setFontSpacing(0);
     }
 
     /**

@@ -9,7 +9,7 @@ class RegisterTcpdfFonts extends Command
 {
     protected $signature = 'pdf:register-tcpdf-fonts
                             {--force : Rigenera anche le definizioni già presenti}';
-    protected $description = 'Registra font custom (Cormorant Garamond, Inter) in TCPDF per il certificato.';
+    protected $description = 'Registra i font del brand (Space Grotesk, JetBrains Mono) in TCPDF per il certificato.';
 
     /**
      * Genera in storage/fonts/tcpdf le definizioni TCPDF dei .ttf in
