@@ -70,6 +70,14 @@ class Course extends Model
             ->orderBy('sort_order');
     }
 
+    /** Materiali caricati a livello di corso, non ancora assegnati a un modulo — la KB del motore di generazione. */
+    public function courseLevelMaterials()
+    {
+        return $this->hasMany(Material::class)
+            ->whereNull('module_id')
+            ->orderBy('sort_order');
+    }
+
     public function quizzes()
     {
         return $this->hasMany(Quiz::class);
@@ -211,6 +219,11 @@ class Course extends Model
     }
 
     // P25.3 — proposte di aggiornamento (coda HITL).
+    public function generationRuns()
+    {
+        return $this->hasMany(CourseGenerationRun::class);
+    }
+
     public function updateProposals()
     {
         return $this->hasMany(UpdateProposal::class)->orderByDesc('created_at');
