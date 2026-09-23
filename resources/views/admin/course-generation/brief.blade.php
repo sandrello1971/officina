@@ -9,10 +9,11 @@
 
     <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F; margin-bottom:6px;">&#10024; Genera moduli con AI</h2>
     <p style="color:#8A9696; font-size:0.85rem; margin:0 0 20px;">
-        L'AI propone struttura, manuale discente, manuale formatore e slide per ogni modulo a partire dai
-        materiali caricati sul corso. Prima di generare, indica le caratteristiche desiderate: l'AI non
-        decide alla cieca. <strong>Nulla sarà visibile ai discenti finché non lo approvi</strong> nella
-        revisione che segue.
+        L'AI propone struttura, manuale discente, manuale formatore e slide per ogni modulo. Prima di
+        generare, indica argomento e caratteristiche desiderate: l'AI non decide alla cieca. Al passo
+        successivo sceglierai TU quali fonti usare tra quelle già caricate (ed eventualmente altre
+        proposte in base all'argomento). <strong>Nulla sarà visibile ai discenti finché non lo approvi</strong>
+        nella revisione finale.
     </p>
 
     @if (session('error'))
@@ -20,13 +21,6 @@
             {{ session('error') }}
         </div>
     @endif
-
-    @if ($runningRun)
-        <div style="background:#FFF8EE; border:1px solid rgba(226,138,83,0.45); color:#C26A2E; padding:12px 16px; border-radius:8px; margin-bottom:20px; font-size:0.85rem; display:flex; align-items:center; justify-content:space-between; gap:10px;">
-            <span>Una generazione è già in corso per questo corso.</span>
-            <a href="{{ route('admin.course-generation.show', $runningRun) }}" style="color:#C26A2E; font-weight:700; text-decoration:underline;">Vai alla revisione &rarr;</a>
-        </div>
-    @else
 
     <div style="background:white; border-radius:10px; padding:24px;">
         <form method="POST" action="{{ route('admin.course-generation.store', $course) }}">
@@ -44,6 +38,15 @@
             @endif
 
             <div style="display:flex; flex-direction:column; gap:16px;">
+                <div>
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Argomento principale *</label>
+                    <input type="text" name="topic" value="{{ old('topic') }}" required placeholder="es. sicurezza sul lavoro, assistenti AI in azienda"
+                           style="width:100%; padding:10px; border:1px solid #E8F5F5; border-radius:8px; font-size:0.85rem; margin-top:4px;">
+                    <p style="font-size:0.75rem; color:#8A9696; margin-top:4px;">
+                        Usato per suggerirti le fonti più pertinenti tra quelle già caricate e, su richiesta, per proporre fonti esterne autorevoli.
+                    </p>
+                </div>
+
                 <div>
                     <label style="font-size:0.8rem; font-weight:600; color:#4A5252;">Pubblico/target e livello</label>
                     <input type="text" name="target" value="{{ old('target') }}" placeholder="es. professionisti sanitari, principianti"
@@ -97,11 +100,10 @@
             <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
                 <a href="{{ route('admin.courses.show', $course) }}" style="padding:10px 20px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.875rem; text-decoration:none;">Annulla</a>
                 <button type="submit" data-guard-submit style="padding:10px 24px; background:#E28A53; color:white; border:none; border-radius:8px; font-size:0.875rem; font-weight:700; cursor:pointer;">
-                    &#10024; Genera struttura corso
+                    Continua: seleziona le fonti &rarr;
                 </button>
             </div>
         </form>
     </div>
-    @endif
 </div>
 @endsection

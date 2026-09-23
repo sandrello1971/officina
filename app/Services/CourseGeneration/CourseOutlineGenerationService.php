@@ -28,11 +28,12 @@ class CourseOutlineGenerationService
 
     /**
      * @param  array  $brief  target, level, duration_hours, modules_count, objectives, tone, language, constraints
+     * @param  ?array  $selectedSources  selezione confermata dal formatore (null = tutta la KB del corso)
      * @return array<int, array{title:string, summary:string}>
      */
-    public function generate(Course $course, array $brief): array
+    public function generate(Course $course, array $brief, ?array $selectedSources = null): array
     {
-        $source = $this->aggregator->aggregate($course);
+        $source = $this->aggregator->aggregate($course, $selectedSources);
         if (trim($source) === '') {
             throw new RuntimeException('Nessun materiale caricato sul corso: carica prima i documenti della knowledge base.');
         }

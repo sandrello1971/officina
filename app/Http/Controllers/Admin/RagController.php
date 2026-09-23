@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\IngestRagVideoJob;
 use App\Models\Course;
 use App\Models\DocumentRag;
 use App\Services\RagService;
@@ -10,7 +11,9 @@ use Illuminate\Http\Request;
 
 class RagController extends Controller
 {
-    public function index()
+    private const VIDEO_EXTENSIONS = ['mp4', 'mov', 'avi', 'webm'];
+
+    public function index(Request $request)
     {
         $documents = DocumentRag::with(['course', 'module'])
             ->select('id', 'title', 'course_id', 'module_id', 'chunk_index', 'created_at')
@@ -18,15 +21,16 @@ class RagController extends Controller
             ->paginate(20);
 
         $courses = Course::orderBy('sort_order')->get();
+        $selectedCourseId = $request->query('course_id');
 
-        return view('admin.rag.index', compact('documents', 'courses'));
+        return view('admin.rag.index', compact('documents', 'courses', 'selectedCourseId'));
     }
 
     public function upload(Request $request)
     {
         $request->validate([
             'files' => 'required|array|min:1',
-            'files.*' => 'file|mimes:pdf,doc,docx,txt|max:20480',
+            'files.*' => 'file|mimes:pdf,doc,docx,txt,pptx,mp4,mov,avi,webm|max:204800',
             'course_id' => 'required|uuid',
             'module_id' => 'nullable|uuid',
             'title' => 'nullable|string|max:255',
@@ -35,10 +39,20 @@ class RagController extends Controller
         $ragService = app(RagService::class);
         $uploaded = 0;
         $skipped = 0;
+        $queued = 0;
         $lastText = '';
 
         foreach ($request->file('files') as $file) {
             $title = $request->title ?: pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $ext = strtolower($file->getClientOriginalExtension());
+
+            if (in_array($ext, self::VIDEO_EXTENSIONS, true)) {
+                $path = $file->store('rag-documents', 'public');
+                IngestRagVideoJob::dispatch($path, $title, $request->course_id, $request->module_id ?: null);
+                $queued++;
+                continue;
+            }
+
             $path = $file->store('rag-documents', 'public');
             $text = $this->extractText($file);
 
@@ -59,6 +73,9 @@ class RagController extends Controller
         }
 
         $successMsg = "{$uploaded} documento/i indicizzato/i";
+        if ($queued > 0) {
+            $successMsg .= ", {$queued} video in trascrizione (comparirà/comparranno tra qualche minuto)";
+        }
         if ($skipped > 0) {
             $successMsg .= " ({$skipped} saltato/i per testo vuoto)";
         }

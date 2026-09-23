@@ -32,7 +32,7 @@ class GenerateCourseOutlineJob implements ShouldQueue
         }
 
         try {
-            $outline = $service->generate($run->course, $run->brief ?? []);
+            $outline = $service->generate($run->course, $run->brief ?? [], $run->selected_sources);
             $run->update(['outline' => $outline, 'status' => 'completed']);
         } catch (Throwable $e) {
             Log::warning('[officina] generazione outline corso fallita', [

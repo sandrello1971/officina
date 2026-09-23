@@ -186,6 +186,45 @@ class CourseGenerationEngineTest extends TestCase
     {
         $course = Course::create(['name' => 'Corso vuoto', 'slug' => 'corso-' . Str::lower(Str::random(8)), 'is_active' => true]);
 
-        $this->asAdmin()->get(route('admin.course-generation.create', $course))->assertStatus(422);
+        $this->asAdmin()->get(route('admin.course-generation.create', $course))
+            ->assertRedirect(route('admin.rag.index', ['course_id' => $course->id]));
+    }
+
+    public function test_brief_e_selezione_fonti_filtrano_la_kb_usata(): void
+    {
+        $course = $this->makeCourseWithKb();
+        // Secondo materiale, volutamente estraneo al topic, per verificare che
+        // la selezione (non "tutto indiscriminatamente") sia rispettata.
+        Material::create([
+            'course_id' => $course->id,
+            'module_id' => null,
+            'title' => 'Ricette di cucina',
+            'is_instructor_only' => true,
+            'is_downloadable' => false,
+            'content_html' => '<p>Testo estraneo, non pertinente alla sicurezza sul lavoro.</p>',
+        ]);
+        $this->fakeOutlineAndManuals();
+
+        $this->asAdmin()->post(route('admin.course-generation.store', $course), [
+            'topic' => 'Sicurezza sul lavoro',
+            'target' => 'lavoratori neoassunti',
+        ])->assertRedirect();
+
+        $run = CourseGenerationRun::where('course_id', $course->id)->firstOrFail();
+        $this->assertSame('sources', $run->phase);
+        $this->assertSame('sicurezza-sul-lavoro', \App\Models\CourseTopic::where('course_id', $course->id)->where('weight', 'primary')->value('topic'));
+
+        $material = Material::where('course_id', $course->id)->where('title', 'Dispensa base')->firstOrFail();
+
+        $this->asAdmin()->get(route('admin.course-generation.sources', $run))->assertOk();
+
+        $this->asAdmin()->post(route('admin.course-generation.sources.confirm', $run), [
+            'sources' => ["material:{$material->id}"],
+        ])->assertRedirect(route('admin.course-generation.show', $run));
+
+        $run->refresh();
+        $this->assertSame('outline', $run->phase);
+        $this->assertSame([['source_type' => 'material', 'id' => $material->id]], $run->selected_sources);
+        $this->assertCount(1, $run->outline);
     }
 }

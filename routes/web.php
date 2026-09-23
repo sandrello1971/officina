@@ -500,6 +500,9 @@ Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'
     // Motore generazione corsi da KB — brief (Fase 0) + revisione formatore.
     Route::get('courses/{course}/generation/create', [App\Http\Controllers\Admin\CourseGenerationController::class, 'create'])->name('course-generation.create');
     Route::post('courses/{course}/generation', [App\Http\Controllers\Admin\CourseGenerationController::class, 'store'])->name('course-generation.store');
+    Route::get('course-generation/{run}/sources', [App\Http\Controllers\Admin\CourseGenerationController::class, 'sources'])->name('course-generation.sources');
+    Route::post('course-generation/{run}/sources/suggest', [App\Http\Controllers\Admin\CourseGenerationController::class, 'suggestExternalSources'])->name('course-generation.sources.suggest');
+    Route::post('course-generation/{run}/sources/confirm', [App\Http\Controllers\Admin\CourseGenerationController::class, 'confirmSources'])->name('course-generation.sources.confirm');
 
     Route::get('course-generation/{run}', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'show'])->name('course-generation.show');
     Route::get('course-generation/{run}/status', [App\Http\Controllers\Admin\CourseGenerationReviewController::class, 'status'])->name('course-generation.status');
@@ -586,6 +589,7 @@ Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'
     Route::post('fonti/proponi', [App\Http\Controllers\Admin\TrustedSourceController::class, 'suggest'])->name('sources.suggest');
     Route::patch('fonti/{source}/approva', [App\Http\Controllers\Admin\TrustedSourceController::class, 'approve'])->name('sources.approve');
     Route::patch('fonti/{source}/rifiuta', [App\Http\Controllers\Admin\TrustedSourceController::class, 'reject'])->name('sources.reject');
+    Route::post('fonti/{source}/importa', [App\Http\Controllers\Admin\TrustedSourceController::class, 'importAsDocument'])->name('sources.import');
     Route::delete('fonti/{source}', [App\Http\Controllers\Admin\TrustedSourceController::class, 'destroy'])->name('sources.destroy');
 
     // P26 Fase A — Scout di copertura (gated da config services.p26.enabled nel controller).

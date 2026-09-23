@@ -20,16 +20,16 @@
                             style="width:100%; padding:10px 14px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem; outline:none;">
                         <option value="">— Seleziona corso —</option>
                         @foreach($courses as $course)
-                        <option value="{{ $course->id }}">{{ $course->icon }} {{ $course->name }}</option>
+                        <option value="{{ $course->id }}" @selected($selectedCourseId === $course->id)>{{ $course->icon }} {{ $course->name }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div>
-                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">File (PDF, DOCX, TXT) *</label>
-                    <input type="file" name="files[]" accept=".pdf,.doc,.docx,.txt" required multiple
+                    <label style="font-size:0.8rem; font-weight:600; color:#4A5252; display:block; margin-bottom:6px;">File (PDF, DOCX, TXT, PPTX, video MP4/MOV/AVI/WEBM) *</label>
+                    <input type="file" name="files[]" accept=".pdf,.doc,.docx,.txt,.pptx,.mp4,.mov,.avi,.webm" required multiple
                            style="width:100%; padding:10px; border:1px solid #C8D0D0; border-radius:8px; font-size:0.875rem;">
                     <p style="font-size:0.75rem; color:#8A9696; margin-top:4px;">
-                        Puoi selezionare piu file tenendo premuto Cmd (Mac) o Ctrl (Windows)
+                        Puoi selezionare piu file tenendo premuto Cmd (Mac) o Ctrl (Windows). I video vengono trascritti in automatico e compaiono nell'elenco dopo qualche minuto.
                     </p>
                 </div>
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:10px; background:#E8F5F5; border-radius:8px;">

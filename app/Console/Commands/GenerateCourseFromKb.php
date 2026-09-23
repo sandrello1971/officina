@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Jobs\GenerateCourseOutlineJob;
 use App\Models\Course;
 use App\Models\CourseGenerationRun;
+use App\Models\DocumentRag;
 use Illuminate\Console\Command;
 
 // Motore generazione corsi da KB — trigger da CLI (uso: test/debug). Il percorso
@@ -33,7 +34,8 @@ class GenerateCourseFromKb extends Command
             return self::FAILURE;
         }
 
-        if ($course->courseLevelMaterials()->doesntExist()) {
+        $hasSource = DocumentRag::where('course_id', $course->id)->exists() || $course->courseLevelMaterials()->exists();
+        if (!$hasSource) {
             $this->error('Nessun materiale caricato sul corso: carica prima i documenti della knowledge base.');
             return self::FAILURE;
         }

@@ -30,6 +30,10 @@ class CourseGenerationReviewController extends Controller
     {
         $run->load('course');
 
+        if ($run->isSourcesPending()) {
+            return redirect()->route('admin.course-generation.sources', $run);
+        }
+
         if ($run->isOutlinePending()) {
             return view('admin.course-generation.outline', compact('run'));
         }
