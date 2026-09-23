@@ -19,11 +19,7 @@ class CertificatePdfBuilder
     /**
      * Coordinate Y (in mm) dei campi dinamici sul template A4 landscape
      * (297×210mm). Aggiustabili senza toccare altro codice.
-     * Font names devono matchare quelli stampati da
-     * `php artisan pdf:register-tcpdf-fonts`:
-     *   cormorantgaramondvariable   = roman (regular/bold equivalenti, variable font)
-     *   cormorantgaramondivariable  = italic (regular/bold equivalenti)
-     *   intervariable               = sans (regular/bold equivalenti)
+     * Font names = chiavi di self::FONTS.
      */
     private const COORDS = [
         'student_name'   => ['y' => 72.0,  'font' => 'cormorantgaramondivariable', 'size' => 36, 'color' => [26, 31, 31]],
@@ -34,6 +30,80 @@ class CertificatePdfBuilder
         'code_value'     => ['y' => 166.0, 'font' => 'intervariable',              'size' => 11, 'color' => [26, 31, 31], 'spacing' => 0.3],
         'owner_value'    => ['y' => 183.0, 'font' => 'cormorantgaramondvariable',  'size' => 12, 'color' => [26, 31, 31]],
     ];
+
+    /**
+     * Font custom: nome TCPDF => .ttf sorgente (relativo a base_path()).
+     * Sono variable font: TCPDF ignora l'asse, quindi regular/bold coincidono.
+     * Il nome TCPDF è derivato dal nome interno del font, non scelto da noi:
+     * ensureFonts() verifica che coincida.
+     *
+     * Le definizioni generate vivono in storage/fonts/tcpdf, NON in
+     * vendor/tecnickcom/tcpdf/fonts: vendor/ è rigenerato da composer e un
+     * deploy le aveva cancellate, rompendo l'emissione di tutti i certificati.
+     */
+    public const FONTS = [
+        'cormorantgaramondvariable'  => 'resources/fonts/cormorant-garamond/CormorantGaramond-Variable.ttf',
+        'cormorantgaramondivariable' => 'resources/fonts/cormorant-garamond/CormorantGaramond-Italic-Variable.ttf',
+        'intervariable'              => 'resources/fonts/inter/Inter-Variable.ttf',
+    ];
+
+    public static function fontDir(): string
+    {
+        return storage_path('fonts/tcpdf');
+    }
+
+    /**
+     * Genera le definizioni TCPDF dei font mancanti. Idempotente: se sono già
+     * su disco non fa nulla. Chiamata a ogni build (costo: tre file_exists) e
+     * dal comando pdf:register-tcpdf-fonts.
+     *
+     * @return array<string, string> nome TCPDF => path della definizione .php
+     */
+    public static function ensureFonts(): array
+    {
+        $dir = self::fontDir();
+        $defs = [];
+        foreach (array_keys(self::FONTS) as $name) {
+            $defs[$name] = "{$dir}/{$name}.php";
+        }
+
+        $missing = array_filter($defs, fn (string $def) => !is_file($def));
+        if ($missing === []) {
+            return $defs;
+        }
+
+        if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new \RuntimeException("Impossibile creare la cartella font TCPDF: {$dir}");
+        }
+
+        // Lock: due richieste concorrenti non devono scrivere lo stesso file
+        // mentre l'altra lo include a metà.
+        $lock = fopen("{$dir}/.lock", 'c');
+        flock($lock, LOCK_EX);
+        try {
+            foreach (array_keys($missing) as $name) {
+                if (is_file($defs[$name])) {
+                    continue; // generato da chi aveva il lock prima di noi
+                }
+                $ttf = base_path(self::FONTS[$name]);
+                if (!is_file($ttf)) {
+                    throw new \RuntimeException("Font sorgente mancante: {$ttf}");
+                }
+                $generated = \TCPDF_FONTS::addTTFfont($ttf, 'TrueTypeUnicode', '', 32, "{$dir}/");
+                if ($generated !== $name) {
+                    throw new \RuntimeException(
+                        "Registrazione font {$ttf} fallita: atteso '{$name}', ottenuto '"
+                        . var_export($generated, true) . "'"
+                    );
+                }
+            }
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+
+        return $defs;
+    }
 
     /**
      * Genera i bytes del PDF certificato.
@@ -51,6 +121,9 @@ class CertificatePdfBuilder
         }
 
         $pdf = new Fpdi();
+        foreach (self::ensureFonts() as $name => $def) {
+            $pdf->AddFont($name, '', $def);
+        }
         $pdf->setSourceFile($templateAbsPath);
         $tplId = $pdf->importPage(1);
         $size = $pdf->getTemplateSize($tplId);
@@ -165,13 +238,15 @@ class CertificatePdfBuilder
         // In piccolo, grigio chiaro, centrato in fondo alla pagina. Scritto a
         // coordinate fisse (auto page-break è OFF) per non interferire col
         // layout del template importato. 'intervariable' (Inter) ha il glifo ©.
+        // Y dentro la cornice: sotto "Rilasciato da" (~191mm) e sopra il filo
+        // arancione interno del template (201.6mm). A pageH-6 finiva sul
+        // bordo teal esterno ed era illeggibile.
         $notice = copyright_notice();
         if ($notice !== '') {
-            $pageH = $isLandscape ? $portraitW : $portraitH;
             $pdf->SetFont('intervariable', '', 6);
             $pdf->SetTextColor(150, 158, 158);
             $pdf->setFontSpacing(0);
-            $pdf->SetXY(0, $pageH - 6.0);
+            $pdf->SetXY(0, 195.5);
             $pdf->Cell($pageW, 4, $notice, 0, 0, 'C');
         }
 

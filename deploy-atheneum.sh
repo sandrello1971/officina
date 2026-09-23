@@ -115,6 +115,9 @@ php "$DEST/artisan" migrate --force
 echo "==> seed materie standard (idempotente: firstOrCreate, non tocca le custom)"
 php "$DEST/artisan" db:seed --class=SubjectSeeder --force
 
+echo "==> font TCPDF certificati (idempotente; storage/fonts/tcpdf, fuori da vendor/)"
+php "$DEST/artisan" pdf:register-tcpdf-fonts
+
 echo "==> cache config/route/view"
 php "$DEST/artisan" config:cache
 php "$DEST/artisan" route:cache

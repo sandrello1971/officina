@@ -28,6 +28,25 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // TCPDF: di default su errore fa die() — il processo muore senza che
+        // nessun try/catch possa intercettarlo (es. font mancante → lo studente
+        // che supera l'esame riceve "TCPDF ERROR" al posto della risposta).
+        // Vogliamo un'eccezione. tcpdf_config.php definisce la costante senza
+        // guard (ridefinirla = warning → ErrorException), quindi disattiviamo
+        // quel file e lasciamo i default a tcpdf_autoconfig.php, riallineando
+        // gli unici due valori che differiscono.
+        // Va fatto qui: TCPDF è in classmap, si carica solo al primo uso.
+        foreach ([
+            'K_TCPDF_EXTERNAL_CONFIG' => true,
+            'K_TCPDF_THROW_EXCEPTION_ERROR' => true,
+            'K_TIMEZONE' => 'UTC',
+            'PDF_IMAGE_SCALE_RATIO' => 1.25,
+        ] as $name => $value) {
+            if (!defined($name)) {
+                define($name, $value);
+            }
+        }
+
         // V3 — TTS parametrico: il provider concreto è scelto da config (TTS_PROVIDER).
         $this->app->bind(\App\Services\Tts\TtsProvider::class, function ($app) {
             $provider = config('services.tts.provider', 'elevenlabs');

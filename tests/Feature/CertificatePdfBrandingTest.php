@@ -7,7 +7,6 @@ use App\Models\Course;
 use App\Models\Student;
 use App\Services\CertificatePdfBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 /**
@@ -24,22 +23,6 @@ use Tests\TestCase;
 class CertificatePdfBrandingTest extends TestCase
 {
     use RefreshDatabase;
-
-    private static bool $fontsRegistered = false;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // CertificatePdfBuilder usa font TCPDF custom (Cormorant Garamond, Inter)
-        // generati dai .ttf in storage/fonts/. In un checkout pulito / in CI non
-        // sono ancora registrati: senza, SetFont lancerebbe. La registrazione è
-        // idempotente, la eseguiamo una volta per processo.
-        if (!self::$fontsRegistered) {
-            Artisan::call('pdf:register-tcpdf-fonts');
-            self::$fontsRegistered = true;
-        }
-    }
 
     private function makeCertificate(): Certificate
     {
@@ -108,5 +91,33 @@ class CertificatePdfBrandingTest extends TestCase
             $text,
             'Il certificato deve riportare la dicitura di copyright in footer.'
         );
+    }
+
+    public function test_font_mancanti_vengono_rigenerati_al_volo(): void
+    {
+        // Regressione: le definizioni stavano in vendor/, un deploy le ha
+        // cancellate e ogni certificato falliva. Il builder deve rigenerarle.
+        foreach (array_keys(CertificatePdfBuilder::FONTS) as $name) {
+            foreach (glob(CertificatePdfBuilder::fontDir() . "/{$name}.*") ?: [] as $file) {
+                unlink($file);
+            }
+        }
+
+        $pdf = (new CertificatePdfBuilder())->build($this->makeCertificate());
+
+        $this->assertStringStartsWith('%PDF-', $pdf);
+        foreach (array_keys(CertificatePdfBuilder::FONTS) as $name) {
+            $this->assertFileExists(CertificatePdfBuilder::fontDir() . "/{$name}.php");
+        }
+    }
+
+    public function test_errori_tcpdf_sono_eccezioni_non_die(): void
+    {
+        // Con la config di default TCPDF fa die(): il try/catch dell'observer
+        // non lo intercetta e la richiesta di submit del quiz muore a metà.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('TCPDF ERROR');
+
+        (new \TCPDF())->SetFont('font-che-non-esiste');
     }
 }
