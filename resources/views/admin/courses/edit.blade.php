@@ -18,8 +18,26 @@
                       border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
                 🧭 Mappe concettuali
             </a>
+            <a href="{{ route('admin.rag.index', ['course_id' => $course->id]) }}"
+               style="padding:6px 12px; background:white; color:#4A5252; border:1px solid #D1D5DB;
+                      border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
+                📄 Carica documenti (Documenti AI)
+            </a>
+            <a href="{{ route('admin.course-generation.create', $course) }}"
+               style="padding:6px 12px; background:#FDECE2; color:#C26A2E; border:1px solid #E28A53;
+                      border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
+                ✨ Genera moduli con AI
+            </a>
         </div>
     </div>
+
+    @php($lastRun = $course->generationRuns()->latest()->first())
+    @if($lastRun && $lastRun->phase !== 'done')
+    <div style="background:#FFF8EE; border:1px solid rgba(226,138,83,0.45); color:#C26A2E; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:0.85rem; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <span>Generazione AI in corso o in attesa di revisione ({{ $lastRun->status }} / {{ $lastRun->phase }}).</span>
+        <a href="{{ route('admin.course-generation.show', $lastRun) }}" style="color:#C26A2E; font-weight:700; text-decoration:underline;">Vai alla revisione &rarr;</a>
+    </div>
+    @endif
 
     @if(session('success'))
     <div style="padding:10px 14px; background:rgba(85,177,174,0.12);
