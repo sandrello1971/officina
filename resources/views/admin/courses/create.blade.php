@@ -9,6 +9,11 @@
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Nuovo corso</h2>
     </div>
 
+    <div style="background:#E8F5F5; border:1px solid rgba(85,177,174,0.35); border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:0.82rem; color:#3A8C89;">
+        &#8505;&#65039; Qui inserisci solo i dati base. Dopo aver creato il corso potrai caricare i documenti
+        sorgente e generare i moduli con l'AI dalla pagina "Modifica corso".
+    </div>
+
     <div style="background:white; border-radius:10px; padding:24px;">
         <form method="POST" action="/courses" enctype="multipart/form-data">
             @csrf

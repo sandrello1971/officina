@@ -84,7 +84,7 @@ class CourseController extends Controller
         }
 
         return redirect("/courses/{$course->id}/edit")
-            ->with('success', 'Corso creato. Aggiungi i moduli.');
+            ->with('success', 'Corso creato. Ora puoi caricare i documenti sorgente e generare i moduli con l\'AI, oppure aggiungerli a mano.');
     }
 
     public function show(string $id)
