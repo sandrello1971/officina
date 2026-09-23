@@ -39,6 +39,29 @@ trait DeterminesTeachingMode
     }
 
     /**
+     * True se il formatore ha diritto ai materiali riservati (manuale
+     * formatore, sezioni per modulo): iscritto al corso, abilitato a tutti
+     * i corsi (auto_enroll_all_courses) o docente esplicito del corso.
+     * La semplice consultazione via browsesAnyCourse() NON basta.
+     */
+    protected function accessesInstructorMaterials(Student $student, Course $course): bool
+    {
+        if (!$student->isInstructor()) {
+            return false;
+        }
+
+        if ($student->auto_enroll_all_courses) {
+            return true;
+        }
+
+        return $student->courses()
+                ->where('courses.id', $course->id)
+                ->wherePivot('is_active', true)
+                ->exists()
+            || $this->teaches($student, $course);
+    }
+
+    /**
      * True se il formatore può accedere in sola consultazione a QUALUNQUE
      * corso attivo, anche uno che non insegna (accesso esteso richiesto per
      * il portale learn.*: QA, supporto, verifica contenuti). Non sblocca

@@ -131,6 +131,29 @@ class InstructorTeachingModeTest extends TestCase
             ->assertDontSee('Manuale formatore');
     }
 
+    public function test_auto_enroll_instructor_sees_instructor_manual_without_explicit_link(): void
+    {
+        // Regressione: i formatori "di piattaforma" (auto_enroll_all_courses)
+        // non hanno righe in course_instructor ma devono vedere il manuale.
+        $course = $this->makeCourse();
+        $material = Material::create([
+            'course_id'          => $course->id,
+            'title'              => 'Manuale formatore',
+            'is_instructor_only' => true,
+            'sort_order'         => 1,
+        ]);
+        $instructor = $this->makeStudent(['role' => 'instructor', 'auto_enroll_all_courses' => true]);
+
+        $this->actingAsStudent($instructor)
+            ->get(route('student.course.show', $course))
+            ->assertOk()
+            ->assertSee('Manuale formatore');
+
+        $this->actingAsStudent($instructor)
+            ->get(route('student.instructor.material.show', [$course->slug, $material]))
+            ->assertOk();
+    }
+
     public function test_browsing_instructor_gets_no_progress_on_module(): void
     {
         $course = $this->makeCourse();

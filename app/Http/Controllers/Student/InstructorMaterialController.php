@@ -64,14 +64,7 @@ class InstructorMaterialController extends Controller
             abort(403, 'Accesso riservato ai docenti.');
         }
 
-        $enrolled = $student->courses()
-            ->where('courses.id', $course->id)
-            ->wherePivot('is_active', true)
-            ->exists();
-
-        if (!$enrolled
-            && !$student->auto_enroll_all_courses
-            && !$this->teaches($student, $course)) {
+        if (!$this->accessesInstructorMaterials($student, $course)) {
             abort(403, 'Non insegni questo corso.');
         }
 
