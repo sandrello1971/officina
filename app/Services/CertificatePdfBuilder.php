@@ -215,7 +215,7 @@ class CertificatePdfBuilder
         $pdf->SetFont('jetbrainsmono', '', 5);
         $pdf->setFontSpacing(0);
         $pdf->SetXY($qr['block_x'], $qr['y'] + $qr['size'] + 5.0);
-        $pdf->MultiCell($qr['block_w'], 2.5, $verifyUrl, 0, 'C');
+        $pdf->MultiCell($qr['block_w'], 2.5, self::verifyUrlLines($verifyUrl), 0, 'C');
 
         // === Copyright (tutela diritto d'autore) ===
         // In piccolo, centrato, dentro la cornice interna del template
@@ -300,6 +300,23 @@ class CertificatePdfBuilder
         $pdf->SetXY($x, $cfg['y']);
         $pdf->Cell($w, $cfg['h'], $text, 0, 0, 'C', false, '', 1); // stretch=1: comprime solo se ancora troppo largo
         $pdf->setFontSpacing(0);
+    }
+
+    /**
+     * URL di verifica su tre righe: dominio / percorso / codice. In monospazio
+     * l'a capo automatico spezzava in un punto qualunque, anche a metà codice
+     * (che è la parte che una persona deve poter ricopiare).
+     */
+    public static function verifyUrlLines(string $url): string
+    {
+        $parts = parse_url($url);
+        if (!isset($parts['scheme'], $parts['host'], $parts['path'])) {
+            return $url;
+        }
+        $origin = $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+        $slash = strrpos($parts['path'], '/');
+
+        return $origin . "\n" . substr($parts['path'], 0, $slash + 1) . "\n" . substr($parts['path'], $slash + 1);
     }
 
     /**

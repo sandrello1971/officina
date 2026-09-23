@@ -120,4 +120,12 @@ class CertificatePdfBrandingTest extends TestCase
 
         (new \TCPDF())->SetFont('font-che-non-esiste');
     }
+
+    public function test_url_di_verifica_va_a_capo_prima_del_codice(): void
+    {
+        $this->assertSame(
+            "https://learn.officina.effettoglitch.it\n/certificato/verifica/\nATH-AC3T-8GRM-ZZKG",
+            CertificatePdfBuilder::verifyUrlLines('https://learn.officina.effettoglitch.it/certificato/verifica/ATH-AC3T-8GRM-ZZKG')
+        );
+    }
 }
