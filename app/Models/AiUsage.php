@@ -13,7 +13,7 @@ class AiUsage extends Model
     public $timestamps = false; // solo created_at, impostato dal client
 
     protected $fillable = [
-        'feature', 'model', 'tokens_in', 'tokens_out', 'cost_usd', 'status', 'error',
+        'feature', 'model', 'tokens_in', 'tokens_out', 'cost_usd', 'status', 'key_source', 'error',
         'school_id', 'course_id', 'actor_type', 'actor_id', 'meta', 'created_at',
     ];
 
