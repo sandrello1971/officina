@@ -753,3 +753,7 @@ Route::domain('admin.{tenant_host}')->group(function () {
         ->middleware('throttle:5,1')
         ->name('admin.2fa.verify');
 });
+
+// Host senza rotte proprie (es. l'host base di un ente): passa comunque dal
+// gruppo web, così InitializeTenancyForHost può reindirizzare a learn.* o dare 404.
+Route::fallback(fn () => abort(404));

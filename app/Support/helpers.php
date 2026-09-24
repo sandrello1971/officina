@@ -34,6 +34,19 @@ if (!function_exists('atheneum_setting_put')) {
     }
 }
 
+if (!function_exists('module_enabled')) {
+    /**
+     * Il modulo è attivo per l'ente corrente? Fuori da un tenant (CLI legacy,
+     * vetrina) vale l'installazione storica: tutto attivo.
+     */
+    function module_enabled(string $module): bool
+    {
+        $tenant = tenant();
+
+        return $tenant === null || $tenant->hasModule($module);
+    }
+}
+
 if (!function_exists('copyright_notice')) {
     /**
      * Dicitura UNICA di tutela del diritto d'autore, valida per ogni contenuto

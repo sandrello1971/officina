@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->web(append: [
             \App\Http\Middleware\EnsureSessionBelongsToTenant::class,
+            \App\Http\Middleware\EnforceTenantModules::class,
             \App\Http\Middleware\SecurityHeaders::class,
             // Audit trail: registra le azioni mutanti in /admin e /docente (si auto-filtra).
             \App\Http\Middleware\AuditTrail::class,

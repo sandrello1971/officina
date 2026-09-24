@@ -20,8 +20,8 @@ use Illuminate\Support\Facades\View;
  */
 class TenantConfig
 {
-    /** Chiavi di config toccate dagli override, con il loro valore .env. */
-    private static ?array $baseline = null;
+    /** Chiave nel container dei valori .env delle config sovrascritte. */
+    private const BASELINE = 'tenant-config.baseline';
 
     private const PATHS = [
         'mail.mailers.smtp.host', 'mail.mailers.smtp.port', 'mail.mailers.smtp.username',
@@ -33,8 +33,10 @@ class TenantConfig
 
     public static function apply(): void
     {
-        self::$baseline ??= collect(self::PATHS)->mapWithKeys(fn ($p) => [$p => config($p)])->all();
-        Config::set(self::$baseline);
+        if (! app()->bound(self::BASELINE)) {
+            self::rebaseline();
+        }
+        Config::set(self::baseline());
 
         $tenant = tenant();
 
@@ -43,6 +45,17 @@ class TenantConfig
 
         View::share('instanceName', Setting::resolve('instance_name', 'Officina'));
         URL::defaults(['tenant_host' => $tenant?->base_host ?? config('domains.base')]);
+    }
+
+    /** Fotografa i valori correnti come base .env (al boot; nei test dopo aver cambiato la config). */
+    public static function rebaseline(): void
+    {
+        app()->instance(self::BASELINE, collect(self::PATHS)->mapWithKeys(fn ($p) => [$p => config($p)])->all());
+    }
+
+    private static function baseline(): array
+    {
+        return app(self::BASELINE);
     }
 
     private static function applyMail(?Tenant $tenant): void
@@ -90,7 +103,7 @@ class TenantConfig
         // tenant (CLI legacy, vetrina) vale il comportamento storico = 'both'.
         $mode = $tenant?->ai_key_mode ?? Tenant::AI_KEY_BOTH;
         $own = self::decrypt(Setting::resolve('api_key_anthropic_encrypted'));
-        $platform = (string) (self::$baseline['services.anthropic.key'] ?? '');
+        $platform = (string) (self::baseline()['services.anthropic.key'] ?? '');
 
         [$key, $source] = match ($mode) {
             Tenant::AI_KEY_TENANT => [$own ?: '', 'tenant'],

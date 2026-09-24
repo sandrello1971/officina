@@ -87,15 +87,18 @@
             'active' => request()->routeIs('student.announcements.*'),
             'badgeId' => 'sidebar-announcements-badge', 'badgeCount' => $unreadAnnouncements ?? 0,
         ])
+        @if(module_enabled('ai_news'))
         @include('layouts.partials._topbar-item', [
             'href' => route('student.news.index'), 'label' => 'News AI', 'icon' => 'ai',
             'active' => request()->routeIs('student.news.*'),
         ])
+        @endif
     </div>
 
     <div class="topbar-actions">
-        {{-- Assistente AI: inibito server-side durante l'esame. --}}
-        @if(!empty($examLock))
+        {{-- Assistente AI: inibito server-side durante l'esame e assente se l'ente non ha il modulo. --}}
+        @if(!module_enabled('ai_chat'))
+        @elseif(!empty($examLock))
         <span class="topbar-item" style="opacity:0.4; cursor:not-allowed;" title="{{ $assistantName }} non è disponibile durante un esame">
             @include('layouts.partials._icon', ['name' => 'ai', 'size' => 20])
         </span>
@@ -127,7 +130,7 @@
                 @endif
                 @endif
 
-                @if(($identity['professor'] ?? false) || ($identity['secretary'] ?? false))
+                @if(module_enabled('scuola') && (($identity['professor'] ?? false) || ($identity['secretary'] ?? false)))
                 <div class="um-label">Cambia contesto</div>
                 @if($identity['professor'] ?? false)
                 <a href="{{ route('docente.dashboard') }}">@include('layouts.partials._icon', ['name' => 'teachers', 'size' => 18]) Area docente</a>
@@ -164,7 +167,7 @@
 </div>
 
 {{-- MINERVA BUBBLE — inibito server-side durante l'esame --}}
-@if(empty($examLock))
+@if(empty($examLock) && module_enabled('ai_chat'))
 <div x-data="minervaBubble()" x-init="init()"
      @minerva-toggle.window="toggle()"
      style="position:fixed; bottom:20px; right:20px; z-index:100;">
