@@ -41,7 +41,7 @@ Route::get('/certificato/verifica/{code}/pdf', [App\Http\Controllers\Certificate
 
 // ===== AREA STUDENTI =====
 // Vive alla radice di learn.* (prima era il prefisso /learn sull'host unico).
-Route::domain(config('domains.learn'))->name('student.')->group(function () {
+Route::domain('learn.{tenant_host}')->name('student.')->group(function () {
     Route::get('/', fn () => redirect()->route('student.dashboard'))->name('home');
     Route::get('/demo', [App\Http\Controllers\Student\DemoController::class, 'start'])->name('demo.start');
     Route::get('/login', [App\Http\Controllers\Student\AuthController::class, 'showLogin'])->name('login');
@@ -232,7 +232,7 @@ Route::domain(config('domains.learn'))->name('student.')->group(function () {
 
 // ===== AREA DOCENTE SCHOLA =====
 // Auth via sessione studente + gate professor. NON eredita gli accessi instructor.
-Route::domain(config('domains.learn'))->prefix('docente')->name('docente.')->middleware(['student.auth', 'professor'])->group(function () {
+Route::domain('learn.{tenant_host}')->prefix('docente')->name('docente.')->middleware(['student.auth', 'professor'])->group(function () {
     Route::get('/', [App\Http\Controllers\Docente\DashboardController::class, 'index'])->name('dashboard');
 
     // Classi (pacchetto 3)
@@ -381,7 +381,7 @@ Route::domain(config('domains.learn'))->prefix('docente')->name('docente.')->mid
 
 // ===== AREA SEGRETERIA SCOLASTICA (fase 2, P12) =====
 // Gate school_admin + cambio password obbligatorio. Tutto scoped su school_id.
-Route::domain(config('domains.learn'))->prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.password'])->group(function () {
+Route::domain('learn.{tenant_host}')->prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.password'])->group(function () {
     Route::get('/', [App\Http\Controllers\Scuola\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'edit'])->name('anagrafica.edit');
     Route::patch('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'update'])->name('anagrafica.update');
@@ -448,12 +448,12 @@ Route::domain(config('domains.learn'))->prefix('scuola')->name('scuola.')->middl
 // (segreteria/docenti/studenti) e al platform admin, quindi fuori dal gate
 // school_admin ma sotto student.auth.
 Route::get('/branding/scuola/{school}/logo', [App\Http\Controllers\Scuola\BrandingController::class, 'logo'])
-    ->domain(config('domains.learn'))
+    ->domain('learn.{tenant_host}')
     ->middleware('student.auth')->name('scuola.logo');
 
 // ===== AREA ADMIN OFFICINA =====
 // Vive alla radice di admin.* (prima era il prefisso /admin sull'host unico).
-Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'])->group(function () {
+Route::domain('admin.{tenant_host}')->name('admin.')->middleware(['admin.auth'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Audit trail — chi ha fatto cosa nelle aree admin/docente.
@@ -747,7 +747,7 @@ Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'
 // 2FA challenge: l'admin ha password OK ma non e' ancora "logged_in".
 // Fuori dal middleware admin.auth (sennò redirect a login infinito).
 // Throttle 5/min anti brute-force sul verify.
-Route::domain(config('domains.admin'))->group(function () {
+Route::domain('admin.{tenant_host}')->group(function () {
     Route::get('/2fa/challenge', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'show'])->name('admin.2fa.challenge');
     Route::post('/2fa/verify', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'verify'])
         ->middleware('throttle:5,1')

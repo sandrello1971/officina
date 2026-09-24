@@ -18,6 +18,11 @@ return [
     |
     */
 
+    // Host base dell'installazione primaria (Effetto Glitch): default di
+    // {tenant_host} quando si generano URL fuori da un tenant (CLI, vetrina).
+    // Gli altri enti hanno il proprio base_host sul record tenant.
+    'base' => env('APP_BASE_DOMAIN', 'officina.effettoglitch.it'),
+
     'site' => env('APP_SITE_DOMAIN', 'officina.effettoglitch.it'),
 
     'admin' => env('APP_ADMIN_DOMAIN', 'admin.officina.effettoglitch.it'),

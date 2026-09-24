@@ -62,8 +62,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerBrevoMailTransport();
-        $this->applyMailSettingsOverride();
-        $this->applyApiKeySettingsOverride();
+        // SMTP, chiavi API e nome istanza dipendono dall'ente: riapplicati anche
+        // a ogni cambio di tenant (TenancyServiceProvider).
+        \App\Support\TenantConfig::apply();
 
         // Observability: logga in modo strutturato ogni job asincrono fallito
         // (visibile nei log e, quando configurato, inoltrabile a Sentry/Slack).
@@ -152,8 +153,6 @@ class AppServiceProvider extends ServiceProvider
                     ])->withInput();
                 });
         });
-
-        $this->shareInstanceName();
 
         // Branding per scuola (fase 2): risolto sopra il default piattaforma e
         // condiviso con i layout segreteria e docente. Utenti "liberi"
@@ -254,81 +253,4 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Override runtime della config mail dal settings store, SOLO se le
-     * chiavi sono valorizzate. Difensivo: chiavi vuote → nessuna modifica
-     * → si continua a usare .env (no regressione produzione).
-     */
-    private function applyMailSettingsOverride(): void
-    {
-        $host = Setting::resolve('mail_host');
-        if (!$host) {
-            return; // se host non c'è, non tocchiamo nulla
-        }
-
-        $overrides = [
-            'mail.mailers.smtp.host'       => $host,
-            'mail.mailers.smtp.port'       => Setting::resolve('mail_port', 587),
-            'mail.mailers.smtp.username'   => Setting::resolve('mail_username'),
-            'mail.mailers.smtp.encryption' => Setting::resolve('mail_encryption', 'tls') ?: null,
-        ];
-
-        $fromAddress = Setting::resolve('mail_from_address');
-        $fromName    = Setting::resolve('mail_from_name');
-        if ($fromAddress) $overrides['mail.from.address'] = $fromAddress;
-        if ($fromName)    $overrides['mail.from.name']    = $fromName;
-
-        $encPwd = Setting::resolve('mail_password_encrypted');
-        if ($encPwd) {
-            try {
-                $overrides['mail.mailers.smtp.password'] = Crypt::decryptString($encPwd);
-            } catch (\Throwable $e) {
-                // Password cifrata illeggibile → preferisco NON sovrascrivere
-                // password .env piuttosto che disabilitare la mail in prod.
-            }
-        }
-
-        Config::set($overrides);
-    }
-
-    /**
-     * Override runtime delle chiavi API di servizi terzi dal settings store,
-     * SOLO per quelle valorizzate. Stesso principio difensivo di
-     * applyMailSettingsOverride: chiave assente/illeggibile → si continua a
-     * usare .env, nessuna regressione produzione.
-     */
-    private function applyApiKeySettingsOverride(): void
-    {
-        $map = [
-            'api_key_anthropic_encrypted'  => ['services.anthropic.key'],
-            'api_key_brevo_encrypted'      => ['services.brevo.key', 'mail.mailers.brevo.key'],
-            'api_key_elevenlabs_encrypted' => ['services.elevenlabs.key'],
-        ];
-
-        $overrides = [];
-        foreach ($map as $settingKey => $configPaths) {
-            $encrypted = Setting::resolve($settingKey);
-            if (!$encrypted) {
-                continue;
-            }
-            try {
-                $value = Crypt::decryptString($encrypted);
-            } catch (\Throwable $e) {
-                continue; // valore cifrato illeggibile → resta l'env
-            }
-            foreach ($configPaths as $path) {
-                $overrides[$path] = $value;
-            }
-        }
-
-        if ($overrides) {
-            Config::set($overrides);
-        }
-    }
-
-    private function shareInstanceName(): void
-    {
-        $instanceName = Setting::resolve('instance_name', 'Officina');
-        View::share('instanceName', $instanceName);
-    }
 }

@@ -12,7 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Header di sicurezza su tutte le risposte del gruppo web.
+        // Multi-tenancy: l'ente va risolto PRIMA di StartSession (le sessioni
+        // devono nascere nel contesto giusto) e la sessione poi legata all'ente.
+        $middleware->web(prepend: [
+            \App\Http\Middleware\InitializeTenancyForHost::class,
+        ]);
         $middleware->web(append: [
+            \App\Http\Middleware\EnsureSessionBelongsToTenant::class,
             \App\Http\Middleware\SecurityHeaders::class,
             // Audit trail: registra le azioni mutanti in /admin e /docente (si auto-filtra).
             \App\Http\Middleware\AuditTrail::class,
