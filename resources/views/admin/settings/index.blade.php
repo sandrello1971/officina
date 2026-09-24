@@ -233,10 +233,20 @@
 
         <div style="background:white; border-radius:10px; padding:20px; margin-bottom:20px;">
             <h3 style="font-size:1rem; font-weight:700; color:#1A1F1F; margin-bottom:4px;">Chiavi API</h3>
+            @php $aiMode = tenant()?->ai_key_mode ?? 'both'; @endphp
             <p style="font-size:0.78rem; color:#8A9696; margin-bottom:14px;">
-                Se un campo è vuoto viene usata la chiave del file <code style="background:#F5F7F7; padding:1px 5px; border-radius:3px;">.env</code> (comportamento attuale).
+                Se un campo è vuoto viene usata la chiave fornita dalla piattaforma.
                 Le chiavi vengono cifrate a riposo e non sono mai mostrate in chiaro dopo il salvataggio.
             </p>
+            @if($aiMode === 'platform')
+            <p style="font-size:0.78rem; color:#7A4A12; background:#FFF4E5; padding:8px 10px; border-radius:6px; margin-bottom:14px;">
+                Il tuo piano usa la chiave Anthropic della piattaforma: una chiave inserita qui non viene utilizzata.
+            </p>
+            @elseif($aiMode === 'tenant')
+            <p style="font-size:0.78rem; color:#7A4A12; background:#FFF4E5; padding:8px 10px; border-radius:6px; margin-bottom:14px;">
+                Il tuo piano richiede la tua chiave Anthropic: senza, le funzioni AI restano disattivate.
+            </p>
+            @endif
 
             @foreach([
                 ['field' => 'api_key_anthropic',  'label' => 'Anthropic (Claude)', 'set' => $settings['api_key_anthropic_set']],

@@ -44,7 +44,7 @@ class TenantCreate extends Command
         $this->info("✔ Ente '{$tenant->slug}' creato sul DB {$result['db']}.");
         $this->line("  admin: https://{$tenant->adminHost()}   learn: https://{$tenant->learnHost()}");
         $this->line("  password temporanea admin: {$result['temp_password']}");
-        $this->warn('  Ricorda DNS + certificato TLS per i due host (scripts/tenant-cert.sh).');
+        $this->warn('  Ricorda DNS + certificato TLS per i due host (scripts/tenant-host.sh).');
 
         return self::SUCCESS;
     }

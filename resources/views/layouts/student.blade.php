@@ -22,7 +22,8 @@
         window.Echo = new Echo({
             broadcaster: 'reverb',
             key: '{{ config('broadcasting.connections.reverb.key') }}',
-            wsHost: '{{ config('broadcasting.connections.reverb.options.client.host', request()->getHost()) }}',
+            {{-- Host della pagina: ogni vhost (anche degli altri enti) fa proxy di /app verso Reverb. --}}
+            wsHost: '{{ request()->getHost() }}',
             wsPort: {{ (int) config('broadcasting.connections.reverb.options.client.port', 443) }},
             wssPort: {{ (int) config('broadcasting.connections.reverb.options.client.port', 443) }},
             forceTLS: ('{{ config('broadcasting.connections.reverb.options.client.scheme', 'https') }}' === 'https'),

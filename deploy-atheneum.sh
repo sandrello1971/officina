@@ -109,11 +109,32 @@ composer install --no-dev --optimize-autoloader --working-dir="$DEST"
 echo "==> npm ci && build"
 ( cd "$DEST" && npm ci && npm run build )
 
-echo "==> migrazioni (additive; se una fallisce, lo script si ferma)"
+# La config in cache è quella del deploy PRECEDENTE: le migrazioni e i comandi
+# qui sotto devono vedere i config file nuovi (es. connessione central).
+echo "==> config:clear"
+php "$DEST/artisan" config:clear
+
+# Multi-tenant: `migrate` tocca solo il DB central (tenants/domains/...);
+# lo schema applicativo vive nel DB di ogni ente e nel template dei nuovi.
+echo "==> migrazioni central (additive; se una fallisce, lo script si ferma)"
 php "$DEST/artisan" migrate --force
 
-echo "==> seed materie standard (idempotente: firstOrCreate, non tocca le custom)"
-php "$DEST/artisan" db:seed --class=SubjectSeeder --force
+# Senza enti registrati nessun host risponde: resta in manutenzione e spiega.
+if [[ "$(php "$DEST/artisan" tenant:list --count)" == "0" ]]; then
+  echo "ABORT: nessun ente registrato nel DB central. Il sito resta in manutenzione."
+  echo "       Primo cutover multi-tenant: segui docs/MULTI_TENANT_DEPLOY.md (tenant:register-existing),"
+  echo "       poi rilancia questo script."
+  exit 1
+fi
+
+echo "==> migrazioni di ogni ente"
+php "$DEST/artisan" tenants:migrate --force
+
+echo "==> migrazioni del template dei nuovi enti"
+php "$DEST/artisan" tenant:template-migrate
+
+echo "==> seed materie standard, solo enti con Scuola (idempotente: firstOrCreate)"
+php "$DEST/artisan" tenants:each "db:seed --class=SubjectSeeder --force" --module=scuola
 
 echo "==> font TCPDF certificati (idempotente; storage/fonts/tcpdf, fuori da vendor/)"
 php "$DEST/artisan" pdf:register-tcpdf-fonts

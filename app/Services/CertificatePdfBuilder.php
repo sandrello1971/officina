@@ -100,7 +100,9 @@ class CertificatePdfBuilder
 
     public static function fontDir(): string
     {
-        return storage_path('fonts/tcpdf');
+        // Asset di piattaforma, condivisi da tutti gli enti: base_path e non
+        // storage_path, che dentro un ente punta a storage/tenant<id>.
+        return base_path('storage/fonts/tcpdf');
     }
 
     /**
