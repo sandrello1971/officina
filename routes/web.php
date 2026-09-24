@@ -754,6 +754,27 @@ Route::domain('admin.{tenant_host}')->group(function () {
         ->name('admin.2fa.verify');
 });
 
+// ===== CONSOLE DI PIATTAFORMA =====
+// Host central (config platform.domain): gestione degli enti. Realm separato
+// dagli admin dei singoli enti, 2FA obbligatorio.
+Route::domain(config('platform.domain'))->name('platform.')->group(function () {
+    Route::get('/login', [App\Http\Controllers\Platform\AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [App\Http\Controllers\Platform\AuthController::class, 'login'])->middleware('throttle:login')->name('login.post');
+    Route::get('/2fa', [App\Http\Controllers\Platform\AuthController::class, 'showTwoFactor'])->name('2fa');
+    Route::post('/2fa', [App\Http\Controllers\Platform\AuthController::class, 'verifyTwoFactor'])->middleware('throttle:5,1')->name('2fa.verify');
+    Route::post('/logout', [App\Http\Controllers\Platform\AuthController::class, 'logout'])->name('logout');
+
+    Route::middleware('platform.auth')->group(function () {
+        Route::get('/', [App\Http\Controllers\Platform\TenantController::class, 'index'])->name('tenants.index');
+        Route::get('/enti/nuovo', [App\Http\Controllers\Platform\TenantController::class, 'create'])->name('tenants.create');
+        Route::post('/enti', [App\Http\Controllers\Platform\TenantController::class, 'store'])->name('tenants.store');
+        Route::get('/enti/{tenant}', [App\Http\Controllers\Platform\TenantController::class, 'edit'])->name('tenants.edit');
+        Route::put('/enti/{tenant}', [App\Http\Controllers\Platform\TenantController::class, 'update'])->name('tenants.update');
+        Route::post('/enti/{tenant}/admin/{admin}/password', [App\Http\Controllers\Platform\TenantController::class, 'resetAdminPassword'])->name('tenants.admin-password');
+        Route::delete('/enti/{tenant}', [App\Http\Controllers\Platform\TenantController::class, 'destroy'])->name('tenants.destroy');
+    });
+});
+
 // File del disco public degli enti secondari (vedi TenantMediaController).
 Route::get('/media/{path}', [App\Http\Controllers\TenantMediaController::class, 'show'])
     ->where('path', '.*')->name('tenant.media');

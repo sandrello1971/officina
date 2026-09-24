@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'professor' => \App\Http\Middleware\ProfessorAuth::class,
             'school_admin' => \App\Http\Middleware\SchoolAdminAuth::class,
             'admin.auth' => \App\Http\Middleware\AdminAuth::class,
+            'platform.auth' => \App\Http\Middleware\PlatformAuth::class,
             'demo.restrictions' => \App\Http\Middleware\DemoRestrictions::class,
             'legal_representative' => \App\Http\Middleware\EnsureLegalRepresentative::class,
         ]);
