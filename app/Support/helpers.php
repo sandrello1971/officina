@@ -47,6 +47,20 @@ if (!function_exists('module_enabled')) {
     }
 }
 
+if (!function_exists('tenant_channel')) {
+    /**
+     * Nome di un canale broadcast nel perimetro dell'ente corrente
+     * (`t.<tenant>.user.<id>`). Gli id si ripetono fra DB di enti diversi e
+     * Reverb è unico: senza prefisso un utente riceverebbe eventi di un altro ente.
+     */
+    function tenant_channel(string $name): string
+    {
+        $tenant = tenant();
+
+        return $tenant ? 't.' . $tenant->getTenantKey() . '.' . $name : $name;
+    }
+}
+
 if (!function_exists('copyright_notice')) {
     /**
      * Dicitura UNICA di tutela del diritto d'autore, valida per ogni contenuto

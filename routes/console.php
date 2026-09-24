@@ -8,30 +8,33 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('atheneum:purge-deleted-notes')->dailyAt('03:00');
-Schedule::command('exams:fail-stale')->everyFiveMinutes()->withoutOverlapping();
+// Multi-tenant: ogni job schedulato gira per ente (tenants:each), saltando gli
+// enti sospesi e quelli che non hanno il modulo coinvolto.
+
+Schedule::command('tenants:each atheneum:purge-deleted-notes')->dailyAt('03:00');
+Schedule::command('tenants:each exams:fail-stale')->everyFiveMinutes()->withoutOverlapping();
 
 // Rete di recupero durevole del RAG vettoriale Schola: vettorizza ogni notte i
 // chunk rimasti senza embedding (es. videoai giù al momento dell'ingestion).
-Schedule::command('schola:backfill-embeddings')->dailyAt('03:30')->withoutOverlapping();
+Schedule::command('tenants:each schola:backfill-embeddings --module=scuola')->dailyAt('03:30')->withoutOverlapping();
 
 // P25.3d — Controlli di aggiornamento corsi (Course Freshness Agent). Gira ogni giorno
 // ma lancia SOLO i corsi con cadenza scaduta (default 'off' → opt-in), con cap per
 // esecuzione. Solo generazione di proposte; nessuna applicazione (HITL manuale).
-Schedule::command('freshness:run-due')->dailyAt('04:00')->withoutOverlapping();
+Schedule::command('tenants:each freshness:run-due --module=freshness')->dailyAt('04:00')->withoutOverlapping();
 
 // P26.3 — Scout di copertura (argomenti mancanti, non solo obsoleti). Stessa disciplina di
 // costo della Freshness: cadenza opt-in per corso (default 'off'), interruttore globale
 // `gap_scout_auto_enabled` (default OFF), cap per esecuzione. Orario sfalsato di 30 minuti
 // rispetto a freshness:run-due per non sommare la spesa AI dei due controlli nello stesso istante.
-Schedule::command('gap:scout-run-due')->dailyAt('04:30')->withoutOverlapping();
+Schedule::command('tenants:each gap:scout-run-due --module=gap_scout')->dailyAt('04:30')->withoutOverlapping();
 
 // Completezza della consegna (slide, materiali, manuale formatore, permessi file). Puro
 // controllo di struttura: nessuna chiamata AI, nessun interruttore di costo — può girare
 // su tutti i corsi ogni settimana senza cap.
-Schedule::command('course:completeness-audit')->weeklyOn(1, '05:30')->withoutOverlapping();
+Schedule::command('tenants:each course:completeness-audit')->weeklyOn(1, '05:30')->withoutOverlapping();
 
 // News AI — rassegna settimanale via ricerca online. Gira il lunedì; recupera solo se
 // l'interruttore globale `ainews_auto_enabled` è ON (default OFF → nessuna spesa). Salva
 // bozze: la pubblicazione ai discenti è HITL (revisione admin).
-Schedule::command('ainews:fetch-weekly')->weeklyOn(1, '05:00')->withoutOverlapping();
+Schedule::command('tenants:each ainews:fetch-weekly --module=ai_news')->weeklyOn(1, '05:00')->withoutOverlapping();

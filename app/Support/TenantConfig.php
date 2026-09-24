@@ -29,6 +29,7 @@ class TenantConfig
         'mail.from.address', 'mail.from.name',
         'services.anthropic.key', 'services.anthropic.key_source',
         'services.brevo.key', 'mail.mailers.brevo.key', 'services.elevenlabs.key',
+        'filesystems.disks.public.url',
     ];
 
     public static function apply(): void
@@ -42,6 +43,13 @@ class TenantConfig
 
         self::applyMail($tenant);
         self::applyApiKeys($tenant);
+
+        // Disco public degli enti secondari servito da TenantMediaController:
+        // public/storage è il symlink ai file dell'ente primario.
+        if ($tenant && ! $tenant->isPrimary()) {
+            Config::set('filesystems.disks.public.url', '/media');
+        }
+        \Illuminate\Support\Facades\Storage::forgetDisk('public');
 
         View::share('instanceName', Setting::resolve('instance_name', 'Officina'));
         URL::defaults(['tenant_host' => $tenant?->base_host ?? config('domains.base')]);

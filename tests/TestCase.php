@@ -42,6 +42,7 @@ abstract class TestCase extends BaseTestCase
     {
         config([
             'tenancy.database.central_connection' => 'pgsql',
+            'queue.failed.database' => 'pgsql',
             'tenancy.bootstrappers' => array_values(array_diff(
                 config('tenancy.bootstrappers'),
                 [DatabaseTenancyBootstrapper::class]

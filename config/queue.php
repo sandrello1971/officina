@@ -120,9 +120,11 @@ return [
     |
     */
 
+    // Multi-tenant: i job falliti di tutti gli enti stanno nel DB central
+    // (il payload porta tenant_id); la pagina admin di ogni ente filtra i propri.
     'failed' => [
         'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
-        'database' => env('DB_CONNECTION', 'sqlite'),
+        'database' => env('QUEUE_FAILED_CONNECTION', 'central'),
         'table' => 'failed_jobs',
     ],
 

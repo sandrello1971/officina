@@ -52,7 +52,7 @@ class TenantAiUsageTest extends TestCase
         $this->enter(['ai_key_mode' => Tenant::AI_KEY_BOTH], ownKey: 'ente-key');
         $this->ask();
 
-        $this->assertSame('tenant', AiUsage::sole()->key_source);
+        $this->assertSame('tenant', AiUsage::where('feature', 't')->latest('created_at')->firstOrFail()->key_source);
         Http::assertSent(fn ($r) => $r->header('x-api-key')[0] === 'ente-key');
     }
 

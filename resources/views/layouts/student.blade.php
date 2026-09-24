@@ -440,7 +440,7 @@ function minervaBubble() {
         annBadge.style.display = next > 0 ? 'inline-block' : 'none';
     }
 
-    window.Echo.private(`user.${userId}`)
+    window.Echo.private(@json(tenant_channel('user.')) + userId)
         .listen('.MessageSent', (payload) => {
             // Se siamo sulla pagina del thread relativo, lo show.blade gia gestisce.
             // Altrimenti bump badge sidebar.

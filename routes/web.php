@@ -754,6 +754,10 @@ Route::domain('admin.{tenant_host}')->group(function () {
         ->name('admin.2fa.verify');
 });
 
+// File del disco public degli enti secondari (vedi TenantMediaController).
+Route::get('/media/{path}', [App\Http\Controllers\TenantMediaController::class, 'show'])
+    ->where('path', '.*')->name('tenant.media');
+
 // Host senza rotte proprie (es. l'host base di un ente): passa comunque dal
 // gruppo web, così InitializeTenancyForHost può reindirizzare a learn.* o dare 404.
 Route::fallback(fn () => abort(404));
