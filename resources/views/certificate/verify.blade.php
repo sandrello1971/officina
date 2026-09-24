@@ -194,7 +194,7 @@
                     <div style="color: #1A1F1F; font-size: 0.85rem; line-height: 1.6;">
                         Firmato digitalmente da
                         <strong>{{ $cert->signed_by ?? ('Legale rappresentante ' . atheneum_setting('platform_owner', 'Effetto Glitch')) }}</strong>,
-                        in qualità di legale rappresentante di {{ atheneum_setting('platform_owner', 'Effetto Glitch di Stefano Andrello') }},
+                        in qualità di legale rappresentante di {{ atheneum_setting('platform_owner', 'Effetto Glitch') }},
                         il <strong>{{ $cert->signed_at->locale('it')->isoFormat('D MMMM YYYY') }}</strong>.
                     </div>
                     <a href="{{ route('certificate.verify.pdf', ['code' => $cert->code]) }}"
@@ -225,10 +225,16 @@
         @endif
     </div>
 
+    @php
+        $ownerUrl = atheneum_setting('platform_owner_url', tenant() && ! tenant()->isPrimary() ? '' : 'https://effettoglitch.it');
+        $learnHost = tenant()?->learnHost() ?? request()->getHost();
+    @endphp
     <div class="footer-link">
-        <a href="https://effettoglitch.it">effettoglitch.it</a>
-        &nbsp;·&nbsp;
-        <a href="https://officina.effettoglitch.it">officina.effettoglitch.it</a>
+        @if ($ownerUrl)
+            <a href="{{ $ownerUrl }}">{{ preg_replace('#^https?://#', '', rtrim($ownerUrl, '/')) }}</a>
+            &nbsp;·&nbsp;
+        @endif
+        <a href="https://{{ $learnHost }}">{{ $learnHost }}</a>
     </div>
 </body>
 </html>

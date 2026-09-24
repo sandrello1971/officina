@@ -29,21 +29,49 @@ class BuildCertificateTemplate extends Command
     private const LOGO = 'resources/pdf/templates/assets/effettoglitch-logo.png';
     private const MARK = 'resources/pdf/templates/assets/effettoglitch-mark.png';
 
+    /** Brand dell'ente secondario corrente (null = brand Effetto Glitch). */
+    private ?array $tenantBrand = null;
+
     public function handle(): int
     {
-        $output = $this->option('output') ?: base_path(B::TEMPLATE_PATH);
+        // Un ente secondario non riceve mai il brand Effetto Glitch: logo e
+        // host sono i suoi, il template va nel suo storage.
+        $tenant = tenant();
+        if ($tenant && ! $tenant->isPrimary()) {
+            $logo = \App\Models\BrandProfile::forPlatform()->logo_path;
+            $logoAbs = $logo ? \Illuminate\Support\Facades\Storage::disk('local')->path($logo) : null;
+            $this->tenantBrand = [
+                'name' => (string) atheneum_setting('instance_name', $tenant->name),
+                'host' => $tenant->learnHost(),
+                'logo' => $logoAbs && is_file($logoAbs) ? $logoAbs : null,
+            ];
+        }
+
+        $output = $this->option('output') ?: B::templatePath();
+        @mkdir(dirname($output), 0775, true);
 
         $pdf = B::newDocument();
-        $pdf->SetTitle('Template certificato Officina — Effetto Glitch');
+        $pdf->SetTitle('Template certificato Officina — ' . ($this->tenantBrand['name'] ?? 'Effetto Glitch'));
         [$pw, $ph, $orientation] = B::pageFormat(self::W, self::H);
         $pdf->AddPage($orientation, [$pw, $ph]);
 
-        $this->watermark($pdf);
+        if (! $this->tenantBrand) {
+            $this->watermark($pdf);
+        }
         $this->frame($pdf);
 
-        // Logo completo (G + wordmark + payoff), centrato in alto.
         $logoW = 78.0;
-        $pdf->Image(base_path(self::LOGO), (self::W - $logoW) / 2.0, 16.0, $logoW, 0, 'PNG');
+        if (! $this->tenantBrand) {
+            // Logo completo (G + wordmark + payoff), centrato in alto.
+            $pdf->Image(base_path(self::LOGO), (self::W - $logoW) / 2.0, 16.0, $logoW, 0, 'PNG');
+        } elseif ($this->tenantBrand['logo']) {
+            $pdf->Image($this->tenantBrand['logo'], (self::W - $logoW) / 2.0, 16.0, $logoW, 22.0, '', '', '', true, 300, '', false, false, 0, 'CM');
+        } else {
+            B::writeField($pdf, mb_strtoupper($this->tenantBrand['name']), [
+                'x' => 20.0, 'w' => self::W - 40.0, 'y' => 22.0, 'h' => 12.0,
+                'font' => 'jetbrainsmonomedium', 'size' => 20, 'color' => B::INDIGO, 'spacing' => 3.0,
+            ], self::W);
+        }
 
         $this->labels($pdf);
         $this->divider($pdf, 121.0);
@@ -158,13 +186,15 @@ class BuildCertificateTemplate extends Command
         $x = 227.0;
         $w = 45.0;
         $markW = 10.0;
-        $pdf->Image(base_path(self::MARK), $x + ($w - $markW) / 2.0, 157.0, $markW, 0, 'PNG');
+        if (! $this->tenantBrand) {
+            $pdf->Image(base_path(self::MARK), $x + ($w - $markW) / 2.0, 157.0, $markW, 0, 'PNG');
+        }
 
         B::writeField($pdf, 'OFFICINA', [
             'x' => $x, 'w' => $w, 'y' => 169.5, 'h' => 5.0,
             'font' => 'jetbrainsmonomedium', 'size' => 8.5, 'color' => B::VIOLET, 'spacing' => 2.2,
         ], self::W);
-        B::writeField($pdf, 'officina.effettoglitch.it', [
+        B::writeField($pdf, $this->tenantBrand['host'] ?? 'officina.effettoglitch.it', [
             'x' => $x, 'w' => $w, 'y' => 175.0, 'h' => 4.0,
             'font' => 'jetbrainsmono', 'size' => 6.5, 'color' => B::MUTED,
         ], self::W);

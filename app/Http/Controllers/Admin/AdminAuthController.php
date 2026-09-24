@@ -48,8 +48,10 @@ class AdminAuthController extends Controller
 
         // 2) BREAK-GLASS: credenziale .env legacy.
         // NON rimuovere: serve come canale di emergenza se il DB admins è
-        // vuoto/corrotto o le credenziali sono perse.
-        if ($email === strtolower((string) config('admin.email'))
+        // vuoto/corrotto o le credenziali sono perse. Solo sull'ente primario:
+        // altrimenti la stessa credenziale aprirebbe l'admin di ogni ente.
+        if ((tenant() === null || tenant()->isPrimary())
+            && $email === strtolower((string) config('admin.email'))
             && config('admin.password_hash')
             && Hash::check($request->password, config('admin.password_hash'))) {
             session(['admin_logged_in' => true, 'admin_email' => $email]);

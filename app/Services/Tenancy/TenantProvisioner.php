@@ -69,6 +69,9 @@ class TenantProvisioner
                 atheneum_setting_put($key, $value);
             }
 
+            // Tema slide/PDF neutro: il tema Glitch è il brand di Effetto Glitch.
+            \App\Models\BrandProfile::create(['base_theme' => \App\Enums\BaseTheme::Classico->value]);
+
             Admin::create([
                 'name' => $params['admin_name'] ?? $adminEmail,
                 'email' => $adminEmail,
