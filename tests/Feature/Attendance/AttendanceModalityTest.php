@@ -27,7 +27,7 @@ class AttendanceModalityTest extends TestCase
         $session = CourseSession::create(['course_id' => $course->id, 'title' => 'L', 'scheduled_at' => now(), 'duration_minutes' => 120, 'modality' => 'in_person']);
 
         // 2h sincrono + 1h FAD per Anna
-        app(AttendanceService::class)->markSessionAttendance($session, [$student->id => '2']);
+        app(AttendanceService::class)->markSessionAttendance($session, [$student->id => ['status' => 'presente', 'hours' => '2']]);
         AttendanceRecord::create([
             'student_id' => $student->id, 'course_id' => $course->id, 'type' => 'async_activity',
             'source' => 'module_completion', 'module_id' => $module->id, 'occurred_at' => now(), 'hours_credited' => 1.0,

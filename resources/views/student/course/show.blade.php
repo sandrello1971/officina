@@ -39,7 +39,7 @@
         <div style="margin-top:10px; display:flex; gap:8px;">
             <a href="{{ route('student.course.register', $course->slug) }}" style="padding:7px 13px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">Registro di frequenza</a>
             @unless($course->isAsync())
-            <a href="{{ route('student.course.sessions.index', $course->slug) }}" style="padding:7px 13px; border:1px solid #55B1AE; color:#55B1AE; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">Sessioni sincrone</a>
+            <a href="{{ route('student.course.editions.index', $course->slug) }}" style="padding:7px 13px; border:1px solid #55B1AE; color:#55B1AE; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">Edizioni e presenze</a>
             @endunless
         </div>
     </div>

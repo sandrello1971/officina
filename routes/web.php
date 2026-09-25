@@ -104,13 +104,23 @@ Route::domain('learn.{tenant_host}')->name('student.')->group(function () {
         Route::view('/info/studio-condiviso', 'student.classi.trasparenza')->name('schola.transparency');
         Route::get('/course/{course:slug}', [App\Http\Controllers\Student\CourseController::class, 'show'])->name('course.show');
 
-        // Registro di frequenza lato FORMATORE (gate: insegna il corso).
-        Route::get('/course/{course:slug}/sessions', [App\Http\Controllers\Student\CourseAttendanceController::class, 'sessions'])->name('course.sessions.index');
-        Route::get('/course/{course:slug}/sessions/create', [App\Http\Controllers\Student\CourseAttendanceController::class, 'createSession'])->name('course.sessions.create');
-        Route::post('/course/{course:slug}/sessions', [App\Http\Controllers\Student\CourseAttendanceController::class, 'storeSession'])->name('course.sessions.store');
-        Route::get('/course/{course:slug}/sessions/{session}', [App\Http\Controllers\Student\CourseAttendanceController::class, 'showSession'])->name('course.sessions.show');
-        Route::post('/course/{course:slug}/sessions/{session}/mark', [App\Http\Controllers\Student\CourseAttendanceController::class, 'mark'])->name('course.sessions.mark');
-        Route::delete('/course/{course:slug}/sessions/{session}', [App\Http\Controllers\Student\CourseAttendanceController::class, 'destroySession'])->name('course.sessions.destroy');
+        // Edizioni e registro presenze lato FORMATORE (gate: insegna il corso).
+        Route::get('/course/{course:slug}/editions', [App\Http\Controllers\Student\CourseEditionController::class, 'index'])->name('course.editions.index');
+        Route::get('/course/{course:slug}/editions/create', [App\Http\Controllers\Student\CourseEditionController::class, 'create'])->name('course.editions.create');
+        Route::post('/course/{course:slug}/editions', [App\Http\Controllers\Student\CourseEditionController::class, 'store'])->name('course.editions.store');
+        Route::get('/course/{course:slug}/editions/{edition}', [App\Http\Controllers\Student\CourseEditionController::class, 'show'])->name('course.editions.show');
+        Route::patch('/course/{course:slug}/editions/{edition}', [App\Http\Controllers\Student\CourseEditionController::class, 'update'])->name('course.editions.update');
+        Route::delete('/course/{course:slug}/editions/{edition}', [App\Http\Controllers\Student\CourseEditionController::class, 'destroy'])->name('course.editions.destroy');
+        Route::post('/course/{course:slug}/editions/{edition}/days', [App\Http\Controllers\Student\CourseEditionController::class, 'addDays'])->name('course.editions.days.store');
+        Route::patch('/course/{course:slug}/editions/{edition}/days/{day}', [App\Http\Controllers\Student\CourseEditionController::class, 'updateDay'])->name('course.editions.days.update');
+        Route::delete('/course/{course:slug}/editions/{edition}/days/{day}', [App\Http\Controllers\Student\CourseEditionController::class, 'destroyDay'])->name('course.editions.days.destroy');
+        Route::get('/course/{course:slug}/editions/{edition}/days/{day}', [App\Http\Controllers\Student\CourseEditionController::class, 'day'])->name('course.editions.day');
+        Route::post('/course/{course:slug}/editions/{edition}/days/{day}/mark', [App\Http\Controllers\Student\CourseEditionController::class, 'mark'])->name('course.editions.mark');
+        Route::post('/course/{course:slug}/editions/{edition}/students', [App\Http\Controllers\Student\CourseEditionController::class, 'addStudents'])->name('course.editions.students.store');
+        Route::delete('/course/{course:slug}/editions/{edition}/students/{student}', [App\Http\Controllers\Student\CourseEditionController::class, 'removeStudent'])->name('course.editions.students.destroy');
+        Route::get('/course/{course:slug}/editions/{edition}/register.pdf', [App\Http\Controllers\Student\CourseEditionController::class, 'pdf'])->name('course.editions.pdf');
+        Route::get('/course/{course:slug}/editions/{edition}/register.csv', [App\Http\Controllers\Student\CourseEditionController::class, 'csv'])->name('course.editions.csv');
+        // Prospetto ore del corso (sincrono + FAD).
         Route::get('/course/{course:slug}/register', [App\Http\Controllers\Student\CourseAttendanceController::class, 'register'])->name('course.register');
         Route::get('/course/{course:slug}/register/pdf', [App\Http\Controllers\Student\CourseAttendanceController::class, 'registerPdf'])->name('course.register.pdf');
         Route::get('/course/{course:slug}/register/{student}', [App\Http\Controllers\Student\CourseAttendanceController::class, 'studentDetail'])->name('course.register.student');
@@ -684,14 +694,23 @@ Route::domain('admin.{tenant_host}')->name('admin.')->middleware(['admin.auth'])
     Route::post('upload-image', [App\Http\Controllers\Admin\AdminDashboardController::class, 'uploadImage'])->name('upload-image');
     Route::post('courses/{course}/generate-quiz', [App\Http\Controllers\Admin\CourseController::class, 'generateQuiz'])->name('courses.generate-quiz');
 
-    // Registro di frequenza — sessioni sincrone + prospetto ore (sync + FAD).
-    Route::get('courses/{course}/sessions', [App\Http\Controllers\Admin\CourseSessionController::class, 'index'])->name('courses.sessions.index');
-    Route::get('courses/{course}/sessions/create', [App\Http\Controllers\Admin\CourseSessionController::class, 'create'])->name('courses.sessions.create');
-    Route::post('courses/{course}/sessions', [App\Http\Controllers\Admin\CourseSessionController::class, 'store'])->name('courses.sessions.store');
-    Route::get('courses/{course}/sessions/{session}', [App\Http\Controllers\Admin\CourseSessionController::class, 'show'])->name('courses.sessions.show');
-    Route::post('courses/{course}/sessions/{session}/mark', [App\Http\Controllers\Admin\CourseSessionController::class, 'mark'])->name('courses.sessions.mark');
-    Route::patch('courses/{course}/sessions/{session}', [App\Http\Controllers\Admin\CourseSessionController::class, 'update'])->name('courses.sessions.update');
-    Route::delete('courses/{course}/sessions/{session}', [App\Http\Controllers\Admin\CourseSessionController::class, 'destroy'])->name('courses.sessions.destroy');
+    // Edizioni del corso e registro presenze giornaliero.
+    Route::get('courses/{course}/editions', [App\Http\Controllers\Admin\CourseEditionController::class, 'index'])->name('courses.editions.index');
+    Route::get('courses/{course}/editions/create', [App\Http\Controllers\Admin\CourseEditionController::class, 'create'])->name('courses.editions.create');
+    Route::post('courses/{course}/editions', [App\Http\Controllers\Admin\CourseEditionController::class, 'store'])->name('courses.editions.store');
+    Route::get('courses/{course}/editions/{edition}', [App\Http\Controllers\Admin\CourseEditionController::class, 'show'])->name('courses.editions.show');
+    Route::patch('courses/{course}/editions/{edition}', [App\Http\Controllers\Admin\CourseEditionController::class, 'update'])->name('courses.editions.update');
+    Route::delete('courses/{course}/editions/{edition}', [App\Http\Controllers\Admin\CourseEditionController::class, 'destroy'])->name('courses.editions.destroy');
+    Route::post('courses/{course}/editions/{edition}/days', [App\Http\Controllers\Admin\CourseEditionController::class, 'addDays'])->name('courses.editions.days.store');
+    Route::patch('courses/{course}/editions/{edition}/days/{day}', [App\Http\Controllers\Admin\CourseEditionController::class, 'updateDay'])->name('courses.editions.days.update');
+    Route::delete('courses/{course}/editions/{edition}/days/{day}', [App\Http\Controllers\Admin\CourseEditionController::class, 'destroyDay'])->name('courses.editions.days.destroy');
+    Route::get('courses/{course}/editions/{edition}/days/{day}', [App\Http\Controllers\Admin\CourseEditionController::class, 'day'])->name('courses.editions.day');
+    Route::post('courses/{course}/editions/{edition}/days/{day}/mark', [App\Http\Controllers\Admin\CourseEditionController::class, 'mark'])->name('courses.editions.mark');
+    Route::post('courses/{course}/editions/{edition}/students', [App\Http\Controllers\Admin\CourseEditionController::class, 'addStudents'])->name('courses.editions.students.store');
+    Route::delete('courses/{course}/editions/{edition}/students/{student}', [App\Http\Controllers\Admin\CourseEditionController::class, 'removeStudent'])->name('courses.editions.students.destroy');
+    Route::get('courses/{course}/editions/{edition}/register.pdf', [App\Http\Controllers\Admin\CourseEditionController::class, 'pdf'])->name('courses.editions.pdf');
+    Route::get('courses/{course}/editions/{edition}/register.csv', [App\Http\Controllers\Admin\CourseEditionController::class, 'csv'])->name('courses.editions.csv');
+    // Prospetto ore del corso (sincrono + FAD).
     Route::get('courses/{course}/register', [App\Http\Controllers\Admin\AttendanceRegisterController::class, 'course'])->name('courses.register');
     Route::get('courses/{course}/register/pdf', [App\Http\Controllers\Admin\AttendanceRegisterController::class, 'coursePdf'])->name('courses.register.pdf');
     Route::get('courses/{course}/register/{student}', [App\Http\Controllers\Admin\AttendanceRegisterController::class, 'student'])->name('courses.register.student');

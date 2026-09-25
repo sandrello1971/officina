@@ -138,6 +138,12 @@ class Course extends Model
         return $this->hasMany(CourseSession::class);
     }
 
+    /** Edizioni del corso (cicli di erogazione con giornate e registro). */
+    public function editions()
+    {
+        return $this->hasMany(CourseEdition::class)->orderByDesc('created_at');
+    }
+
     public function attendanceRecords()
     {
         return $this->hasMany(AttendanceRecord::class);

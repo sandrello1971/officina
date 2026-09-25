@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AttendanceRecord;
 use App\Models\Course;
+use App\Models\CourseEdition;
 use App\Models\CourseSession;
 use App\Models\Module;
 use App\Models\Student;
@@ -151,43 +152,55 @@ class AttendanceService
     // ---------------------------------------------------------------------
 
     /**
-     * Registra le presenze di una sessione sincrona. `$marks` è una mappa
-     * student_id => ore (float) per i presenti; gli assenti (non in mappa)
-     * vedono rimosso l'eventuale record precedente. Idempotente: un solo
-     * record instructor_mark per (studente, sessione).
+     * Appello del formatore su una giornata. Per ogni discente dell'edizione
+     * (o del corso, per giornate senza edizione) scrive UN record con stato,
+     * orari di entrata/uscita, nota e ore: anche gli assenti, a 0 ore.
      *
-     * @param  array<string, float|string|null>  $marks
-     * @return int  numero di presenti registrati
+     * $marks[student_id] = ['status' => presente|assente|assente_giustificato,
+     *   'arrived_at' => 'HH:MM'|null, 'left_at' => 'HH:MM'|null, 'note' => ?, 'hours' => ?]
+     * Discenti senza voce in $marks: record rimosso (appello non ancora fatto).
+     *
+     * @return int  numero di presenti
      */
-    public function markSessionAttendance(CourseSession $session, array $marks): int
+    public function markSessionAttendance(CourseSession $session, array $marks, ?string $markedBy = null): int
     {
-        $enrolled = $session->course->students()->pluck('students.id')->all();
+        $studentIds = $session->course_edition_id
+            ? $session->edition->students()->pluck('students.id')->all()
+            : $session->course->students()->pluck('students.id')->all();
         $present = 0;
 
-        foreach ($enrolled as $studentId) {
-            $isPresent = array_key_exists($studentId, $marks);
+        foreach ($studentIds as $studentId) {
             $existing = AttendanceRecord::where('course_session_id', $session->id)
                 ->where('student_id', $studentId)
                 ->where('source', 'instructor_mark')
                 ->first();
 
-            if (! $isPresent) {
+            $mark = $marks[$studentId] ?? null;
+            if (! is_array($mark) || empty($mark['status'])) {
                 $existing?->delete();
                 continue;
             }
 
-            $present++;
-            // Ore: valore dato dal docente, altrimenti la durata della sessione.
-            $hours = $marks[$studentId] !== null && $marks[$studentId] !== ''
-                ? round((float) $marks[$studentId], 2)
-                : round(($session->duration_minutes ?? 0) / 60, 2);
+            $status = $mark['status'];
+            $isPresent = $status === AttendanceRecord::STATUS_PRESENT;
+            $present += $isPresent ? 1 : 0;
+
+            $arrived = $isPresent ? $this->normalizeTime($mark['arrived_at'] ?? null) : null;
+            $left = $isPresent ? $this->normalizeTime($mark['left_at'] ?? null) : null;
+            $manual = $mark['hours'] ?? null;
 
             $payload = [
-                'course_id'   => $session->course_id,
-                'type'        => 'sync_session',
-                'source'      => 'instructor_mark',
-                'occurred_at' => $session->scheduled_at ?? now(),
-                'hours_credited' => $hours,
+                'course_id'      => $session->course_id,
+                'type'           => 'sync_session',
+                'source'         => 'instructor_mark',
+                'status'         => $status,
+                'arrived_at'     => $arrived,
+                'left_at'        => $left,
+                'note'           => trim((string) ($mark['note'] ?? '')) ?: null,
+                'marked_by'      => $markedBy,
+                'occurred_at'    => $session->scheduled_at ?? now(),
+                'hours_credited' => ! $isPresent ? 0
+                    : ($manual !== null && $manual !== '' ? round((float) $manual, 2) : $this->sessionHours($session, $arrived, $left)),
             ];
 
             if ($existing) {
@@ -201,6 +214,113 @@ class AttendanceService
         }
 
         return $present;
+    }
+
+    /**
+     * Ore svolte in una giornata: durata prevista meno ritardo e uscita
+     * anticipata (orari fuori dalla giornata non contano).
+     */
+    public function sessionHours(CourseSession $session, ?string $arrived, ?string $left): float
+    {
+        if (! $session->scheduled_at) {
+            return round(($session->duration_minutes ?? 0) / 60, 2);
+        }
+
+        $start = $session->scheduled_at->copy();
+        $end = $session->endsAt();
+        $from = $arrived ? $start->copy()->setTimeFromTimeString($arrived) : $start;
+        $to = $left ? $start->copy()->setTimeFromTimeString($left) : $end;
+
+        $from = $from->max($start);
+        $to = $to->min($end);
+
+        return round(max(0, $from->diffInMinutes($to, false)) / 60, 2);
+    }
+
+    /** Minuti di ritardo rispetto all'inizio della giornata (0 se puntuale). */
+    public function lateMinutes(CourseSession $session, ?AttendanceRecord $record): int
+    {
+        if (! $record?->arrived_at || ! $session->scheduled_at) {
+            return 0;
+        }
+        $arrived = $session->scheduled_at->copy()->setTimeFromTimeString($record->arrived_at);
+
+        return max(0, (int) $session->scheduled_at->diffInMinutes($arrived, false));
+    }
+
+    /** Minuti di uscita anticipata rispetto alla fine della giornata. */
+    public function earlyMinutes(CourseSession $session, ?AttendanceRecord $record): int
+    {
+        if (! $record?->left_at || ! $session->scheduled_at) {
+            return 0;
+        }
+        $left = $session->scheduled_at->copy()->setTimeFromTimeString($record->left_at);
+
+        return max(0, (int) $left->diffInMinutes($session->endsAt(), false));
+    }
+
+    private function normalizeTime(?string $time): ?string
+    {
+        $time = trim((string) $time);
+
+        return preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $time) ? $time : null;
+    }
+
+    /**
+     * Registro dell'edizione: griglia discenti × giornate con stato, orari e
+     * ore per cella, totali e percentuale di frequenza per discente, presenti
+     * per giornata.
+     *
+     * @return array{days: Collection, rows: Collection, present_per_day: array<string,int>, planned_hours: float}
+     */
+    public function editionRegister(CourseEdition $edition): array
+    {
+        $days = $edition->days()->get();
+        $planned = round($days->sum('duration_minutes') / 60, 2);
+        $records = AttendanceRecord::whereIn('course_session_id', $days->pluck('id'))
+            ->where('source', 'instructor_mark')
+            ->get()
+            ->groupBy('student_id');
+
+        $presentPerDay = array_fill_keys($days->pluck('id')->all(), 0);
+
+        $rows = $edition->students()->get()->map(function (Student $student) use ($days, $records, $planned, &$presentPerDay) {
+            $byDay = $records->get($student->id, collect())->keyBy('course_session_id');
+            $cells = [];
+            $totals = ['present' => 0, 'absent' => 0, 'justified' => 0, 'late' => 0, 'early' => 0, 'unmarked' => 0];
+
+            foreach ($days as $day) {
+                $record = $byDay->get($day->id);
+                $late = $this->lateMinutes($day, $record);
+                $early = $this->earlyMinutes($day, $record);
+                $cells[$day->id] = ['record' => $record, 'late' => $late, 'early' => $early];
+
+                match ($record?->status) {
+                    AttendanceRecord::STATUS_PRESENT => $totals['present']++,
+                    AttendanceRecord::STATUS_ABSENT => $totals['absent']++,
+                    AttendanceRecord::STATUS_JUSTIFIED => $totals['justified']++,
+                    default => $totals['unmarked']++,
+                };
+                if ($record?->isPresent()) {
+                    $presentPerDay[$day->id]++;
+                    $totals['late'] += $late > 0 ? 1 : 0;
+                    $totals['early'] += $early > 0 ? 1 : 0;
+                }
+            }
+
+            $hours = round((float) $byDay->sum('hours_credited'), 2);
+
+            return [
+                'student' => $student,
+                'cells'   => $cells,
+                'hours'   => $hours,
+                'planned' => $planned,
+                'percent' => $planned > 0 ? round($hours / $planned * 100, 1) : 0.0,
+                'totals'  => $totals,
+            ];
+        })->values();
+
+        return ['days' => $days, 'rows' => $rows, 'present_per_day' => $presentPerDay, 'planned_hours' => $planned];
     }
 
     // ---------------------------------------------------------------------
@@ -230,7 +350,8 @@ class AttendanceService
                 // Il TOTALE dipende dalla modalità del corso: async → solo FAD,
                 // sync → solo presenze, non impostata → entrambi (storico).
                 'total_hours'       => $this->countedHours($course, $sync, $async),
-                'sessions_attended' => $recs->where('source', 'instructor_mark')->count(),
+                'sessions_attended' => $recs->where('source', 'instructor_mark')
+                    ->where('status', AttendanceRecord::STATUS_PRESENT)->count(),
                 'modules_completed' => $recs->where('source', 'module_completion')->count(),
                 'last_activity'     => $recs->max('occurred_at'),
             ];

@@ -12,7 +12,7 @@
         </div>
         <div style="display:flex; gap:8px;">
             @unless($course->isAsync())
-            <a href="{{ route('admin.courses.sessions.index', $course) }}" style="padding:8px 14px; border:1px solid #55B1AE; color:#55B1AE; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">Sessioni</a>
+            <a href="{{ route('admin.courses.editions.index', $course) }}" style="padding:8px 14px; border:1px solid #55B1AE; color:#55B1AE; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">Edizioni e presenze</a>
             @endunless
             <a href="{{ route('admin.courses.register.pdf', $course) }}" style="padding:8px 14px; background:#55B1AE; color:white; border-radius:6px; font-size:0.8rem; font-weight:600; text-decoration:none;">Scarica PDF</a>
         </div>
