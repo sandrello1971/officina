@@ -98,7 +98,7 @@ Rilancia poi `./deploy-atheneum.sh`: esegue `tenants:migrate`, allinea il templa
        try_files $uri /index.php?$query_string;
    }
    ```
-2. **DNS.** Crea il record `*.officina.effettoglitch.it` → `51.83.73.186`, per gli enti in sottodominio e per la console.
+2. **DNS.** La zona `effettoglitch.it` è su Aruba, che **non applica il wildcard** `*.officina`. Ogni host va creato come record A esplicito → `51.83.73.186`: `platform.officina` per la console (già fatto, settembre 2026) e i due host di ogni ente (vedi *Nuovo ente*). Aruba impiega qualche minuto ad allineare i nodi: verifica con `dig +trace <host>`, perché una query diretta a un nameserver può colpire un nodo non ancora aggiornato.
 3. **Console.** `sudo scripts/tenant-host.sh --single platform.officina.effettoglitch.it`
 4. **Riavvio servizi.** Il worker deve ripartire con la coda redis:
    ```bash
@@ -138,8 +138,9 @@ I DB `officina_central` e `officina_tpl` si possono lasciare dove sono.
        --admin-email=admin@ente.it --ai-key-mode=both --ai-budget=50
    ```
    Clona il template, registra `admin.`/`learn.` e crea il primo admin con password temporanea.
-2. **Pubblicazione degli host (root).** `sudo scripts/tenant-host.sh ente.officina.effettoglitch.it`. Per un dominio dell'ente: prima il DNS di `admin.` e `learn.` verso il server, poi lo stesso comando con quell'host.
-3. **Configurazione dell'ente.** L'admin dell'ente completa le Impostazioni: nome istanza, SMTP, chiave Anthropic se in modalità BYOK, logo. Il template del certificato si genera al primo attestato con logo e host dell'ente.
+2. **DNS.** In Aruba, zona `effettoglitch.it`, crea due record A → `51.83.73.186`: `admin.<ente>.officina` e `learn.<ente>.officina`. Facoltativo: `<ente>.officina`, che reindirizza a `learn.`. Per un dominio dell'ente, i record `admin.` e `learn.` li crea l'ente sul suo DNS.
+3. **Pubblicazione degli host (root)**, quando `dig +trace` li risolve: `sudo scripts/tenant-host.sh ente.officina.effettoglitch.it`. Certbot fallisce se il DNS non è ancora propagato.
+4. **Configurazione dell'ente.** L'admin dell'ente completa le Impostazioni: nome istanza, SMTP, chiave Anthropic se in modalità BYOK, logo. Il template del certificato si genera al primo attestato con logo e host dell'ente.
 
 ## Operatività
 

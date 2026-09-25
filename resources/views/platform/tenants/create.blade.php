@@ -14,7 +14,7 @@
             <input name="admin_name" value="{{ old('admin_name') }}" class="mt-1 w-full border rounded px-3 py-2">
         </label>
     </div>
-    <p class="text-xs mt-4" style="color:#8A9696;">Il database dell'ente viene clonato dal template. Dopo la creazione servono DNS e certificato TLS per i due host.</p>
+    <p class="text-xs mt-4" style="color:#8A9696;">Il database dell'ente viene clonato dal template. Dopo la creazione servono due record DNS A (admin.&lt;host&gt; e learn.&lt;host&gt;) e il certificato TLS.</p>
     <button type="submit" class="mt-5 rounded px-4 py-2 text-sm font-semibold text-white" style="background:#3A8C89;">Crea ente</button>
 </form>
 @endsection

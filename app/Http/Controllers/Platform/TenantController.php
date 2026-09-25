@@ -50,8 +50,12 @@ class TenantController extends Controller
 
         Log::info('[platform] ente creato', ['tenant' => $result['tenant']->slug, 'by' => $this->operator($request)]);
 
-        return redirect()->route('platform.tenants.edit', $result['tenant'])
-            ->with('credentials', ['email' => $data['admin_email'], 'password' => $result['temp_password']]);
+        $tenant = $result['tenant'];
+
+        return redirect()->route('platform.tenants.edit', $tenant)
+            ->with('credentials', ['email' => $data['admin_email'], 'password' => $result['temp_password']])
+            ->with('success', "Ente creato. Ora: record DNS A per {$tenant->adminHost()} e {$tenant->learnHost()} → IP del server, "
+                . "poi da root scripts/tenant-host.sh {$tenant->base_host} (nginx + certificato).");
     }
 
     public function edit(Tenant $tenant)

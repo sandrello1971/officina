@@ -7,8 +7,9 @@
 # dell'app (snippets/officina-app.conf) usato da admin./learn. di Effetto
 # Glitch; certbot aggiunge poi i blocchi 443 e il redirect da 80.
 #
-# Prerequisito: DNS di tutti gli host verso questo server (per i sottodomini di
-# officina.effettoglitch.it basta il record wildcard *.officina.effettoglitch.it).
+# Prerequisito: DNS di tutti gli host verso questo server. Su effettoglitch.it
+# (Aruba) il wildcard *.officina non viene applicato: record A espliciti per
+# admin.<ente>.officina e learn.<ente>.officina.
 #
 # Uso:
 #   sudo scripts/tenant-host.sh ente.officina.effettoglitch.it          # ente: admin.* + learn.*
