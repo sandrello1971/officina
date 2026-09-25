@@ -33,7 +33,9 @@ class InitializeTenancyForHost
             if (! $domain) {
                 $tenant = Tenant::query()->where('base_host', $host)->first();
                 if ($tenant) {
-                    return redirect()->away('https://' . $tenant->learnHost() . $request->getRequestUri());
+                    $port = in_array($request->getPort(), [80, 443], true) ? '' : ':' . $request->getPort();
+
+                    return redirect()->away($request->getScheme() . '://' . $tenant->learnHost() . $port . $request->getRequestUri());
                 }
                 abort(404);
             }

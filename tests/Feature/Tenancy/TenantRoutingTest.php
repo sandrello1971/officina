@@ -48,6 +48,8 @@ class TenantRoutingTest extends TestCase
 
         $this->get('https://altro.officina.test/login')
             ->assertRedirect('https://learn.altro.officina.test/login');
+        $this->get('http://altro.officina.test:8765/login')
+            ->assertRedirect('http://learn.altro.officina.test:8765/login');
     }
 
     public function test_ente_sospeso_da_403(): void
