@@ -26,7 +26,7 @@ class CourseAttendanceController extends Controller
     private function guard(Course $course): Student
     {
         $student = Student::findOrFail(session('student_id'));
-        abort_unless($this->teaches($student, $course), 403);
+        abort_unless($this->managesAttendance($student, $course), 403);
 
         return $student;
     }

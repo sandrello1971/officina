@@ -55,7 +55,7 @@ abstract class EditionController extends Controller
     {
         $this->authorizeCourse($course);
 
-        return $this->view('create', $course, ['instructors' => $course->instructors()->orderBy('name')->get()]);
+        return $this->view('create', $course, ['instructors' => $this->instructorOptions()]);
     }
 
     public function store(Request $request, Course $course)
@@ -100,7 +100,7 @@ abstract class EditionController extends Controller
             'marked' => $marked,
             'candidates' => $candidates,
             'enrolledIds' => $enrolledIds,
-            'instructors' => $course->instructors()->orderBy('name')->get(),
+            'instructors' => $this->instructorOptions(),
             'tab' => in_array($request->query('tab'), ['giornate', 'discenti', 'registro'], true) ? $request->query('tab') : 'registro',
         ]);
     }
@@ -286,9 +286,23 @@ abstract class EditionController extends Controller
             'name' => ['required', 'string', 'max:160'],
             'location' => ['nullable', 'string', 'max:255'],
             'modality' => ['required', Rule::in(array_keys(CourseEdition::MODALITIES))],
-            'instructor_id' => ['nullable', Rule::in($course->instructors()->pluck('students.id')->all())],
+            'instructor_id' => ['nullable', Rule::in($this->instructorOptions()->pluck('id')->all())],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];
+    }
+
+    /**
+     * Formatori selezionabili come responsabili: tutti i formatori attivi
+     * dell'ente (in Officina i formatori di piattaforma non sono legati ai
+     * singoli corsi).
+     */
+    private function instructorOptions()
+    {
+        return Student::query()
+            ->where('is_active', true)
+            ->where(fn ($q) => $q->where('role', 'instructor')->orWhere('is_instructor', true))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
     }
 
     private function planRules(): array

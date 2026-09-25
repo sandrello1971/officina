@@ -196,4 +196,32 @@ class CourseEditionRegisterTest extends TestCase
         $this->withSession($admin)->get($this->adminUrl("/courses/{$course->id}"))->assertOk()->assertSee($url, false);
         $this->withSession($admin)->get($this->adminUrl("/courses/{$course->id}/edit"))->assertOk()->assertSee($url, false);
     }
+
+    public function test_formatore_di_piattaforma_vede_il_pulsante_e_gestisce_le_presenze(): void
+    {
+        $edition = $this->edition();
+        $course = $edition->course;
+        // Abilitato a tutti i corsi, senza legame esplicito col corso (caso reale di glitch@).
+        $formatore = Student::create(['name' => 'Glitch', 'email' => 'g' . uniqid() . '@e.it', 'password' => bcrypt('x'),
+            'role' => 'instructor', 'is_instructor' => true, 'auto_enroll_all_courses' => true, 'is_active' => true, 'must_change_password' => false]);
+        $session = ['student_id' => $formatore->id, 'student_email' => $formatore->email, 'student_name' => $formatore->name];
+
+        $this->withSession($session)->get($this->learnUrl("/course/{$course->slug}"))
+            ->assertOk()->assertSee("/course/{$course->slug}/editions", false);
+        $this->withSession($session)->get(route('student.course.editions.show', [$course->slug, $edition]))->assertOk();
+        $this->withSession($session)->get(route('student.course.register', $course->slug))->assertOk();
+    }
+
+    public function test_formatore_iscritto_come_discente_non_gestisce_le_presenze(): void
+    {
+        $edition = $this->edition();
+        $course = $edition->course;
+        $formatore = $this->student('Iscritto', 'instructor');
+        $course->students()->attach($formatore->id, ['enrolled_at' => now(), 'is_active' => true]);
+        $session = ['student_id' => $formatore->id, 'student_email' => $formatore->email, 'student_name' => $formatore->name];
+
+        $this->withSession($session)->get($this->learnUrl("/course/{$course->slug}"))
+            ->assertOk()->assertDontSee("/course/{$course->slug}/editions", false);
+        $this->withSession($session)->get(route('student.course.editions.index', $course->slug))->assertForbidden();
+    }
 }
