@@ -4,25 +4,35 @@
         <p style="color:#6B7280;">Nessuna giornata.</p>
     @else
     <table class="ed-table">
-        <thead><tr><th>#</th><th>Titolo</th><th>Data</th><th>Inizio</th><th>Ore</th><th>Appello</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Giornata</th><th>Data</th><th>Orario</th><th>Ore</th><th>Appello</th><th></th></tr></thead>
         <tbody>
         @foreach($days as $d)
             @php $n = $marked[$d->id] ?? 0; $tot = $edition->students->count(); @endphp
             <tr>
-                <form method="POST" action="{{ $nav->url('days.update', $edition, $d) }}" data-busy="Salvo…" id="day-{{ $d->id }}">@csrf @method('PATCH')</form>
                 <td>{{ $d->day_number }}</td>
-                <td><input form="day-{{ $d->id }}" name="title" value="{{ $d->title }}" class="ed-input" style="width:150px;"></td>
-                <td><input form="day-{{ $d->id }}" type="date" name="date" value="{{ $d->scheduled_at?->toDateString() }}" class="ed-input"></td>
-                <td><input form="day-{{ $d->id }}" type="time" name="start_time" value="{{ $d->scheduled_at?->format('H:i') }}" class="ed-input"></td>
-                <td><input form="day-{{ $d->id }}" type="number" name="hours" step="0.25" min="0.25" value="{{ round($d->duration_minutes / 60, 2) }}" class="ed-input" style="width:70px;"></td>
-                <td>
-                    <a href="{{ $nav->url('day', $edition, $d) }}" class="ed-btn {{ $n === 0 ? 'primary' : '' }}">{{ $n === 0 ? 'Fai appello' : "Appello {$n}/{$tot}" }}</a>
-                </td>
+                <td>{{ $d->title }}</td>
+                <td>{{ $d->scheduled_at?->locale('it')->isoFormat('ddd D MMM YYYY') }}</td>
+                <td>{{ $d->scheduled_at?->format('H:i') }}–{{ $d->endsAt()?->format('H:i') }}</td>
+                <td>{{ \App\Support\AttendanceCell::hours($d->duration_minutes / 60) }}</td>
+                <td><a href="{{ $nav->url('day', $edition, $d) }}" class="ed-btn {{ $n === 0 ? 'primary' : '' }}">{{ $n === 0 ? 'Fai appello' : "Appello {$n}/{$tot}" }}</a></td>
                 <td style="white-space:nowrap; text-align:right;">
-                    <button type="submit" form="day-{{ $d->id }}" class="ed-btn">Salva</button>
+                    <button type="button" class="ed-btn" onclick="const r = document.getElementById('move-{{ $d->id }}'); r.style.display = r.style.display === 'none' ? '' : 'none';">&#128197; Sposta / modifica</button>
                     <form method="POST" action="{{ $nav->url('days.destroy', $edition, $d) }}" style="display:inline;" data-busy="Elimino…"
                           onsubmit="return confirm('Eliminare {{ $d->title }}{{ $n ? ' e il suo appello' : '' }}?')">@csrf @method('DELETE')
                         <button type="submit" class="ed-btn danger">Elimina</button></form>
+                </td>
+            </tr>
+            <tr id="move-{{ $d->id }}" style="display:none; background:#F7F9F9;">
+                <td colspan="7">
+                    <form method="POST" action="{{ $nav->url('days.update', $edition, $d) }}" data-busy="Sposto…" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; padding:6px 0;">
+                        @csrf @method('PATCH')
+                        <div><label class="ed-label">Nuova data</label><input type="date" name="date" value="{{ $d->scheduled_at?->toDateString() }}" required class="ed-input"></div>
+                        <div><label class="ed-label">Inizio</label><input type="time" name="start_time" value="{{ $d->scheduled_at?->format('H:i') }}" required class="ed-input"></div>
+                        <div><label class="ed-label">Ore</label><input type="number" name="hours" step="0.25" min="0.25" value="{{ round($d->duration_minutes / 60, 2) }}" required class="ed-input" style="width:80px;"></div>
+                        <div><label class="ed-label">Titolo</label><input name="title" value="{{ $d->title }}" required class="ed-input" style="width:180px;"></div>
+                        <button type="submit" class="ed-btn primary">Salva</button>
+                        <span style="font-size:0.75rem; color:#8A9696;">Le giornate si rinumerano in ordine di data{{ $n ? '; le ore dell\'appello vengono ricalcolate' : '' }}.</span>
+                    </form>
                 </td>
             </tr>
         @endforeach
