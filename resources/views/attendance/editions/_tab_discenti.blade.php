@@ -25,6 +25,7 @@
 </div>
 
 @php $available = $candidates->reject(fn ($c) => $edition->students->contains('id', $c->id)); @endphp
+<style>.cand.cand-off { display:none !important; }</style>
 <form method="POST" action="{{ $nav->url('students.store', $edition) }}" class="ed-card" data-busy="Aggiungo…" id="add-students">
     @csrf
     <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:4px;">Aggiungi discenti</h3>
@@ -59,7 +60,7 @@
             const rows = Array.from(form.querySelectorAll('.cand'));
             const info = document.getElementById('cand-info');
             const submit = document.getElementById('cand-submit');
-            const visible = () => rows.filter(r => r.style.display !== 'none');
+            const visible = () => rows.filter(r => !r.classList.contains('cand-off'));
             function refresh() {
                 const sel = rows.filter(r => r.querySelector('input').checked).length;
                 info.textContent = visible().length + ' visibili su ' + rows.length + ' · ' + sel + ' selezionati';
@@ -69,7 +70,8 @@
             }
             q.addEventListener('input', function () {
                 const term = q.value.trim().toLowerCase();
-                rows.forEach(r => r.style.display = !term || r.dataset.k.includes(term) ? '' : 'none');
+                // Classe e non style.display: azzerare lo stile toglierebbe il display:flex della riga.
+                rows.forEach(r => r.classList.toggle('cand-off', !!term && !r.dataset.k.includes(term)));
                 refresh();
             });
             // Invio nella ricerca non deve inviare il form.
