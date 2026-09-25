@@ -41,6 +41,8 @@
         <env name="DB_HOST" value="127.0.0.1"/>
         <env name="DB_PORT" value="5432"/>
         <env name="DB_DATABASE" value="atheneum_test_db"/>
+        <env name="CENTRAL_DB_DATABASE" value="atheneum_test_db"/>
+        <env name="TENANT_TEMPLATE_DB" value=""/>
         <env name="DB_USERNAME" value="atheneum_user"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
