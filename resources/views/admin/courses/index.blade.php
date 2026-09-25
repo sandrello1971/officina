@@ -96,6 +96,7 @@
                     <div style="display:flex; gap:8px;">
                         <a href="/courses/{{ $course->id }}/edit" style="font-size:0.8rem; color:#55B1AE;">Modifica</a>
                         <a href="/courses/{{ $course->id }}/modules" style="font-size:0.8rem; color:#8A9696;">Moduli</a>
+                        <a href="{{ route('admin.courses.editions.index', $course) }}" style="font-size:0.8rem; color:#E28A53;">Presenze</a>
                     </div>
                 </td>
             </tr>

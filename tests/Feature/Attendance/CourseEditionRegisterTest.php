@@ -184,4 +184,16 @@ class CourseEditionRegisterTest extends TestCase
         $this->assertSame(0, AttendanceRecord::where('student_id', $anna->id)->count());
         $this->assertTrue($edition->course->students()->where('students.id', $anna->id)->exists());
     }
+
+    public function test_link_presenze_visibile_anche_sui_corsi_asincroni(): void
+    {
+        $course = Course::create(['name' => 'Async', 'slug' => 'as-' . uniqid(), 'is_active' => true, 'sort_order' => 1, 'modality' => 'async']);
+        Admin::create(['name' => 'A', 'email' => 'adm@e.it', 'password' => 'x', 'is_active' => true]);
+        $admin = ['admin_logged_in' => true, 'admin_email' => 'adm@e.it'];
+        $url = "/courses/{$course->id}/editions";
+
+        $this->withSession($admin)->get($this->adminUrl('/courses'))->assertOk()->assertSee($url, false);
+        $this->withSession($admin)->get($this->adminUrl("/courses/{$course->id}"))->assertOk()->assertSee($url, false);
+        $this->withSession($admin)->get($this->adminUrl("/courses/{$course->id}/edit"))->assertOk()->assertSee($url, false);
+    }
 }

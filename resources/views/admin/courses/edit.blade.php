@@ -8,6 +8,11 @@
         <span style="color:#C8D0D0;">|</span>
         <h2 style="font-size:1.25rem; font-weight:700; color:#1A1F1F;">Modifica {{ $course->name }}</h2>
         <div style="margin-left:auto; display:flex; gap:6px;">
+            <a href="{{ route('admin.courses.editions.index', $course) }}"
+               style="padding:6px 12px; background:white; color:#C26A2E; border:1px solid #E28A53;
+                      border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
+                &#128197; Edizioni e presenze
+            </a>
             <a href="/courses/{{ $course->id }}"
                style="padding:6px 12px; background:white; color:#1A1F1F; border:1px solid #D1D5DB;
                       border-radius:6px; font-size:0.78rem; font-weight:600; text-decoration:none;">
