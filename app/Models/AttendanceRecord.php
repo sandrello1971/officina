@@ -9,8 +9,19 @@ class AttendanceRecord extends Model
 {
     use HasUuids;
 
+    // Stato dell'appello del formatore (source = instructor_mark).
+    public const STATUS_PRESENT = 'presente';
+    public const STATUS_ABSENT = 'assente';
+    public const STATUS_JUSTIFIED = 'assente_giustificato';
+
+    public const STATUSES = [
+        self::STATUS_PRESENT => 'Presente',
+        self::STATUS_ABSENT => 'Assente',
+        self::STATUS_JUSTIFIED => 'Assente giustificato',
+    ];
+
     protected $fillable = [
-        'student_id', 'course_id', 'type', 'source',
+        'student_id', 'course_id', 'type', 'source', 'status', 'arrived_at', 'left_at', 'note', 'marked_by',
         'course_session_id', 'module_id', 'occurred_at', 'hours_credited', 'ip', 'meta',
     ];
 
@@ -33,6 +44,11 @@ class AttendanceRecord extends Model
     public function module()
     {
         return $this->belongsTo(Module::class);
+    }
+
+    public function isPresent(): bool
+    {
+        return $this->status === self::STATUS_PRESENT;
     }
 
     public function session()

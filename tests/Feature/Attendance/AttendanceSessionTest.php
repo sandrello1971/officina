@@ -30,19 +30,23 @@ class AttendanceSessionTest extends TestCase
         return [$course, $a, $b, $session];
     }
 
-    public function test_mark_session_registra_presenti_e_rimuove_assenti(): void
+    public function test_mark_session_registra_stati_e_rimuove_chi_non_ha_appello(): void
     {
         [$course, $a, $b, $session] = $this->scenario();
         $svc = app(AttendanceService::class);
 
-        // Anna presente con 2h esplicite, Bruno presente con ore vuote (→ durata 2h).
-        $count = $svc->markSessionAttendance($session, [$a->id => '2', $b->id => null]);
-        $this->assertSame(2, $count);
+        // Anna presente con 2h esplicite, Bruno assente: record esplicito a 0 ore.
+        $count = $svc->markSessionAttendance($session, [
+            $a->id => ['status' => 'presente', 'hours' => '2'],
+            $b->id => ['status' => 'assente'],
+        ]);
+        $this->assertSame(1, $count);
         $this->assertEquals(2.0, (float) AttendanceRecord::where('student_id', $a->id)->where('source', 'instructor_mark')->value('hours_credited'));
-        $this->assertEquals(2.0, (float) AttendanceRecord::where('student_id', $b->id)->where('source', 'instructor_mark')->value('hours_credited'));
+        $this->assertSame('assente', AttendanceRecord::where('student_id', $b->id)->where('source', 'instructor_mark')->value('status'));
+        $this->assertEquals(0.0, (float) AttendanceRecord::where('student_id', $b->id)->where('source', 'instructor_mark')->value('hours_credited'));
 
-        // Ri-salvo con solo Anna: Bruno (assente) viene rimosso, nessun duplicato per Anna.
-        $count = $svc->markSessionAttendance($session, [$a->id => '1.5']);
+        // Ri-salvo con solo Anna: Bruno senza appello viene rimosso, nessun duplicato per Anna.
+        $count = $svc->markSessionAttendance($session, [$a->id => ['status' => 'presente', 'hours' => '1.5']]);
         $this->assertSame(1, $count);
         $this->assertSame(1, AttendanceRecord::where('course_session_id', $session->id)->count());
         $this->assertEquals(1.5, (float) AttendanceRecord::where('student_id', $a->id)->where('source', 'instructor_mark')->value('hours_credited'));
@@ -54,7 +58,7 @@ class AttendanceSessionTest extends TestCase
         $svc = app(AttendanceService::class);
         $module = Module::create(['course_id' => $course->id, 'title' => 'M', 'sort_order' => 0, 'content' => '<p>x</p>', 'duration_minutes' => 60]);
 
-        $svc->markSessionAttendance($session, [$a->id => '2']);           // Anna: 2h sincrono
+        $svc->markSessionAttendance($session, [$a->id => ['status' => 'presente', 'hours' => '2']]); // Anna: 2h sincrono
         AttendanceRecord::create([                                        // Anna: 1h FAD
             'student_id' => $a->id, 'course_id' => $course->id, 'type' => 'async_activity',
             'source' => 'module_completion', 'module_id' => $module->id, 'occurred_at' => now(), 'hours_credited' => 1.0,
@@ -75,7 +79,7 @@ class AttendanceSessionTest extends TestCase
     {
         [$course, $a, $b, $session] = $this->scenario();
         $svc = app(AttendanceService::class);
-        $svc->markSessionAttendance($session, [$a->id => '2']);
+        $svc->markSessionAttendance($session, [$a->id => ['status' => 'presente', 'hours' => '2']]);
 
         $bytes = app(AttendanceRegisterPdfBuilder::class)->buildCourseRegister(
             $course, $svc->courseRegister($course), collect([$session])

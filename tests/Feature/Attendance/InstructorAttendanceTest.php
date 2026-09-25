@@ -3,7 +3,7 @@
 namespace Tests\Feature\Attendance;
 
 use App\Models\Course;
-use App\Models\CourseSession;
+use App\Models\CourseEdition;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,13 +24,13 @@ class InstructorAttendanceTest extends TestCase
         return Course::create(['name' => 'C', 'slug' => 'c-' . uniqid(), 'is_active' => true, 'sort_order' => 1]);
     }
 
-    public function test_formatore_del_corso_accede_a_sessioni_e_registro(): void
+    public function test_formatore_del_corso_accede_a_edizioni_e_registro(): void
     {
         $course = $this->course();
         $instructor = Student::create(['name' => 'Doc', 'email' => 'd' . uniqid() . '@e.it', 'password' => bcrypt('x'), 'is_active' => true, 'role' => 'instructor', 'must_change_password' => false]);
         $instructor->taughtCourses()->attach($course->id);
 
-        $this->asUser($instructor)->get(route('student.course.sessions.index', $course->slug))->assertOk();
+        $this->asUser($instructor)->get(route('student.course.editions.index', $course->slug))->assertOk();
         $this->asUser($instructor)->get(route('student.course.register', $course->slug))->assertOk();
     }
 
@@ -41,34 +41,40 @@ class InstructorAttendanceTest extends TestCase
         $instructor = Student::create(['name' => 'Doc', 'email' => 'd' . uniqid() . '@e.it', 'password' => bcrypt('x'), 'is_active' => true, 'role' => 'instructor', 'must_change_password' => false]);
         $instructor->taughtCourses()->attach($altro->id); // insegna un ALTRO corso
 
-        $this->asUser($instructor)->get(route('student.course.sessions.index', $course->slug))->assertForbidden();
+        $this->asUser($instructor)->get(route('student.course.editions.index', $course->slug))->assertForbidden();
 
         $studente = Student::create(['name' => 'Stu', 'email' => 's' . uniqid() . '@e.it', 'password' => bcrypt('x'), 'is_active' => true, 'role' => 'student', 'must_change_password' => false]);
         $studente->courses()->attach($course->id, ['enrolled_at' => now(), 'is_active' => true]);
         $this->asUser($studente)->get(route('student.course.register', $course->slug))->assertForbidden();
     }
 
-    public function test_formatore_crea_sessione_e_segna_presenza(): void
+    public function test_formatore_crea_edizione_e_fa_appello(): void
     {
         $course = $this->course();
         $instructor = Student::create(['name' => 'Doc', 'email' => 'd' . uniqid() . '@e.it', 'password' => bcrypt('x'), 'is_active' => true, 'role' => 'instructor', 'must_change_password' => false]);
         $instructor->taughtCourses()->attach($course->id);
-        $discente = Student::create(['name' => 'Anna', 'email' => 'a' . uniqid() . '@e.it', 'password' => bcrypt('x'), 'is_active' => true, 'must_change_password' => false]);
-        $course->students()->attach($discente->id, ['enrolled_at' => now(), 'is_active' => true]);
+        $discente = Student::create(['name' => 'Anna', 'email' => 'a' . uniqid() . '@e.it', 'password' => bcrypt('x'), 'is_active' => true, 'role' => 'student', 'must_change_password' => false]);
 
-        $this->asUser($instructor)->post(route('student.course.sessions.store', $course->slug), [
-            'title' => 'Lezione 1', 'scheduled_at' => now()->format('Y-m-d H:i'),
-            'duration_minutes' => 120, 'modality' => 'in_person',
+        $this->asUser($instructor)->post(route('student.course.editions.store', $course->slug), [
+            'name' => 'Ottobre', 'modality' => 'in_person', 'first_date' => '2026-10-05',
+            'days' => 2, 'start_time' => '09:00', 'hours_per_day' => 4, 'weekdays' => [1, 2, 3, 4, 5],
         ])->assertRedirect();
 
-        $session = CourseSession::where('course_id', $course->id)->firstOrFail();
-        $this->asUser($instructor)->post(route('student.course.sessions.mark', [$course->slug, $session]), [
-            'present' => [$discente->id], 'hours' => [$discente->id => '2'],
+        $edition = CourseEdition::where('course_id', $course->id)->firstOrFail();
+        $this->asUser($instructor)->post(route('student.course.editions.students.store', [$course->slug, $edition]), [
+            'student_ids' => [$discente->id],
+        ])->assertRedirect();
+
+        $day = $edition->days()->firstOrFail();
+        $this->asUser($instructor)->post(route('student.course.editions.mark', [$course->slug, $edition, $day]), [
+            'marks' => [$discente->id => ['status' => 'presente', 'arrived_at' => '09:30']],
         ])->assertRedirect();
 
         $this->assertDatabaseHas('attendance_records', [
-            'course_session_id' => $session->id, 'student_id' => $discente->id,
-            'source' => 'instructor_mark', 'hours_credited' => 2,
+            'course_session_id' => $day->id, 'student_id' => $discente->id,
+            'source' => 'instructor_mark', 'status' => 'presente', 'hours_credited' => 3.5,
+            'marked_by' => $instructor->email,
         ]);
+        $this->asUser($instructor)->get(route('student.course.editions.show', [$course->slug, $edition]))->assertOk()->assertSee('R 09:30');
     }
 }

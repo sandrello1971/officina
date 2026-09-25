@@ -28,7 +28,7 @@
     <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
         <a href="{{ route('admin.courses.register', $course) }}" style="padding:10px 16px; background:#55B1AE; color:white; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">Registro di frequenza</a>
         @unless($course->isAsync())
-        <a href="{{ route('admin.courses.sessions.index', $course) }}" style="padding:10px 16px; border:1px solid #55B1AE; color:#55B1AE; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">Sessioni sincrone</a>
+        <a href="{{ route('admin.courses.editions.index', $course) }}" style="padding:10px 16px; border:1px solid #55B1AE; color:#55B1AE; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">Edizioni e presenze</a>
         @endunless
         <a href="{{ route('admin.course-generation.create', $course) }}" style="padding:10px 16px; border:1px solid #E28A53; color:#C26A2E; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">&#10024; Genera moduli con AI</a>
         <a href="{{ route('admin.rag.index', ['course_id' => $course->id]) }}" style="padding:10px 16px; border:1px solid #C8D0D0; color:#4A5252; border-radius:8px; font-size:0.85rem; text-decoration:none; font-weight:600;">&#128196; Carica documenti (Documenti AI)</a>
