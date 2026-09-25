@@ -54,9 +54,6 @@ if psql -tAc "SELECT 1 FROM pg_database WHERE datname='$TEMPLATE_DB';" | grep -q
 fi
 createdb -O "$APP_ROLE" "$TEMPLATE_DB"
 psql -v ON_ERROR_STOP=1 -d "$TEMPLATE_DB" -c "
-  CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";
-  CREATE EXTENSION IF NOT EXISTS pgcrypto;
-  CREATE EXTENSION IF NOT EXISTS pg_trgm;
   CREATE EXTENSION IF NOT EXISTS vector;
 "
 
