@@ -8,7 +8,7 @@ use App\Models\Course;
 use App\Models\Student;
 use App\Support\EditionRoutes;
 
-/** Edizioni e registro presenze per il formatore che insegna il corso (area learn). */
+/** Edizioni e registro presenze per il formatore del corso o di piattaforma (area learn). */
 class CourseEditionController extends EditionController
 {
     use DeterminesTeachingMode;
@@ -18,7 +18,7 @@ class CourseEditionController extends EditionController
     protected function authorizeCourse(Course $course): void
     {
         $this->current = Student::findOrFail(session('student_id'));
-        abort_unless($this->teaches($this->current, $course), 403);
+        abort_unless($this->managesAttendance($this->current, $course), 403);
     }
 
     protected function layout(): string

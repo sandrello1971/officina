@@ -74,6 +74,16 @@ trait DeterminesTeachingMode
     }
 
     /**
+     * True se il formatore gestisce edizioni, appelli e registro del corso:
+     * stessa regola di reviewsStudentWork() (docente esplicito o formatore
+     * di piattaforma con auto_enroll_all_courses).
+     */
+    protected function managesAttendance(Student $student, Course $course): bool
+    {
+        return $this->reviewsStudentWork($student, $course);
+    }
+
+    /**
      * True se il formatore può accedere in sola consultazione a QUALUNQUE
      * corso attivo, anche uno che non insegna (accesso esteso richiesto per
      * il portale learn.*: QA, supporto, verifica contenuti). Non sblocca
