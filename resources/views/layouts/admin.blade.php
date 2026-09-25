@@ -37,7 +37,9 @@
         <a href="/" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">&#128202; Dashboard</a>
         <a href="/students" class="nav-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">&#128101; Discenti</a>
         <a href="{{ route('admin.instructors.index') }}" class="nav-item {{ request()->routeIs('admin.instructors.*') ? 'active' : '' }}">&#127979; Formatori</a>
+        @if(module_enabled('scuola'))
         <a href="{{ route('admin.scuole.index') }}" class="nav-item {{ request()->routeIs('admin.scuole.*') ? 'active' : '' }}">&#127979; Scuole</a>
+        @endif
         <a href="/certificates/signatures" class="nav-item {{ request()->routeIs('admin.certificates.signatures.*') ? 'active' : '' }}">&#9997; Firma Certificati</a>
         {{-- Gruppo Corsi: espandibile (Alpine), auto-aperto se la rotta corrente
              è una di quelle raggruppate, così l'utente vede dov'è. --}}
@@ -61,10 +63,16 @@
                 <a href="/courses" class="nav-item nav-subitem {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">Tutti i corsi</a>
                 <a href="{{ route('admin.course-categories.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.course-categories.*') ? 'active' : '' }}">Categorie</a>
                 <a href="{{ route('admin.course-tags.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.course-tags.*') ? 'active' : '' }}">Tag</a>
+                @if(module_enabled('freshness'))
                 <a href="{{ route('admin.freshness.proposals.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.freshness.*') ? 'active' : '' }}">Aggiornamenti</a>
+                @endif
+                @if(module_enabled('gap_scout'))
                 <a href="{{ route('admin.completeness.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.completeness.*') ? 'active' : '' }}">Completezza</a>
+                @endif
+                @if(module_enabled('ai_news'))
                 <a href="{{ route('admin.news.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.news.*') ? 'active' : '' }}">News AI</a>
-                @if(config('services.p26.enabled'))
+                @endif
+                @if(config('services.p26.enabled') && module_enabled('gap_scout'))
                 <a href="{{ route('admin.sources.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.sources.*') ? 'active' : '' }}">Fonti attendibili</a>
                 <a href="{{ route('admin.coverage.index') }}" class="nav-item nav-subitem {{ request()->routeIs('admin.coverage.*') ? 'active' : '' }}">Copertura</a>
                 @endif

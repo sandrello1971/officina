@@ -39,7 +39,7 @@ class ConversationCreated implements ShouldBroadcast
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('user.' . $this->recipientId)];
+        return [new PrivateChannel(tenant_channel('user.' . $this->recipientId))];
     }
 
     public function broadcastAs(): string

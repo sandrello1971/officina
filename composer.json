@@ -20,6 +20,7 @@
         "sentry/sentry-laravel": "^4.26",
         "setasign/fpdi-tcpdf": "^2.3",
         "smalot/pdfparser": "^2.12",
+        "stancl/tenancy": "^3.10",
         "symfony/brevo-mailer": "^8.1",
         "symfony/http-client": "^8.1"
     },

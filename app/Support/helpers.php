@@ -34,6 +34,33 @@ if (!function_exists('atheneum_setting_put')) {
     }
 }
 
+if (!function_exists('module_enabled')) {
+    /**
+     * Il modulo è attivo per l'ente corrente? Fuori da un tenant (CLI legacy,
+     * vetrina) vale l'installazione storica: tutto attivo.
+     */
+    function module_enabled(string $module): bool
+    {
+        $tenant = tenant();
+
+        return $tenant === null || $tenant->hasModule($module);
+    }
+}
+
+if (!function_exists('tenant_channel')) {
+    /**
+     * Nome di un canale broadcast nel perimetro dell'ente corrente
+     * (`t.<tenant>.user.<id>`). Gli id si ripetono fra DB di enti diversi e
+     * Reverb è unico: senza prefisso un utente riceverebbe eventi di un altro ente.
+     */
+    function tenant_channel(string $name): string
+    {
+        $tenant = tenant();
+
+        return $tenant ? 't.' . $tenant->getTenantKey() . '.' . $name : $name;
+    }
+}
+
 if (!function_exists('copyright_notice')) {
     /**
      * Dicitura UNICA di tutela del diritto d'autore, valida per ogni contenuto
@@ -50,12 +77,18 @@ if (!function_exists('copyright_notice')) {
      */
     function copyright_notice(): string
     {
-        $override = trim((string) config('atheneum.copyright', ''));
+        // Ogni ente è titolare dei propri contenuti: le impostazioni dell'ente
+        // vincono; la config (.env) vale solo per il primario e fuori tenant.
+        $tenant = tenant();
+        $secondary = $tenant && ! $tenant->isPrimary();
+
+        $override = trim((string) (atheneum_setting('copyright') ?: ($secondary ? '' : config('atheneum.copyright', ''))));
         if ($override !== '') {
             return $override;
         }
 
-        $holder = trim((string) config('atheneum.copyright_holder', ''));
+        $holder = trim((string) (atheneum_setting('copyright_holder')
+            ?: ($secondary ? $tenant->name : config('atheneum.copyright_holder', ''))));
         if ($holder === '') {
             return '';
         }

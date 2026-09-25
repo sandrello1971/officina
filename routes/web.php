@@ -41,7 +41,7 @@ Route::get('/certificato/verifica/{code}/pdf', [App\Http\Controllers\Certificate
 
 // ===== AREA STUDENTI =====
 // Vive alla radice di learn.* (prima era il prefisso /learn sull'host unico).
-Route::domain(config('domains.learn'))->name('student.')->group(function () {
+Route::domain('learn.{tenant_host}')->name('student.')->group(function () {
     Route::get('/', fn () => redirect()->route('student.dashboard'))->name('home');
     Route::get('/demo', [App\Http\Controllers\Student\DemoController::class, 'start'])->name('demo.start');
     Route::get('/login', [App\Http\Controllers\Student\AuthController::class, 'showLogin'])->name('login');
@@ -232,7 +232,7 @@ Route::domain(config('domains.learn'))->name('student.')->group(function () {
 
 // ===== AREA DOCENTE SCHOLA =====
 // Auth via sessione studente + gate professor. NON eredita gli accessi instructor.
-Route::domain(config('domains.learn'))->prefix('docente')->name('docente.')->middleware(['student.auth', 'professor'])->group(function () {
+Route::domain('learn.{tenant_host}')->prefix('docente')->name('docente.')->middleware(['student.auth', 'professor'])->group(function () {
     Route::get('/', [App\Http\Controllers\Docente\DashboardController::class, 'index'])->name('dashboard');
 
     // Classi (pacchetto 3)
@@ -381,7 +381,7 @@ Route::domain(config('domains.learn'))->prefix('docente')->name('docente.')->mid
 
 // ===== AREA SEGRETERIA SCOLASTICA (fase 2, P12) =====
 // Gate school_admin + cambio password obbligatorio. Tutto scoped su school_id.
-Route::domain(config('domains.learn'))->prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.password'])->group(function () {
+Route::domain('learn.{tenant_host}')->prefix('scuola')->name('scuola.')->middleware(['school_admin', 'student.password'])->group(function () {
     Route::get('/', [App\Http\Controllers\Scuola\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'edit'])->name('anagrafica.edit');
     Route::patch('/anagrafica', [App\Http\Controllers\Scuola\ProfileController::class, 'update'])->name('anagrafica.update');
@@ -448,12 +448,12 @@ Route::domain(config('domains.learn'))->prefix('scuola')->name('scuola.')->middl
 // (segreteria/docenti/studenti) e al platform admin, quindi fuori dal gate
 // school_admin ma sotto student.auth.
 Route::get('/branding/scuola/{school}/logo', [App\Http\Controllers\Scuola\BrandingController::class, 'logo'])
-    ->domain(config('domains.learn'))
+    ->domain('learn.{tenant_host}')
     ->middleware('student.auth')->name('scuola.logo');
 
 // ===== AREA ADMIN OFFICINA =====
 // Vive alla radice di admin.* (prima era il prefisso /admin sull'host unico).
-Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'])->group(function () {
+Route::domain('admin.{tenant_host}')->name('admin.')->middleware(['admin.auth'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Audit trail — chi ha fatto cosa nelle aree admin/docente.
@@ -747,9 +747,38 @@ Route::domain(config('domains.admin'))->name('admin.')->middleware(['admin.auth'
 // 2FA challenge: l'admin ha password OK ma non e' ancora "logged_in".
 // Fuori dal middleware admin.auth (sennò redirect a login infinito).
 // Throttle 5/min anti brute-force sul verify.
-Route::domain(config('domains.admin'))->group(function () {
+Route::domain('admin.{tenant_host}')->group(function () {
     Route::get('/2fa/challenge', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'show'])->name('admin.2fa.challenge');
     Route::post('/2fa/verify', [App\Http\Controllers\Admin\TwoFactorChallengeController::class, 'verify'])
         ->middleware('throttle:5,1')
         ->name('admin.2fa.verify');
 });
+
+// ===== CONSOLE DI PIATTAFORMA =====
+// Host central (config platform.domain): gestione degli enti. Realm separato
+// dagli admin dei singoli enti, 2FA obbligatorio.
+Route::domain(config('platform.domain'))->name('platform.')->group(function () {
+    Route::get('/login', [App\Http\Controllers\Platform\AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [App\Http\Controllers\Platform\AuthController::class, 'login'])->middleware('throttle:login')->name('login.post');
+    Route::get('/2fa', [App\Http\Controllers\Platform\AuthController::class, 'showTwoFactor'])->name('2fa');
+    Route::post('/2fa', [App\Http\Controllers\Platform\AuthController::class, 'verifyTwoFactor'])->middleware('throttle:5,1')->name('2fa.verify');
+    Route::post('/logout', [App\Http\Controllers\Platform\AuthController::class, 'logout'])->name('logout');
+
+    Route::middleware('platform.auth')->group(function () {
+        Route::get('/', [App\Http\Controllers\Platform\TenantController::class, 'index'])->name('tenants.index');
+        Route::get('/enti/nuovo', [App\Http\Controllers\Platform\TenantController::class, 'create'])->name('tenants.create');
+        Route::post('/enti', [App\Http\Controllers\Platform\TenantController::class, 'store'])->name('tenants.store');
+        Route::get('/enti/{tenant}', [App\Http\Controllers\Platform\TenantController::class, 'edit'])->name('tenants.edit');
+        Route::put('/enti/{tenant}', [App\Http\Controllers\Platform\TenantController::class, 'update'])->name('tenants.update');
+        Route::post('/enti/{tenant}/admin/{admin}/password', [App\Http\Controllers\Platform\TenantController::class, 'resetAdminPassword'])->name('tenants.admin-password');
+        Route::delete('/enti/{tenant}', [App\Http\Controllers\Platform\TenantController::class, 'destroy'])->name('tenants.destroy');
+    });
+});
+
+// File del disco public degli enti secondari (vedi TenantMediaController).
+Route::get('/media/{path}', [App\Http\Controllers\TenantMediaController::class, 'show'])
+    ->where('path', '.*')->name('tenant.media');
+
+// Host senza rotte proprie (es. l'host base di un ente): passa comunque dal
+// gruppo web, così InitializeTenancyForHost può reindirizzare a learn.* o dare 404.
+Route::fallback(fn () => abort(404));

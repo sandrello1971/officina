@@ -3,6 +3,7 @@
 namespace App\Services\Ai;
 
 use App\Models\AiUsage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -38,6 +39,7 @@ class ClaudeClient
     public function messages(array $params, array $context = [], ?int $timeoutOverride = null, ?int $maxRetriesOverride = null): ClaudeResponse
     {
         $cfg = config('services.anthropic');
+        $this->assertAvailable($cfg);
         $model = $params['model'] ?? $cfg['model'];
         $params['model'] = $model;
         $params['max_tokens'] ??= 4096;
@@ -126,6 +128,7 @@ class ClaudeClient
     public function stream(array $params, array $context = []): string
     {
         $cfg = config('services.anthropic');
+        $this->assertAvailable($cfg);
         $model = $params['model'] ?? $cfg['model'];
         $params['model'] = $model;
         $params['stream'] = true;
@@ -230,6 +233,35 @@ class ClaudeClient
         usleep($seconds * 1_000_000);
     }
 
+    /**
+     * Blocca la chiamata se l'ente non ha una chiave utilizzabile o ha esaurito
+     * il budget mensile sulla chiave di piattaforma (tenants.ai_monthly_budget_usd).
+     */
+    private function assertAvailable(array $cfg): void
+    {
+        // Ente in modalità "solo chiave propria" che non l'ha ancora inserita.
+        if (($cfg['key'] ?? null) === '' && ($cfg['key_source'] ?? null) === 'tenant') {
+            throw new AiUnavailableException('Chiave Anthropic non configurata per questo ente: inseriscila in Impostazioni.');
+        }
+
+        $budget = tenant()?->ai_monthly_budget_usd;
+        if ($budget === null || ($cfg['key_source'] ?? 'platform') !== 'platform') {
+            return;
+        }
+
+        $spent = Cache::remember('ai.platform_spend.' . now()->format('Y-m'), 60, fn () => (float) AiUsage::query()
+            ->where('key_source', 'platform')
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum('cost_usd'));
+
+        if ($spent >= (float) $budget) {
+            throw new AiUnavailableException(sprintf(
+                'Budget AI mensile esaurito (%.2f su %.2f USD): riprova il mese prossimo o contatta la piattaforma.',
+                $spent, (float) $budget
+            ));
+        }
+    }
+
     /** Scrive il metering. Non deve MAI far fallire la chiamata AI. */
     private function meter(string $model, int $in, int $out, string $status, array $context, ?string $error = null, int $searches = 0): void
     {
@@ -241,6 +273,7 @@ class ClaudeClient
                 'tokens_out' => $out,
                 'cost_usd'   => $this->cost($model, $in, $out, $searches),
                 'status'     => $status,
+                'key_source' => config('services.anthropic.key_source', 'platform'),
                 'error'      => $error ? mb_substr($error, 0, 255) : null,
                 'school_id'  => $context['school_id'] ?? null,
                 'course_id'  => $context['course_id'] ?? null,

@@ -114,7 +114,7 @@
     }
 
     // Subscribe al private channel del thread per ricevere MessageSent live
-    window.Echo.private(`conversation.${conversationId}`)
+    window.Echo.private(@json(tenant_channel('conversation.')) + conversationId)
         .listen('.MessageSent', (payload) => {
             // Skip duplicati (es. messaggio mio gia in DOM dal redirect post-submit)
             if (container.querySelector(`[data-message-id="${payload.message_id}"]`)) return;
@@ -134,7 +134,7 @@
         });
 
     // Presence channel per typing indicator (whisper events client-to-client)
-    const presence = window.Echo.join(`conversation.${conversationId}`)
+    const presence = window.Echo.join(@json(tenant_channel('conversation.')) + conversationId)
         .listenForWhisper('typing', (e) => {
             if (e.userId === currentUserId) return;  // ignora propri whisper
             typingName.textContent = e.userName;

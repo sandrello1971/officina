@@ -37,7 +37,7 @@ class AnnouncementSent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return array_map(
-            fn (string $id) => new PrivateChannel('user.' . $id),
+            fn (string $id) => new PrivateChannel(tenant_channel('user.' . $id)),
             $this->recipientIds
         );
     }

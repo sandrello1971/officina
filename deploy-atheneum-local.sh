@@ -78,11 +78,18 @@ composer install --no-dev --optimize-autoloader --working-dir="$DEST"
 echo "==> npm ci && build"
 ( cd "$DEST" && npm ci && npm run build )
 
-echo "==> migrazioni (additive; P24 non ne introduce, ma rilancia eventuali pendenti)"
-php "$DEST/artisan" migrate --force
+# La config in cache è quella del deploy PRECEDENTE: le migrazioni e i comandi
+# qui sotto devono vedere i config file nuovi (es. connessione central).
+echo "==> config:clear"
+php "$DEST/artisan" config:clear
 
-echo "==> seed materie standard (idempotente)"
-php "$DEST/artisan" db:seed --class=SubjectSeeder --force
+echo "==> migrazioni: central, ogni ente, template dei nuovi enti"
+php "$DEST/artisan" migrate --force
+php "$DEST/artisan" tenants:migrate --force
+php "$DEST/artisan" tenant:template-migrate
+
+echo "==> seed materie standard, solo enti con Scuola (idempotente)"
+php "$DEST/artisan" tenants:each "db:seed --class=SubjectSeeder --force" --module=scuola
 
 echo "==> cache config/route/view"
 php "$DEST/artisan" config:cache

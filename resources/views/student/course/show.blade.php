@@ -45,6 +45,7 @@
     </div>
     @endif
 
+    @if(module_enabled('ai_chat'))
     <div style="background:linear-gradient(135deg,#1A1F1F,#3A8C89); border-radius:12px; padding:16px 20px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between;" x-data>
         <div>
             <div style="color:#55B1AE; font-weight:700; font-size:0.875rem;">&#10022; Assistente AI — {{ atheneum_setting('assistant_name', 'Minerva') }}</div>
@@ -55,6 +56,7 @@
             Apri chat &rarr;
         </a>
     </div>
+    @endif
 
     @if(empty($teaching))
         @php

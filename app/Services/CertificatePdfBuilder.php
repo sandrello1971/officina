@@ -21,6 +21,20 @@ class CertificatePdfBuilder
     public const TEMPLATE_PATH = 'resources/pdf/templates/certificate-default.pdf';
 
     /**
+     * Template in uso: quello committato (brand Effetto Glitch) per l'ente
+     * primario, quello generato nello storage dell'ente per gli altri.
+     */
+    public static function templatePath(): string
+    {
+        $tenant = tenant();
+        if ($tenant && ! $tenant->isPrimary()) {
+            return storage_path('app/private/branding/certificate-template.pdf');
+        }
+
+        return base_path(self::TEMPLATE_PATH);
+    }
+
+    /**
      * Palette Effetto Glitch (RGB). INDIGO/VIOLET sono i due estremi del
      * gradiente del logo; INK è il fondo viola scurissimo del sito, usato
      * qui come colore del testo (il certificato si stampa: fondo bianco).
@@ -86,7 +100,9 @@ class CertificatePdfBuilder
 
     public static function fontDir(): string
     {
-        return storage_path('fonts/tcpdf');
+        // Asset di piattaforma, condivisi da tutti gli enti: base_path e non
+        // storage_path, che dentro un ente punta a storage/tenant<id>.
+        return base_path('storage/fonts/tcpdf');
     }
 
     /**
@@ -152,7 +168,11 @@ class CertificatePdfBuilder
         $verifyUrl = route('certificate.verify', ['code' => $cert->code]);
         $date = Carbon::parse($cert->issued_at)->locale('it')->isoFormat('D MMMM YYYY');
 
-        $templateAbsPath = base_path(self::TEMPLATE_PATH);
+        $templateAbsPath = self::templatePath();
+        if (!file_exists($templateAbsPath) && $templateAbsPath !== base_path(self::TEMPLATE_PATH)) {
+            // Template dell'ente non ancora generato: lo si crea al primo uso.
+            \Illuminate\Support\Facades\Artisan::call('certificates:build-template');
+        }
         if (!file_exists($templateAbsPath)) {
             throw new \RuntimeException("Template PDF mancante: {$templateAbsPath}");
         }

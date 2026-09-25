@@ -14,10 +14,11 @@ use Illuminate\Console\Command;
  *   php artisan ai:usage --feature=quiz.generate # filtra una feature
  *   php artisan ai:usage --school=<uuid>         # filtra un tenant
  *   php artisan ai:usage --by=school|course|day  # raggruppa diversamente
+ *   php artisan ai:usage --all-tenants           # totali per ente (chiave piattaforma vs ente)
  */
 class AiUsageReport extends Command
 {
-    protected $signature = 'ai:usage {--days=30} {--feature=} {--school=} {--by=feature : feature|school|course|day}';
+    protected $signature = 'ai:usage {--days=30} {--feature=} {--school=} {--by=feature : feature|school|course|day} {--all-tenants : Totali per ente, dal DB di ciascun tenant}';
 
     protected $description = 'Report costi/token delle chiamate AI (da ai_usage)';
 
@@ -25,6 +26,10 @@ class AiUsageReport extends Command
     {
         $days = (int) $this->option('days');
         $since = now()->subDays($days);
+
+        if ($this->option('all-tenants')) {
+            return $this->allTenants($since, $days);
+        }
 
         $base = AiUsage::where('created_at', '>=', $since);
         if ($f = $this->option('feature')) {
@@ -81,6 +86,25 @@ class AiUsageReport extends Command
             $tot->cost === null ? 'n/d' : '$' . number_format((float) $tot->cost, 2)
         ));
         $this->comment('Nota: i costi usano il listino in config/services.php (services.anthropic.prices).');
+
+        return self::SUCCESS;
+    }
+
+    private function allTenants(\Carbon\CarbonInterface $since, int $days): int
+    {
+        $rows = app(\App\Services\Tenancy\TenantAiUsage::class)->summary($since);
+
+        $this->info("Utilizzo AI per ente — ultimi {$days} giorni");
+        $this->table(
+            ['ente', 'chiamate', 'USD chiave piattaforma', 'USD chiave ente', 'budget mensile'],
+            collect($rows)->map(fn ($r) => [
+                $r['tenant']->name,
+                $r['calls'],
+                number_format($r['platform_usd'], 4),
+                number_format($r['tenant_usd'], 4),
+                $r['budget'] !== null ? number_format($r['budget'], 2) : '—',
+            ])->values()
+        );
 
         return self::SUCCESS;
     }

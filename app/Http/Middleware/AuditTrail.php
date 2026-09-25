@@ -87,7 +87,7 @@ class AuditTrail
         if (str_starts_with($name, 'docente.')) {
             return 'docente';
         }
-        if ($name === '' && $request->getHost() === config('domains.admin')) {
+        if ($name === '' && str_starts_with($request->getHost(), 'admin.')) {
             return 'admin';
         }
 
