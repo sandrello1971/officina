@@ -224,4 +224,41 @@ class CourseEditionRegisterTest extends TestCase
             ->assertOk()->assertDontSee("/course/{$course->slug}/editions", false);
         $this->withSession($session)->get(route('student.course.editions.index', $course->slug))->assertForbidden();
     }
+
+    public function test_discenti_con_ruolo_vuoto_sono_candidati(): void
+    {
+        $edition = $this->edition();
+        // Caso reale: la maggior parte dei discenti ha role NULL.
+        Student::create(['name' => 'Elena Forieri', 'email' => 'elena.forieri@mavigex.com', 'password' => bcrypt('x'), 'is_active' => true, 'must_change_password' => false]);
+        $this->student('Formatore', 'instructor');
+        Admin::create(['name' => 'A', 'email' => 'adm@e.it', 'password' => 'x', 'is_active' => true]);
+
+        $this->withSession(['admin_logged_in' => true, 'admin_email' => 'adm@e.it'])
+            ->get(route('admin.courses.editions.show', [$edition->course, $edition]) . '?tab=discenti')
+            ->assertOk()->assertSee('elena.forieri@mavigex.com')->assertDontSee('Formatore</span>', false);
+    }
+
+    public function test_spostare_una_giornata_la_rinumera_e_ricalcola_le_ore(): void
+    {
+        $edition = $this->edition(); // lun 5 → ven 9 ottobre, 9:00-13:00
+        $anna = $this->student('Anna');
+        app(CourseEditionService::class)->addStudents($edition, [$anna->id]);
+        $first = $edition->days()->first();
+        app(AttendanceService::class)->markSessionAttendance($first, [$anna->id => ['status' => 'presente', 'arrived_at' => '10:00']]);
+        Admin::create(['name' => 'A', 'email' => 'adm@e.it', 'password' => 'x', 'is_active' => true]);
+
+        // Sposto la giornata 1 a lunedì 12, dalle 14:00 per 2 ore.
+        $this->withSession(['admin_logged_in' => true, 'admin_email' => 'adm@e.it'])
+            ->patch(route('admin.courses.editions.days.update', [$edition->course, $edition, $first]), [
+                'title' => 'Giornata 1', 'date' => '2026-10-12', 'start_time' => '14:00', 'hours' => 2,
+            ])->assertRedirect();
+
+        $first->refresh();
+        $this->assertSame('2026-10-12 14:00', $first->scheduled_at->format('Y-m-d H:i'));
+        $this->assertSame(5, $first->day_number);
+        $this->assertSame('Giornata 5', $first->title);
+        $this->assertSame([1, 2, 3, 4, 5], $edition->days()->pluck('day_number')->all());
+        // Entrata 10:00 fuori dal nuovo orario 14-16: conta tutta la giornata spostata.
+        $this->assertEquals(2.0, (float) AttendanceRecord::where('course_session_id', $first->id)->value('hours_credited'));
+    }
 }

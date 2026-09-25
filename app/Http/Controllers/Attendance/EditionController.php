@@ -87,9 +87,11 @@ abstract class EditionController extends Controller
         $candidates = Student::query()
             ->whereNotIn('id', $inOtherEditions)
             ->where('is_active', true)
-            ->where('role', 'student')
-            ->where('is_instructor', false)
-            ->where('is_demo', false)
+            // Ruolo vuoto = discente (è il caso della maggior parte degli account).
+            ->where(fn ($q) => $q->whereNull('role')->orWhere('role', 'student'))
+            ->where(fn ($q) => $q->whereNull('is_instructor')->orWhere('is_instructor', false))
+            ->where(fn ($q) => $q->whereNull('is_secretary')->orWhere('is_secretary', false))
+            ->where(fn ($q) => $q->whereNull('is_demo')->orWhere('is_demo', false))
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'role', 'is_instructor']);
         $enrolledIds = $course->students()->pluck('students.id')->all();
